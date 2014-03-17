@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="o2musicstream.cz" version="0.5" vendor="Kajda"
+        class="cz.vity.freerapid.plugins.services.o2musicstream.O2MusicStreamServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://www\.o2\.music\.stream\.cz/klip/.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="o2musicstream.cz"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="o2musicstream.cz" path="/" type="code"/>
+    </runtime>
+</plugin>

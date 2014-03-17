@@ -13,19 +13,17 @@ public class SharingMatrixServiceImpl extends AbstractFileShareService {
     private static final String PLUGIN_CONFIG_FILE = "plugin_SharingMatrixPremium.xml";
     private volatile PremiumAccount config;
 
-    @Override
     public String getName() {
         return "sharingmatrix.com_premium";
     }
 
-    @Override
     public int getMaxDownloadsFromOneIP() {
         return 100;
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return false;//ok
     }
 
     @Override

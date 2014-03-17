@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="sharingmatrix.com" version="0.6.10" vendor="Kajda+JPEXS+RickCL+codeboy2k"
+<plugin id="sharingmatrix.com" version="0.6.11" vendor="JPEXS"
         class="cz.vity.freerapid.plugins.services.sharingmatrix.SharingMatrixServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\d?\.)?sharingmatrix\.com/file/.+"/>

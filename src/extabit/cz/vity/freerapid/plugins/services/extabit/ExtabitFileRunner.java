@@ -57,12 +57,15 @@ class ExtabitFileRunner extends AbstractRunner {
     	Matcher nameMatcher = PlugUtils.matcher("<[^>]*id=\"download_filename\"[^>]*>([^<>]+)<", getContentAsString());
     	if(!nameMatcher.find())
     		unimplemented();
-    	httpFile.setFileName(nameMatcher.group(1));
+    	httpFile.setFileName(nameMatcher.group(1).trim());
 
     	Matcher sizeMatcher = PlugUtils.matcher("Размер файла:(?:\\s|<[^<>]*>)*([^<>]+)<", getContentAsString());
-    	if(!sizeMatcher.find())
-    		unimplemented();
-    	httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1)));
+    	if(!sizeMatcher.find()) {
+    	    sizeMatcher = getMatcherAgainstContent("<[^>]*class=\"download_filesize\"[^>]*>([^<>]+)<");
+            if(!sizeMatcher.find())
+                unimplemented();
+    	}
+    	httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1).trim().replace("[", "").replace("]", "")));
     	httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -72,7 +75,7 @@ class ExtabitFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         runCheck();
         checkDownloadProblems();
-        
+
         final HttpMethod req1 = getMethodBuilder()
         	.setAction("?go")
         	.setBaseURL(fileURL)
@@ -80,19 +83,20 @@ class ExtabitFileRunner extends AbstractRunner {
         if(!makeRequest(req1))
         	throw new ServiceConnectionProblemException();
         checkProblems();
-        
+
         final HttpMethod req2 = getMethodBuilder()
         	.setActionFromFormByName("cmn_form", true)
         	.setParameter("capture", getCaptchaCode())
         	.setBaseURL("http://extabit.com/")
         	.toHttpMethod();
         if(!makeRequest(req2))
-        	throw new ServiceConnectionProblemException();
+            if( !getContentAsString().trim().equals("") )
+                throw new ServiceConnectionProblemException();
         checkProblems();
-        
-        if(!getContentAsString().contains("\"?af\""))
+
+        if(!getContentAsString().trim().equals("") && !getContentAsString().contains("\"?af\""))
         	throw new CaptchaEntryInputMismatchException();
-        
+
         final HttpMethod req3 = getMethodBuilder()
         	.setAction("?af")
         	.setBaseURL(fileURL)
@@ -100,15 +104,14 @@ class ExtabitFileRunner extends AbstractRunner {
         if(!makeRequest(req3))
         	throw new ServiceConnectionProblemException();
         checkProblems();
-        
-        final HttpMethod req4 = getMethodBuilder()
-        	.setActionFromAHrefWhereATagContains("Скачать")
-        	.toHttpMethod();
-        
+
+        // Converted to Unicode: Older text is: Скачать
+        HttpMethod req4 = getMethodBuilder().setActionFromAHrefWhereATagContains("\u0421\u043a\u0430\u0447\u0430\u0442\u044c").toHttpMethod();
+
         if (!tryDownloadAndSaveFile(req4)) {
         	checkProblems();//if downloading failed
     			logger.warning(getContentAsString());//log the info
-    			
+
     			/* Since the server doesn't properly indicate
     			 * multiple downloads condition, just assume it here
     			 */
@@ -118,15 +121,15 @@ class ExtabitFileRunner extends AbstractRunner {
 
 		/**
 		 * @return
-		 * @throws PluginImplementationException 
-		 * @throws ErrorDuringDownloadingException 
+		 * @throws PluginImplementationException
+		 * @throws ErrorDuringDownloadingException
 		 */
 		private String getCaptchaCode() throws ErrorDuringDownloadingException {
 			CaptchaSupport cs=getCaptchaSupport();
 			Matcher captchaMatcher=PlugUtils.matcher("<img src=\"(/cap[^\"]*)\"", getContentAsString());
 			if(!captchaMatcher.find())
 				unimplemented();
-			
+
 			return cs.getCaptcha("http://extabit.com"+captchaMatcher.group(1));
 		}
 
@@ -144,10 +147,10 @@ class ExtabitFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }
-    
+
     private void checkDownloadProblems() {
     }
-    
+
     private void checkProblems() throws ErrorDuringDownloadingException {
     	checkFileProblems();
     	checkDownloadProblems();

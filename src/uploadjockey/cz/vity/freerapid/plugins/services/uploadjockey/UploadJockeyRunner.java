@@ -20,7 +20,7 @@ class UploadJockeyRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadJockeyRunner.class.getName());
     public String dpOK ="Invalid";
     public String upOK = "Invalid";
-    public String rpOK = "Invalid";
+    public String rsOK = "Invalid";
     public String esOK = "Invalid";
     public String ffOK = "Invalid";
     public String muOK = "Invalid";
@@ -70,28 +70,29 @@ class UploadJockeyRunner extends AbstractRunner {
 
                     
 
-
+                    System.out.println(dpOK);
+                    
 
                     if (dpOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(dpURL));
                     }  else
 
-                    if (ffOK.equals("up")) {
+                    if (upOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(upURL));
                     } else
 
-                    if (dpOK.equals("rs")) {
+                    if (rsOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(rsURL));
                     }  else
 
-                    if (ffOK.equals("es")) {
+                    if (esOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(esURL));
                     } else
-                    if (dpOK.equals("ff")) {
+                    if (ffOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(ffURL));
                     }  else
 
-                    if (ffOK.equals("mu")) {
+                    if (ffOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(muURL));
                     } else throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
 
@@ -144,20 +145,20 @@ class UploadJockeyRunner extends AbstractRunner {
                                                     dpOK = checkDepositFiles(dpContent);
                                                 } else
                                                 if (tService.equals("Uploaded")) {
-                                                    ffOK = checkUploaded(dpContent);
+                                                    upOK = checkUploaded(dpContent);
                                                 }
                                                 if (tService.equals("Rapidshare")) {
-                                                    ffOK = checkRapidshare(dpContent);
+                                                    rsOK = checkRapidshare(dpContent);
                                                 }
                                                 if (tService.equals("Easy")) {
-                                                    ffOK = checkEasy(dpContent);
+                                                    esOK = checkEasy(dpContent);
                                                 }
 
                                                 if (tService.equals("FileFactory")) {
                                                     ffOK = checkFileFactory(dpContent);
                                                 }
                                                 if (tService.equals("Megaupload")) {
-                                                    ffOK = checkMegaupload(dpContent);
+                                                    muOK = checkMegaupload(dpContent);
                                                 }
 
                                                 //dpURL = checkServer(mContent,"DepositFiles");
@@ -188,18 +189,15 @@ class UploadJockeyRunner extends AbstractRunner {
             //throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
         }
         Matcher matcher = getMatcherAgainstContent("<b>([0-9.]+&nbsp;.B)</b>");
-        if (matcher.find()) {
-            logger.info("File size " + matcher.group(1));
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        }
+
         matcher = getMatcherAgainstContent("class\\=\"info[^=]*\\=\"([^\"]*)\"");
         if (matcher.find()) {
-            final String fn = matcher.group(1);
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-        } else return "not available";
+  //          final String fn = matcher.group(1);
+ //           logger.info("File name " + fn);
+ //           httpFile.setFileName(fn);
             return "ok";
+        } else return "not available";
+            
    }
 
         private String checkUploaded(String content) throws Exception {
@@ -213,13 +211,13 @@ class UploadJockeyRunner extends AbstractRunner {
 
        Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
         if (matcher.find()) {
-            final String fileSize = matcher.group(1);
-            logger.info("File size " + fileSize);
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-
+ //           final String fileSize = matcher.group(1);
+//            logger.info("File size " + fileSize);
+//            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
+            return "ok";
         } else return "not available";
         //httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        return "ok";
+
 
     }
         

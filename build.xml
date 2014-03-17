@@ -176,6 +176,7 @@
         <ant dir="${src.dir}/linksave" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/lixin" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/loadto" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/mediafire" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/mega1280" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/megashare" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/megashares" antfile="build.xml" inheritall="false"/>

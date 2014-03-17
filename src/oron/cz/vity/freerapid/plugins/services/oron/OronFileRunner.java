@@ -64,7 +64,7 @@ class OronFileRunner extends AbstractRunner {
                 .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("method_free", true)
                 .setAction(fileURL)
-                .setParameter("method_free", " Free Download ")
+                .setParameter("method_free", " Regular Download ")
                 .toPostMethod();
 
         if (!makeRedirectedRequest(method))
@@ -134,9 +134,9 @@ class OronFileRunner extends AbstractRunner {
                 .setReferer(fileURL)
                 .setActionFromFormByName("F1", true)
                 .setAction(fileURL)
-                .setParameter("method_free", " Free Download ");
+                .setParameter("method_free", " Regular Download ");
 
-        Matcher m = getMatcherAgainstContent("api.recaptcha.net/noscript\\?k=([^\"]+)\"");
+        Matcher m = getMatcherAgainstContent("/recaptcha/api/challenge\\?k=([^\"]+)\"");
         if (!m.find()) throw new PluginImplementationException("ReCaptcha key not found");
 
         ReCaptcha r = new ReCaptcha(m.group(1), client);

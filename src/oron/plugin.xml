@@ -1,13 +1,12 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="oron.com" version="1.0.9" vendor="Thumb+JPEXS"
+<plugin id="oron.com" version="1.0.10" vendor="Thumb+JPEXS"
         class="cz.vity.freerapid.plugins.services.oron.OronServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?oron\.com/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="minver" value="0.851"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="oron.com"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="resumeSupported" value="false"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

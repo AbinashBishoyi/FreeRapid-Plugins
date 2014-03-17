@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://cramit.in/lur4th620ack/www.DirectLinkSpot.com_dmd-od.avi"));
+            httpFile.setNewURL(new URL("http://cramit.in/b2azcrw7u6gd"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //then we tries to download

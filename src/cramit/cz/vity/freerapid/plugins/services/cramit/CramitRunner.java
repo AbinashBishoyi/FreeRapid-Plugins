@@ -1,16 +1,13 @@
 package cz.vity.freerapid.plugins.services.cramit;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -25,33 +22,38 @@ public class CramitRunner extends AbstractRunner {
         super.run();
 
         logger.info("Starting run task " + fileURL);
-        final GetMethod getMethod = getGetMethod(fileURL);
+        HttpMethod httpMethod = getGetMethod(fileURL);
 
-        if (makeRedirectedRequest(getMethod)) {
-            final HttpMethod httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("method_free", true).setAction(fileURL).toPostMethod();
+        if (makeRedirectedRequest(httpMethod)) {
+            checkProblems();
+            checkNameAndSize();
+
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("method_free", true).setAction(fileURL).toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
 
-            Matcher matcher = getMatcherAgainstContent("Wait.*\">(\\d*)</span>");
+            Matcher matcher = getMatcherAgainstContent("Wait.*\">(\\d+?)</span>");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Waiting time not found");
             }
+            final int wait = Integer.parseInt(matcher.group(1)) + 1;
 
-            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
-
-            final HttpMethod httpMethod2 = getMethodBuilder().setActionFromFormWhereTagContains("method_free", true).setAction(fileURL).toPostMethod();
-            if (!makeRedirectedRequest(httpMethod2)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
+            while (getContentAsString().contains("recaptcha")) {
+                httpMethod = stepCaptcha();
+                downloadTask.sleep(wait);
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
             }
 
-            final HttpMethod httpMethod3 = getMethodBuilder().setActionFromAHrefWhereATagContains("<h2>Click Here to Download</h2>").toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod3)) {
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Click to download", true).toGetMethod();
+            if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 logger.warning(getContentAsString());
-                throw new IOException("File input stream is empty");
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -63,7 +65,7 @@ public class CramitRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
 
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod httpMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
@@ -76,16 +78,35 @@ public class CramitRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<h2>Download File ", "</h2>");
+        PlugUtils.checkName(httpFile, content, "Download File ", "</h2>");
         PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("<h2>File Not Found</h2>") || content.contains("No such file with this filename")) {
+        if (content.contains("File Not Found") || content.contains("No such file with this filename")) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
+    }
+
+    private HttpMethod stepCaptcha() throws Exception {
+        final Matcher m = getMatcherAgainstContent("api.recaptcha.net/noscript\\?k=([^\"]+)\"");
+        if (!m.find()) throw new PluginImplementationException("ReCaptcha key not found");
+        final String reCaptchaKey = m.group(1);
+
+        final String content = getContentAsString();
+        final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+
+        final String captchaURL = r.getImageURL();
+        logger.info("Captcha URL " + captchaURL);
+
+        final String captcha = captchaSupport.getCaptcha(captchaURL);
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
+        r.setRecognized(captcha);
+
+        return r.modifyResponseMethod(getMethodBuilder(content).setReferer(fileURL).setActionFromFormWhereTagContains("method_free", true).setAction(fileURL)).toPostMethod();
     }
 
 }

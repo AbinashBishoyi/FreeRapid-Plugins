@@ -105,7 +105,8 @@ class Channel5FileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("this page does not exist")) {
+        if (getContentAsString().contains("this page does not exist")
+                || getContentAsString().contains("this episode is no longer available")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

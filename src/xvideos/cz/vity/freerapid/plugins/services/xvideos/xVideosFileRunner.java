@@ -64,6 +64,7 @@ class xVideosFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Not Found") ||
+                contentAsString.contains("Sorry, this video is not available") ||
                 contentAsString.contains("This video has been deleted")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }

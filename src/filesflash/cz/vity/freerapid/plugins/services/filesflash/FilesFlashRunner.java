@@ -84,7 +84,7 @@ class FilesFlashRunner extends AbstractRunner {
     }
 
     private void stepCaptcha() throws Exception {
-        final String publicKey = PlugUtils.getStringBetween(getContentAsString(), "k=", "\">");
+        final String publicKey = PlugUtils.getStringBetween(getContentAsString(), ";k=", "\">");
         final MethodBuilder methodBuilder = getMethodBuilder()
                 .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("freedownload.php", true);

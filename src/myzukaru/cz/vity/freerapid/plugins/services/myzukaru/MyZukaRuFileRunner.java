@@ -69,7 +69,7 @@ class MyZukaRuFileRunner extends AbstractRunner {
             } else if (isSongUrl(fileURL)) {
                 final HttpMethod httpMethod = getMethodBuilder()
                         .setReferer(fileURL)
-                        .setActionFromAHrefWhereATagContains("Скачать трек")
+                        .setActionFromAHrefWhereATagContains("Скачать")
                         .toHttpMethod();
                 setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
                 if (!tryDownloadAndSaveFile(httpMethod)) {

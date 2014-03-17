@@ -202,7 +202,7 @@ class UlozToRunner extends AbstractRunner {
     }
 
     //"Prekro�en pocet FREE slotu, pouzijte VIP download
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws Exception {
         final String content = getContentAsString();
         if (content.contains("Soubor byl sma") || content.contains("Soubor byl zak")) {
             throw new URLNotAvailableAnymoreException("Soubor byl smazan");
@@ -212,6 +212,9 @@ class UlozToRunner extends AbstractRunner {
         }
         if (content.contains("stahovat pouze jeden soubor")) {
             throw new ServiceConnectionProblemException("Muzete stahovat pouze jeden soubor naraz");
+        }
+        if (content.contains("Majitel souboru si nepřeje soubor zveřejnit a označil jej jako soukromý")) {
+            throw new NotRecoverableDownloadException("Majitel souboru si nepřeje soubor zveřejnit a označil jej jako soukromý");
         }
         if (content.contains("et FREE slot") && content.contains("ijte VIP download")) {
             logger.warning(getContentAsString());

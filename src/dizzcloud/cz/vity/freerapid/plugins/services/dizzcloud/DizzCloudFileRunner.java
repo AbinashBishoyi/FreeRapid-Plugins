@@ -25,7 +25,7 @@ class DizzCloudFileRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkFileProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else {
             checkProblems();
@@ -89,12 +89,18 @@ class DizzCloudFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         if (content.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (content.contains("The file's owner has disabled the ability to free download a file larger than")) {
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        checkFileProblems();
+        final String content = getContentAsString();
+        if (content.contains("The file's owner has disabled the ability to free download a file larger than") ||
+                content.contains("File owner has disabled<br/>free download for files")) {
             throw new NotRecoverableDownloadException("Download of this size disabled for free users by owner");
         }
         if (content.contains("Next free download from your ip will be available in")) {

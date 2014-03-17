@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.fileom;
+package cz.vity.freerapid.plugins.services.shareneo;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,19 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://fileom.com/353ptb0vkp7s"));
-            httpFile.setNewURL(new URL("http://fileom.com/uk9eluk7dtah"));
+            httpFile.setNewURL(new URL("http://www.shareneo.net/3bg"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final FileOMServiceImpl service = new FileOMServiceImpl(); //instance of service - of our plugin
-            /*
-            //we set premium account details
-            final PremiumAccount config = new PremiumAccount();
-            config.setUsername("****");
-            config.setPassword("****");
-            service.setConfig(config);
-            */
+            //then we tries to download
+            final ShareNeoServiceImpl service = new ShareNeoServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

@@ -144,6 +144,9 @@ class SafeLinkingFileRunner extends AbstractRunner {
                 content.contains("This link does not exist")) {
             throw new URLNotAvailableAnymoreException("Link does not exist"); //let to know user in FRD
         }
+        if (content.contains("The links in this package are <strong>offline</strong>")) {
+            throw new URLNotAvailableAnymoreException("The links in this package are offline");
+        }
         if (content.contains("server is not currently responding")) {
             throw new ServiceConnectionProblemException("server is not currently responding"); //let to know user in FRD
         }

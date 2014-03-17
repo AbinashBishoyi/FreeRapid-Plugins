@@ -103,7 +103,8 @@ class Tube8FileRunner extends AbstractRunner {
 
         if (contentAsString.contains(">Newest Videos<")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        } else if (contentAsString.contains("This video is deleted")) {
+        } else if (contentAsString.contains("This video is deleted") ||
+                contentAsString.contains("video-removed-div")) {
             throw new URLNotAvailableAnymoreException("This video is deleted");
         }
 

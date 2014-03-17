@@ -37,10 +37,7 @@ class EasyShareRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
-        if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-
-        }
+        checkProblems();
         Matcher matcher = PlugUtils.matcher("Download ([^,]+), upload", contentAsString);
         if (matcher.find()) {
             final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
@@ -93,8 +90,7 @@ class EasyShareRunner extends AbstractRunner {
                 }
             }
 
-            while (getContentAsString().contains("Type characters")) {
-
+            while (true) {
                 if (!getContentAsString().contains("Type characters")) {
                     checkProblems();
                     logger.warning(getContentAsString());
@@ -114,7 +110,7 @@ class EasyShareRunner extends AbstractRunner {
         if (matcher.find()) {
             return "http://www.easy-share.com/c/" + matcher.group(1);
         } else {
-            logger.warning(getContentAsString());
+            logger.warning("Cannot get number from url " + fileURL);
             throw new PluginImplementationException("Plugin implementation problem");
         }
 
@@ -122,7 +118,7 @@ class EasyShareRunner extends AbstractRunner {
     }
 
 
-    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException {
+    private void checkProblems() throws Exception {
         if (getContentAsString().contains("File not found")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
         }
@@ -132,6 +128,10 @@ class EasyShareRunner extends AbstractRunner {
         if (getContentAsString().contains("Error 404: Page not found")) {
             throw new InvalidURLOrServiceProblemException(String.format("<b>Error 404: Page not found</b><br>"));
         }
+        if (getContentAsString().contains("You have downloaded ")) {
+            throw new YouHaveToWaitException(String.format("<b>You have downloaded to much during last hour. You have to wait</b><br>"), 20 * 60);
+        }
+
     }
 
     private boolean stepCaptcha(final String contentAsString) throws Exception {
@@ -165,7 +165,7 @@ class EasyShareRunner extends AbstractRunner {
                         if (tryDownloadAndSaveFile(method)) return true;
                         else {
                             checkProblems();
-                            if (getContentAsString().contains("Type characters") || getContentAsString().contains("w="))
+                            if (getContentAsString().contains("Type characters"))
                                 return false;
                             logger.warning(getContentAsString());
                             throw new IOException("File input stream is empty.");

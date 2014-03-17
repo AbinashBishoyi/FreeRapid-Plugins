@@ -8,10 +8,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -22,8 +18,7 @@ import java.util.regex.Matcher;
  */
 class SendSpaceRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SendSpaceRunner.class.getName());
-    private static final String HTTP_SENDSPACE = "http://www.sendspace.com";
-    public String mLink;
+
 
     @Override
     public void runCheck() throws Exception {
@@ -43,6 +38,7 @@ class SendSpaceRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
+            client.setReferer(fileURL);
             final String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
 //            <script type="text/javascript">
@@ -55,47 +51,28 @@ class SendSpaceRunner extends AbstractRunner {
             if (matcher.find()) {
                 String mCode = matcher.group(1);
                 logger.info("Code :" + mCode);
-
-                String script1, script2;
-                
-                String scriptFileURL = HTTP_SENDSPACE + "/jsc/download.js";
-                getMethod = getGetMethod(scriptFileURL);
-                if (makeRequest(getMethod)) {
-                    script1 = getContentAsString();
-                    logger.info("Script1 :" + script1);
-                } else {
-                    throw new InvalidURLOrServiceProblemException("Can't load script file");
-                }
-
-                matcher = PlugUtils.matcher("\\<script type=\"text/javascript\"\\>(function enc\\(text\\)\\{.+\\})\\</script\\>", contentAsString);
+                matcher = getMatcherAgainstContent("enc.text..[A-z]+=new Array..;[A-z]+=([0-9]+)");
+                int constu = 213;
                 if (matcher.find()) {
-                    script2 = matcher.group(1);
-                    logger.info("Script2 :" + script2);
-                    
-                    script2 += "\n" + script1;
-                    script2 += "\n" + "function decodeLink(code) { return enc(base64ToText(code)); }";
-  
-                    ScriptEngineManager manager = new ScriptEngineManager();
-                    ScriptEngine engine = manager.getEngineByName("javascript");
-                    engine.eval(script2);
-                    Invocable invokeEngine = (Invocable) engine;
-                    Object o = invokeEngine.invokeFunction("decodeLink", mCode);
-
-                    mCode = o.toString();
-                    logger.info("Code after decoding :" + mCode);
-                } else {
-                    throw new PluginImplementationException("Can't find decode function");
+                    constu = Integer.parseInt(matcher.group(1));
                 }
-
-                matcher = PlugUtils.matcher("href=\"(.+)\" onclick", mCode);
+                matcher = getMatcherAgainstContent("='([^']+)';for");
+                String pf = "aa";
                 if (matcher.find()) {
-                    mLink = matcher.group(1);
-                    mLink = mLink.replace(" ", "%20");
-                    logger.info("Final Link :" + mLink);
-                } else {
-                    throw new PluginImplementationException("Can't find final download link");
+                    pf = matcher.group(1);
                 }
 
+                //           mLink = new BCodec().decode(matcher.group(1));
+                String decoded = enc(base64ToText(mCode), constu, pf);
+
+                matcher = PlugUtils.matcher("href=\"([^\"]+)\"", decoded);
+                if (!matcher.find()) {
+
+                    logger.warning(decoded);//something was really wrong, we will explore it from the logs :-)
+                    throw new PluginImplementationException("Can't find download link");
+                }
+                String mLink = matcher.group(1);
+                logger.info("Final Link :" + mLink);
                 getMethod = getGetMethod(mLink);
 
                 if (!tryDownloadAndSaveFile(getMethod)) {
@@ -158,5 +135,57 @@ class SendSpaceRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException(String.format("<b>SendSpace Error:</b><br>The free service is at full capacity."));
         }
     }
+
+    private String b64s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\"";
+
+    private String base64ToText(String t) {
+        String r = "";
+        int m = 0;
+        int a = 0;
+        int c;
+        for (int n = 0; n < t.length(); n++) {
+            c = b64s.indexOf(t.charAt(n));
+            if (c >= 0) {
+                if (m > 0) r += (char) ((c << (8 - m)) & 255 | a);
+                a = c >> m;
+                m += 2;
+                if (m == 8)
+                    m = 0;
+            }
+        }
+        return r;
+    }
+
+    private String enc(String text, int constu, String pf) {
+        int[] eTAOS = new int[2 * constu];
+        int nlIaPA = constu;
+        for (int hdNaq = 0; hdNaq < nlIaPA; hdNaq++) {
+            eTAOS[hdNaq] = hdNaq;
+        }
+        String JrNioT = pf;
+        int eEm = 0;
+        int[] AIH = eTAOS;
+        for (int KZOODS = 0; KZOODS < nlIaPA; KZOODS++) {
+            eEm = (JrNioT.charAt(KZOODS % JrNioT.length()) + AIH[KZOODS] + eEm) % nlIaPA;
+            int jgWAl = AIH[KZOODS];
+            AIH[KZOODS] = AIH[eEm];
+            AIH[eEm] = jgWAl;
+            AIH[eEm] = AIH[eEm] ^ 5;
+        }
+        eEm = 0;
+        String gblQxi = "";
+        for (int nSQir = 0; nSQir < text.length(); nSQir++) {
+            int NZrqeV = nSQir % nlIaPA;
+            eEm = (AIH[NZrqeV] + eEm) % nlIaPA;
+            int apIBcA = AIH[NZrqeV];
+            AIH[NZrqeV] = AIH[eEm];
+            AIH[eEm] = apIBcA;
+            gblQxi += (char) ((text.charAt(nSQir) ^ AIH[(AIH[NZrqeV] + AIH[eEm]) % nlIaPA]));
+        }
+
+
+        return gblQxi;
+    }
+
 
 }

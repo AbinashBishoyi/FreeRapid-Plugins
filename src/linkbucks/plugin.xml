@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="linkbucks.com" version="0.1.2" vendor="Alex"
+<plugin id="linkbucks.com" version="0.1.3" vendor="Vity"
         class="cz.vity.freerapid.plugins.services.linkbucks.LinkBucksServiceImpl">
     <attributes>
         <attribute id="urlRegex"
@@ -9,6 +9,7 @@
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="linkbucks.com,seriousfiles.com"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
+        <attribute id="maxDownloads" value="10"/>
     </attributes>
 
     <runtime>

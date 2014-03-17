@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, ntoskrnl
+ * @author Ladislav Vitasek, ntoskrnl, Abinash Bishoyi
  */
 class UploadedToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadedToRunner.class.getName());
@@ -58,18 +58,20 @@ class UploadedToRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException();
                     }
                     if (!getMatcherAgainstContent("err\"?:\"?captcha").find()) {
-                        if (getContentAsString().contains("limit-dl")) {
+                        /**
+                         * Abinash Bishoyi: Updated the error message string
+                         */
+                        if (getContentAsString().contains("You've reached")) {
                             throw new ServiceConnectionProblemException("Free download limit reached");
                         }
-                        //By Abinash Bishoyi
-                        if (getContentAsString().contains("max. number of possible free downloads for this hour")) {
-                            throw new ServiceConnectionProblemException("Hourly free download limit reached");
-                        }
-                        if (getContentAsString().contains("limit-parallel")) {
+                        if (getContentAsString().contains("You're already")) {
                             throw new ServiceConnectionProblemException("You are already downloading a file");
                         }
-                        if (getContentAsString().contains("limit-size") || getContentAsString().contains("In order to download files bigger")) {
+                        if (getContentAsString().contains("Only Premiumusers") || getContentAsString().contains("In order to download files bigger")) {
                             throw new NotRecoverableDownloadException("Only premium users may download files larger than 1 GB");
+                        }
+                        if (getContentAsString().contains("The free download") || getContentAsString().contains("In order to download files bigger")) {
+                            throw new NotRecoverableDownloadException("The free download is currently not available - Please try again later");
                         }
                         method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("url:'", "'").toGetMethod();
                         if (!tryDownloadAndSaveFile(method)) {
@@ -127,11 +129,16 @@ class UploadedToRunner extends AbstractRunner {
 
     private HttpMethod stepCaptcha(final String fileId) throws Exception {
         final ReCaptcha r = new ReCaptcha("6Lcqz78SAAAAAPgsTYF3UlGf2QFQCNuPMenuyHF3", client);
+        /**
+         * Abinash: Bypassing the captcha check
+         */
+        /*
         final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         }
         r.setRecognized(captcha);
+        */
         return r.modifyResponseMethod(
                 getMethodBuilder().setReferer(fileURL).setAction("http://uploaded.to/io/ticket/captcha/" + fileId)
         ).toPostMethod();

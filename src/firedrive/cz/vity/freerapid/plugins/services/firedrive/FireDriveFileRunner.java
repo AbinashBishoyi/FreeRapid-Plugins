@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.firedrive;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -27,6 +24,13 @@ import java.util.regex.Matcher;
 class FireDriveFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FireDriveFileRunner.class.getName());
     private final static int REDIRECT_MAX_DEPTH = 4;
+
+    private SettingsConfig config;
+
+    private void setConfig() throws Exception {
+        FireDriveServiceImpl service = (FireDriveServiceImpl) getPluginService();
+        config = service.getConfig();
+    }
 
     @Override
     public void runCheck() throws Exception {
@@ -82,13 +86,36 @@ class FireDriveFileRunner extends AbstractRunner {
             }
             checkProblems();
 
-            Matcher matcher = getMatcherAgainstContent("[\"'](http://[^\"']+?\\?(?:stream|key)=[^\"']+?)[\"']");
-            if (!matcher.find()) {
+            setConfig();
+            VideoQuality configQuality = config.getVideoQuality();
+            logger.info("Config settings : " + config);
+            Matcher hiMatcher = getMatcherAgainstContent("[\"'](http://[^\"']+?\\?key=[^\"']+?)[\"']");
+            Matcher lowMatcher = getMatcherAgainstContent("[\"'](http://[^\"']+?\\?stream=[^\"']+?)[\"']");
+            String downloadURL;
+            //low quality stream is not guaranteed to be exist.
+            //high quality on the other hand, always exists.
+            if (lowMatcher.find()) {
+                if ((configQuality == VideoQuality.High) && (hiMatcher.find())) {
+                    downloadURL = hiMatcher.group(1);
+                } else {
+                    downloadURL = lowMatcher.group(1);
+                }
+            } else if (hiMatcher.find()) {
+                downloadURL = hiMatcher.group(1);
+            } else {
                 throw new PluginImplementationException("Download link not found");
             }
-            String downloadLink = matcher.group(1);
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(downloadLink).toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+
+            if (configQuality == VideoQuality.Mobile) {
+                String mobileDownloadURL = downloadURL.replaceFirst("\\?(key|stream)=", "?mobile=");
+                if (!tryDownloadAndSaveFile(getGetMethod(mobileDownloadURL))) {
+                    logger.info("Attempt to download mobile version failed ..\nTrying to download the stream or original version ..");
+                    if (!tryDownloadAndSaveFile(getGetMethod(downloadURL))) { //mobile version is unstable, if fails then download low or high quality
+                        checkProblems();
+                        throw new ServiceConnectionProblemException("Error starting download");
+                    }
+                }
+            } else if (!tryDownloadAndSaveFile(getGetMethod(downloadURL))) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
@@ -102,6 +129,9 @@ class FireDriveFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Does Not Exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("Server is Overloaded")) {
+            throw new YouHaveToWaitException("Server is overloaded", 60 * 2);
         }
     }
 
@@ -160,9 +190,9 @@ class FireDriveFileRunner extends AbstractRunner {
         } catch (Exception e) { // doesn't have ext
             //
         }
-        //TODO : file ext pattern too broad ?
+        //file ext pattern too broad ?
         httpFile.setFileName((filename.matches(".+?\\.[^\\.]{3}$")) && (ext != null) ? filename.replaceFirst("\\.[^\\.]{3}$", ext) : (ext != null ? filename + ext : filename));
-        method = getMethodBuilder().setReferer(fileURL + "#").setAction(action).toGetMethod();
+        method = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
         return super.tryDownloadAndSaveFile(method);
     }
 

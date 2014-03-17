@@ -21,6 +21,9 @@ public class TestApp extends PluginDevApplication {
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final FireDriveServiceImpl service = new FireDriveServiceImpl();
+            SettingsConfig config = new SettingsConfig();
+            config.setVideoQuality(VideoQuality.Mobile);
+            service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

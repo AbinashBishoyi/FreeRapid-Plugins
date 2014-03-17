@@ -21,7 +21,7 @@ class IFileFileRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(IFileFileRunner.class.getName());
     private final static String BASE_URL = "http://ifile.it/";
-    private final static String REDIRECT_URL = BASE_URL + "baecfkr/0199575797%20MetaphysicsA.rar";
+    private final static String REDIRECT_URL = "";
     private String __alias_id;
     //    private String __x_c;
     private String __esn;

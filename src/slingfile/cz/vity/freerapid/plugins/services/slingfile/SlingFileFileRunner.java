@@ -10,6 +10,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.concurrent.TimeUnit;
 
 /*
  * @author TommyTom
@@ -32,8 +33,8 @@ class SlingFileFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "File Name: <strong>", "</strong></p>");
-        PlugUtils.checkFileSize(httpFile, content, "File Size: ", "</p>");
+        PlugUtils.checkName(httpFile, content, "<h3><span>", "</span></h3>");
+        PlugUtils.checkFileSize(httpFile, content, "<td>", "| Uploaded");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -45,7 +46,11 @@ class SlingFileFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setBaseURL(fileURL).setActionFromFormByName("form1", true).toPostMethod();
+            HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setBaseURL(fileURL)
+                    .setActionFromFormByName("download_form", true)
+                    .toPostMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("here").toGetMethod();
                 //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var seconds=", ";") + 1);
@@ -66,7 +71,7 @@ class SlingFileFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("The file you requested cannot be found") || content.contains("<h1>Not Found</h1>")) {
+        if (content.contains("The file you requested cannot be found") || content.contains("<h1>Not Found</h1>")||content.contains("The file you have requested was not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

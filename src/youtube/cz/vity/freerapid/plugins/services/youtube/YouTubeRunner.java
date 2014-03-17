@@ -15,6 +15,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -34,7 +35,7 @@ import java.util.regex.Matcher;
  */
 class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:23.0) Gecko/20100101 Firefox/24.0";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0";
 
     private YouTubeSettingsConfig config;
     private YouTubeMedia youTubeMedia = null;
@@ -44,6 +45,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         super.runCheck();
         setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
+        if (!isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles()) {
+            checkFileProblems();
+        }
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             bypassAgeVerification(method);
@@ -67,6 +71,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             return;
         }
 
+        if (!isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles()) {
+            checkFileProblems();
+        }
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             bypassAgeVerification(method);
@@ -129,7 +136,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     if (formatContent.contains("sig=")) {
                         matcher = PlugUtils.matcher("sig=(.+?)(?:\\\\u0026.+)?$", formatContent);
                         if (matcher.find()) {
-                            videoURL = videoURL + "&signature=" + matcher.group(1);
+                            videoURL += "&signature=" + matcher.group(1);
                         }
                     } else {
                         matcher = PlugUtils.matcher("(?:\\\\u0026)?s=([A-Z0-9\\.]+?)(?:\\\\u0026|$)", formatContent);
@@ -169,26 +176,19 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
     }
 
-    //@TODO : implement https://developers.google.com/youtube/2.0/developers_guide_protocol_video_entries
-    //@TODO : https://gdata.youtube.com/feeds/api/videos/$videoid?v=2    , where $videoid = video id from url
-    private void checkProblems() throws Exception {
-        if (getContentAsString().contains("video you have requested is not available")
-                || getContentAsString().contains("video is no longer available")
-                || getContentAsString().contains("This channel is not available")
-                || getContentAsString().contains("video has been removed")
-                || getContentAsString().contains("page you requested cannot be found")
-                || getContentAsString().contains("blocked it in your country on copyright grounds")
-                || getContentAsString().contains("has not made this video available")
-                || getContentAsString().contains("account associated with this video has been terminated")) {
-            //|| getContentAsString().contains("This video is unavailable")) { //false positive
+    private void checkFileProblems() throws Exception {
+        logger.info("Checking file problems");
+        HttpMethod method = getGetMethod(String.format("https://gdata.youtube.com/feeds/api/videos/%s?v=2", getIdFromUrl()));
+        int httpCode = client.makeRequest(method, true);
+        if ((httpCode == HttpStatus.SC_NOT_FOUND)
+                || getContentAsString().contains("ResourceNotFoundException")
+                || getContentAsString().contains("Video not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        /* Causes false positives
-        final Matcher matcher = getMatcherAgainstContent("<div\\s+?class=\"yt-alert-content\">\\s*([^<>]+?)\\s*</div>");
-        if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException(matcher.group(1));
-        }
-        */
+    }
+
+    private void checkProblems() throws Exception {
+        //
     }
 
     private void checkName() throws ErrorDuringDownloadingException {

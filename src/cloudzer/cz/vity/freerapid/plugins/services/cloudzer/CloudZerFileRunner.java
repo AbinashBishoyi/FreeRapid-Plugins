@@ -83,7 +83,7 @@ class CloudZerFileRunner extends AbstractRunner {
                 }
             } while (getContentAsString().contains("err\":\"captcha\""));
             checkProblems();
-            final HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "\"url\":\"", "\"}").trim().replace("\\/", "/"));
+            final HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "\"url\":\"", "\"").trim().replace("\\/", "/"));
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

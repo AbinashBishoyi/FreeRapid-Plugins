@@ -36,7 +36,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     private boolean badConfig = false;
     private static String versionUrl="http://www.multishare.cz/html/mms_support.php?version";
 
-    private static String version="1.2.2";
+    private static String version="1.2.3";
     
     private static final String HTTP_USER_AGENT = "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.10) Gecko/2009042523 Ubuntu/9.04 (jaunty) Firefox/3.0.10";
 
@@ -105,8 +105,8 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         setClientParameter(DownloadClientConsts.USER_AGENT, HTTP_USER_AGENT);
-        checkNameAndSize();
         versionCheck();    
+        checkNameAndSize();        
         String jmeno = "";
         String heslo = "";
         synchronized (MultiShareMMSFileRunner.class) {
@@ -123,6 +123,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
             heslo = pa.getPassword();
         }
         HttpMethod pm=getMethodBuilder()
+        
                 .setAction(API_URL+"?sub=download-link")
                 .setParameter("login", jmeno)
                 .setParameter("password", heslo)

@@ -38,7 +38,7 @@ class MediafireRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
 
-        if (fileURL.contains("?sharekey=")) {
+        if (isList()) {
             runList();
             return;
         }
@@ -116,6 +116,8 @@ class MediafireRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException(String.format("<b>The file was removed.</b><br>"));
         }
 
+        if(isList()) return;
+
         PlugUtils.checkFileSize(httpFile, content, "sharedtabsfileinfo1-fs\" value=\"", "\">");
         PlugUtils.checkName(httpFile, content, "sharedtabsfileinfo1-fn\" value=\"", "\">");
 
@@ -184,5 +186,10 @@ class MediafireRunner extends AbstractRunner {
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
+
+
+   private boolean isList() {
+       return (fileURL.contains("?sharekey="));
+   }
 
 }

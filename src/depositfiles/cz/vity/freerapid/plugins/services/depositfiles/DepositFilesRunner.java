@@ -64,7 +64,8 @@ class DepositFilesRunner extends AbstractRunner {
 
             Matcher matcher = getMatcherAgainstContent("setTimeout\\s*\\(\\s*'load_form\\s*\\(\\s*fid\\s*,\\s*msg\\s*\\)\\s*'\\s*,\\s*(\\d+)\\s*\\)");
             if (!matcher.find()) {
-                throw new PluginImplementationException();
+                checkProblems();
+                throw new ServiceConnectionProblemException("Cannot find wait time");
             }
             int seconds = Integer.parseInt(matcher.group(1)) / 1000;
             logger.info("wait - " + seconds);

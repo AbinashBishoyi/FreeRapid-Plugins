@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.HttpStatus;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -28,6 +29,11 @@ class TinyUrlRunner extends AbstractRunner {
 
        
         if (makeRedirectedRequest(method)) {
+        //it works to me .... compilable
+            if (client.makeRequest(method, false) == HttpStatus.SC_MOVED_PERMANENTLY) {
+
+
+            }
 
 
             String content = getContentAsString();

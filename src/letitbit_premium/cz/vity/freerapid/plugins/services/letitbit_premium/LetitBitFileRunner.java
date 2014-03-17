@@ -57,8 +57,9 @@ class LetitBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "File: <span>", "</span>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "[<span>", "</span>]");
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<span class=\"file-info-name\">", "</span>");
+        httpFile.setFileName(PlugUtils.unescapeHtml(name).trim());
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"file-info-size\">[", "]</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

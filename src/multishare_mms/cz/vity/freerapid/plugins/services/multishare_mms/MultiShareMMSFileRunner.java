@@ -36,7 +36,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     private boolean badConfig = false;
     private static String versionUrl="http://www.multishare.cz/html/mms_support.php?version";
 
-    private static String version="1.2.1";
+    private static String version="1.2.2";
     
     private static final String HTTP_USER_AGENT = "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.10) Gecko/2009042523 Ubuntu/9.04 (jaunty) Firefox/3.0.10";
 
@@ -49,8 +49,9 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        PostMethod pm = new PostMethod(API_URL+"?sub=check-file");
-        pm.addParameter("link", fileURL);
+        HttpMethod pm=getMethodBuilder()
+                .setAction(API_URL+"?sub=check-file")
+                .setParameter("link", fileURL).toPostMethod();
         if (makeRequest(pm)) {
             String content=getContentAsString();
             if(content.startsWith("ERR:")){
@@ -121,10 +122,11 @@ class MultiShareMMSFileRunner extends AbstractRunner {
             jmeno = pa.getUsername();
             heslo = pa.getPassword();
         }
-        PostMethod pm = new PostMethod(API_URL+"?sub=download-link");
-        pm.addParameter("login", jmeno);
-        pm.addParameter("password", heslo);
-        pm.addParameter("link", fileURL);
+        HttpMethod pm=getMethodBuilder()
+                .setAction(API_URL+"?sub=download-link")
+                .setParameter("login", jmeno)
+                .setParameter("password", heslo)
+                .setParameter("link", fileURL).toPostMethod();
         if (makeRequest(pm)) {
             String content=getContentAsString();
             if(content.startsWith("ERR:")){

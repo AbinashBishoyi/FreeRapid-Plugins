@@ -34,7 +34,7 @@ class UltraMegabitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("<h4><[^>]+>\\s*(.+?)\\s*\\((.+?)\\)<", content);
+        final Matcher match = PlugUtils.matcher("<h4><[^>]+>\\s*(.+?)\\s*\\(([^\\)]+?)\\)<", content);
         if (!match.find())
             throw new PluginImplementationException("File Name/Size not found");
         httpFile.setFileName(match.group(1).trim());

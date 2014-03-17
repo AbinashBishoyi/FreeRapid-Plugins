@@ -35,7 +35,11 @@ class PodnapisiFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<title>", " - Subtitles</title>");
+        try {
+            PlugUtils.checkName(httpFile, content, "<title>", " - Subtitles</title>");
+        } catch (Exception e) {
+            PlugUtils.checkName(httpFile, content, "<title>", "</title>");
+        }
         final Matcher matchN = PlugUtils.matcher("ID</span>\\s*?<span>(.+?)</span>", content);
         if (!matchN.find()) throw new PluginImplementationException("File ID not found");
         httpFile.setFileName(httpFile.getFileName() + " (" + matchN.group(1).trim() + ").zip");

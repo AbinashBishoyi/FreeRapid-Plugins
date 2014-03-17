@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -21,25 +22,28 @@ import java.util.regex.Matcher;
  */
 class FileVelocityFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileVelocityFileRunner.class.getName());
+    private final static String SERVICE_TITLE = "FileVelocity";
+    private final static String SERVICE_COOKIE_DOMAIN = ".filevelocity.com";
+    private final static String SERVICE_LOGIN_REFERER = "http://filevelocity.com";
+    private final static String SERVICE_LOGIN_ACTION = "http://filevelocity.com";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "english", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
-        addCookie(new Cookie(".filevelocity.com", "lang", "english", "/", null, false));
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
             checkNameAndSize(getContentAsString());
         } else {
             checkFileProblems();
-            checkDownloadProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<nobr>", "</nobr>");
-        PlugUtils.checkFileSize(httpFile, content, "<small style=\"font-size:10px;\">", "</small>");
+        PlugUtils.checkName(httpFile, content, "<h2>Download File", "</h2></div>");
+        PlugUtils.checkFileSize(httpFile, content, "<font color=\"red\">(", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -51,27 +55,27 @@ class FileVelocityFileRunner extends AbstractRunner {
             //for testing purpose
             //pa.setPassword("freerapid");
             //pa.setUsername("freerapid");
-
             if (pa == null || !pa.isSet()) {
                 logger.info("No account data set, skipping login");
                 return false;
             }
-
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction("http://filevelocity.com/login.html")
+                    .setReferer(SERVICE_LOGIN_REFERER)
+                    .setAction(SERVICE_LOGIN_ACTION)
                     .setParameter("op", "login")
                     .setParameter("redirect", "")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
                     .setParameter("submit", "")
                     .toPostMethod();
-            addCookie(new Cookie(".filevelocity.com", "login", pa.getUsername(), "/", null, false));
-            addCookie(new Cookie(".filevelocity.com", "xfss", "", "/", null, false));
+            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "login", pa.getUsername(), "/", null, false));
+            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "xfss", "", "/", null, false));
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
             if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new BadLoginException("Invalid FileVelocity registered account login information!");
-
+                throw new BadLoginException("Invalid " + SERVICE_TITLE + "registered account login information!");
+            if (getContentAsString().contains("account was banned by administrator"))
+                throw new PluginImplementationException("Your account was banned by admin");
             return true;
         }
     }
@@ -88,7 +92,7 @@ class FileVelocityFileRunner extends AbstractRunner {
         login();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod method = getGetMethod(fileURL);
-        addCookie(new Cookie(".filevelocity.com", "lang", "english", "/", null, false));
+        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "english", "/", null, false));
         if (!makeRedirectedRequest(method)) {
             logger.warning(getContentAsString());
             checkFileProblems();
@@ -113,26 +117,58 @@ class FileVelocityFileRunner extends AbstractRunner {
 
         checkDownloadProblems();
 
-        final MethodBuilder methodBuilder = getMethodBuilder()
-                .setActionFromFormByName("F1", true)
-                .setAction(fileURL)
-                .removeParameter("method_premium");
-
-        String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
-        Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
+        final String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
+        final Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
         if (waitTimematcher.find()) {
-            downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)));
+            downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)) + 1);
         }
 
+        String password = "";
         if (isPassworded()) {
-            final String password = getDialogSupport().askForPassword("FileVelocity");
+            password = getDialogSupport().askForPassword(SERVICE_TITLE);
             if (password == null) {
                 throw new NotRecoverableDownloadException("This file is secured with a password");
             }
-            methodBuilder.setParameter("password", password);
         }
-
-        httpMethod = stepCaptcha(methodBuilder);
+        while (true) {
+            MethodBuilder methodBuilder = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromFormByName("F1", true)
+                    .setAction(fileURL)
+                    .removeParameter("method_premium");
+            if (isPassworded()) {
+                methodBuilder.setParameter("password", password);
+            }
+            httpMethod = stepReCaptcha(methodBuilder);
+            final int httpStatus = client.makeRequest(httpMethod, false);
+            if (httpStatus / 100 == 3) { //redirect
+                final Header locationHeader = httpMethod.getResponseHeader("Location");
+                if (locationHeader == null)
+                    throw new ServiceConnectionProblemException("Could not find download file location");
+                httpMethod = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(locationHeader.getValue())
+                        .toGetMethod();
+                break;
+            } else if (getContentAsString().contains("File Download Link Generated")) { //link generated
+                final Matcher downloadLinkMatcher = getMatcherAgainstContent("<a href=\"(http.+?" + httpFile.getFileName() + ")\">");
+                if (!downloadLinkMatcher.find()) {
+                    throw new PluginImplementationException("Could not find generated download link");
+                }
+                final String downloadLink = downloadLinkMatcher.group(1);
+                httpMethod = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(downloadLink)
+                        .toGetMethod();
+                break;
+            } else {
+                if (!getContentAsString().contains("recaptcha/api/challenge")) {
+                    checkDownloadProblems();
+                    throw new PluginImplementationException("Download link not found");
+                }
+            }
+        }
+        setFileStreamContentTypes("text/plain");
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkDownloadProblems();
@@ -140,8 +176,8 @@ class FileVelocityFileRunner extends AbstractRunner {
         }
     }
 
-    private HttpMethod stepCaptcha(MethodBuilder methodBuilder) throws Exception {
-        final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha/api/challenge\\?k=(.*?)\">");
+    private HttpMethod stepReCaptcha(MethodBuilder methodBuilder) throws Exception {
+        final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha/api/challenge\\?k=(.*?)\"");
         reCaptchaKeyMatcher.find();
         final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
         final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
@@ -156,16 +192,16 @@ class FileVelocityFileRunner extends AbstractRunner {
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
+        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("server is in maintenance mode")) {
+            throw new YouHaveToWaitException("This server is in maintenance mode", 30 * 60 * 60);
         }
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Wrong captcha")) {
-            throw new YouHaveToWaitException("Wrong captcha", 1);
-        }
         if (contentAsString.contains("till next download")) {
             String regexRule = "(?:([0-9]+) hours?, )?(?:([0-9]+) minutes?, )?(?:([0-9]+) seconds?) till next download";
             Matcher matcher = PlugUtils.matcher(regexRule, contentAsString);
@@ -182,6 +218,18 @@ class FileVelocityFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Server problem");
+        }
+        if (contentAsString.contains("file reached max downloads limit")) {
+            throw new PluginImplementationException("This file reached max downloads limit");
+        }
+        if (contentAsString.contains("You can download files up to")) {
+            throw new PluginImplementationException(PlugUtils.getStringBetween(contentAsString, "<div class=\"err\">", ".<br>"));
+        }
+        if (contentAsString.contains("have reached the download-limit")) {
+            throw new YouHaveToWaitException("You have reached the download-limit", 30 * 60 * 60);
+        }
+        if (contentAsString.contains("Error happened when generating Download Link")) {
+            throw new YouHaveToWaitException("Error happened when generating Download Link", 10 * 60 * 60);
         }
     }
 

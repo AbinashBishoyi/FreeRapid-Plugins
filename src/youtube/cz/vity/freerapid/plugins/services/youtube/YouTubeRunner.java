@@ -24,6 +24,7 @@ import java.net.URLDecoder;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Kajda
@@ -34,17 +35,17 @@ import java.util.regex.Matcher;
  */
 class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:25.0) Gecko/20100101 Firefox/25.0";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0";
+    private static final String DEFAULT_FILE_EXT = ".flv";
 
     private YouTubeSettingsConfig config;
-    private YouTubeMedia youTubeMedia = null;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
-        if (!isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles()) {
+        if (isVideo()) {
             checkFileProblems();
         }
         final HttpMethod method = getGetMethod(fileURL);
@@ -70,7 +71,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             return;
         }
 
-        if (!isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles()) {
+        if (isVideo()) {
             checkFileProblems();
         }
         HttpMethod method = getGetMethod(fileURL);
@@ -94,15 +95,13 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
 
             String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
-            logger.info("Swf URL : " + swfUrl);
             String fmtStreamMapContent = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
+            logger.info("Swf URL : " + swfUrl);
             logger.info("fmtStreamMap : " + fmtStreamMapContent);
-            Map<Integer, YouTubeMedia> youTubeMediaMap = getFmtStreamMap(fmtStreamMapContent);
-            youTubeMedia = getSelectedYouTubeMedia(youTubeMediaMap);
-            checkName();
+            Map<Integer, YouTubeMedia> fmtStreamMap = getFmtStreamMap(fmtStreamMapContent);
+            YouTubeMedia youTubeMedia = getSelectedYouTubeMedia(fmtStreamMap);
+            httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", youTubeMedia.getContainer().getFileExt()));
 
-            logger.info("Config setting : " + config);
-            logger.info("Downloading video : " + youTubeMedia);
             String videoURL = youTubeMedia.getUrl();
             if (URLUtil.getQueryParams(videoURL, "UTF-8").get("signature") == null) { //if there is no "signature" param in url
                 String signature;
@@ -120,6 +119,8 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 videoURL += "&signature=" + signature;
             }
 
+            logger.info("Config setting : " + config);
+            logger.info("Downloading video : " + youTubeMedia);
             method = getGetMethod(videoURL);
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             if (config.isConvertToAudio()) {
@@ -165,8 +166,8 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- YouTube\n</title>");
         }
         String fileName = PlugUtils.unescapeHtml(PlugUtils.unescapeHtml(httpFile.getFileName()));
-        if (!isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles()) {
-            fileName += (youTubeMedia == null ? ".flv" : youTubeMedia.getContainer().getFileExt());
+        if (isVideo()) {
+            fileName += DEFAULT_FILE_EXT;
         }
         httpFile.setFileName(fileName);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -179,8 +180,8 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
     private Map<Integer, YouTubeMedia> getFmtStreamMap(String content) throws Exception {
         Map<Integer, YouTubeMedia> fmtStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
-        String aFmtStream[] = content.split(",");
-        for (String fmtStream : aFmtStream) {
+        String fmtStreams[] = content.split(",");
+        for (String fmtStream : fmtStreams) {
             //fmtStream example :
             //url=http%3A%2F%2Fr5---sn-2uuxa3vh-jb3l.googlevideo.com%2Fvideoplayback%3Fmv%3Dm%26upn%3DZC7X-TgcnkI%26source%3Dyoutube%26sparams%3Did%252Cip%252Cipbits%252Citag%252Cratebypass%252Csource%252Cupn%252Cexpire%26ms%3Dau%26expire%3D1385234607%26fexp%3D910100%252C910207%252C900222%252C916624%252C919510%252C936912%252C936910%252C923308%252C936913%252C907231%252C907240%26mt%3D1385210269%26id%3Do-AJpZVaZ_pyzg65PoyK8IHQwiD_4EXmalD6shPyZuX1Zw%26sver%3D3%26ratebypass%3Dyes%26ip%3D192.168.1.113%26key%3Dyt5%26itag%3D22%26ipbits%3D0\u0026type=video%2Fmp4%3B+codecs%3D%22avc1.64001F%2C+mp4a.40.2%22\u0026sig=8A9764AECD80DBA23E94F4E149B42699FC3C0402.042C3EE60DB22A9E3E21E7D65D662D39E90A6C39\u0026fallback_host=tc.v19.cache7.googlevideo.com\u0026quality=hd720\u0026itag=22
             String fmtStreamComponents[] = PlugUtils.unescapeUnicode(fmtStream).split("&"); // \u0026 as separator
@@ -213,7 +214,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 throw new PluginImplementationException("Invalid YouTube media : " + fmtStream);
             }
             YouTubeMedia youTubeMedia = new YouTubeMedia(itag, url, signature, cipherSig);
-            logger.info("Found : " + youTubeMedia);
+            logger.info("Found video : " + youTubeMedia);
             fmtStreamMap.put(itag, youTubeMedia);
         }
         return fmtStreamMap;
@@ -320,6 +321,10 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
 
         return ytMediaMap.get(selectedItagCode);
+    }
+
+    private boolean isVideo() {
+        return !isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles();
     }
 
     private boolean isVid2AudSupported(YouTubeMedia ytMedia) {
@@ -527,7 +532,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 throw new PluginImplementationException("Error converting and saving subtitles", e);
             }
             return true;
-        } else if (config.isDownloadSubtitles()) {
+        } else if (config.isDownloadSubtitles() && isVideo()) {
             final String id = getIdFromUrl();
             final HttpMethod method = getGetMethod("http://www.youtube.com/api/timedtext?type=list&v=" + id);
             if (makeRedirectedRequest(method)) {

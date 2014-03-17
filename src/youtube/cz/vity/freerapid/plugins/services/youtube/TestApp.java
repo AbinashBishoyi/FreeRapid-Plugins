@@ -44,7 +44,8 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=ShVRP09NCO4"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=MwpMEbgC7DA")); //sig decipher
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=oRS5p60yX_E"));
-            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=zoKj7TdJk98")); //1080 - not solved yet
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=zoKj7TdJk98")); //1080 - not solved yet
+            httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=PL41C0F5B0D27D9CD0"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
@@ -55,7 +56,7 @@ public class TestApp extends PluginDevApplication {
             config.setVideoQuality(VideoQuality._480);
             config.setContainer(Container.flv);
             config.setReversePlaylistOrder(false);
-            config.setDownloadSubtitles(false);
+            config.setDownloadSubtitles(true);
             config.setConvertToAudio(false);
             config.setAudioQuality(AudioQuality._128);
             service.setConfig(config);

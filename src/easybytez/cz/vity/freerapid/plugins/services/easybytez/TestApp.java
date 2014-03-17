@@ -15,9 +15,9 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.easybytez.com/0okbkvwpu6qp"));
+            httpFile.setNewURL(new URL("http://www.easybytez.com/zen90nkamv16"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 9060, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             final EasyBytezServiceImpl service = new EasyBytezServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {

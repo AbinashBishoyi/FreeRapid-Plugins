@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="filestore.to" version="0.1.0" vendor="RickCL"
+        class="cz.vity.freerapid.plugins.services.filestore.FilestoreFilesShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?filestore\.to/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="filestore.to"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <runtime>
+        <library id="filestore.to" path="/" type="code"/>
+    </runtime>
+</plugin>

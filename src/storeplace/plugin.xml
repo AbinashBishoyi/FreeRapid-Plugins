@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="storeplace.org" version="0.1.0" vendor="RickCL"
+        class="cz.vity.freerapid.plugins.services.storeplace.StoreplaceFilesShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?storeplace\.org/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="storeplace.org"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <runtime>
+        <library id="storeplace.org" path="/" type="code"/>
+    </runtime>
+</plugin>

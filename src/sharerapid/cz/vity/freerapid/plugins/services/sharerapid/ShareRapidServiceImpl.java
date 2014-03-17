@@ -5,7 +5,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Jan Smejkal (edit from CZshare profi to RapidShare)
  */
 public class ShareRapidServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "share-rapid.com";

@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, Jan Smejkal (edit from Hellshare to CZshare)
+ * @author Jan Smejkal (edit from CZshare profi to RapidShare)
  */
 class ShareRapidRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareRapidRunner.class.getName());

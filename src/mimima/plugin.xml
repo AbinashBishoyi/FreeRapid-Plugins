@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.mimima.MimimaServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://[0-9a-z\-]+\.mimima\.com/.+"/>
-        <attribute id="minver" value="0.8"/>
-        <attribute id="maxver" value="0.809"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.82"/>
         <attribute id="services" value="mimima.com"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>

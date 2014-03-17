@@ -1,18 +1,14 @@
 package cz.vity.freerapid.plugins.services.mimima;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -43,14 +39,13 @@ class MimimaRunner extends AbstractRunner {
                 String code = matcher.group(1);
                 logger.info(code);
                 pmethod.addParameter("code", code);
-
-
-
-                        if (!tryDownloadAndSaveFile(pmethod)) {
-                        checkProblems();
+                client.getHTTPClient().getParams().setParameter("noContentTypeInHeader", true);//take everything 
+                if (!tryDownloadAndSaveFile(pmethod)) {
+                    checkProblems();
                     //if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))
                     //   return false;
-                        throw new IOException("File input stream is empty.");
+                    logger.warning(getContentAsString());
+                    throw new IOException("File input stream is empty.");
                     //logger.warning("Wrong captcha");
 
                     //throw new IOException("File input stream is empty.");
@@ -59,21 +54,21 @@ class MimimaRunner extends AbstractRunner {
                 } //else throw new ServiceConnectionProblemException();
 
             }
-            
+
             //PlugUtils.addParameters(pmethod, contentAsString, parameters);
             //client.getHTTPClient().getParams().setBooleanParameter("noContentTypeInHeader", true);
 
-           // inal PostMethod method = getPostMethod(fileURL);//file url
+            // inal PostMethod method = getPostMethod(fileURL);//file url
 
-        //        String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_premium", "down_script"}; //array of parameter names for parsing
-        //        PlugUtils.addParameters(method, contentAsString, parameters);
-                //method.addParameter("Keyword", "Ok"); //it always sends 'Ok'
-        //        method.addParameter("code", code); //it does not work without captcha
+            //        String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_premium", "down_script"}; //array of parameter names for parsing
+            //        PlugUtils.addParameters(method, contentAsString, parameters);
+            //method.addParameter("Keyword", "Ok"); //it always sends 'Ok'
+            //        method.addParameter("code", code); //it does not work without captcha
 
-        //        client.getHTTPClient().getParams().setBooleanParameter("noContentTypeInHeader", true);
+            //        client.getHTTPClient().getParams().setBooleanParameter("noContentTypeInHeader", true);
 //
-        //        if (!tryDownloadAndSaveFile(method))
-        
+            //        if (!tryDownloadAndSaveFile(method))
+
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

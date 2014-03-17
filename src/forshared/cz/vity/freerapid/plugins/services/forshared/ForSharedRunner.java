@@ -58,14 +58,13 @@ class ForSharedRunner extends AbstractRunner {
                 HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
                 if (makeRedirectedRequest(httpMethod)) {
 
-                    httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Click here to download this file").toGetMethod();
+                    httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("ownload").toGetMethod();
 
                     final int wait = PlugUtils.getNumberBetween(getContentAsString(), "DelayTimeSec'>", "<");
                     downloadTask.sleep(wait + 1);
 
                     if (!tryDownloadAndSaveFile(httpMethod)) {
                         checkProblems();
-                        logger.warning(getContentAsString());
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
 

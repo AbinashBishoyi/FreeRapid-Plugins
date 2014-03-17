@@ -2,7 +2,7 @@
 <project name="4Shared Plugin" default="all" basedir=".">
     <property name="application" value="forshared"/>
 
-    <property name="version" value="1.01"/>
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="forshared.jar"/>

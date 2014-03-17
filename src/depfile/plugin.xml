@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.depfile.DepFileServiceImpl"
+        id="depfile.com" vendor="RickCL+tong2shot" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?(i-filez|depfile)\.com/.+"/>
+        <attribute id="minver" value="0.852"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="depfile.com i-filez.com"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+        <attribute id="maxDownloads" value="1"/>
+    </attributes>
+
+    <runtime>
+        <library id="depfile.com" path="/" type="code"/>
+    </runtime>
+</plugin>

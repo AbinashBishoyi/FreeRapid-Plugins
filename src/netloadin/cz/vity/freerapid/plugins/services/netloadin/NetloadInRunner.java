@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.netloadin;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.netloadin.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -9,11 +10,12 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, JPEXS (Captcha)
  */
 class NetloadInRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NetloadInRunner.class.getName());
@@ -21,6 +23,8 @@ class NetloadInRunner extends AbstractRunner {
 
     private String initURL;
     private String enterURL;
+    private int captchaCount=0;
+    private static final int CAPTCHARETRIES=3;
 
     @Override
     public void runCheck() throws Exception {
@@ -51,6 +55,7 @@ class NetloadInRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
+            captchaCount=0;
             do {
                 stepEnterPage(getContentAsString());
                 if (!getContentAsString().contains("Please enter the Securitycode")) {
@@ -59,7 +64,7 @@ class NetloadInRunner extends AbstractRunner {
 
                 }
                 stepCaptcha(getContentAsString());
-
+                captchaCount++;
             } while (getContentAsString().contains("You may forgot the security code or it might be wrong"));
 
             Matcher matcher = getMatcherAgainstContent(">([0-9.]+ .B)</div>");
@@ -133,7 +138,38 @@ class NetloadInRunner extends AbstractRunner {
             Matcher matcher = PlugUtils.matcher("src=\"(share\\/includes\\/captcha.*?)\"", contentAsString);
             if (matcher.find()) {
                 String s = "/" + PlugUtils.replaceEntities(matcher.group(1));
-                String captcha = getCaptchaSupport().getCaptcha(HTTP_NETLOAD + s);
+                String captcha = "";
+                if(captchaCount<CAPTCHARETRIES){
+                    logger.info("Getting captcha image");
+                    GetMethod methodC = getGetMethod(HTTP_NETLOAD + s);
+                    client.getHTTPClient().executeMethod(methodC);
+                    
+                    logger.info("Reading captcha...");
+                    InputStream is = null;
+                    try{
+                      is=methodC.getResponseBodyAsStream();
+                      captcha = CaptchaReader.recognize(is);
+                    }catch(Exception ex){
+                        logger.severe(ex.toString());
+                    } finally{
+                        if(is!=null){
+                         try{
+                         is.close();
+                         }catch(Exception ex){
+                             //ignore
+                         }
+                        }
+                    }
+                    logger.info("Captcha read:"+captcha);
+                   
+                    methodC.releaseConnection();
+                    if (captcha == null) {
+                        logger.warning("Cannot read captcha (retry "+captchaCount+") - wrong number separation");
+                        return false;
+                    }
+                }else{
+                    captcha = getCaptchaSupport().getCaptcha(HTTP_NETLOAD + s);
+                }
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {

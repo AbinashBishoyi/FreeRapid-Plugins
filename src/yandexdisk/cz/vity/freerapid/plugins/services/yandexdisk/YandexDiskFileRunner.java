@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -29,6 +30,7 @@ class YandexDiskFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             fileURL = getMethod.getURI().toString();
+            requestPageInEn();
             checkProblems();
             checkNameAndSize(getContentAsString());
         } else {
@@ -52,6 +54,7 @@ class YandexDiskFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             fileURL = method.getURI().toString();
+            requestPageInEn();
             checkProblems();
             checkNameAndSize(getContentAsString());
             final String ckey = PlugUtils.getStringBetween(getContentAsString(), "\"ckey\":\"", "\"");
@@ -103,6 +106,19 @@ class YandexDiskFileRunner extends AbstractRunner {
         final String hash = URLDecoder.decode(matcher.group(1), "UTF-8");
         logger.info(hash);
         return hash;
+    }
+
+    //They don't provide cookie mechanism to choose locale, so we have to request the page
+    //in en if redirected to ru locale.
+    private void requestPageInEn() throws ServiceConnectionProblemException, IOException {
+        if (fileURL.contains("&locale=ru")) {
+            fileURL = fileURL.replaceFirst("&locale=ru", "&locale=en");
+            GetMethod getMethod = getGetMethod(fileURL);
+            if (!makeRedirectedRequest(getMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+            fileURL = getMethod.getURI().toString();
+        }
     }
 
 }

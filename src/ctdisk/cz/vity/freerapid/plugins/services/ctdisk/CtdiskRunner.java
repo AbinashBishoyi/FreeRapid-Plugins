@@ -46,7 +46,6 @@ class CtdiskRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                logger.info("Downloading page:\n" + getContentAsString());
                 if (!getMatcherAgainstContent("验证码输入错误").find()) {
                     if (getContentAsString().contains("You have reached")) {
                         throw new ServiceConnectionProblemException("Free download limit reached");
@@ -88,6 +87,8 @@ class CtdiskRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("对不起，这个文件已到期或被删除。") || getContentAsString().contains("404 Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        } else if (getContentAsString().contains("<br />1.") && getContentAsString().contains("<br />2.")) {
+            throw new PluginImplementationException("Your IP is downloading.");
         }
     }
 

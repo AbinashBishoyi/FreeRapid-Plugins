@@ -8,7 +8,7 @@
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="ctdisk.com"/>
         <attribute id="maxDownloads" value="1"/>
-        <attribute id="faviconImage" value="resources/favicon.ico"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <runtime>
         <library id="ctdisk.com" path="/" type="code"/>

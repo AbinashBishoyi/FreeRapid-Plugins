@@ -18,18 +18,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://ul.to/3uiloc6x/dlbb.wir.part1.rar"));
             httpFile.setNewURL(new URL("http://www.ctdisk.com/file/8256005"));
+//            httpFile.setNewURL(new URL("http://www.ctdisk.com/file/2797200"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("61.50.138.124", 3128); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CtdiskShareServiceImpl service = new CtdiskShareServiceImpl(); //instance of service - of our plugin
 //            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             testRun(service, httpFile, connectionSettings);
             //all output goes to the console
-            httpFile.setNewURL(new URL("http://www.t00y.com/file/8611174"));
-            testRun(service, httpFile, connectionSettings);
+//            httpFile.setNewURL(new URL("http://www.ctdisk.com/file/2797200"));
+//            testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console
         }

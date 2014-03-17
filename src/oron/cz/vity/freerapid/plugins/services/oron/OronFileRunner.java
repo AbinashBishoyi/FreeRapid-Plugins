@@ -110,7 +110,7 @@ class OronFileRunner extends AbstractRunner {
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
         Matcher err_m = getMatcherAgainstContent("<p class=\"err\">([^<>]+)<");
         if (err_m.find()) {
-            Matcher matcher = getMatcherAgainstContent("You have to wait (\\d+? hours?)?(?:, )?(\\d+? minutes?)?(?:, )?(\\d+? seconds?)? until the next download becomes available");
+            Matcher matcher = getMatcherAgainstContent("You have to wait (?:(\\d+?) hours?)?(?:, )?(?:(\\d+?) minutes?)?(?:, )?(?:(\\d+?) seconds?)? until the next download becomes available");
             if (matcher.find()) {
                 final String hours = matcher.group(1);
                 final String minutes = matcher.group(2);

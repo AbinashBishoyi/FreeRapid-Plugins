@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="cramit.in" version="1.0.3" vendor="RickCL"
+<plugin id="cramit.in" version="1.0.4" vendor="RickCL"
         class="cz.vity.freerapid.plugins.services.cramit.CramitServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?cramit.in/.+"/>

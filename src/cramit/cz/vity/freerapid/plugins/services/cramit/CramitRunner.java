@@ -97,7 +97,7 @@ public class CramitRunner extends AbstractRunner {
         if (content.contains("File Not Found") || content.contains("No such file with this filename")) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
-        final Matcher matcher = getMatcherAgainstContent("You have to wait (\\d+? hours?)?(?:, )?(\\d+? minutes?)?(?:, )?(\\d+? seconds?)? till next download");
+        final Matcher matcher = getMatcherAgainstContent("You have to wait (?:(\\d+?) hours?)?(?:, )?(?:(\\d+?) minutes?)?(?:, )?(?:(\\d+?) seconds?)? till next download");
         if (matcher.find()) {
             final String hours = matcher.group(1);
             final String minutes = matcher.group(2);

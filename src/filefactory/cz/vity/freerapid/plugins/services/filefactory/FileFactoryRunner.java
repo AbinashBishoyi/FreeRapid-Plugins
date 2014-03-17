@@ -43,7 +43,7 @@ class FileFactoryFileRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
 
             final MethodBuilder methodBuilder = getMethodBuilder();
-            final HttpMethod httpMethod = methodBuilder.setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").setBaseURL(SERVICE_WEB).toHttpMethod();
+            final HttpMethod httpMethod = methodBuilder.setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").setBaseURL(SERVICE_WEB).toGetMethod();
             final String redirectURL = SERVICE_WEB + methodBuilder.getAction();
 
             if (makeRedirectedRequest(httpMethod)) {
@@ -80,7 +80,7 @@ class FileFactoryFileRunner extends AbstractRunner {
 
                 checkAllProblems();
                 client.setReferer(redirectURL);
-                HttpMethod finalMethod = getMethodBuilder().setReferer(redirectURL).setActionFromAHrefWhereATagContains("Download Now").toHttpMethod();
+                HttpMethod finalMethod = getMethodBuilder().setReferer(redirectURL).setActionFromAHrefWhereATagContains("Download with FileFactory Basic").toGetMethod();
                 downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS));
                 if (!tryDownloadAndSaveFile(finalMethod)) {
                     checkAllProblems();
@@ -163,7 +163,7 @@ class FileFactoryFileRunner extends AbstractRunner {
             logger.info("Captcha URL " + captchaSrc);
             final String captcha;
 
-            if (captchaOCRCounter <= 0) { // TODO
+            if (captchaOCRCounter <= 0) {
                 captcha = readCaptchaImage(captchaSrc);
             } else {
                 captcha = captchaSupport.getCaptcha(captchaSrc);

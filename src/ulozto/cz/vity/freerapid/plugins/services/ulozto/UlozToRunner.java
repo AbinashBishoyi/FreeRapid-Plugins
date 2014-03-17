@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.ulozto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.ulozto.captcha.SoundReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -15,7 +16,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, JPEXS (captcha)
+ * @author Ladislav Vitasek, Ludek Zika, JPEXS (captcha), birchie
  */
 class UlozToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UlozToRunner.class.getName());
@@ -145,26 +146,23 @@ class UlozToRunner extends AbstractRunner {
         final String captchaId = captchaIdKeyMatcher.group(1);
         final String captchaKey = captchaIdKeyMatcher.group(2);
         final String captchaImg = "http://img.uloz.to/captcha/" + captchaId + ".png";
-        //   final String captchaSnd = "http://img.uloz.to/captcha/sound/" + captchaId + ".mp3";
-        //   //  DIABLED SOUND RECOGNITION OF CAPTCHA
-        //
-        //    String captchaTxt = "";
-        //   //precteni
-        //   //captchaCount = 9; //for test purpose
-        //   if (captchaCount++ < 6) {
-        //       logger.warning("captcha url:" + captchaImg);
-        //       SoundReader captchaReader = new SoundReader();
-        //       HttpMethod methodSound = getMethodBuilder()
-        //               .setReferer(fileURL)
-        //               .setAction(captchaSnd)
-        //               .toGetMethod();
-        //       captchaTxt = captchaReader.parse(client.makeRequestForFile(methodSound));
-        //       methodSound.releaseConnection();
-        //   } else {
-        //        captchaTxt = captchaSupport.getCaptcha(captchaImg);
-        //   }
+        final String captchaSnd = "http://img.uloz.to/captcha/sound/" + captchaId + ".mp3";
 
-        final String captchaTxt = captchaSupport.getCaptcha(captchaImg);
+        String captchaTxt;
+        //precteni
+        //captchaCount = 9; //for test purpose
+        if (captchaCount++ < 6) {
+            logger.warning("captcha url:" + captchaImg);
+            SoundReader captchaReader = new SoundReader();    // This will NOT work running TestApp !!
+            HttpMethod methodSound = getMethodBuilder()       // It Works as a plugin in FreeRapid   -- birchie
+                    .setReferer(fileURL)
+                    .setAction(captchaSnd)
+                    .toGetMethod();
+            captchaTxt = captchaReader.parse(client.makeRequestForFile(methodSound));
+            methodSound.releaseConnection();
+        } else {
+            captchaTxt = captchaSupport.getCaptcha(captchaImg);
+        }
 
         if (captchaTxt == null) {
             throw new CaptchaEntryInputMismatchException();

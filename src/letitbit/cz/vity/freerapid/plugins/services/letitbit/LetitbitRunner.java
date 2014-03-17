@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -54,7 +55,8 @@ class LetitbitRunner extends AbstractRunner {
             checkNameAndSize();
             String pageUrl = fileURL;
 
-            String url = new LetitbitApi(client).getDownloadUrl(fileURL);
+            //String url = new LetitbitApi(client).getDownloadUrl(fileURL);
+            String url = null;//temporarily disabled
 
             if (url == null) {
                 for (int i = 1; i <= 3; i++) {
@@ -142,19 +144,21 @@ class LetitbitRunner extends AbstractRunner {
 
     private String handleCaptcha(final String pageUrl) throws Exception {
         final String baseUrl = "http://" + new URL(pageUrl).getHost();
+        final String rcKey = PlugUtils.getStringBetween(getContentAsString(), "/challenge?k=", "\"");
+        final String rcControl = PlugUtils.getStringBetween(getContentAsString(), "var recaptcha_control_field = '", "';");
         while (true) {
-            final String captchaUrl = "/captcha_new.php?rand=" + (int) Math.floor(100000 * Math.random());
-            HttpMethod method = getMethodBuilder()
+            final ReCaptcha rc = new ReCaptcha(rcKey, client);
+            final String captcha = getCaptchaSupport().getCaptcha(rc.getImageURL());
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            rc.setRecognized(captcha);
+            final HttpMethod method = rc.modifyResponseMethod(getMethodBuilder()
+                    .setAjax()
                     .setReferer(pageUrl)
                     .setBaseURL(baseUrl)
-                    .setAction(captchaUrl)
-                    .toGetMethod();
-            final String captcha = getCaptcha(method);
-            method = getMethodBuilder()
-                    .setReferer(pageUrl)
-                    .setBaseURL(baseUrl)
-                    .setAction("/ajax/check_captcha.php")
-                    .setParameter("code", captcha)
+                    .setAction("/ajax/check_recaptcha.php"))
+                    .setParameter("recaptcha_control_field", rcControl)
                     .toPostMethod();
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
@@ -166,14 +170,6 @@ class LetitbitRunner extends AbstractRunner {
                 return content;
             }
         }
-    }
-
-    private String getCaptcha(final HttpMethod method) throws Exception {
-        final String captcha = getCaptchaSupport().askForCaptcha(getCaptchaSupport().loadCaptcha(client.makeRequestForFile(method)));
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
-        }
-        return captcha;
     }
 
 }

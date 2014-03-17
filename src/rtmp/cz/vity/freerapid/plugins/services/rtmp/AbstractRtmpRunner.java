@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.rtmp;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.webclient.AbstractHttpRunner;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 /**
  * @author ntoskrnl
  */
-public abstract class AbstractRtmpRunner extends AbstractHttpRunner {
+public abstract class AbstractRtmpRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(AbstractRtmpRunner.class.getName());
 
     /**

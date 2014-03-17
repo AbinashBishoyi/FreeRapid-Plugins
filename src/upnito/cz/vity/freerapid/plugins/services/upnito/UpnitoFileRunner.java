@@ -61,17 +61,12 @@ class UpnitoFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkNameAndSize(contentAsString);
             client.setReferer(fileURL);
-            PostMethod postMethod = getPostMethod(fileURL);
-            final String paramD12 = PlugUtils.getParameter("dl2", contentAsString);
-            final String paramVerifyText = PlugUtils.getParameter("verifytext", contentAsString);
-            final String paramSid = PlugUtils.getParameter("sid", contentAsString);
-            final String paramAuthToken = PlugUtils.getParameter("auth_token", contentAsString);
-            postMethod.addParameter("dl2", paramD12);
-            postMethod.addParameter("verifytext", paramVerifyText);
-            postMethod.addParameter("sid", paramSid);
-            postMethod.addParameter("auth_token", paramAuthToken);
-//                postMethod.addParameter("agree", "on");
-//                postMethod.addParameter("dlButton", "true");
+            final PostMethod postMethod = getPostMethod(fileURL);
+            PlugUtils.addParameter("dl2", contentAsString, postMethod);
+            PlugUtils.addParameter("verifytext", contentAsString, postMethod);
+            PlugUtils.addParameter("sid", contentAsString, postMethod);
+            PlugUtils.addParameter("auth_token", contentAsString, postMethod);
+
             postMethod.addParameter("file", "");
             postMethod.addParameter("userinput", "");
             postMethod.addParameter("validated", "yes");

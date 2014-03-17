@@ -72,6 +72,9 @@ class RuTubeFileRunner extends AbstractRtmpRunner {
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
+            if (getContentAsString().contains("<media href=")) {
+                throw new PluginImplementationException("This link is currently not supported by the plugin");
+            }
             final String baseUrl = PlugUtils.getStringBetween(getContentAsString(), "<baseURL>", "</baseURL>");
             final String mediaUrl = PlugUtils.replaceEntities(
                     PlugUtils.getStringBetween(getContentAsString(), "<media url=\"", "\""));

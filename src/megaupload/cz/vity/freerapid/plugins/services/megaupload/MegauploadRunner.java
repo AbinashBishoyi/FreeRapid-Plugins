@@ -74,7 +74,9 @@ class MegauploadRunner extends AbstractRunner {
                     httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
                 }
                 downloadURL = encodeURL(downloadURL);
-                final GetMethod method = getGetMethod(downloadURL);
+                 final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer(httpFile.getFileUrl().toString()).toHttpMethod();
+               // final GetMethod method = getGetMethod(downloadURL);
+                 downloadTask.sleep(45);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     logger.warning(getContentAsString());

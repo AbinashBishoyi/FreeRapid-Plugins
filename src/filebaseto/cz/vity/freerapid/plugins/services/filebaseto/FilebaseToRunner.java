@@ -52,12 +52,23 @@ class FilebaseToRunner extends AbstractRunner {
                     }
             }
 
-            final Matcher matcher = getMatcherAgainstContent("<center><form action=\"(http.+?)\"");
-            if (matcher.find()) {
-                PostMethod postMethod = getPostMethod(matcher.group(1));
+            final Matcher matcher1 = getMatcherAgainstContent("<center><form action=\"(http.+?)\"");
+            final Matcher matcher2 = getMatcherAgainstContent("a href=\"(.*?download/ticket.*?)\"");
+            if (matcher1.find()) {
+                PostMethod postMethod = getPostMethod(matcher1.group(1));
                 PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"wait"});
                 //  logger.warning(getContentAsString());
                 if (!tryDownloadAndSaveFile(postMethod)) {
+                    checkProblems();
+                    logger.warning(getContentAsString());
+                    throw new IOException("File input stream is empty.");
+                }
+
+            } else if (matcher2.find()) {
+                String fn = matcher2.group(1);
+                logger.info("Alternative final URL " + fn);
+                GetMethod gMethod = getGetMethod(matcher2.group(1));
+                if (!tryDownloadAndSaveFile(gMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");

@@ -2,7 +2,7 @@
 <project name="ZippyShare.com" default="all" basedir=".">
     <property name="application" value="zippyshare"/>
 
-    <property name="version" value="0.5.1"/>
+    <property name="version" value="0.5.2"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="zippyshare.jar"/>

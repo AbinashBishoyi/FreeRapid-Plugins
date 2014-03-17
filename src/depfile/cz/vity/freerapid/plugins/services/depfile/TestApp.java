@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://depfile.com/a1Ek8mPCz"));
             httpFile.setNewURL(new URL("http://depfile.com/fBlxjSXw4"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("203.176.183.198", 8080); //eg we can use local proxy to sniff HTTP communication
             final DepFileServiceImpl service = new DepFileServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {

@@ -32,7 +32,7 @@ class DepFileFileRunner extends AbstractRunner {
 
     @Override
     protected String getBaseURL() {
-        return fileURL.startsWith("https") ? "https://depfile.com/" : "http://depfile.com/";
+        return "https://depfile.com/";
     }
 
     @Override

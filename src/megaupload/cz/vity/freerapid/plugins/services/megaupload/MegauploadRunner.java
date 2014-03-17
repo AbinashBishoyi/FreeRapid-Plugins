@@ -165,9 +165,10 @@ class MegauploadRunner extends AbstractRunner {
     private void checkProblems() throws ServiceConnectionProblemException, NotRecoverableDownloadException, IOException, YouHaveToWaitException {
 
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("trying to access is temporarily unavailable"))
-            throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
 
+        if (contentAsString.contains("trying to access is temporarily unavailable")) {
+            throw new ServiceConnectionProblemException("The file you are trying to access is temporarily unavailable");
+        }
 
         if (contentAsString.contains("Download limit exceeded")) {
             final GetMethod getMethod = getGetMethod(HTTP_SITE + "/premium/???????????????");
@@ -191,6 +192,7 @@ class MegauploadRunner extends AbstractRunner {
         if (contentAsString.contains("the link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
         }
+
         if (contentAsString.contains("We have detected an elevated number of requests")) {
             final int wait = PlugUtils.getNumberBetween(contentAsString, "check back in", "minute");
             throw new YouHaveToWaitException("We have detected an elevated number of requests", wait * 60);

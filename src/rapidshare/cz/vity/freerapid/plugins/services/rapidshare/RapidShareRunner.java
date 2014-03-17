@@ -29,7 +29,7 @@ class RapidShareRunner extends AbstractRunner {
                 matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (matcher.find()) {
                     final String error = matcher.group(1);
-                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed file"))
+                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                     if (error.contains("file could not be found"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
@@ -64,7 +64,7 @@ class RapidShareRunner extends AbstractRunner {
                 matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (matcher.find()) {
                     final String error = matcher.group(1);
-                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed file"))
+                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                     if (error.contains("file could not be found"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);

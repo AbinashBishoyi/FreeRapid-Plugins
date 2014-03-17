@@ -82,12 +82,11 @@ class EdiskRunner extends AbstractRunner {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-        Matcher matcher = getMatcherAgainstContent("neexistuje z ");
-        if (matcher.find()) {
+        if (content.contains("neexistuje z ")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
 
-        matcher = PlugUtils.matcher(": ([^ ]+) \\(([0-9.]+ .B)\\)</h2>", content);
+        Matcher matcher = PlugUtils.matcher(": ([^ ]+) \\(([0-9.]+ .B)\\)</h2>", content);
         // odebiram jmeno
         String fn;
         if (matcher.find()) {
@@ -176,13 +175,10 @@ class EdiskRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("neexistuje z ");
-        if (matcher.find()) {
+        if (getContentAsString().contains("neexistuje z ")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
-        matcher = getMatcherAgainstContent("stahovat pouze jeden soubor");
-        if (matcher.find()) {
+        if (getContentAsString().contains("stahovat pouze jeden soubor")) {
             throw new ServiceConnectionProblemException(String.format("<b>Mùžete stahovat pouze jeden soubor naráz</b><br>"));
 
         }

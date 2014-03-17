@@ -24,6 +24,7 @@ class UppITFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        setEncoding("ISO-8859-1");
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -37,6 +38,7 @@ class UppITFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        setEncoding("ISO-8859-1");
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
@@ -62,6 +64,11 @@ class UppITFileRunner extends AbstractRunner {
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
+    }
+
+    private void setEncoding(String encoding) {
+        client.getHTTPClient().getParams().setParameter("pageCharset", encoding);
+        client.getHTTPClient().getParams().setHttpElementCharset(encoding);
     }
 
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {

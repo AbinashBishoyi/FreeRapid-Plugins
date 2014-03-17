@@ -19,6 +19,7 @@ class DataUpFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        setEncoding("ISO-8859-1");
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
@@ -32,6 +33,7 @@ class DataUpFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        setEncoding("ISO-8859-1");
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
 
@@ -48,6 +50,11 @@ class DataUpFileRunner extends AbstractRunner {
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
+    }
+
+    private void setEncoding(String encoding) {
+        client.getHTTPClient().getParams().setParameter("pageCharset", encoding);
+        client.getHTTPClient().getParams().setHttpElementCharset(encoding);
     }
 
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {

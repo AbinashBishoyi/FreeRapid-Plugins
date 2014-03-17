@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class AppleMoviesServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
-        return "movies.apple.com";
+        return "trailers.apple.com";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 9;
     }

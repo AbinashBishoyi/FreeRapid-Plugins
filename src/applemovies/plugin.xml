@@ -1,12 +1,13 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="movies.apple.com" version="1.0.0" vendor="ntoskrnl"
+<plugin id="movies.apple.com" version="1.1.0" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.services.applemovies.AppleMoviesServiceImpl">
+    <!-- They changed the URL of the site. TODO: rename plugin completely when possible -->
     <attributes>
-        <attribute id="urlRegex" value="http://movies\.apple\.com/.+"/>
+        <attribute id="urlRegex" value="http://trailers\.apple\.com/(trailers|movies)/.+?/.+?/(.+?\.mov)?"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="movies.apple.com"/>
+        <attribute id="services" value="trailers.apple.com"/>
         <attribute id="maxDownloads" value="9"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

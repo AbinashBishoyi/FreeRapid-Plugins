@@ -64,7 +64,18 @@ class CzshareRunner extends AbstractRunner {
 
                 content = getContentAsString();
                 matcher = PlugUtils.matcher("<a href=\"(.*czshare.com/" + id + "/[^\"]*)\" title=\"[^\"]+\">", content);  //Note (JPEXS): text of the link can contain inserted <br /> tags, url can contain other characters than title parameter
-                if (matcher.find()) {
+                Matcher matcher2=PlugUtils.matcher("<a href=\"(.*czshare.com/profi\\.php\\?id=" + id + "&[^\"]*)\" title=\"[^\"]+\">", content); //Second variant of the link
+                boolean matched=false;
+                if(matcher.find()){
+                    matched=true;
+                }else{
+                    if(matcher2.find()){
+                        matched=true;
+                        matcher=matcher2;
+                    }
+                }
+                
+                if (matched) {
                     String downURL = matcher.group(1);
 
                     GetMethod method = getGetMethod(downURL);

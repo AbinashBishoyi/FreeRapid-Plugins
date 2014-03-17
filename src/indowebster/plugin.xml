@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="indowebster.com" version="0.2" vendor="Alex"
+<plugin id="indowebster.com" version="0.3" vendor="Alex+JPEXS"
         class="cz.vity.freerapid.plugins.services.indowebster.IndowebsterServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?indowebster\.com/.+"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="indowebster.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

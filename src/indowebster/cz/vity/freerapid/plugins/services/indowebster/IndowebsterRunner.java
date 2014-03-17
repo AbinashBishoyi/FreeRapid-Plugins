@@ -7,6 +7,8 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -17,7 +19,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Alex
+ * @author Alex, JPEXS
  */
 class IndowebsterRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(IndowebsterRunner.class.getName());
@@ -29,76 +31,44 @@ class IndowebsterRunner extends AbstractRunner {
         makeRequest(getMethod);
         
         String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("File ini merupakan file PRIVATE")) {
-            // checked
-           logger.info("file exists!");
-            
-
-        } else {
-
-
-            if (makeRequest(getMethod)) {
-                contentAsString = getContentAsString();
-                checkNameandSize(getContentAsString());
-            } else
-                throw new PluginImplementationException();
-        }
+        checkNameandSize(getContentAsString());        
     }
-    //<div id="buttonz" align="center"> <a href="http://www4.indowebster.com/f8a03b1118fc754d82a8fe7d3be43278.rar" onclick="return poppop('addd.php')" class="hintanchor" onmouseover="showhint('Download link for Indonesia only.', this, event, '200px')">Download from IDWS</a> </div><center>
-
+    
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod getMethoda = getGetMethod(fileURL);
-        //getMethoda.setFollowRedirects(true);
-        //you can now use makeRedirectedRequest() for working with redirects
-        if (makeRedirectedRequest(getMethoda)) {
+        final GetMethod method1 = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method1)) {
             String contentAsString = getContentAsString();
-            //check password
-            if (contentAsString.contains("File ini merupakan file PRIVATE")) {
-                client.setReferer(fileURL);
-                PostMethod pMethod = getPostMethod(fileURL + " ");
-                //String password = JOptionPane.showInputDialog("Input LINK password:");
-                pMethod.addParameter("password", "www.indowebster.web.id");
-                //pMethod.addParameter("input", "www.indowebster.web.id");
-                pMethod.addParameter("submit", "Login");
-                makeRequest(pMethod);
-                logger.info("Request success!");
-
-
-            }
-            contentAsString = getContentAsString();
-
-             if (contentAsString.contains("File ini merupakan file PRIVATE")) {
-                client.setReferer(fileURL);
-                PostMethod pMethod = getPostMethod(fileURL + " ");
-                String password = JOptionPane.showInputDialog("Input LINK password:");
-                pMethod.addParameter("password", password);
-                pMethod.addParameter("input", "www.indowebster.web.id");
-                pMethod.addParameter("submit", "Login");
-                makeRequest(pMethod);
-                logger.info("Request success!");
-
-
-            }
-            contentAsString = getContentAsString();
+                        
             checkNameandSize(contentAsString);
-
-            //            //<div class="download"><a href="/download/1918981?PHPSESSID=79692e667cdfa171fcf6c90e7d69315c"></a></div>
-            Matcher matcher = PlugUtils.matcher("<div id=\"buttonz\" align=\"center\"> <a href=\"(.+?)\"", contentAsString);
-            if (matcher.find()) {
-                String myLink = matcher.group(1);
-                logger.info("Link : " + myLink);
-                final GetMethod getMethod = getGetMethod(myLink);
-                if (!tryDownloadAndSaveFile(getMethod)) {
-                    checkProblems();
-                    logger.warning(getContentAsString());//something was really wrong, we will explore it from the logs :-)
-                    throw new IOException("File input stream is empty.");
+            MethodBuilder mb=getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download from IDWS");
+            mb.setMethodAction(mb.getAction().replace("\n",""));
+            final HttpMethod method2 = mb.toHttpMethod();
+            
+            if (makeRedirectedRequest(method2)){
+                contentAsString = getContentAsString();
+                Matcher matcher = PlugUtils.matcher("<div id=\"download[0-9]?\"><a href=\"javascript:\" onclick=\"location\\.href='([^']+)'", contentAsString);
+                String nofind="<div id=\"hallo\">";
+                String link=null;
+                while(matcher.find()){
+                  String before=contentAsString.substring(matcher.start()-nofind.length(),matcher.start());               
+                  if(!before.equals(nofind)){
+                    link=matcher.group(1);                  
+                    break;
+                  }
                 }
-            } else throw new PluginImplementationException("Cant find download link");//something is wrong with plugin
-        } else throw new InvalidURLOrServiceProblemException("Cant load download link - ");
+                if(link!=null){
+                    final GetMethod getMethod = getGetMethod(link);
+                    if (!tryDownloadAndSaveFile(getMethod)) {
+                        checkProblems();
+                        logger.warning(getContentAsString());
+                        throw new IOException("File input stream is empty.");
+                    }
+                }else throw new PluginImplementationException("Cant find download link 3");
+            } else throw new PluginImplementationException("Cant find download link 2");
+        } else throw new InvalidURLOrServiceProblemException("Cant load download link 1");
     }
 
     private void checkNameandSize(String content) throws Exception {
@@ -110,24 +80,8 @@ class IndowebsterRunner extends AbstractRunner {
         if (content.contains("File doesn")) {
             throw new URLNotAvailableAnymoreException("<b>Indowebster error:</b><br>File doesn't exist");
         }
-
-        Matcher xmatcher = PlugUtils.matcher("<div class=\"views\"><b>Size :</b>(.+?)<", content);
-        if (xmatcher.find()) {
-            final String fileSize = xmatcher.group(1);
-            logger.info("File size " + fileSize);
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-
-        } else logger.warning("File size was not found" + content);
-
-        xmatcher = PlugUtils.matcher("<div>Original name : &quot;<!--INFOLINKS_ON--> (.+?)<!--INFOLINKS_OFF-->&quot; <br><br />", content);
-        if (xmatcher.find()) {
-            final String fileName = xmatcher.group(1).trim(); //method trim removes white characters from both sides of string
-            logger.info("File name :" + fileName);
-            httpFile.setFileName(fileName);
-
-        } else logger.warning("File name was not found" + content);
-
-
+        PlugUtils.checkName(httpFile, content, "Original name : &quot;<!--INFOLINKS_ON--> ", "<!--INFOLINKS_OFF-->");
+        PlugUtils.checkFileSize(httpFile, content, "<b>Size :</b> ", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 
     }

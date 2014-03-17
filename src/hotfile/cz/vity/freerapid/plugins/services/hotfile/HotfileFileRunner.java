@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.services.hotfile.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ class HotfileFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".hotfile.com", "lang", "en", "/", 86400, false));
         fileURL = checkURL(fileURL); //added support for http://hotfile.com/links/....
         final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {
@@ -37,6 +39,7 @@ class HotfileFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        addCookie(new Cookie(".hotfile.com", "lang", "en", "/", 86400, false));
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
         final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).toHttpMethod();
@@ -77,7 +80,7 @@ class HotfileFileRunner extends AbstractRunner {
             final int waitTime = Integer.parseInt(matcher.group(1)) / 1000;
 
             if (waitTime > 0) {
-                throw new YouHaveToWaitException("You reached your hourly traffic limit", Math.min(waitTime, 60*16)); // during download we get too long 7200 seconds to wait 
+                throw new YouHaveToWaitException("You reached your hourly traffic limit", Math.min(waitTime, 60 * 16)); // during download we get too long 7200 seconds to wait
             }
         }
     }
@@ -98,10 +101,14 @@ class HotfileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"size\">| ", "</span>");
-        PlugUtils.checkName(httpFile, getContentAsString(), "Downloading <b>", "</b>");
-
+        final String content = getContentAsString();
+        if (content.contains("<strong>Downloading:</strong>")) {
+            PlugUtils.checkName(httpFile, content, "Downloading:</strong> ", " <span>");
+            PlugUtils.checkFileSize(httpFile, content, "|</span> <strong>", "</strong>");
+        } else {
+            PlugUtils.checkName(httpFile, content, "Downloading <b>", "</b>");
+            PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\">| ", "</span>");
+        }
     }
 
     private void processDownloadWithForm() throws Exception {
@@ -116,7 +123,7 @@ class HotfileFileRunner extends AbstractRunner {
         }
     }
 
-    private void downloadFile() throws Exception {        
+    private void downloadFile() throws Exception {
         if (getContentAsString().contains("api.recaptcha.net")) {
             stepCaptcha();
             if (getContentAsString().contains("var timerend=0;")) {
@@ -124,7 +131,7 @@ class HotfileFileRunner extends AbstractRunner {
                 return;
             }
         }
-        
+
         HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -136,11 +143,11 @@ class HotfileFileRunner extends AbstractRunner {
 
     private void stepCaptcha() throws Exception {
 
-        Matcher m=getMatcherAgainstContent("api.recaptcha.net/noscript\\?k=([^\"]+)\"");
-        if(!m.find()) throw new PluginImplementationException("ReCaptcha key is missing");
-        String reCaptchaKey=m.group(1);
-        String content=getContentAsString();
-        ReCaptcha r=new ReCaptcha(reCaptchaKey,client);
+        Matcher m = getMatcherAgainstContent("api.recaptcha.net/noscript\\?k=([^\"]+)\"");
+        if (!m.find()) throw new PluginImplementationException("ReCaptcha key is missing");
+        String reCaptchaKey = m.group(1);
+        String content = getContentAsString();
+        ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
         CaptchaSupport captchaSupport = getCaptchaSupport();
         String captchaURL = r.getImageURL();
         logger.info("Captcha URL " + captchaURL);
@@ -149,8 +156,8 @@ class HotfileFileRunner extends AbstractRunner {
             throw new CaptchaEntryInputMismatchException();
         } else {
             r.setRecognized(captcha);
-            HttpMethod method=r.modifyResponseMethod(getMethodBuilder(content).setBaseURL(SERVICE_WEB).setActionFromFormWhereActionContains("/dl/", true)).toHttpMethod();
-            if(!makeRequest(method)){
+            HttpMethod method = r.modifyResponseMethod(getMethodBuilder(content).setBaseURL(SERVICE_WEB).setActionFromFormWhereActionContains("/dl/", true)).toHttpMethod();
+            if (!makeRequest(method)) {
                 throw new PluginImplementationException("Cannot send captcha to server");
             }
         }

@@ -16,8 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://hotfile.com/dl/783563/30d47a1/D_Ramirez-The_Wired_EP-(SLAVE015)-WEB-2009-EPiCFAiL.rar.html"));
-            httpFile.setNewURL(new URL("http://hotfile.com/dl/14020141/9f13b88/Stargate.Universe.S01E01-E02.Air.Parts.1.and.2.HDTV.XviD-FQM.part1.rar.html"));
+            httpFile.setNewURL(new URL("http://pl.hotfile.com/dl/24398736/6141943/Avatar.2009.XviD.part1.rar.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

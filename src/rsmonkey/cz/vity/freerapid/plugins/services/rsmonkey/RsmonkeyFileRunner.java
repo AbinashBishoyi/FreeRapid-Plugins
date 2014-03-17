@@ -4,22 +4,18 @@ package cz.vity.freerapid.plugins.services.rsmonkey;
 //import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 //import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-//import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-//import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Logger;
 
-import cz.vity.freerapid.plugins.webclient.DownloadState;
-
 /**
- *
  * @author Arthur Gunawan
  */
 class RsmonkeyFileRunner extends AbstractRunner {
@@ -36,8 +32,9 @@ class RsmonkeyFileRunner extends AbstractRunner {
             try {
                 //Find forwarded URL in the content
                 String s = PlugUtils.getStringBetween(contentAsString, "<iframe name=\"pagetext\" height=\"100%\" frameborder=\"no\" width=\"100%\" src=\"", "\"></iframe>");
-                logger.info("New Link : " + s);     //Debug purpose, show the new found link
-                this.httpFile.setNewURL(new URL(s));  //Set New URL for the link
+                final String escapedURI = getMethodBuilder().setAction(s).toHttpMethod().getURI().getEscapedURI();
+                logger.info("New Link : " + escapedURI);     //Debug purpose, show the new found link
+                this.httpFile.setNewURL(new URL(escapedURI));  //Set New URL for the link
             } catch (MalformedURLException e) {        //Catch error url
                 throw new URLNotAvailableAnymoreException("Invalid URL");
             }
@@ -45,15 +42,16 @@ class RsmonkeyFileRunner extends AbstractRunner {
             this.httpFile.setState(DownloadState.QUEUED);
 
         } else {
-           checkProblems();
+            checkProblems();
         }
     }
-    private void checkProblems() throws ServiceConnectionProblemException {
-           if (getContentAsString().contains("The requested document was not found on this server")) {
-               throw new ServiceConnectionProblemException("RSMonkey Error : Link was not found on this server!");
-           }
 
-       }
+    private void checkProblems() throws ServiceConnectionProblemException {
+        if (getContentAsString().contains("The requested document was not found on this server")) {
+            throw new ServiceConnectionProblemException("RSMonkey Error : Link was not found on this server!");
+        }
+
+    }
 
 
 }

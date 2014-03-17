@@ -123,9 +123,8 @@
     </target>
 
     <target name="manualBuild" description="building">
-        <input message="Insert plugin folder name to build" addproperty="input.plugin"/>
+        <input message="Insert plugin folder name to build" addproperty="input.plugin" defaultvalue="rapidshare"/>
         <!--<property name="input.plugin" value="rapidshare"  /> --><!-- fake -->
-
         <ant dir="${src.dir}/${input.plugin}/" antfile="build.xml" inheritall="false"/>
         <echo message="Plugin ${input.plugin} was succesfully built"/>
     </target>

@@ -45,10 +45,10 @@ class RadikalruRunner extends AbstractRunner {
     }
     
     private void checkName(String content) throws Exception {
-        Matcher matcher = PlugUtils.matcher("http://[0-9a-z]+.radikal.ru/[0-9a-z]+/[0-9a-z]+/([0-9a-z]+.jpg)",content);
+        Matcher matcher = PlugUtils.matcher("http://[0-9a-z]+.radikal.ru/(.+/)?(.+?.jpg)",content);
         if (matcher.find()) {
-            httpFile.setFileName(matcher.group(1));
-            logger.info("File Name: "+ matcher.group(1));
+            httpFile.setFileName(matcher.group(2));
+            logger.info("File Name: "+ matcher.group(2));
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 
         }

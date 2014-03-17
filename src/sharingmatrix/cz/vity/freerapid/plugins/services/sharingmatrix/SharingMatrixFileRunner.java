@@ -182,23 +182,23 @@ class SharingMatrixFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString().replaceAll("&nbsp;", " ");
+        final String contentAsString = getContentAsString().replace("&nbsp;", " ");
         try {
-            PlugUtils.checkName(httpFile, contentAsString, "Filename:</th>\n<td>", "<");
-        } catch (PluginImplementationException e) {
+            PlugUtils.checkName(httpFile, contentAsString, "Filename:\n<strong>", "</strong>");
+        } catch (PluginImplementationException e1) {
             try {
-                PlugUtils.checkName(httpFile, contentAsString, "Filename: <strong>", "</strong>");
+                PlugUtils.checkName(httpFile, contentAsString, "link_name\n=\n'", "'");
             } catch (PluginImplementationException e2) {
-                PlugUtils.checkName(httpFile, contentAsString, "<div id=\"fname\">", "</div>");
+                throw new PluginImplementationException("File name not found");
             }
         }
         try {
-            PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</th>\n<td>", "<");
-        } catch (Exception e) {
+            PlugUtils.checkFileSize(httpFile, contentAsString, "File size:\n<strong>", "</strong>");
+        } catch (PluginImplementationException e1) {
             try {
-                PlugUtils.checkFileSize(httpFile, contentAsString, "File size: <strong>", "</strong>");
-            } catch (Exception e2) {
-                PlugUtils.checkFileSize(httpFile, contentAsString, "<div id=\"fsize_div\">", "</div>");
+                PlugUtils.checkFileSize(httpFile, contentAsString, "fsize\n=\n'", "'");
+            } catch (PluginImplementationException e2) {
+                throw new PluginImplementationException("File size not found");
             }
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

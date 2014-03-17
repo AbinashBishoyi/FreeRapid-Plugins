@@ -1,15 +1,13 @@
 package cz.vity.freerapid.plugins.services.extabit;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -35,8 +33,8 @@ class ExtabitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "download Extabit.com - file hosting</title>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<th>Size:</th>\n<td class=\"col-fileinfo\">", "</td>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<div title=\"", "\">");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<td class=\"col-fileinfo\">", "</td>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -50,9 +48,11 @@ class ExtabitFileRunner extends AbstractRunner {
             checkNameAndSize();
 
             Matcher matcher;
+            final String contentAsString = getContentAsString(); //get page content that contains captcha
             final long startTime = System.currentTimeMillis();
             do {
-                method = stepCaptcha();
+                method = stepCaptcha(contentAsString);
+                method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
                 final long toWait = startTime + 31000 - System.currentTimeMillis();
                 if (toWait > 0) {
                     downloadTask.sleep((int) Math.ceil(toWait / 1000d));
@@ -62,6 +62,8 @@ class ExtabitFileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
             } while (!(matcher = getMatcherAgainstContent("\"href\"\\s*:\\s*\"(.+?)\"")).find());
+
+            //logger.info(getContentAsString());
 
             method = getMethodBuilder()
                     .setReferer(fileURL)
@@ -84,17 +86,21 @@ class ExtabitFileRunner extends AbstractRunner {
         if (getContentAsString().contains("File is temporary unavailable")) {
             throw new ServiceConnectionProblemException("File is temporarily unavailable");
         }
+        if (getContentAsString().contains("Next free download from your ip will be available in")) {
+            final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(),"Next free download from your ip will be available in <b>"," minutes</b>", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("Next free download from your ip will be available in",waitTime);
+        }
     }
 
-    private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
-        final String captchaUrl = getMethodBuilder().setAction("/capture.gif?" + new Random().nextInt()).getEscapedURI();
+    private HttpMethod stepCaptcha(String content) throws ErrorDuringDownloadingException {
+        final String captchaUrl = getMethodBuilder(content).setAction("/capture.gif?" + new Random().nextInt()).getEscapedURI();
         final String captcha = getCaptchaSupport().getCaptcha(captchaUrl);
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         }
-        return getMethodBuilder()
+        return getMethodBuilder(content)
                 .setReferer(fileURL)
-                .setAction(fileURL)
+                .setActionFromFormWhereTagContains("cmn_form",false)
                 .setParameter("link", "1")
                 .setParameter("capture", captcha)
                 .toGetMethod();

@@ -84,14 +84,13 @@ class IFolderFileRunner extends AbstractRunner {
                 * Note: Server sends response with no Status-Line and no headers, Special method must be executed
                 */
                 method = new GetMethodNoStatus("http://ints.ifolder.ru" + method.getPath() + "?" + method.getQueryString());
+            }
+            do {
                 if (!makeRedirectedRequest(method)) {
                     throw new ServiceConnectionProblemException();
                 }
-            }
-            do {
-                CaptchaSupport captchaSupport = getCaptchaSupport();
-                String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
-                s = "http://ints.ifolder.ru" + s;
+                final CaptchaSupport captchaSupport = getCaptchaSupport();
+                final String s = "http://ints.ifolder.ru" + getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
                 logger.info("Captcha URL " + s);
                 MethodBuilder builder = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true);
                 try {
@@ -109,11 +108,11 @@ class IFolderFileRunner extends AbstractRunner {
                 if (!makeRedirectedRequest(builder.toPostMethod())) {
                     throw new ServiceConnectionProblemException();
                 }
-            } while (getContentAsString().contains("name=\"confirmed_number\""));
+            } while (getContentAsString().contains("src=\"/random/"));
             downloadTask.sleep(5); //Needed for full speed
 
-            final HttpMethod method6 = getMethodBuilder().setReferer("").setActionFromAHrefWhereATagContains("download").toHttpMethod();
-            if (!tryDownloadAndSaveFile(method6)) {
+            method = getMethodBuilder().setReferer("").setActionFromAHrefWhereATagContains("download").toHttpMethod();
+            if (!tryDownloadAndSaveFile(method)) {
                 logger.warning(getContentAsString());//log the info
                 throw new PluginImplementationException();//some unknown problem
             }

@@ -1,19 +1,16 @@
 package cz.vity.freerapid.plugins.services.mediafire;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.mediafire.js.JsDocument;
-import cz.vity.freerapid.plugins.services.mediafire.js.JsElement;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import sun.org.mozilla.javascript.internal.Context;
-import sun.org.mozilla.javascript.internal.Scriptable;
-import sun.org.mozilla.javascript.internal.ScriptableObject;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -23,18 +20,7 @@ import java.util.regex.Matcher;
  * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
  */
 public class MediafireRunner extends AbstractRunner {
-    public final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
-
-    private final static String SCRIPT_HEADER =
-            "function alert(s) { Packages." + MediafireRunner.class.getName() + ".logger.warning('JS: ' + s); }\n" +
-                    "function aa(s) { alert(s); }\n" +
-                    "var document = new JsDocument();\n" +
-                    "function dummyparent() {\n" +
-                    "    this.document = document;\n" +
-                    "}\n" +
-                    "var parent = new dummyparent();\n" +
-                    "function jQuery() { }\n" +
-                    "function LoadTemplatesFromSource() { }\n";
+    private final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -46,6 +32,22 @@ public class MediafireRunner extends AbstractRunner {
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private void checkNameAndSize() throws Exception {
+        if (isList()) return;
+        final String content = getContentAsString();
+        PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
+        PlugUtils.checkFileSize(httpFile, content, "Download <span>(", ")</span>");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("The key you provided for file download")
+                || content.contains("How can MediaFire help you?")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
@@ -84,161 +86,62 @@ public class MediafireRunner extends AbstractRunner {
     }
 
     private HttpMethod findDownloadUrl() throws Exception {
-        final List<String> elementsOnPage = findElementsOnPage();
-        final Context context = Context.enter();
-        try {
-            final Scriptable scope = prepareContext(context);
-            final HttpMethod method = findFirstUrl(context, scope);
-            if (!makeRedirectedRequest(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            return findSecondUrl(elementsOnPage, context, scope);
-        } finally {
-            Context.exit();
-        }
+        final List<DownloadElement> elements = DownloadElement.findDownloadElements(getContentAsString(), findZDivisor());
+        final String url = Collections.max(elements).getUrl();
+        return getGetMethod(url);
     }
 
-    private Scriptable prepareContext(final Context context) throws ErrorDuringDownloadingException {
-        final Scriptable scope = context.initStandardObjects();
-        try {
-            ScriptableObject.defineClass(scope, JsDocument.class);
-            ScriptableObject.defineClass(scope, JsElement.class);
-            context.evaluateString(scope, SCRIPT_HEADER, "<script>", 1, null);
-        } catch (Exception e) {
-            throw new PluginImplementationException("Script header execution failed", e);
-        }
-        return scope;
-    }
-
-    private List<String> findElementsOnPage() throws ErrorDuringDownloadingException {
-        final List<String> list = new LinkedList<String>();
-        final Matcher matcher = getMatcherAgainstContent("<div[^<>]*?id=\"([^\"]+?)\"[^<>]*?>Preparing download");
-        while (matcher.find()) {
-            list.add(matcher.group(1));
-        }
-        if (list.isEmpty()) {
-            throw new PluginImplementationException("Element IDs not found");
-        }
-        return list;
-    }
-
-    private HttpMethod findFirstUrl(final Context context, final Scriptable scope) throws ErrorDuringDownloadingException {
-        final String rawScript = findLongestJavascript();
-        //logger.info(rawScript);
-
-        Matcher matcher = PlugUtils.matcher("function\\s*?[a-z\\d]+?\\(", rawScript);
-        int lastFunctionIndex = -1;
-        while (matcher.find()) {
-            lastFunctionIndex = matcher.start();
-        }
-        if (lastFunctionIndex < 0) {
-            logger.warning(rawScript);
-            throw new PluginImplementationException("Last function in first JavaScript not found");
-        }
+    private int findZDivisor() throws ErrorDuringDownloadingException {
         // gysl8luzk='';oq1w66x=unescape(....;eval(gysl8luzk);
         //(...................................................) <-- this part is what we want
-        matcher = PlugUtils.matcher("(([a-z\\d]+?)\\s*?=\\s*?\\\\?'\\\\?';\\s*?[a-z\\d]+?\\s*?=\\s*?unescape\\(.+?eval\\(\\2\\);)", rawScript);
-        if (!matcher.find(lastFunctionIndex)) {
-            logger.warning(rawScript);
-            throw new PluginImplementationException("Error parsing last function in first JavaScript");
+        Matcher matcher = getMatcherAgainstContent("(([a-z\\d]+?)\\s*?=\\s*?\\\\?'\\\\?';\\s*?[a-z\\d]+?\\s*?=\\s*?unescape\\(.+?)eval\\(\\2\\);");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing page JavaScript (1)");
         }
-        final String partOfFunction = matcher.group(1).replace("\\'", "'");
-        //logger.info(partOfFunction);
-
-        final String preparedScript = rawScript.replace("setTimeout(", "return '/dynamic/download.php?qk=' + qk + '&pk1=' + pk1 + '&r=' + pKr; setTimeout(");
-        final String script = new StringBuilder(preparedScript.length() + 1 + partOfFunction.length())
-                .append(preparedScript)
-                .append('\n')
-                .append(partOfFunction)
-                .toString();
-        //logger.info(script);
-
+        final String script = matcher.group(1) + matcher.group(2) + ";";
         final String result;
         try {
-            scope.put("pk", scope, 0);
-            result = Context.toString(context.evaluateString(scope, script, "<script>", 1, null));
-        } catch (Exception e) {
+            result = ScriptUtils.evaluateJavaScriptToString(script);
+        } catch (final Exception e) {
             logger.warning(script);
-            throw new PluginImplementationException("Script 1 execution failed", e);
+            throw new PluginImplementationException("Error executing page JavaScript", e);
         }
-        logger.info(result);
-        return getMethodBuilder().setReferer(fileURL).setAction(result).toGetMethod();
+        matcher = PlugUtils.matcher("%\\s*(\\d+)", result);
+        if (!matcher.find()) {
+            logger.warning(result);
+            throw new PluginImplementationException("Error parsing page JavaScript (2)");
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
-    private String findLongestJavascript() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>\\s*(?!</script>)(?:<!\\-\\-)?(.+?)</script>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("First JavaScript not found");
-        }
-        String currentLongest = matcher.group(1);
-        while (matcher.find()) {
-            final String js = matcher.group(1);
-            if (js.length() > currentLongest.length()) {
-                currentLongest = js;
+    private static class DownloadElement implements Comparable<DownloadElement> {
+        private final String url;
+        private final int zIndex;
+
+        public static List<DownloadElement> findDownloadElements(final String content, final int zDivisor) throws ErrorDuringDownloadingException {
+            final List<DownloadElement> list = new LinkedList<DownloadElement>();
+            final Matcher matcher = PlugUtils.matcher("<div class=\"download_link\"[^<>]*?z\\-index:(\\d+)[^<>]*?>\\s*<a href=\"(.+?)\"", content);
+            while (matcher.find()) {
+                list.add(new DownloadElement(matcher.group(2), Integer.parseInt(matcher.group(1)) % zDivisor));
             }
-        }
-        return currentLongest;
-    }
-
-    private HttpMethod findSecondUrl(final List<String> elementsOnPage, final Context context, final Scriptable scope) throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>\\s*(?!</script>)(?:<!\\-\\-)?(.+?)</script>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Second JavaScript not found");
-        }
-        final String rawScript = matcher.group(1);
-        //logger.info(rawScript);
-
-        matcher = getMatcherAgainstContent("<body[^<>]*?onload=[\"'](.+?)[\"']");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing second page");
-        }
-        final String functionToCall = matcher.group(1);
-        //logger.info(functionToCall);
-
-        final String script = new StringBuilder(rawScript.length() + 1 + functionToCall.length())
-                .append(rawScript)
-                .append('\n')
-                .append(functionToCall)
-                .toString();
-        //logger.info(script);
-
-        final JsDocument document;
-        try {
-            context.evaluateString(scope, script, "<script>", 1, null);
-            document = (JsDocument) scope.get("document", scope);
-        } catch (Exception e) {
-            logger.warning(script);
-            throw new PluginImplementationException("Script 2 execution failed", e);
-        }
-
-        for (final String id : elementsOnPage) {
-            final JsElement element = document.getElements().get(id);
-            if (element != null && element.isVisible()) {
-                return findThirdUrl(element.getText());
+            if (list.isEmpty()) {
+                throw new PluginImplementationException("Download link not found");
             }
+            return list;
         }
-        throw new PluginImplementationException("Download link element not found");
-    }
 
-    private HttpMethod findThirdUrl(final String text) throws ErrorDuringDownloadingException {
-        //logger.info(text);
-        return getMethodBuilder(text).setReferer(fileURL).setActionFromAHrefWhereATagContains("").toGetMethod();
-    }
+        private DownloadElement(final String url, final int zIndex) {
+            this.url = url;
+            this.zIndex = zIndex;
+        }
 
-    private void checkNameAndSize() throws Exception {
-        if (isList()) return;
-        final String content = getContentAsString();
-        PlugUtils.checkFileSize(httpFile, content, "sharedtabsfileinfo1-fs\" value=\"", "\">");
-        PlugUtils.checkName(httpFile, content, "sharedtabsfileinfo1-fn\" value=\"", "\">");
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
+        public String getUrl() {
+            return url;
+        }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        final String content = getContentAsString();
-        if (content.contains("The key you provided for file download")
-                || content.contains("How can MediaFire help you?")) {
-            throw new URLNotAvailableAnymoreException("File not found");
+        @Override
+        public int compareTo(final DownloadElement that) {
+            return Integer.valueOf(this.zIndex).compareTo(that.zIndex);
         }
     }
 

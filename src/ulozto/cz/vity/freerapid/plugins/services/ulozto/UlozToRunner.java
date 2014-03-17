@@ -42,6 +42,10 @@ class UlozToRunner extends AbstractRunner {
         }
     }
 
+    private boolean isPasswordProtected() {
+        return getContentAsString().contains("passwordProtectedFile");
+    }
+
     private void passwordProtectedCheck() throws Exception {
         while (getContentAsString().contains("passwordProtectedFile")) {
             final String password = getDialogSupport().askForPassword("Ulozto password protected file");
@@ -67,9 +71,10 @@ class UlozToRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            passwordProtectedCheck();
-            ageCheck(getContentAsString());
-            checkNameAndSize(getContentAsString());
+            if (!isPasswordProtected()) {
+                ageCheck(getContentAsString());
+                checkNameAndSize(getContentAsString());
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -123,6 +128,11 @@ class UlozToRunner extends AbstractRunner {
 
     private void checkURL() {
         fileURL = fileURL.replaceFirst("(ulozto\\.net|ulozto\\.cz|ulozto\\.sk)", "uloz.to").replaceFirst("http://www\\.uloz\\.to", "http://uloz.to");
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://uloz.to";
     }
 
     private void checkNameAndSize(String content) throws Exception {

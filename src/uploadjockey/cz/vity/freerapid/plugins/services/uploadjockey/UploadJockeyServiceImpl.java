@@ -14,7 +14,7 @@ public class UploadJockeyServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 10;
+        return 1;
     }
 
     @Override

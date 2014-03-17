@@ -34,41 +34,68 @@ class UploadJockeyRunner extends AbstractRunner {
         //String x = JOptionPane.showInputDialog("Select server:");
 
         final GetMethod mJockey = getGetMethod(fileURL);
-        if (makeRedirectedRequest(mJockey)) { //Load Jockey Page
+        if (makeRequest(mJockey)) { //Load Jockey Page
             //Find File Factory // First for testing file removed error later make this last because there is >> Captcha
                     String ffOK = "Invalid";
                     String dpOK = "Invalid";
+                    String ffURL = "Invalid";
+                    String dpURL = "Invalid";
+                    final String mContent = getContentAsString();
 
                    final Matcher ffMatch = getMatcherAgainstContent("<a href=\"([^\"]+)\" target=\"_blank\" >FileFactory");
                     if (ffMatch.find()) {
                         final GetMethod gFF = getGetMethod(ffMatch.group(1));
                             if (makeRedirectedRequest(gFF)) {
-                                String ffContent = getContentAsString();
-                                ffOK = checkFileFactory(ffContent);
+                                //<iframe src="http://www.filefactory.com/file/" name="top" width="1100" height="600" scrolling="auto" frameborder="0"></iframe>
+                                final Matcher flMatch = getMatcherAgainstContent("<iframe src=\"([^\"]+)");
+                                    if (flMatch.find()) {
+                                        ffURL = flMatch.group(1);
+                                        final GetMethod gFF2 = getGetMethod(ffURL);
+                                            if (makeRedirectedRequest(gFF2)) {
+                                                String ffContent = getContentAsString();
+                                                ffOK = checkFileFactory(ffContent);
+                                            }
+
+                                    }
                             }
                     }
-
-                    final Matcher dpMatch = getMatcherAgainstContent("<a href=\"([^\"]+)\" target=\"_blank\" >DepositFiles");
+                    
+                    
+                    final Matcher dpMatch = PlugUtils.matcher("<a href=\"([^\"]+)\" target=\"_blank\" >DepositFiles", mContent);
+                    
                     if (dpMatch.find()) {
+                        //System.out.println("Processing DP");
                         final GetMethod gDP = getGetMethod(dpMatch.group(1));
                             if (makeRedirectedRequest(gDP)) {
-                                String dpContent = getContentAsString();
-                                dpOK = checkDepositFiles(dpContent);
+                                final Matcher dpMatch2 = getMatcherAgainstContent("<iframe src=\"([^\"]+)");
+                                    if(dpMatch2.find()) {
+                                        dpURL = dpMatch2.group(1);
+                                        final GetMethod gDP2 = getGetMethod(dpURL);
+                                            if (makeRedirectedRequest(gDP2)) {
+                                                String dpContent = getContentAsString();
+                                                dpOK = checkDepositFiles(dpContent);
+                                            }
+                                    }
                             }
                     }
 
                     if (ffOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(ffMatch.group(1)));
-                            this.httpFile.setPluginID("filefactory.com");
-
+                            this.httpFile.setNewURL(new URL(ffURL));
                     }  else
 
                     if (dpOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(dpMatch.group(1)));
-                            this.httpFile.setPluginID("depositfiles.com");
+                            this.httpFile.setNewURL(new URL(dpURL));
+                            
                     }
-            
+
+                    this.httpFile.setPluginID("");
                     this.httpFile.setState(DownloadState.QUEUED);
+
+                    
+
+                    
+
+                    
 
             //Find Deposit Files
 

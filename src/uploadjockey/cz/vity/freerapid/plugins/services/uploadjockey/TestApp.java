@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Alex
+ * @author Ladislav Vitasek
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://www.uploadjockey.com/download/297425/ShortKeys.v2.3.2.1.Incl.Keymaker-CORE.rar"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final UploadJockeyServiceImpl service = new UploadJockeyServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

@@ -4,7 +4,7 @@
         id="spankwire.com" vendor="User+tong2shot" version="1.0.13">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(cdn\d.static.)?spankwire\.com/.+"/>
-        <attribute id="minver" value="0.851"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="spankwire.com"/>
         <attribute id="maxDownloads" value="10"/>

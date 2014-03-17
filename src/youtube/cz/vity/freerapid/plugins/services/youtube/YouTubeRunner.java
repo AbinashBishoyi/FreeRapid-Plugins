@@ -13,7 +13,6 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -57,9 +56,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            fileURL = method.getURI().toString();
-
             checkProblems();
+            fileURL = method.getURI().toString();
             setConfig();
             checkName();
 
@@ -68,26 +66,45 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 return;
             }
 
-            if (getContentAsString().contains("&amp;fmt_stream_map=")) {
-                RtmpSession rtmpSession = handleStreamMap();
-                tryDownloadAndSaveFile(rtmpSession);
+            checkFmtParameter();
+            checkName();
 
+            final String fmtStreamMap = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
+            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + fmt + "[^,]*)", fmtStreamMap);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
+            }
+            final String formatContent = matcher.group(1);
+            if (formatContent.contains("rtmp")) {
+                matcher = PlugUtils.matcher("conn=(.+?)(?:\\\\u0026.+)?$", formatContent);
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Cannot find stream address");
+                }
+                final String conn = URLDecoder.decode(matcher.group(1), "UTF-8");
+                matcher = PlugUtils.matcher("stream=(.+?)(?:\\\\u0026.+)?$", formatContent);
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Cannot find stream params");
+                }
+                final String sparams = URLDecoder.decode(matcher.group(1), "UTF-8");
+                final String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
+                final RtmpSession rtmpSession = new RtmpSession(conn, sparams);
+                rtmpSession.getConnectParams().put("swfUrl", swfUrl);
+                rtmpSession.getConnectParams().put("pageUrl", fileURL);
+                new SwfVerificationHelper(swfUrl).setSwfVerification(rtmpSession, client);
+                if (!tryDownloadAndSaveFile(rtmpSession)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
             } else {
-                checkFmtParameter();
-                checkName();
-
-                String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
-                Matcher matcher = PlugUtils.matcher("url=([^,]+?)\\\\u0026[^,]*itag=" + fmt + ",", fmt_url_map + ",");
-
-                if (matcher.find()) {
-                    setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-                    method = getGetMethod(URLDecoder.decode(matcher.group(1), "UTF-8"));
-                    if (!tryDownloadAndSaveFile(method)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
-                } else {
-                    throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
+                matcher = PlugUtils.matcher("url=(.+?)(?:\\\\u0026.+)?$", formatContent);
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Cannot find stream URL");
+                }
+                method = getGetMethod(URLDecoder.decode(matcher.group(1), "UTF-8"));
+                setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
         } else {
@@ -220,33 +237,6 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 fileExtension = ".webm";
                 break;
         }
-    }
-
-    private RtmpSession handleStreamMap() throws Exception {
-        String fmt_stream_map = PlugUtils.getStringBetween(getContentAsString(), "&amp;fmt_stream_map=", "&");
-        try {
-            fmt_stream_map = URLDecoder.decode(fmt_stream_map, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            LogUtils.processException(logger, e);
-        }
-        //Example: 34|c4/id/31ff2b12315eb686/itag/34|rtmpe://...,18|mp4:c1/id/31ff2b12315eb686/itag/18|rtmpe://...,5|c1/id/31ff2b12315eb686/itag/5|rtmpe://...
-        String[] formats = fmt_stream_map.split(",");
-        String[][] formatParts = new String[formats.length][];
-        for (int f = 0; f < formats.length; f++) {
-            //Example: 34|c4/id/31ff2b12315eb686/itag/34|rtmpe://...
-            formatParts[f] = formats[f].split("\\|");
-        }
-        //TODO quality selection?
-        final RtmpSession rtmpSession = new RtmpSession(formatParts[0][2], formatParts[0][1]);
-        final String swfUrl = getSwfUrl();
-        rtmpSession.getConnectParams().put("swfUrl", swfUrl);
-        rtmpSession.getConnectParams().put("pageUrl", fileURL);
-        new SwfVerificationHelper(swfUrl).setSwfVerification(rtmpSession, client);
-        return rtmpSession;
-    }
-
-    private String getSwfUrl() throws ErrorDuringDownloadingException {
-        return PlugUtils.getStringBetween(getContentAsString(), "<param name=\\\"movie\\\" value=\\\"", "\\\"").replace("\\/", "/");
     }
 
     private void parseUserPage() throws Exception {

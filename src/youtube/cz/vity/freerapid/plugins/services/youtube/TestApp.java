@@ -15,9 +15,11 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
+            //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
+            //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
             httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=IJdOcdk_J1E"));//normal
-            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=Mf8rEjFetoY"));//rtmp
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=DVFbA1AbEUw"));//rtmp
             //httpFile.setNewURL(new URL("http://www.youtube.com/user/HDstarcraft"));//playlist
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

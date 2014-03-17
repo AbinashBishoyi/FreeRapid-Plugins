@@ -48,4 +48,8 @@ public class DepositFilesServiceImpl extends AbstractFileShareService {
         return config;
     }
 
+    void setConfig(PremiumAccount config) {
+        this.config = config;
+    }
+
 }

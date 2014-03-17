@@ -85,13 +85,13 @@ class DepositFilesFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher name = getMatcherAgainstContent("(?s)class=\"info.+?=\"(.+?)\"");
+        final Matcher name = getMatcherAgainstContent("File name: <b[^<>]*?>(.+?)</b>");
         if (!name.find()) throw new PluginImplementationException("File name not found");
         httpFile.setFileName(name.group(1));
 
-        final Matcher size = getMatcherAgainstContent("<b>(\\d+?.+?&nbsp;.+?)</b>");
+        final Matcher size = getMatcherAgainstContent("File size: <b[^<>]*?>(.+?)</b>");
         if (!size.find()) throw new PluginImplementationException("File size not found");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1).replaceAll("&nbsp;", " ")));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

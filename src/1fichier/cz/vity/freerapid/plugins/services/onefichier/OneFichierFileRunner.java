@@ -26,8 +26,7 @@ class OneFichierFileRunner extends AbstractRunner {
         setEnglishURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -43,8 +42,8 @@ class OneFichierFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "File name :</th><td>", "</td>");
-        PlugUtils.checkFileSize(httpFile, content, "File size :</th><td>", "</td>");
+        PlugUtils.checkName(httpFile, content, "name :</th><td>", "</td>");
+        PlugUtils.checkFileSize(httpFile, content, "Size :</th><td>", "</td>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -55,15 +54,31 @@ class OneFichierFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Download the file", true).toPostMethod();
-
-            //here is the download link extraction
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            final HttpMethod hMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).toPostMethod();
+            if (makeRedirectedRequest(hMethod)) {
+                final String contentAsString = getContentAsString();//check for response
+                checkProblems();//check problems
+                checkNameAndSize(contentAsString);//extract file name and size from the page
+                downloadTask.sleep(1 + PlugUtils.getNumberBetween(contentAsString, "var count =", ";"));
+                final HttpMethod h2Method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Show the download link", true).toPostMethod();
+                if (!makeRedirectedRequest(h2Method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();//check problems
+                HttpMethod httpMethod;
+                try {
+                    httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Download the file", true).toPostMethod();
+                } catch (Exception e) {
+                    httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "window.location = '", "'"));
+                }
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();//if downloading failed
+                    throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                }
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
         } else {
             checkProblems();
@@ -78,7 +93,8 @@ class OneFichierFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (contentAsString.contains("you can download only one file at a time")) {
-            throw new YouHaveToWaitException("You can download only one file at a time and you must wait up to 5 minutes between each downloads", 300);
+            final int delay = PlugUtils.getNumberBetween(contentAsString, "wait up to", "minute");
+            throw new YouHaveToWaitException("You can download only one file at a time and you must wait up to " + delay + " minutes between each downloads", delay * 60);
         }
     }
 

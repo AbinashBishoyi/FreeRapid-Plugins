@@ -25,8 +25,7 @@ class OneFichierFileRunner extends AbstractRunner {
         setEnglishURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -42,8 +41,8 @@ class OneFichierFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "File name :</th><td>", "</td>");
-        PlugUtils.checkFileSize(httpFile, content, "File size :</th><td>", "</td>");
+        PlugUtils.checkName(httpFile, content, "name :</th><td>", "</td>");
+        PlugUtils.checkFileSize(httpFile, content, "Size :</th><td>", "</td>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -85,7 +84,8 @@ class OneFichierFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (contentAsString.contains("you can download only one file at a time")) {
-            throw new YouHaveToWaitException("You can download only one file at a time and you must wait up to 5 minutes between each downloads", 300);
+            final int delay = PlugUtils.getNumberBetween(contentAsString, "wait up to", "minute");
+            throw new YouHaveToWaitException("You can download only one file at a time and you must wait up to " + delay + " minutes between each downloads", delay * 60);
         }
     }
 

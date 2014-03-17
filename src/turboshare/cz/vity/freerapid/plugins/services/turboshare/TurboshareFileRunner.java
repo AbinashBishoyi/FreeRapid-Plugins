@@ -10,8 +10,8 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.util.logging.Logger;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 /**
  * Class which contains main code
@@ -48,7 +48,6 @@ class TurboshareFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
-
             //Post First Form
 
             HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setBaseURL(fileURL).setActionFromFormByIndex(1, true).setParameter("method_free", "Free Download").removeParameter("method_premium").toHttpMethod();//TODO
@@ -62,12 +61,8 @@ class TurboshareFileRunner extends AbstractRunner {
 
             final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "<span id=\"countdown\">", "</span>", TimeUnit.SECONDS);
             downloadTask.sleep(waitTime);
-            final String escapedURI = getMethodBuilder().setBaseURL(fileURL).setAction(fileURL).setActionFromFormByName("F1", true).setParameter("method_free", "Free Download").removeParameter("method_premium").toHttpMethod().getURI().getEscapedURI();
-             logger.info("Escaped URI: " + escapedURI);
-            
-            httpMethod = getMethodBuilder().setReferer(escapedURI).setAction(escapedURI).setBaseURL(escapedURI).setActionFromFormByName("F1", true).setParameter("method_free", "Free Download").removeParameter("method_premium").toHttpMethod();//TODO
+            httpMethod = getMethodBuilder().setActionFromFormByName("F1", true).setReferer(fileURL).setAction(fileURL).setParameter("method_free", "Free Download").removeParameter("method_premium").toPostMethod();
 
-            
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 logger.warning(getContentAsString());//log the info

@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -65,7 +66,8 @@ class XUN6FileRunner extends AbstractRunner {
                 }
             } while (getContentAsString().contains("\u8ACB\u91CD\u65B0\u8F38\u5165\u9A57\u8B49\u78BC"));
             final HttpMethod method3 = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("\u4E0B\u8F09").toHttpMethod();
-
+            int waitTime=PlugUtils.getWaitTimeBetween(getContentAsString(), "var timeout=\"", "\";", TimeUnit.SECONDS);
+            downloadTask.sleep(waitTime); 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(method3)) {
                 checkProblems();//if downloading failed

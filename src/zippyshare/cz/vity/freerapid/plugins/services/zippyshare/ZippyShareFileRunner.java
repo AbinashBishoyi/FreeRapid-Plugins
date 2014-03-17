@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 
 /**
  * @author Kajda
+ * @since 0.82
  */
 class ZippyShareFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(ZippyShareFileRunner.class.getName());
@@ -40,7 +41,7 @@ class ZippyShareFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "var comeonguys = '", "';"), getMethodBuilder().getEncoding())).toHttpMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "var comeonguys = '", "';"), "UTF-8")).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();

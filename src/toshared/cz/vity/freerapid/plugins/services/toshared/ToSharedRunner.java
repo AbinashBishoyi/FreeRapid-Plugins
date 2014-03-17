@@ -37,7 +37,7 @@ class ToSharedRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
 
-        this.logger.info("Starting download is TASK " + fileURL);
+        logger.info("Starting download is TASK " + fileURL);
 
         final GetMethod getMethod = getGetMethod(fileURL);
 
@@ -53,11 +53,11 @@ class ToSharedRunner extends AbstractRunner {
                 if (!tryDownloadAndSaveFile(method)) {
                     this.checkForProblems(getContentAsString());
 
-                    this.logger.warning(getContentAsString());
+                    logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");
                 }
             } else {
-                this.logger.info(getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
         } else {
@@ -77,7 +77,7 @@ class ToSharedRunner extends AbstractRunner {
     public void checkNameAndSize(String content) throws Exception {
         /* verifies the url from service */
         if ((!content.contains("2shared.com")) || (content.contains("The file link that you requested is not valid."))) {
-            this.logger.warning(getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
@@ -87,10 +87,10 @@ class ToSharedRunner extends AbstractRunner {
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
 
-            this.logger.info("File name " + fileName);
+            logger.info("File name " + fileName);
             httpFile.setFileName(fileName.trim());
         } else {
-            this.logger.warning("File name was not found" + content);
+            logger.warning("File name was not found" + content);
         }
 
         /* gets the file size */
@@ -99,10 +99,10 @@ class ToSharedRunner extends AbstractRunner {
         if (matcher.find()) {
             final String fileSize = (matcher.group(1)).replaceAll(",", "");
 
-            this.logger.info("File size " + fileSize);
+            logger.info("File size " + fileSize);
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
         } else {
-            this.logger.warning("File size was not found" + content);
+            logger.warning("File size was not found" + content);
         }
 
         /* file was checked and exists */

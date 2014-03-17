@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 
 /**
  * @author Kajda
+ * @since 0.82
  */
 class HotfileFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(HotfileFileRunner.class.getName());

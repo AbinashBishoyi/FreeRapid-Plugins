@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="youtube.com" version="0.6.7" vendor="Kajda+JPEXS"
+<plugin id="youtube.com" version="0.6.8" vendor="Kajda+JPEXS"
         class="cz.vity.freerapid.plugins.services.youtube.YouTubeServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?youtube\.com/watch.+"/>

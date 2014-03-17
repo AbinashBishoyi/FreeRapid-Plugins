@@ -53,7 +53,7 @@ class YouTubeFileRunner extends AbstractRunner {
             checkName();
             
             
-            String fmt_url_map=PlugUtils.getStringBetween(getContentAsString(), "\"fmt_url_map\": \"", "\"");
+            String fmt_url_map=PlugUtils.getStringBetween(getContentAsString(), "&fmt_url_map=", "&");
             fmt_url_map=URLDecoder.decode(fmt_url_map,"UTF-8");            
             Matcher matcher = PlugUtils.matcher(","+fmt+"\\|(http[^\\|]+)(,[0-9]+\\||$)",","+fmt_url_map);
 
@@ -86,7 +86,7 @@ class YouTubeFileRunner extends AbstractRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<h1 (?:dir='rtl')?>(.+?)</h1>");
+        final Matcher matcher = getMatcherAgainstContent("<meta name=\"title\" content=\"(.+?)\">");
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim() + fileExtension;
@@ -121,7 +121,7 @@ class YouTubeFileRunner extends AbstractRunner {
     }
 
     private void processConfig() throws ErrorDuringDownloadingException {
-        String fmt_map=PlugUtils.getStringBetween(getContentAsString(), "\"fmt_map\": \"", "\"");
+        String fmt_map=PlugUtils.getStringBetween(getContentAsString(), "&fmt_map=", "&hl");
         try {
             fmt_map=URLDecoder.decode(fmt_map, "UTF-8");
         } catch (UnsupportedEncodingException ex) {

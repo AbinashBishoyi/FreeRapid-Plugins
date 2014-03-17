@@ -182,7 +182,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
             throw new ServiceConnectionProblemException("Your Hulu Plus subscription allows you to watch only one video at a time");
         }
         if (content.contains("we noticed you are trying to access Hulu through")) {
-            throw new NotRecoverableDownloadException("Hulu noticed that you are trying to access them through a proxy");
+            if (client.getSettings().isProxySet()) {
+                throw new NotRecoverableDownloadException("Hulu noticed that you are trying to access them through a proxy");
+            } else {
+                // They detected Tor. Retry.
+                throw new YouHaveToWaitException("Hulu noticed that you are trying to access them through a proxy", 4);
+            }
         }
     }
 

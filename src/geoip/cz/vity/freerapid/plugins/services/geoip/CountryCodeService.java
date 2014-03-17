@@ -9,6 +9,11 @@ import java.util.logging.Logger;
 
 public class CountryCodeService {
     private final static Logger logger = Logger.getLogger(CountryCodeService.class.getName());
+
+    /**
+     * http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz
+     * Updated 2014-02-01
+     */
     private final static String DATABASE_FILENAME = "GeoIP.dat";
     private final static int COUNTRY_BEGIN = 16776960;
     private final static int STANDARD_RECORD_LENGTH = 3;

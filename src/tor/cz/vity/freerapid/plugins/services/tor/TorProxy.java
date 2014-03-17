@@ -84,11 +84,11 @@ public class TorProxy {
 
     public synchronized void open() throws Exception {
         refereceCount++;
-        if (refereceCount == 1) {
-            if (shutdownTask != null) {
-                shutdownTask.cancel(true);
-                shutdownTask = null;
-            }
+        if (shutdownTask != null) {
+            shutdownTask.cancel(true);
+            shutdownTask = null;
+        }
+        if (client == null) {
             init();
         }
     }

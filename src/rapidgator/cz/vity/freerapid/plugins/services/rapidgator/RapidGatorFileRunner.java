@@ -11,9 +11,13 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.awt.*;
+import java.awt.geom.QuadCurve2D;
+import java.awt.image.BufferedImage;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -176,26 +180,21 @@ class RapidGatorFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             String mediaType;
-            int mediaTypeCounter = 0;
-            do {
-                final String captchaAction = "http://api.solvemedia.com/papi/_challenge.js" +
-                        "?k=" + captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/opera,ua/opera11,os/nt,os/nt6.1,jslib/jquery;ts=1336764790;th=white;r=" + Math.random();
-                httpMethod = getMethodBuilder()
-                        .setReferer("http://rapidgator.net/download/captcha")
-                        .setAction(captchaAction)
-                        .toGetMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
-                    throw new ServiceConnectionProblemException();
-                }
-                final Matcher mediaTypeMatcher = getMatcherAgainstContent("\"mediatype\"\\s*:\\s*\"(.+?)\",");
-                if (!mediaTypeMatcher.find()) {
-                    throw new PluginImplementationException("Captcha media type not found");
-                }
-                mediaType = mediaTypeMatcher.group(1);
-                logger.info("ATTEMPT " + mediaTypeCounter + ", mediaType = " + mediaType);
+            final String captchaAction = "http://api.solvemedia.com/papi/_challenge.js" + "?k=" + captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/opera,ua/opera11,os/nt,os/nt6.1," +
+                    "fwv/NGbXMA.qkvc89,jslib/jquery;ts=" + Long.toString(System.currentTimeMillis()).substring(0, 10) + ";th=white;r=" + Math.random();
+            httpMethod = getMethodBuilder()
+                    .setReferer("http://rapidgator.net/download/captcha")
+                    .setAction(captchaAction)
+                    .toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException();
             }
-            while (!mediaType.equals("img") && (mediaTypeCounter++ < 10)); // 'html' type captcha is broken, show 'img' type captcha instead
-
+            final Matcher mediaTypeMatcher = getMatcherAgainstContent("\"mediatype\"\\s*:\\s*\"(.+?)\",");
+            if (!mediaTypeMatcher.find()) {
+                throw new PluginImplementationException("Captcha media type not found");
+            }
+            mediaType = mediaTypeMatcher.group(1);
+            logger.info("mediaType = " + mediaType);
             final Matcher chidMatcher = getMatcherAgainstContent("\"chid\"\\s*:\\s*\"(.+?)\",");
             if (!chidMatcher.find()) {
                 throw new PluginImplementationException("Captcha challenge ID not found");
@@ -204,11 +203,23 @@ class RapidGatorFileRunner extends AbstractRunner {
             String captchaTxt;
             final String challengeImg = "http://api.solvemedia.com/papi/media?c=" + chid + ";w=300;h=150;fg=000000;bg=f8f8f8";
             if (mediaType.equals("img")) {
+                client.setReferer("http://rapidgator.net/download/captcha");
                 final CaptchaSupport captchaSupport = getCaptchaSupport();
                 captchaTxt = captchaSupport.getCaptcha(challengeImg);
                 if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
+            } else if (mediaType.equals("html")) {
+                httpMethod = getMethodBuilder()
+                        .setReferer("http://rapidgator.net/download/captcha")
+                        .setAction(challengeImg)
+                        .toGetMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    throw new ServiceConnectionProblemException();
+                }
+                logger.info(getContentAsString());
+                captchaTxt = getCaptchaSupport().askForCaptcha(drawHTMLCaptcha(getContentAsString(), 300, 150, Color.blue));
+                if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
             } else {
-                throw new ServiceConnectionProblemException("Captcha media type 'img' not found");
+                throw new ServiceConnectionProblemException("Captcha media type 'img' or 'html' not found");
             }
             MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
@@ -219,6 +230,7 @@ class RapidGatorFileRunner extends AbstractRunner {
             return methodBuilder.toPostMethod();
         } else {
             logger.info("Captcha Error");
+            checkProblems();
             throw new PluginImplementationException("Captcha not found");
         }
     }
@@ -245,6 +257,41 @@ class RapidGatorFileRunner extends AbstractRunner {
         if (contentAsString.contains("You can`t download not more than")) {
             throw new PluginImplementationException("You can`t download not more than 1 file at a time in free mode");
         }
+        if (contentAsString.contains("Captcha expired")) {
+            throw new YouHaveToWaitException("Captcha expired. Try again in 15 minutes", (15 * 60) + 1);
+        }
+    }
+
+    private BufferedImage drawHTMLCaptcha(final String content, final int width, final int height, final Color color) {
+        final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        final Graphics2D g = (Graphics2D) image.getGraphics();
+        g.setColor(Color.white);
+        g.drawRect(1, 1, width, height);
+        g.fillRect(1, 1, width, height);
+        g.setStroke(new BasicStroke(3));
+        g.setColor(color);
+        final Matcher matcher = PlugUtils.matcher("CM\\((\\d{1,3}),(\\d{1,3})\\);(.*?)CS\\(\\);\\s", Pattern.quote(content));
+        while (matcher.find()) {
+            int prevX, prevY;
+            prevX = Integer.parseInt(matcher.group(1));
+            prevY = Integer.parseInt(matcher.group(2));
+            final Matcher matcher2 = PlugUtils.matcher("CL\\((\\d{1,3}),(\\d{1,3})\\);|CQ\\((\\d{1,3}),(\\d{1,3}),(\\d{1,3}),(\\d{1,3})\\);", matcher.group(3));
+            while (matcher2.find()) {
+                if (matcher2.group(0).contains("CL")) { //draw line
+                    g.drawLine(prevX, prevY, Integer.parseInt(matcher2.group(1)), Integer.parseInt(matcher2.group(2)));
+                    prevX = Integer.parseInt(matcher2.group(1));
+                    prevY = Integer.parseInt(matcher2.group(2));
+                } else if (matcher2.group(0).contains("CQ")) { //draw quadratic curve
+                    QuadCurve2D q = new QuadCurve2D.Float();
+                    q.setCurve(prevX, prevY, Integer.parseInt(matcher2.group(3)), Integer.parseInt(matcher2.group(4)), Integer.parseInt(matcher2.group(5)), Integer.parseInt(matcher2.group(6)));
+                    g.draw(q);
+                    prevX = Integer.parseInt(matcher2.group(5));
+                    prevY = Integer.parseInt(matcher2.group(6));
+                }
+            }
+        }
+        g.dispose();
+        return image;
     }
 
 }

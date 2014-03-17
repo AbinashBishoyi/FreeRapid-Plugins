@@ -88,8 +88,9 @@ class CbsFileRunner extends AbstractRtmpRunner {
                 || getContentAsString().contains("Media is not available")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (getContentAsString().contains("title=\"Unavailable\"")) {
-            throw new NotRecoverableDownloadException("This video cannot be streamed in your geographical area");
+        if (getContentAsString().contains("title=\"Unavailable\"")
+                || getContentAsString().contains("This content is not available in your location")) {
+            throw new NotRecoverableDownloadException("This content is not available in your location");
         }
     }
 

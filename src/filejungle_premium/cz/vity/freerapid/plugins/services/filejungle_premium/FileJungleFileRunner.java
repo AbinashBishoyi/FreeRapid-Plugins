@@ -44,9 +44,10 @@ class FileJungleFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        runCheck();
         login();
         HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        if (!tryDownloadAndSaveFile(method)) {
             checkProblems();
             checkNameAndSize();
             method = getMethodBuilder().setActionFromFormByName("premiumForm", true).toPostMethod();
@@ -54,9 +55,6 @@ class FileJungleFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
-        } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
         }
     }
 

@@ -181,6 +181,11 @@ class FilesMonsterFileRunner extends AbstractRunner {
                     "avaliable for free download in", "min", TimeUnit.MINUTES);
             throw new YouHaveToWaitException("Waiting for next file", time);
         }
+        if (contentAsString.contains("available for free download in")) {
+            int time = PlugUtils.getWaitTimeBetween(contentAsString,
+                    "available for free download in", "min", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("Waiting for next file", time);
+        }
     }
 
     private void checkJSONProblems(final String content) throws ErrorDuringDownloadingException {

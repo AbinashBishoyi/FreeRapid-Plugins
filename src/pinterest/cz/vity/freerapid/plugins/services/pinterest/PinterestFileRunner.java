@@ -85,7 +85,7 @@ class PinterestFileRunner extends AbstractRunner {
                     if (!matchD1.find()) throw new PluginImplementationException("Error D1");
                     final Matcher matchD2 = PlugUtils.matcher("P.setContext\\((.+?)\\);", content);
                     if (!matchD2.find()) throw new PluginImplementationException("Error D2");
-                    final Matcher matchD3 = PlugUtils.matcher("26\"\\}\\], \"errorStrategy\": 1, \"data\": \\{\\}, (\"options\": \\{\"scrollable\": true.+?), \"uid\": \"Grid-20\"", content);
+                    final Matcher matchD3 = PlugUtils.matcher("Footer-\\d+?\"\\}\\], \"errorStrategy\": 1, \"data\": \\{\\}, (\"options\": \\{\"scrollable\": true.+?), \"uid\": \"Grid-\\d", content);
                     if (!matchD3.find()) throw new PluginImplementationException("Error D3");
                     String data = "{" + matchD1.group(1).replaceAll("\\s", "") + ",\"context\":" +
                             matchD2.group(1).replaceAll("\\s", "") + ",\"module\":{\"name\":\"GridItems\"," +

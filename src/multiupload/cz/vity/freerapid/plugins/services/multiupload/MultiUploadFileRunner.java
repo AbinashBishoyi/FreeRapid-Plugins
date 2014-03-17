@@ -59,6 +59,7 @@ class MultiUploadFileRunner extends AbstractRunner {
         } else {   // list of links
             final GetMethod getMethod = getGetMethod(fileURL);
             if (makeRedirectedRequest(getMethod)) {
+                checkNameAndSize();
                 final Matcher match = getMatcherAgainstContent("<a href=\"(http://www\\d*?\\.multiupload\\.(com|co.uk|nl):.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
                 if (match.find()) {    //direct download
                     list.add(new URI(match.group(1)));

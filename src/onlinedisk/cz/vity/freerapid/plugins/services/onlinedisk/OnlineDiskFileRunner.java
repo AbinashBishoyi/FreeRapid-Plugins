@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.Random;
 
 /**
  * Class which contains main code

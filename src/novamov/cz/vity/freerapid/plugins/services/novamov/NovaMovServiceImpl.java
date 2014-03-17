@@ -1,8 +1,7 @@
 package cz.vity.freerapid.plugins.services.novamov;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin

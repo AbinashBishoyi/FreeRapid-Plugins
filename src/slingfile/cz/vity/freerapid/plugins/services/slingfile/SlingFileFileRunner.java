@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
-import java.util.concurrent.TimeUnit;
 
 /*
  * @author TommyTom

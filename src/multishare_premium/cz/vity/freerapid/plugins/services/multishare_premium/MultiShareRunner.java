@@ -5,13 +5,13 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.HttpMethod;
 
 /**
  * @author JPEXS

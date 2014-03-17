@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 

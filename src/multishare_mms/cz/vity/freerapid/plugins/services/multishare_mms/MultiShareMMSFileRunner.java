@@ -9,18 +9,19 @@ import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.awt.Desktop;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+
+import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import javax.swing.JOptionPane;
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 /**
  * Class which contains main code

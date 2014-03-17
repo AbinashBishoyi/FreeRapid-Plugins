@@ -1,17 +1,16 @@
 package cz.vity.freerapid.plugins.services.hotfilefolder;
 
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
+import org.apache.commons.httpclient.HttpMethod;
+
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-
-import org.apache.commons.httpclient.HttpMethod;
-
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
 
 /**
  * @author RickCL

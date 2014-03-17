@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.ulozcz;
 
 //import cz.vity.freerapid.plugins.services.ulozcz.UlozCzFileRunner;
+
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
@@ -9,7 +10,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;

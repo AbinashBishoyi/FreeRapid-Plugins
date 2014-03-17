@@ -1,18 +1,13 @@
 package cz.vity.freerapid.plugins.services.filestore;
 
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.methods.GetMethod;
+
 import java.util.HashMap;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-
-import org.apache.commons.httpclient.methods.GetMethod;
-
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 /**
  * @author RickCL

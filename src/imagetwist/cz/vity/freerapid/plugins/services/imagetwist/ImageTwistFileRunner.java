@@ -13,8 +13,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
-import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
-
 /**
  * Class which contains main code
  *

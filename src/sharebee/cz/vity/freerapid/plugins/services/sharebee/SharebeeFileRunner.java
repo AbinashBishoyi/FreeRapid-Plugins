@@ -1,17 +1,16 @@
 package cz.vity.freerapid.plugins.services.sharebee;
 
-import java.net.URL;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-
-import org.apache.commons.httpclient.HttpMethod;
-
 import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
+
+import java.net.URL;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author RickCL

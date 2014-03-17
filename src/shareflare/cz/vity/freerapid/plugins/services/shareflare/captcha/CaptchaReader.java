@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.shareflare.captcha;
 
-import java.awt.Color;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.io.ObjectInputStream;

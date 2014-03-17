@@ -1,13 +1,14 @@
 package cz.vity.freerapid.plugins.services.cramit;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.captcha.*;
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchaType;
+import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchasCaptchaType;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
 
-import java.util.logging.Logger;
 import java.awt.image.BufferedImage;
+import java.util.logging.Logger;
 
 public class CramitCaptchaType implements CaptchaType {
     private final static Logger logger = Logger.getLogger(CaptchasCaptchaType.class.getName());

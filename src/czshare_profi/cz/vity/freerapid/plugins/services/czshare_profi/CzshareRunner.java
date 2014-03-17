@@ -11,7 +11,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Jan Smejkal (edit from CZshare and RapidShare premium to CZshare profi)

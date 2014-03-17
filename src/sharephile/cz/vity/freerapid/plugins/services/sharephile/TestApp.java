@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.sharephile;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;

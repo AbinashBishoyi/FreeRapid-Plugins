@@ -8,9 +8,9 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
+import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.awt.image.BufferedImage;
 
 /**
  * Class which contains main code

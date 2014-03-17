@@ -1,12 +1,12 @@
 package cz.vity.freerapid.plugins.services.alfafiles;
 
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 
 /**

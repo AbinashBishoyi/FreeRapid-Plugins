@@ -312,6 +312,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             throw new ServiceConnectionProblemException("Error posting login info");
         }
         if (!getContentAsString().contains("ok=1")) {
+            logger.warning("Content from login: " + getContentAsString());
             throw new BadLoginException("Invalid Hulu account login information");
         }
         return true;

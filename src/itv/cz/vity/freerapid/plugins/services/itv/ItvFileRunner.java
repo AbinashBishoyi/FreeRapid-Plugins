@@ -70,7 +70,7 @@ class ItvFileRunner extends AbstractRtmpRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
-            final String userToken = PlugUtils.getStringBetween(getContentAsString(), "\"user_token\":\"", "\"");
+            final String userToken = PlugUtils.getStringBetween(getContentAsString(), "\"user_token\":\"", "\"").replace("\\/", "/");
             method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://mercury.itv.com/PlaylistService.svc?wsdl")

@@ -94,49 +94,47 @@ class UptoBoxFileRunner extends AbstractRunner {
 
         checkFileProblems();
         checkNameAndSize(getContentAsString());
-
         HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
                 .setBaseURL(fileURL)
                 .setActionFromFormWhereTagContains("Free Download", true)
                 .removeParameter("method_premium")
                 .toPostMethod();
-
         if (!makeRedirectedRequest(httpMethod)) {
             checkDownloadProblems();
             throw new ServiceConnectionProblemException();
         }
+
         checkDownloadProblems();
 
-        MethodBuilder methodBuilder = getMethodBuilder()
-                .setActionFromFormByName("F1", true)
-                .setAction(fileURL)
-                .removeParameter("method_premium");
-
-        String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
-        Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
-        if (waitTimematcher.find()) {
-            downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)));
-        }
-
+        String password = null;
         if (isPassworded()) {
-            final String password = getDialogSupport().askForPassword("UptoBox");
+            password = getDialogSupport().askForPassword("UptoBox");
             if (password == null) {
                 throw new NotRecoverableDownloadException("This file is secured with a password");
             }
-            methodBuilder.setParameter("password", password);
         }
 
-        if (getContentAsString().contains("captcha_code")) {
-            methodBuilder = stepCaptcha(methodBuilder);
+        while (getContentAsString().contains("captcha_code")) {
+            MethodBuilder methodBuilder = getMethodBuilder()
+                    .setActionFromFormByName("F1", true)
+                    .setAction(fileURL)
+                    .removeParameter("method_premium")
+                    .setParameter("code", stepCaptcha());
+            if (isPassworded()) {
+                methodBuilder.setParameter("password", password);
+            }
+            final String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
+            final Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
+            if (waitTimematcher.find()) {
+                downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)) + 1);
+            }
+            if (!makeRedirectedRequest(methodBuilder.toPostMethod())) {
+                checkDownloadProblems();
+                throw new ServiceConnectionProblemException();
+            }
         }
-
-        httpMethod = methodBuilder.toPostMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();
-            throw new ServiceConnectionProblemException();
-        }
-
+        checkDownloadProblems();
         httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
                 .setActionFromAHrefWhereATagContains("start your download")
@@ -179,24 +177,23 @@ class UptoBoxFileRunner extends AbstractRunner {
         }
     }
 
-    private MethodBuilder stepCaptcha(MethodBuilder methodBuilder) throws Exception {
+    private String stepCaptcha() throws Exception {
         logger.info("Processing captcha");
         final String contentAsString = getContentAsString();
-        String captchaRule = "<span style='position:absolute;padding\\-left:(\\d+)px;padding\\-top:\\d+px;'>(\\d+)</span>";
-        Matcher captchaMatcher = PlugUtils.matcher(captchaRule, PlugUtils.unescapeHtml(contentAsString));
+        String captchaRule = "<span style='position:absolute;padding\\-left:(\\d+)px;padding\\-top:\\d+px;'>(.+?)</span>";
+        Matcher captchaMatcher = PlugUtils.matcher(captchaRule, contentAsString);
         StringBuilder strbuffCaptcha = new StringBuilder(4);
         SortedMap<Integer, String> captchaMap = new TreeMap<Integer, String>();
-
         while (captchaMatcher.find()) {
-            captchaMap.put(Integer.parseInt(captchaMatcher.group(1)), captchaMatcher.group(2));
+            captchaMap.put(Integer.parseInt(captchaMatcher.group(1)), PlugUtils.unescapeHtml(captchaMatcher.group(2)));
         }
         for (String value : captchaMap.values()) {
             strbuffCaptcha.append(value);
         }
-        String strCaptcha = Integer.toString(Integer.parseInt(strbuffCaptcha.toString())); //omitting leading '0'
+        final String strCaptcha = Integer.toString(Integer.parseInt(strbuffCaptcha.toString())); //omit leading '0'
         logger.info("Captcha : " + strCaptcha);
 
-        return methodBuilder.setParameter("code", strCaptcha);
+        return strCaptcha;
     }
 
 }

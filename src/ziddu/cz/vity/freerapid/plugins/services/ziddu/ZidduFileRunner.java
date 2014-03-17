@@ -115,7 +115,7 @@ class ZidduFileRunner extends AbstractRunner {
         //captcha = captchaSupport.getCaptcha(captchaSrc);
         logger.info("Recognized captcha " + captcha);
 
-        captchaSupport.askForCaptcha(bufferedImage);
+//        captchaSupport.askForCaptcha(bufferedImage);
 
         if (captcha == null || captcha.isEmpty() || captcha.length() != 2)
             captcha = captchaSupport.getCaptcha(captchaSrc);

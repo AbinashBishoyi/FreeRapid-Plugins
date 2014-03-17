@@ -16,7 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.pinterest.com/pin/212616221990889024/"));
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/pin/275423333434060623/"));  // pin
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/inspiration/"));  // board  <25
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/old/"));  // board  >25
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/bikes/"));  // board  >>25
+            httpFile.setNewURL(new URL("http://www.pinterest.com/rmkmj2/i-lift-things-up-and-put-them-down/"));  // board >>>>>25
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

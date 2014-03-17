@@ -82,7 +82,7 @@ class MediafireRunner extends AbstractRunner {
             }
             checkNameAndSize();
 
-            //TODO password handling
+            stepPassword();
 
             if (!isCaptcha()) {
                 break;

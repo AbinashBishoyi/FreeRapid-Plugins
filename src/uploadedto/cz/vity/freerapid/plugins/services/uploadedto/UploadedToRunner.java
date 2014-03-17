@@ -57,7 +57,7 @@ class UploadedToRunner extends AbstractRunner {
                     }
                 } while (getMatcherAgainstContent("err\"?:\"?captcha").find());
 
-                if (getContentAsString().contains("You have reached")) {
+                if (getContentAsString().contains("You have reached") || getContentAsString().contains("limit-dl")) {
                     throw new ServiceConnectionProblemException("Free download limit reached");
                 }
                 if (getContentAsString().contains("available download slots")) {

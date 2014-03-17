@@ -79,9 +79,16 @@ class ExtabitFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkDownloadProblems();
+            String strUrl;
+            final Matcher match = PlugUtils.matcher("window.location=\\s*?'(.+?)';", getContentAsString());
+            do {
+                if (!match.find())
+                    throw new PluginImplementationException("Download link not found");
+                strUrl = match.group(1);
+            } while (strUrl.contains("installer_file_name="));
             method = getMethodBuilder()
                     .setReferer(downloadPage)
-                    .setActionFromAHrefWhereATagContains("Download file")
+                    .setAction(strUrl)
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(method)) {
                 checkDownloadProblems();

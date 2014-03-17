@@ -10,13 +10,14 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class VideoWeedServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "videoweed.com";
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return true;
     }
 
     @Override

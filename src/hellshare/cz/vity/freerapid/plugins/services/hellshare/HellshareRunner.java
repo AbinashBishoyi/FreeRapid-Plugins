@@ -80,7 +80,7 @@ class HellshareRunner {
     private PostMethod stepCaptcha() throws Exception {
 
         if ("".equals(client.getContentAsString())) {
-            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
+            throw new YouHaveToWaitException("Neurèité omezení", 120);
 
         }
 
@@ -145,9 +145,9 @@ class HellshareRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = PlugUtils.matcher("(c|C)hyba", client.getContentAsString());
+        matcher = PlugUtils.matcher("Soubor nenalezen", client.getContentAsString());
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zøejmì neexistuje</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }
 
 

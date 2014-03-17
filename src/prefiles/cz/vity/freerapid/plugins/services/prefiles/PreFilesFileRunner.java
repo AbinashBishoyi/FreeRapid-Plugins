@@ -71,6 +71,7 @@ class PreFilesFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
 
+            checkProblems();
             content = getContentAsString();
 
             long now = System.currentTimeMillis();

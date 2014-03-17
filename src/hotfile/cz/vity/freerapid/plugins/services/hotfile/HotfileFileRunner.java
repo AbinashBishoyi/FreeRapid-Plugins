@@ -7,10 +7,10 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.net.URL;
 
 /**
  * @author Kajda & Arthur Gunawan
@@ -93,8 +93,8 @@ class HotfileFileRunner extends AbstractRunner {
             logger.info("New Link : " + escapedURI);     //Debug purpose, show the new found link
             this.httpFile.setNewURL(new URL(escapedURI));
             return escapedURI;
-       } else return cURL;
- }
+        } else return cURL;
+    }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         Matcher matcher = getMatcherAgainstContent("20px'>Downloading (.+?) \\(");
@@ -104,7 +104,7 @@ class HotfileFileRunner extends AbstractRunner {
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
-            matcher = getMatcherAgainstContent("\\((.+?)\\)</h2>");
+            matcher = getMatcherAgainstContent(" \\((.+?)\\)</h2>");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));

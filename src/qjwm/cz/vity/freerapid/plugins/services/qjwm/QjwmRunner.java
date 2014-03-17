@@ -85,10 +85,14 @@ class QjwmRunner extends AbstractRunner {
     }
 
     private void redirectToDownloadPage() {
-        final Matcher matcher = PlugUtils.matcher("(.+?)qjwm\\.com/down_([0-9]+)", fileURL);
-        if (matcher.find()) {
+        final Matcher matcher1 = PlugUtils.matcher("(.+?)qjwm\\.com/down_([0-9]+)", fileURL);
+        final Matcher matcher2 = PlugUtils.matcher("(.+?)qjwm\\.com/down.aspx?(.+)", fileURL);
+        if (matcher1.find()) {
             // Can be redirected.
-            fileURL = String.format("%sqjwm.com/download_%s.html", matcher.group(1), matcher.group(2));
+            fileURL = String.format("%sqjwm.com/download_%s.html", matcher1.group(1), matcher1.group(2));
+            logger.info("Redirect url automatically to: " + fileURL);
+        } else if (matcher2.find()) {
+            fileURL = String.format("%sqjwm.com/download.aspx?%s", matcher2.group(1), matcher2.group(2));
             logger.info("Redirect url automatically to: " + fileURL);
         }
     }

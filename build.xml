@@ -171,6 +171,7 @@
         <ant dir="${src.dir}/itv" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/jandown" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/kewlshare" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/kuaichuan" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/leteckaposta" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/letitbit" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/letitbit_premium" antfile="build.xml" inheritall="false"/>

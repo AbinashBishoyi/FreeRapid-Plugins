@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -33,8 +34,8 @@ class IFolderFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435: <b>", "</b>");
-        String sizeString = PlugUtils.getStringBetween(content, "\u0420\u0430\u0437\u043C\u0435\u0440: <b>", "</b>");
+        PlugUtils.checkName(httpFile, content, "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435:</span> <b>", "</b>");
+        String sizeString = PlugUtils.getStringBetween(content, "\u0420\u0430\u0437\u043C\u0435\u0440:</span> <b>", "</b>");
         //Replace azbuka letters with latin:
         sizeString = sizeString.replace('\u041C', 'M');
         sizeString = sizeString.replace('\u0431', 'B');
@@ -69,16 +70,17 @@ class IFolderFileRunner extends AbstractRunner {
                 String nextAction = matcher.group(1);
                 final HttpMethod method3 = getMethodBuilder().setReferer("").setAction(nextAction).toHttpMethod();
                 if (makeRedirectedRequest(method3)) {
-                    final HttpMethod method4 = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();
+                    final HttpMethod method4 = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();                    
                     if (makeRedirectedRequest(method4)) {
-                        String sdelay = PlugUtils.getStringBetween(getContentAsString(), "var delay = ", ";");
-                        int delay = 30;
-                        try {
-                            delay = Integer.parseInt(sdelay);
-                        } catch (NumberFormatException nex) {
-                        }
+                        int delay = PlugUtils.getWaitTimeBetween(getContentAsString(), "var delay = ", ";",TimeUnit.SECONDS);
                         downloadTask.sleep(delay);
-                        if (makeRedirectedRequest(method4)) {
+
+
+                        /*
+                         * Note: Server sends response with no Status-Line and no headers, Special method must be executed
+                         */
+                        final HttpMethod method4b = new GetMethodNoStatus("http://ints.ifolder.ru"+method4.getPath()+"?"+method4.getQueryString());
+                        if (makeRedirectedRequest(method4b)) {
                             do {
                                 CaptchaSupport captchaSupport = getCaptchaSupport();
                                 String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();

@@ -24,4 +24,8 @@ public class IFolderServiceImpl extends AbstractFileShareService {
         return new IFolderFileRunner();
     }
 
+    public int getMaxDownloadsFromOneIP(){
+        return 1;
+    }
+
 }

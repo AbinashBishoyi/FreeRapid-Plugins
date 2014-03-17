@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="share-links.biz" version="0.1" vendor="RickCL"
+<plugin id="share-links.biz" version="0.2" vendor="RickCL"
         class="cz.vity.freerapid.plugins.services.sharelinksbiz.SharelinksBizServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(?:share-links|s2l).biz/([_a-zA-Z0-9]+)"/>

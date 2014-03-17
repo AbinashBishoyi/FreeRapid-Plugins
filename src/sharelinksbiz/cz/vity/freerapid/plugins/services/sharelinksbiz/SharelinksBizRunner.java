@@ -1,5 +1,10 @@
 package cz.vity.freerapid.plugins.services.sharelinksbiz;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Arrays;
@@ -8,6 +13,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -25,9 +31,20 @@ class SharelinksBizRunner extends AbstractRunner {
     private static final String HTTP_BASE = "http://share-links.biz";
     private static final String HTTP_ENGINE = HTTP_BASE + "/get/lnk/";
 
+    private static final String FILE_COOKIE_NAME = "share-links.biz.cookie";
+
     @Override
     public void run() throws Exception {
         super.run();
+
+        if( new File(FILE_COOKIE_NAME).exists() ) {
+            FileInputStream fis = new FileInputStream(FILE_COOKIE_NAME);
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            Cookie[] cookies = (Cookie[]) ois.readObject();
+            ois.close();
+            client.getHTTPClient().getState().addCookies(cookies);
+        }
+
 
         Matcher matcher;
         final GetMethod gMethod = getGetMethod(fileURL);
@@ -37,7 +54,7 @@ class SharelinksBizRunner extends AbstractRunner {
         }
 
         if( getContentAsString().contains("captcha.gif") ) {
-            GetMethod captchaMethod;
+            GetMethod captchaMethod=null;
             boolean captchaFound = false;
 
             String captchPage = getContentAsString();
@@ -69,14 +86,23 @@ class SharelinksBizRunner extends AbstractRunner {
                 System.out.println( "HTML FOR CAPTCHA: <$\n" + captchPage + "\n$>");
                 throw new PluginImplementationException("Captcha error or not Implemented !!!");
             }
+            if(client.getHTTPClient().getState().getCookies().length > 0) {
+                FileOutputStream fos = new FileOutputStream( FILE_COOKIE_NAME );
+                ObjectOutputStream oos = new ObjectOutputStream(fos);
+                oos.writeObject( client.getHTTPClient().getState().getCookies() );
+                oos.close();
+            }
         }
 
         matcher = getMatcherAgainstContent("javascript:_get\\('([^']+)'[^']*''");
         if( matcher.find() ) {
-            // This is need, I don't now why but really need
-            getCaptchaSupport().getCaptchaImage( "http://share-links.biz/template/images/header/blank.gif" );
-
             HttpMethod methodPross;
+
+            // This is need, I don't know why but really need
+            methodPross = getMethodBuilder().setReferer(fileURL).setAction("http://share-links.biz/template/images/header/blank.gif").toHttpMethod();
+            updateHeader(methodPross);
+            makeRedirectedRequest(methodPross);
+
             do {
                 client.setReferer( fileURL );
                 //System.out.println( matcher.group(1) );

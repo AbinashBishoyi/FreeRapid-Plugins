@@ -23,13 +23,13 @@ class RapidGatorFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidGatorFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -61,14 +61,14 @@ class RapidGatorFileRunner extends AbstractRunner {
         super.run();
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            String contentAsString = getContentAsString();
+            checkProblems();
+            checkNameAndSize(contentAsString);
 
-            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "var secs = ", ";", TimeUnit.SECONDS);
-            final String fileId = PlugUtils.getStringBetween(contentAsString, "var fid = ", ";");
+            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "var secs =", ";", TimeUnit.SECONDS);
+            final String fileId = PlugUtils.getStringBetween(contentAsString, "var fid =", ";");
 
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
@@ -78,15 +78,11 @@ class RapidGatorFileRunner extends AbstractRunner {
             httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException();
             }
             checkProblems();
             contentAsString = getContentAsString();
-            //logger.info(contentAsString);
             final String sid = PlugUtils.getStringBetween(contentAsString, "\"sid\":\"", "\"}");
-            //logger.info(fileId);
-            //logger.info(sid);
-
             downloadTask.sleep(waitTime);
 
             httpMethod = getMethodBuilder()
@@ -97,10 +93,9 @@ class RapidGatorFileRunner extends AbstractRunner {
             httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException();
             }
-
-            //logger.info(getContentAsString());
+            checkProblems();
             
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
@@ -108,25 +103,24 @@ class RapidGatorFileRunner extends AbstractRunner {
                     .toGetMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException();
             }
 
             while (getContentAsString().contains("api.recaptcha.net/challenge")) {
                 httpMethod = stepCaptcha();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
-                    throw new PluginImplementationException();
+                    throw new ServiceConnectionProblemException();
                 }
             }
-
+            checkProblems();
             httpMethod = getMethodBuilder()
                     .setAction(PlugUtils.getStringBetween(getContentAsString(), "location.href = '", "';"))
                     .toGetMethod();
 
-            //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -135,7 +129,6 @@ class RapidGatorFileRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha() throws Exception {
-        //process captcha
         final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("api\\.recaptcha\\.net/challenge\\?k=(.*?)\">");
         reCaptchaKeyMatcher.find();
         final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
@@ -157,15 +150,17 @@ class RapidGatorFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("Delay between downloads must be not less than")) {
-            //final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString,"must be not less than "," min",TimeUnit.MINUTES);
-            //throw new YouHaveToWaitException("Delay between downloads must be not less than",waitTime);
-            throw new PluginImplementationException("Delay between downloads must be not less than 15 minutes");
+            final String waitTime = PlugUtils.getStringBetween(contentAsString,"must be not less than","min");
+            throw new YouHaveToWaitException("Delay between downloads must be not less than "+ waitTime +" minutes",200);
         }
         if (contentAsString.contains("You have reached your daily downloads limit")) {
             throw new PluginImplementationException("You have reached your daily downloads limit");
+        }
+        if (contentAsString.contains("You can download files up to 1 GB in free mode")) {
+            throw new PluginImplementationException("You can download files up to 1 GB in free mode");
         }
     }
 

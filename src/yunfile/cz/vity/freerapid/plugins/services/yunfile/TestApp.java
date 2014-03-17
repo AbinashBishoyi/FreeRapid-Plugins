@@ -22,10 +22,12 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://yunfile.com/file/smap2006/d42eef7d"));
             //httpFile.setNewURL(new URL("http://yfdisk.com/file/hl01999/368e6367/"));
             //httpFile.setNewURL(new URL("http://filemarkets.com/file/hl01999/a8afe973/"));
-            httpFile.setNewURL(new URL("http://page1.yunfile.com/file/adslabc/8e044660/"));
+            //httpFile.setNewURL(new URL("http://page1.yunfile.com/file/adslabc/8e044660/"));
+            //httpFile.setNewURL(new URL("http://page1.yunfile.com/file/bjfrj/1196f8c5/")); //File Size: 74.64 MB
+            httpFile.setNewURL(new URL("http://page2.yunfile.com/fs/2a6r7s3ebnfa8lcfan9996/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("180.250.79.122", 8080); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("127.0.0.1", 9080, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final YunFileServiceImpl service = new YunFileServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

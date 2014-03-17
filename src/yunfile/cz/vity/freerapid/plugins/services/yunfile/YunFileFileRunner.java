@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URLEncoder;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -23,12 +22,13 @@ import java.util.regex.Matcher;
  */
 class YunFileFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(YunFileFileRunner.class.getName());
-    private Random random = new Random();
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         checkFileURL();
+        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".yunfile.com", "language", "en_us", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -53,6 +53,7 @@ class YunFileFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         checkFileURL();
+        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".yunfile.com", "language", "en_us", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
@@ -60,29 +61,24 @@ class YunFileFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-            //final Matcher matcher = getMatcherAgainstContent("Please wait <span.+?>(.+?)</span>");
-            //final int waitTime = !matcher.find() ? 30 : Integer.parseInt(matcher.group(1));
-            //downloadTask.sleep(waitTime + 1); //skip wait time
             String baseURL = "http://" + method.getURI().getAuthority();
+            String referer = method.getURI().toString();
             HttpMethod httpMethod;
-            int captchaCounter = 1;
             do {
+                Matcher matcher = getMatcherAgainstContent("Please wait <span.+?>(.+?)</span>");
+                final int waitTime = !matcher.find() ? 30 : Integer.parseInt(matcher.group(1));
+                downloadTask.sleep(waitTime + 1); //skip wait time
                 String downloadPageLink = PlugUtils.getStringBetween(getContentAsString(), "downpage_link\" href=\"", "\"");
                 if (getContentAsString().contains("vcode")) {
                     final String captcha;
-                    //avoid to input captcha twice, throw random number at first attempt
-                    if (1 == captchaCounter) {
-                        captcha = String.valueOf(random.nextInt(8000) + 1000);
-                    } else {
-                        captcha = getCaptchaSupport().getCaptcha(baseURL + "/verifyimg/getPcv.html");
-                        if (captcha == null) {
-                            throw new CaptchaEntryInputMismatchException();
-                        }
+                    captcha = getCaptchaSupport().getCaptcha(baseURL + "/verifyimg/getPcv.html");
+                    if (captcha == null) {
+                        throw new CaptchaEntryInputMismatchException();
                     }
                     downloadPageLink = downloadPageLink.replaceAll("\\.html$", "/" + captcha + ".html");
                 }
                 httpMethod = getMethodBuilder()
-                        .setReferer(fileURL)
+                        .setReferer(referer)
                         .setBaseURL(baseURL)
                         .setAction(downloadPageLink)
                         .toGetMethod();
@@ -92,7 +88,7 @@ class YunFileFileRunner extends AbstractRunner {
                 }
                 checkProblems();
                 baseURL = "http://" + httpMethod.getURI().getAuthority();
-                ++captchaCounter;
+                referer = httpMethod.getURI().toString();
             }
             while (getContentAsString().contains("vcode"));
             final String downloadPageUrl = httpMethod.getURI().toString();
@@ -109,7 +105,7 @@ class YunFileFileRunner extends AbstractRunner {
             }
             if (cookieVidSet) {
                 httpMethod = getMethodBuilder()
-                        .setReferer(fileURL)
+                        .setReferer(referer)
                         .setActionFromFormByName("down_from", true)
                         .toPostMethod();
             } else {
@@ -168,6 +164,9 @@ class YunFileFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Web Server may be down")) {
             throw new ServiceConnectionProblemException("A communication error occurred: \"Operation timed out\"");
+        }
+        if (contentAsString.contains("Access denied")) {
+            throw new PluginImplementationException("Access denied");
         }
     }
 

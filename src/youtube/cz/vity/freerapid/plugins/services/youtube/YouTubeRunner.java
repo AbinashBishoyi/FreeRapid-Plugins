@@ -420,7 +420,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
     }
 
     private String getPlaylistIdFromUrl() throws PluginImplementationException {
-        final Matcher matcher = PlugUtils.matcher(".+?/playlist\\?list=(?:PL|UU|FL)?([^\\?&#/]+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("list=(?:PL|UU|FL)?([^\\?&#/]+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error getting playlist id");
         }
@@ -456,7 +456,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
     }
 
     private String getCourseIdFromUrl() throws PluginImplementationException {
-        final Matcher matcher = PlugUtils.matcher(".+?/course\\?list=(?:EC)?([^\\?&#/]+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("list=(?:EC)?([^\\?&#/]+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error getting course id");
         }

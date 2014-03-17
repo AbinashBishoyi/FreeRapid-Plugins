@@ -17,7 +17,7 @@ public class YunFileServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;
+        return false;
     }
 
     @Override

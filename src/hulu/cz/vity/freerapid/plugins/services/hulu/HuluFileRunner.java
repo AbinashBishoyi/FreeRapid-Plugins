@@ -54,12 +54,10 @@ class HuluFileRunner extends AbstractRtmpRunner {
     private boolean hasSubtitle = false;
     private HuluSettingsConfig config;
 
-
     private void setConfig() throws Exception {
         final HuluServiceImpl service = (HuluServiceImpl) getPluginService();
         config = service.getConfig();
     }
-
 
     @Override
     public void runCheck() throws Exception {
@@ -77,7 +75,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
             return;
         }
-        Matcher matcher = getMatcherAgainstContent("new Hulu\\.Models\\.Video\\((.+?)\\);");
+        Matcher matcher = getMatcherAgainstContent("window\\._preloadedFastStartVideo = ([^\r\n]+)");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name content not found");
         }
@@ -274,7 +272,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 //same cdn > akamai > limelight > level3
                 if (stream.cdn.equals(config.getCdn()))
                     cdnWeight = 15f;
-                if (stream.cdn.equals("akamai"))
+                else if (stream.cdn.equals("akamai"))
                     cdnWeight = 10f;
                 else if (stream.cdn.equals("limelight"))
                     cdnWeight = 5f;

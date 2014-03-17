@@ -155,16 +155,23 @@ class UlozToRunner extends AbstractRunner {
         final MethodBuilder sendForm = getMethodBuilder()
                 .setBaseURL(SERVICE_BASE_URL).setReferer(fileURL)
                 .setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
-        final Matcher captchaUrlMatcher = getMatcherAgainstContent("src=\"(http://xapca[^\"<>]+?/image\\.gif)\"");
-        if (!captchaUrlMatcher.find()) {
-            throw new PluginImplementationException("Captcha URL not found");
+        final HttpMethod getNewCaptcha = getGetMethod("http://uloz.to/reloadCaptcha.php");
+        if (!makeRedirectedRequest(getNewCaptcha)) {
+            throw new PluginImplementationException("Error loading captcha");
         }
-        final String captchaImg = captchaUrlMatcher.group(1);
-        final String captchaSnd = captchaImg.replace("image.gif", "sound.wav");
+        final Matcher captchaIdKeyMatcher = PlugUtils.matcher("id\":(\\d+),\"key\":\"(\\w+)\"}", getContentAsString());
+        if (!captchaIdKeyMatcher.find()) {
+            throw new PluginImplementationException("Captcha id-key not found");
+        }
+        final String captchaId = captchaIdKeyMatcher.group(1);
+        final String captchaKey = captchaIdKeyMatcher.group(2);
+        final String captchaImg = "http://img.uloz.to/captcha/" + captchaId + ".png";
+        final String captchaSnd = "http://img.uloz.to/captcha/sound/" + captchaId + ".mp3";
         String captchaTxt;
+        //precteni
         //captchaCount = 9; //for test purpose
-        if (captchaCount++ < 0) { //TODO captcha recognition is broken
-            logger.info("captcha url: " + captchaSnd);
+        if (captchaCount++ < 6) {
+            logger.warning("captcha url:" + captchaSnd);
             final SoundReader captchaReader = new SoundReader();    // This will NOT work running TestApp !!
             final HttpMethod methodSound = getMethodBuilder()       // It Works as a plugin in FreeRapid   -- birchie
                     .setReferer(fileURL)
@@ -187,7 +194,9 @@ class UlozToRunner extends AbstractRunner {
         if (captchaTxt == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            sendForm.setParameter("captcha_value", captchaTxt);
+            sendForm.setParameter("captcha_value", captchaTxt)
+                    .setParameter("captcha_id", captchaId)
+                    .setParameter("captcha_key", captchaKey);
             return sendForm.toPostMethod();
         }
     }

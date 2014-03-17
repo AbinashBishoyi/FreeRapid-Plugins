@@ -32,8 +32,8 @@ class FilePostFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "/\">", " - ");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), " - ", "[/url]\" class=\"inp_text\"/>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<title>FilePost.com: Download", "- fast &amp; secure!</title>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span>Size:</span>", "</li>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -93,7 +93,7 @@ class FilePostFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("File not Found")) {
+        if (getContentAsString().contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

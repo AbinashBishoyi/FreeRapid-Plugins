@@ -34,7 +34,7 @@ class FilePostFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "/\">", " - ");
+        PlugUtils.checkName(httpFile, content, "<title>FilePost.com: Download", "- fast &amp; secure!</title>");
         PlugUtils.checkFileSize(httpFile, content, "<span>Size:</span>", "</li>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -147,7 +147,7 @@ class FilePostFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File not Found")) {
+        if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         } else if (contentAsString.contains("already downloading a file")) {
             throw new YouHaveToWaitException("Your IP address is already downloading a file at the moment", 60);

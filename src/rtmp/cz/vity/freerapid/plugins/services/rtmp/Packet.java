@@ -9,7 +9,7 @@ import static cz.vity.freerapid.plugins.services.rtmp.Header.Type.*;
 /**
  * @author Peter Thomas
  */
-class Packet {
+public class Packet {
 
     private static final Logger logger = Logger.getLogger(Packet.class.getName());
 

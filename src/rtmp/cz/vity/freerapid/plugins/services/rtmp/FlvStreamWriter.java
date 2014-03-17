@@ -17,6 +17,7 @@ class FlvStreamWriter implements OutputWriter {
 
     private static final Logger logger = Logger.getLogger(FlvStreamWriter.class.getName());
 
+    private final RtmpSession session;
     private final WriterStatus status;
     private final WritableByteChannel channel;
     private final PipedInputStream in;
@@ -26,7 +27,8 @@ class FlvStreamWriter implements OutputWriter {
     private boolean headerWritten = false;
 
     public FlvStreamWriter(int seekTime, RtmpSession session) {
-        status = new WriterStatus(seekTime, session);
+        this.session = session;
+        this.status = new WriterStatus(seekTime, session);
         try {
             out = new PipedOutputStream();
             channel = Channels.newChannel(out);
@@ -36,6 +38,10 @@ class FlvStreamWriter implements OutputWriter {
         }
         buffer = IoBuffer.allocate(2048);
         buffer.setAutoExpand(true);
+    }
+
+    public WriterStatus getStatus() {
+        return status;
     }
 
     public InputStream getStream() {
@@ -87,6 +93,14 @@ class FlvStreamWriter implements OutputWriter {
     }
 
     public synchronized void write(Packet.Type packetType, IoBuffer data, final int time) {
+        if (session.getPauseMode() == 3) {
+            if (time <= session.getPauseTimestamp()) {
+                logger.info("Skipping packet");
+                return;
+            } else {
+                session.setPauseMode(0);
+            }
+        }
         if (RtmpSession.DEBUG) {
             logger.finest(String.format("writing FLV tag %s %s %s", packetType, time, data));
         }

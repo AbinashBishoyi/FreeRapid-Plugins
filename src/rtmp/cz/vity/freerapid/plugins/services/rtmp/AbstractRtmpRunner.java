@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import cz.vity.freerapid.utilities.Utils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,7 +76,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             while (t.getCause() != null) {
                 t = t.getCause();
             }
-            throw new PluginImplementationException("RTMP error - " + getThrowableDescription(t));
+            throw new PluginImplementationException("RTMP error - " + Utils.getThrowableDescription(t));
         } finally {
             if (rtmpClient != null) {
                 try {
@@ -86,16 +87,6 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             }
         }
         return true;
-    }
-
-    private static String getThrowableDescription(Throwable t) {
-        final String s = t.getClass().getSimpleName();
-        final String l = t.getLocalizedMessage();
-        if (l == null) {
-            return s;
-        } else {
-            return s + ": " + l;
-        }
     }
 
 }

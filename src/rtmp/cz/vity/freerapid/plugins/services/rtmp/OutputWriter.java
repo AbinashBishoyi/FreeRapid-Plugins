@@ -18,4 +18,6 @@ interface OutputWriter {
 
     public InputStream getStream();
 
+    public WriterStatus getStatus();
+
 }

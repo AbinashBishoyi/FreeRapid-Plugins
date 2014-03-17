@@ -435,7 +435,7 @@ class Handshake {
     private static void rtmpe8_crypt(byte[] digest, byte[] signature0) {
         IoBuffer signature = IoBuffer.wrap(signature0);
         for (int i = 0; i < SHA256_LEN; i += 8) {
-            int[] v = new int[]{
+            int[] v = {
                     Utils.readInt32Reverse(signature),
                     Utils.readInt32Reverse(signature)
             };

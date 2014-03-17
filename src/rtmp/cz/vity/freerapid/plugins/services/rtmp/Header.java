@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 /**
  * @author Peter Thomas
  */
-class Header {
+public class Header {
 
     private static final Logger logger = Logger.getLogger(Header.class.getName());
 

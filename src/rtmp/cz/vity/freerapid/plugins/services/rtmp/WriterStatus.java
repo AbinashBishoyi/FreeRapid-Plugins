@@ -65,6 +65,11 @@ class WriterStatus {
         logVideoProgress(time);
     }
 
+    public int getVideoChannelTime() {
+        Integer time = channelTimeMap.get(videoChannel);
+        return time == null ? 0 : time;
+    }
+
     private void logVideoProgress(int time) {
         if (RtmpSession.DEBUG) {
             logger.finest("time: " + time + ", seek: " + seekTime);

@@ -9,6 +9,8 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import java.io.File;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -45,7 +47,7 @@ public class RtmpSession {
     private DecoderOutput decoderOutput;
     private String host;
     private int port;
-    private InvokeResultHandler invokeResultHandler = new DefaultInvokeResultHandler();
+    private LinkedList<PacketHandler> packetHandlers;
     private boolean encrypted;
     private boolean type8;
     private KeyAgreement keyAgreement;
@@ -58,6 +60,8 @@ public class RtmpSession {
     private byte[] clientDigest;
     private byte[] serverDigest;
     private byte[] serverResponse;
+    private int pauseTimestamp;
+    private int pauseMode = 0;
     private HttpFile httpFile;
     private ConnectionSettings connectionSettings;
 
@@ -189,7 +193,9 @@ public class RtmpSession {
         connectParams.put("videoFunction", 1);
         connectParams.put("capabilities", 239);
         connectParams.put("videoCodecs", 252);
-        this.outputWriter = new FlvStreamWriter(playStart, this);
+        outputWriter = new FlvStreamWriter(playStart, this);
+        packetHandlers = new LinkedList<PacketHandler>();
+        addPacketHandler(new DefaultPacketHandler());
     }
 
     public static boolean isProtocolEncrypted(String protocol) throws NullPointerException {
@@ -350,12 +356,26 @@ public class RtmpSession {
         this.type8 = type8;
     }
 
-    public InvokeResultHandler getInvokeResultHandler() {
-        return invokeResultHandler;
+    public List<PacketHandler> getPacketHandlers() {
+        return packetHandlers;
     }
 
-    public void setInvokeResultHandler(InvokeResultHandler invokeResultHandler) {
-        this.invokeResultHandler = invokeResultHandler;
+    /**
+     * Adds a PacketHandler as first in the list
+     *
+     * @param handler handler to add
+     */
+    public void addPacketHandler(PacketHandler handler) {
+        packetHandlers.addFirst(handler);
+    }
+
+    /**
+     * Removes the PacketHandler that is first in the list
+     */
+    public void removePacketHandler() {
+        if (!packetHandlers.isEmpty()) {
+            packetHandlers.removeFirst();
+        }
     }
 
     public String getHost() {
@@ -460,6 +480,22 @@ public class RtmpSession {
 
     public void setStreamDuration(int streamDuration) {
         this.streamDuration = streamDuration;
+    }
+
+    public int getPauseTimestamp() {
+        return pauseTimestamp;
+    }
+
+    public void setPauseTimestamp(int pauseTimestamp) {
+        this.pauseTimestamp = pauseTimestamp;
+    }
+
+    public int getPauseMode() {
+        return pauseMode;
+    }
+
+    public void setPauseMode(int pauseMode) {
+        this.pauseMode = pauseMode;
     }
 
     public HttpFile getHttpFile() {

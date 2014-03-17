@@ -11,7 +11,7 @@ import static cz.vity.freerapid.plugins.services.rtmp.AmfProperty.Type.*;
 /**
  * @author Peter Thomas
  */
-class AmfProperty {
+public class AmfProperty {
 
     private static final Logger logger = Logger.getLogger(AmfProperty.class.getName());
 

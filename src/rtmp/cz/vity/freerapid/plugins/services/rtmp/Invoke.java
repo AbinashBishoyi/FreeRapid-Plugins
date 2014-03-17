@@ -14,7 +14,7 @@ import static cz.vity.freerapid.plugins.services.rtmp.Header.Type.MEDIUM;
 /**
  * @author Peter Thomas
  */
-class Invoke {
+public class Invoke {
 
     private static final Logger logger = Logger.getLogger(Invoke.class.getName());
 
@@ -37,6 +37,10 @@ class Invoke {
     public Invoke(int streamId, String methodName, int channelId, Object... args) {
         this(methodName, channelId, args);
         this.streamId = streamId;
+    }
+
+    public Object[] getArgs() {
+        return args;
     }
 
     public int getLastArgAsInt() {

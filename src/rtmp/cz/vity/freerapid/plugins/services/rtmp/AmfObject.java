@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 /**
  * @author Peter Thomas
  */
-class AmfObject {
+public class AmfObject {
 
     private static final Logger logger = Logger.getLogger(AmfObject.class.getName());
 

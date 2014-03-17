@@ -5,7 +5,6 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.CumulativeProtocolDecoder;
 import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -50,107 +49,11 @@ class RtmpDecoder extends CumulativeProtocolDecoder {
             logger.finest("packet complete: " + packet);
         }
 
-        IoBuffer data = packet.getData();
-
-        switch (packet.getHeader().getPacketType()) {
-            case CHUNK_SIZE:
-                int newChunkSize = data.getInt();
-                session.setChunkSize(newChunkSize);
-                logger.fine("new chunk size is: " + newChunkSize);
+        for (PacketHandler handler : session.getPacketHandlers()) {
+            packet.getData().rewind();
+            if (!handler.handle(packet, session)) {
                 break;
-            case CONTROL_MESSAGE:
-                short type = data.getShort();
-                if (type == 6) {
-                    int time = data.getInt();
-                    data.rewind();
-                    logger.fine("server ping: " + packet);
-                    Packet pong = Packet.ping(7, time, -1); // 7 == pong type
-                    logger.fine("client pong: " + pong);
-                    session.send(pong);
-                } else if (type == 0x001A) {
-                    logger.fine("server swf verification request: " + packet);
-                    byte[] swfv = session.getSwfVerification();
-                    if (swfv == null) {
-                        logger.warning("not sending swf verification response! connect parameters not set"
-                                + ", server likely to stop responding");
-                    } else {
-                        Packet pong = Packet.swfVerification(session.getSwfVerification());
-                        logger.fine("sending client swf verification response: " + pong);
-                        session.send(pong);
-                    }
-                } else {
-                    logger.finest("not handling unknown control message type: " + type + " " + packet);
-                }
-                break;
-            case AUDIO_DATA:
-            case VIDEO_DATA:
-                session.getOutputWriter().write(packet);
-                break;
-            case FLV_DATA:
-                session.getOutputWriter().writeFlvData(data);
-                break;
-            case NOTIFY:
-                AmfObject notify = new AmfObject();
-                notify.decode(data, false);
-                String notifyMethod = notify.getFirstPropertyAsString();
-                logger.fine("server notify: " + notify);
-                if (notifyMethod.equals("onMetaData")) {
-                    logger.fine("notify is 'onMetadata', writing metadata");
-                    data.rewind();
-                    session.getOutputWriter().write(packet);
-
-                    List<AmfProperty> properties = notify.getProperties();
-                    if (properties != null && properties.size() >= 2) {
-                        AmfProperty property = properties.get(1);
-                        if (property != null) {
-                            Object value = property.getValue();
-                            if (value != null && value instanceof AmfObject) {
-                                AmfProperty pDuration = ((AmfObject) value).getProperty("duration");
-                                if (pDuration != null) {
-                                    Object oDuration = pDuration.getValue();
-                                    if (oDuration != null && oDuration instanceof Double) {
-                                        double duration = (Double) oDuration;
-                                        logger.fine("Stream duration: " + duration + " seconds");
-                                        session.setStreamDuration((int) (duration * 1000));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-            case INVOKE:
-                Invoke serverInvoke = new Invoke();
-                serverInvoke.decode(packet);
-                String methodName = serverInvoke.getMethodName();
-                if (methodName.equals("_result")) {
-                    session.getInvokeResultHandler().handle(serverInvoke, session);
-                } else if (methodName.equals("onStatus")) {
-                    AmfObject temp = serverInvoke.getSecondArgAsAmfObject();
-                    String code = (String) temp.getProperty("code").getValue();
-                    logger.fine("onStatus code: " + code);
-                    if (code.equals("NetStream.Failed")
-                            || code.equals("NetStream.Play.Failed")
-                            || code.equals("NetStream.Play.Stop")
-                            || code.equals("NetStream.Play.StreamNotFound")
-                            || code.equals("NetConnection.Connect.InvalidApp")) {
-                        logger.fine("disconnecting");
-                        session.getDecoderOutput().disconnect();
-                    }
-                } else if (methodName.equals("close")) {
-                    logger.fine("Server requested close, disconnecting");
-                    session.getDecoderOutput().disconnect();
-                } else {
-                    logger.fine("unhandled server invoke: " + serverInvoke);
-                }
-                break;
-            case BYTES_READ:
-            case SERVER_BANDWIDTH:
-            case CLIENT_BANDWIDTH:
-                logger.fine("ignoring received packet: " + packet.getHeader());
-                break;
-            default:
-                throw new RuntimeException("unknown packet type: " + packet.getHeader());
+            }
         }
 
         return true;

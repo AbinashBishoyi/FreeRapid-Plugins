@@ -56,9 +56,8 @@ class GoogleDocsFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            final String contentAsString = getContentAsString();
             checkProblems();
-            checkNameAndSize(contentAsString);
+            checkNameAndSize(getContentAsString());
             String downloadUrl;
             try {
                 downloadUrl = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"downloadUrl\":\"", "\""));
@@ -66,28 +65,31 @@ class GoogleDocsFileRunner extends AbstractRunner {
                 throw new PluginImplementationException("Download URL not found");
             }
             HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(downloadUrl).toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            checkProblems();
-
-            String referer = httpMethod.getURI().toString();
-            URL url = new URL(referer);
-            Matcher matcher = getMatcherAgainstContent("<a id=\"uc-download-link\".*? href=\"(.+?)\"");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Download link not found");
-            }
-            String downloadLink = PlugUtils.replaceEntities(URLDecoder.decode(matcher.group(1).trim(), "UTF-8"));
-            String baseUrl = url.getProtocol() + "://" + url.getAuthority();
-            httpMethod = getMethodBuilder()
-                    .setReferer(referer)
-                    .setBaseURL(baseUrl)
-                    .setAction(downloadLink)
-                    .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
+                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(downloadUrl).toGetMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
                 checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+
+                String referer = httpMethod.getURI().toString();
+                URL url = new URL(referer);
+                Matcher matcher = getMatcherAgainstContent("<a id=\"uc-download-link\".*? href=\"(.+?)\"");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Download link not found");
+                }
+                String downloadLink = PlugUtils.replaceEntities(URLDecoder.decode(matcher.group(1).trim(), "UTF-8"));
+                String baseUrl = url.getProtocol() + "://" + url.getAuthority();
+                httpMethod = getMethodBuilder()
+                        .setReferer(referer)
+                        .setBaseURL(baseUrl)
+                        .setAction(downloadLink)
+                        .toGetMethod();
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
             }
         } else {
             checkProblems();

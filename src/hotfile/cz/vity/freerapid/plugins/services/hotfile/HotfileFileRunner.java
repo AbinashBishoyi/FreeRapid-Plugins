@@ -2,7 +2,7 @@ package cz.vity.freerapid.plugins.services.hotfile;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -124,7 +124,7 @@ class HotfileFileRunner extends AbstractRunner {
             throw new PluginImplementationException();
         }
 
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        /*  httpFile.setFileState(FileState.CHECKED_AND_EXISTING);   */
     }
 
     private void processDownloadWithForm() throws Exception {
@@ -140,7 +140,15 @@ class HotfileFileRunner extends AbstractRunner {
     }
 
     private void downloadFile() throws Exception {
-        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
+
+        if (getContentAsString().contains("Enter word above:")) {
+            stepCaptcha();
+            if (getContentAsString().contains("var timerend=0;")) {
+                processDownloadWithForm();
+                return;
+            }
+        }
+        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkAllProblems();
@@ -148,4 +156,28 @@ class HotfileFileRunner extends AbstractRunner {
             throw new IOException("File input stream is empty");
         }
     }
+
+    private void stepCaptcha() throws Exception {
+
+        CaptchaSupport captchaSupport = getCaptchaSupport();
+        String host = "http://" + httpFile.getFileUrl().getHost();
+        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
+        s = host + s;
+        logger.info("Captcha URL " + s);
+        String captcha = captchaSupport.getCaptcha(s);
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        } else {
+            final HttpMethod postMethod = getMethodBuilder().setBaseURL(SERVICE_WEB).setActionFromFormWhereTagContains("method=\"post\"", true).
+                    setParameter("captcha", captcha).toPostMethod();
+
+            if (!makeRedirectedRequest(postMethod)) {
+
+                throw new ServiceConnectionProblemException();
+            }
+        }
+
+
+    }
+
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="gigasize.com" version="0.5" vendor="Kajda"
+        class="cz.vity.freerapid.plugins.services.gigasize.GigaSizeServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?gigasize\.com/get\.php\?d=.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="gigasize.com"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="gigasize.com" path="/" type="code"/>
+    </runtime>
+</plugin>

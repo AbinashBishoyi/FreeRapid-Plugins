@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Alex
+ * @author Kajda
  */
 public class ZippyShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "zippyshare.com";
@@ -14,7 +14,7 @@ public class ZippyShareServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 1;
+        return 9;
     }
 
     @Override
@@ -24,7 +24,7 @@ public class ZippyShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new ZippyShareRunner();
+        return new ZippyShareFileRunner();
     }
 
 }

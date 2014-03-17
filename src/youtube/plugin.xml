@@ -1,13 +1,14 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="youtube.com" version="0.6.9" vendor="Kajda+JPEXS"
+<plugin id="youtube.com" version="0.7.0" vendor="Kajda+JPEXS+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.youtube.YouTubeServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?youtube\.com/watch.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?youtube\.com/(watch|user/).+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="youtube.com"/>
         <attribute id="hasOptions" value="true"/>
+        <attribute id="maxDownloads" value="9"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

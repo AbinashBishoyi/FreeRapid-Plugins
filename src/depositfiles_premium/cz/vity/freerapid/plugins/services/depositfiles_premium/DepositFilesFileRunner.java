@@ -29,10 +29,16 @@ class DepositFilesFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DepositFilesFileRunner.class.getName());
     private boolean badConfig = false;
 
+    private void setLanguageEN() {
+        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
+        addCookie(new Cookie(".dfiles.eu", "lang_current", "en", "/", 86400, false));
+        fileURL = fileURL.replaceFirst("/[^/]{2}/(files|folders)/", "/$1/"); // remove language id from URL
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        fileURL = checkURL(fileURL);
+        setLanguageEN();
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -46,7 +52,7 @@ class DepositFilesFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        fileURL = checkURL(fileURL);
+        setLanguageEN();
         logger.info("Starting download in TASK " + fileURL);
 
         if (isFolder()) {
@@ -77,11 +83,6 @@ class DepositFilesFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
-    }
-
-    private String checkURL(final String url) {
-        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
-        return url.replaceFirst("/../f", "/en/f");
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
@@ -128,7 +129,7 @@ class DepositFilesFileRunner extends AbstractRunner {
             }
 
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction("http://depositfiles.com/en/login.php")
+                    .setAction("/login.php")
                     .setParameter("go", "1")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())

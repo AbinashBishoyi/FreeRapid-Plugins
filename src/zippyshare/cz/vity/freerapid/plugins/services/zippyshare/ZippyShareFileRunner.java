@@ -11,7 +11,6 @@ import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +25,7 @@ class ZippyShareFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkSeriousProblems();
@@ -40,7 +39,7 @@ class ZippyShareFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
@@ -48,13 +47,14 @@ class ZippyShareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             String var = PlugUtils.getStringBetween(contentAsString, "var pong = '", "';");
             final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
-            logger.info("unescape =" + unescape);
+            logger.info("unescape = " + unescape);
             var = applyReplace(var, unescape);
 
-            final int number = PlugUtils.getNumberBetween(contentAsString, "substring(", ");");
-            final String decodedURL = URLDecoder.decode(var, "UTF-8");
-            logger.info("Decoded URL:" + decodedURL);
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(decodedURL.substring(number)).toHttpMethod();
+            //final int number = PlugUtils.getNumberBetween(contentAsString, "substring(", ");");
+            //final String decodedURL = URLDecoder.decode(var, "UTF-8");
+            //logger.info("Decoded URL:" + decodedURL);
+
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.unescapeHtml(var.replace("%3A", ":").replace("%2F", "/"))).toGetMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();
@@ -136,4 +136,5 @@ class ZippyShareFileRunner extends AbstractRunner {
         }
         throw new PluginImplementationException();
     }
+
 }

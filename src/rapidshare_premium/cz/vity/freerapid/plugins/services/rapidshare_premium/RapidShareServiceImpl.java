@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareServiceImpl.java 2480 2010-06-30 05:43:36Z wordrider $
+ * $Id: RapidShareServiceImpl.java 2580 2010-07-28 05:47:02Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -38,7 +38,7 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
 
     @Override
     public int getMaxDownloadsFromOneIP() {
-        return Integer.MAX_VALUE;
+        return 20;
     }
 
     @Override

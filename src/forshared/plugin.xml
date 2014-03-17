@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="4shared.com" version="1.3.3" vendor="Alex+ntoskrnl+Vity"
+<plugin id="4shared.com" version="1.3.4" vendor="Alex+ntoskrnl+Vity"
         class="cz.vity.freerapid.plugins.services.forshared.ForSharedServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?4shared(-china)?\.com/.+"/>

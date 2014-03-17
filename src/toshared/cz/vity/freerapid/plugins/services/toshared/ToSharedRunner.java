@@ -9,6 +9,9 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.logging.Logger;
 
 /**
@@ -40,10 +43,11 @@ class ToSharedRunner extends AbstractRunner {
             checkNameAndSize();
             String url = PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',");
             String l2surl = url.substring(url.length() - 32);
+            int viw = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ENGLISH).get(Calendar.DAY_OF_WEEK);
             if (l2surl.charAt(0) % 2 == 1) {
-                l2surl = l2surl.charAt(0) + l2surl.charAt(1) + l2surl.substring(18);
+                l2surl = l2surl.substring(0, viw) + l2surl.substring(16 + viw);
             } else {
-                l2surl = l2surl.substring(0, 14) + l2surl.charAt(l2surl.length() - 2) + l2surl.charAt(l2surl.length() - 1);
+                l2surl = l2surl.substring(0, 16 - viw) + l2surl.substring(l2surl.length() - viw, viw);
             }
             url = url.substring(0, url.indexOf("id=") + 3) + l2surl;
             method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setAction(url).toGetMethod();

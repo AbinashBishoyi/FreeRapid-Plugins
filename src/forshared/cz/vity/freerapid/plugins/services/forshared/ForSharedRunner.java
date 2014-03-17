@@ -10,7 +10,6 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,8 +29,8 @@ class ForSharedRunner extends AbstractRunner {
         super.runCheck();
         fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
         addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
         } else {
@@ -46,34 +45,27 @@ class ForSharedRunner extends AbstractRunner {
         fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-
             if (fileURL.contains("/dir/")) {
                 parseWebsite();
                 httpFile.getProperties().put("removeCompleted", true);
             } else {
-                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
-                if (makeRedirectedRequest(httpMethod)) {
-
-                    httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("ownload").toGetMethod();
-
-                    final int wait = PlugUtils.getNumberBetween(getContentAsString(), "DelayTimeSec'>", "<");
-                    downloadTask.sleep(wait + 1);
-
-                    if (!tryDownloadAndSaveFile(httpMethod)) {
+                method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
+                if (makeRedirectedRequest(method)) {
+                    method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("ownload").toGetMethod();
+                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "DelayTimeSec'>", "<") + 1);
+                    if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
-
                 } else {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Can't load download page");
                 }
             }
-
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException("Can't load download page");
@@ -85,9 +77,8 @@ class ForSharedRunner extends AbstractRunner {
         if (fileURL.contains("/dir/")) {
             PlugUtils.checkName(httpFile, getContentAsString(), "<b style=\"font-size:larger;\">", "</b>");
         } else {
-            PlugUtils.checkName(httpFile, getContentAsString(), "<title> ", " - 4shared");
-
-            final Matcher size = getMatcherAgainstContent("Size:</b></td>\\s+?<td[^<>]*?>([^<>]+?)</td>");
+            PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- 4shared");
+            final Matcher size = getMatcherAgainstContent("<span title=\"Size[^\"]*?\"><b>([^<>]+?)</b></span>");
             if (!size.find()) throw new PluginImplementationException("File size not found");
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1).replace(",", "")));
         }
@@ -114,15 +105,13 @@ class ForSharedRunner extends AbstractRunner {
 
     private void parseWebsite() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://.+?)\" target=\"_blank\" >");
-        int start = 0;
         final List<URI> uriList = new LinkedList<URI>();
-        while (matcher.find(start)) {
+        while (matcher.find()) {
             try {
                 uriList.add(new URI(matcher.group(1)));
             } catch (URISyntaxException e) {
                 LogUtils.processException(logger, e);
             }
-            start = matcher.end();
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }

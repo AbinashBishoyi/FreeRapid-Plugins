@@ -3,7 +3,7 @@
 <plugin id="hellshare.com" version="1.0.0" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.hellshare.HellshareServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?hellshare\.com/.*"/>
+        <attribute id="urlRegex" value="http://(www\.)?hellshare\.com/.+"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
         <attribute id="services" value="hellshare.com"/>

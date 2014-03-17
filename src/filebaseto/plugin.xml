@@ -3,7 +3,7 @@
 <plugin id="filebase.to" version="1.0.0" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.filebaseto.FilebaseToServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?filebase\.to/.*"/>
+        <attribute id="urlRegex" value="http://(www\.)?filebase\.to/.+"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
         <attribute id="services" value="filebase.to"/>

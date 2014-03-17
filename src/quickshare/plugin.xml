@@ -3,7 +3,7 @@
 <plugin id="quickshare.cz" version="1.0.0" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.quickshare.QuickshareServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?quickshare\.cz/.*"/>
+        <attribute id="urlRegex" value="http://(www\.)?quickshare\.cz/.+"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
         <attribute id="services" value="quickshare.cz"/>

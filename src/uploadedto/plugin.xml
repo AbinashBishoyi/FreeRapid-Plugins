@@ -3,7 +3,7 @@
 <plugin id="uploaded.to" version="1.0.1" vendor="Vity"
         class="cz.vity.freerapid.plugins.services.uploadedto.UploadedToShareServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?uploaded\.to/.*"/>
+        <attribute id="urlRegex" value="http://(www\.)?uploaded\.to/.+"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
         <attribute id="services" value="uploaded.to"/>

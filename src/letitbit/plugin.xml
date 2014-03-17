@@ -3,7 +3,7 @@
 <plugin id="letitbit.net" version="1.0" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.letitbit.LetitbitShareServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?letitbit\.net/.*"/>
+        <attribute id="urlRegex" value="http://(www\.)?letitbit\.net/.+"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
         <attribute id="services" value="letitbit.net"/>

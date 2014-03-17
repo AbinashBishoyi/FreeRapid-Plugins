@@ -3,7 +3,7 @@
 <plugin id="xtraupload.de" version="1.0" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.xtraupload.XtrauploadServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?xtraupload\.de/.*"/>
+        <attribute id="urlRegex" value="http://(www\.)?xtraupload\.de/.+"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
         <attribute id="services" value="xtraupload.de"/>

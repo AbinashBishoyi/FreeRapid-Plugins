@@ -10,12 +10,6 @@ import java.net.URL;
 /**
  * @author Ladislav Vitasek
  */
-
-/**
- * Test application for savefile.com
- *
- * @author Alex
- */
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {

@@ -6,7 +6,7 @@ import com.subgraph.orchid.RouterDescriptor;
 import com.subgraph.orchid.crypto.TorPublicKey;
 import com.subgraph.orchid.data.HexDigest;
 import com.subgraph.orchid.data.IPv4Address;
-import com.subgraph.orchid.geoip.CountryCodeService;
+import cz.vity.freerapid.plugins.services.geoip.CountryCodeService;
 
 import java.util.Collections;
 import java.util.Set;

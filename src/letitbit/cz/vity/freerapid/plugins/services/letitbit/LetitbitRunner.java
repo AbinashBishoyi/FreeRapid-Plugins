@@ -68,16 +68,6 @@ class LetitbitRunner extends AbstractRunner {
                 }
                 pageUrl = httpMethod.getURI().toString();
 
-                httpMethod = getMethodBuilder()
-                        .setReferer(pageUrl)
-                        .setActionFromFormByName("d3_form", true)
-                        .toPostMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                pageUrl = httpMethod.getURI().toString();
-
                 // Russian IPs may see this different page here, handle it
                 if (PlugUtils.find("action=\"http://s\\d+\\.letitbit\\.net/download3\\.php\"", getContentAsString())) {
                     httpMethod = getMethodBuilder()

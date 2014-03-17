@@ -19,10 +19,11 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("C:\\Users\\Administrator\\Desktop\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b02148kx/The_Bottom_Line_Recruitment/"));
+            //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b02148kx/The_Bottom_Line_Recruitment/"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b011lqwt/Doctor_Who_Series_6_The_Almost_People/")); //contains subtitle
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/subtitles/ng/modav/bUnknown-50ba5a59-1670-47b1-a4a7-2d2d9172fd81_b011lqvx_1385431190732.xml?fname=Doctor+Who+-+Series+6+-+The+Almost+People"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b01rxl2f/Bluestone_42_Episode_7/"));
+            httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/p01kc7bh/hd/Blues_America_Woke_up_this_Morning/"));
 
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

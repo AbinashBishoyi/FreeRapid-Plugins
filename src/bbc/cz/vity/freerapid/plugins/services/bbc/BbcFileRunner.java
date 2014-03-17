@@ -126,12 +126,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 }
                 pid = matcher.group(1);
             }
-            String mediaSelector;
-            try {
-                mediaSelector = PlugUtils.getStringBetween(getContentAsString(), "\"my_mediaselector_json_url\":\"", "\"").replace("\\/", "/").replace("/all/", "/stream/");
-            } catch (PluginImplementationException e) {
-                mediaSelector = "http://www.bbc.co.uk/mediaselector/4/mtis/stream/" + pid + "?cb=" + new Random().nextInt(100000);
-            }
+            String mediaSelector = "http://www.bbc.co.uk/mediaselector/4/mtis/stream/" + pid + "?cb=" + new Random().nextInt(100000);
             method = getGetMethod(mediaSelector);
             if (!client.getSettings().isProxySet()) {
                 Tunlr.setupMethod(method);

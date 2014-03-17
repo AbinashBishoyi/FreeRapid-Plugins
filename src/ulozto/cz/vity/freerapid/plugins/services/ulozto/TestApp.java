@@ -20,7 +20,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.uloz.to/x52oVtE/rihanna-feat-tonic-we-found-love-dj-elon-matana-mash-up-mp3"));
-            httpFile.setNewURL(new URL("http://www.ulozto.cz/xtSTrvJ/mother-daughter-exchange-club-19-dvdrip-2011-cd2-avi"));
+            //httpFile.setNewURL(new URL("http://www.ulozto.cz/xtSTrvJ/mother-daughter-exchange-club-19-dvdrip-2011-cd2-avi"));
+            httpFile.setNewURL(new URL("http://uloz.to/xwuTmLG/pan-prstenu-dve-veze-cz-1080p-mkv"));
             final ConnectionSettings settings = new ConnectionSettings();
             //settings.setProxy("localhost", 8081);
             testRun(new UlozToServiceImpl(), httpFile, settings);

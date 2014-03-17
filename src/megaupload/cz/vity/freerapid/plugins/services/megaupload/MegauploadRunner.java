@@ -5,8 +5,8 @@ import cz.vity.freerapid.plugins.services.megaupload.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -32,6 +32,8 @@ class MegauploadRunner extends AbstractRunner {
         super.runCheck();
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
+        else if (httpFile.getFileUrl().getHost().contains("megaporn"))
+            HTTP_SITE = "http://www.megaporn.com";
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -45,6 +47,8 @@ class MegauploadRunner extends AbstractRunner {
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
+        else if (httpFile.getFileUrl().getHost().contains("megaporn"))
+            HTTP_SITE = "http://www.megaporn.com";
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
 
@@ -239,7 +243,7 @@ class MegauploadRunner extends AbstractRunner {
         String ur;
         if (url.contains("mgr_dl.php")) ur = url;
         else ur = url.replaceFirst("/\\?d=", "/mgr_dl.php?d=");
-            ur = ur + "&u=5e9111454eae5fdd521543116ee441534";
+        ur = ur + "&u=5e9111454eae5fdd521543116ee441534";
 
         return ur;
     }
@@ -273,12 +277,12 @@ class MegauploadRunner extends AbstractRunner {
             }
 
         } else {
-          final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-                getMethod.setFollowRedirects(true);
-                if (!makeRequest(getMethod)) {
-                    throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
-                }
-                return false;
+            final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+            getMethod.setFollowRedirects(true);
+            if (!makeRequest(getMethod)) {
+                throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            }
+            return false;
         }
 
     }

@@ -97,14 +97,19 @@ class HotfileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("20px'>Downloading (.+?) \\(");
+        Matcher matcher = getMatcherAgainstContent("20px'>Downloading (.+?)</h2>");
 
         if (matcher.find()) {
-            final String fileName = matcher.group(1).trim();
+            String fileName = matcher.group(1).trim();
+            final int i = fileName.lastIndexOf(" (");
+            if (i < 0)
+                throw new PluginImplementationException("File name not found");
+            String sizeWithPar = fileName.substring(i + 1);
+            fileName = fileName.substring(0, i);
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
-            matcher = getMatcherAgainstContent(" \\((.+?)\\)</h2>");
+            matcher = PlugUtils.matcher("\\((.+?\\))", sizeWithPar);
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));

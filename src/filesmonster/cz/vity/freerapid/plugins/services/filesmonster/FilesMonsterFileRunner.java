@@ -81,11 +81,16 @@ class FilesMonsterFileRunner extends AbstractRunner {
         if (!makeRedirectedRequest(postMethodForTicket)) {
             checkContentOrConnectionProblems();
         }
-        final String reserveTicket = PlugUtils.getStringBetween(getContentAsString(), "rftUrl = '", "';");
+        String reserveTicket;
+        try {
+            reserveTicket = PlugUtils.getStringBetween(getContentAsString(), "rftUrl = '", "';");
+        } catch (Exception e) {
+            reserveTicket = PlugUtils.getStringBetween(getContentAsString(), "reserve_ticket('", "');");
+        }
 
         final String referer = "http://filesmonster.com" + postMethodForTicket.getPath();
         final String dlPrefix = postMethodForTicket.getPath()
-                .substring(0, postMethodForTicket.getPath().indexOf("free/") + "free" .length())
+                .substring(0, postMethodForTicket.getPath().indexOf("free/") + "free".length())
                 + "/";
 
         final HttpMethod getMethodForFiles = getMethodBuilder()
@@ -149,7 +154,11 @@ class FilesMonsterFileRunner extends AbstractRunner {
                 FileInfo fileInfo = new FileInfo(new URL(urlPrefix + 2 + "/" +
                         PlugUtils.getStringBetween(fileString, "dlcode\":\"", "\"")));
                 fileInfo.setFileName(PlugUtils.getStringBetween(fileString, "name\":\"", "\""));
-                fileInfo.setFileSize(PlugUtils.getNumberBetween(fileString, "size\":\"", "\""));
+                try {
+                    fileInfo.setFileSize(PlugUtils.getNumberBetween(fileString, "size\":\"", "\""));
+                } catch (Exception e) {
+                    fileInfo.setFileSize(PlugUtils.getNumberBetween(fileString, "size\":", ","));
+                }
                 fileInfo.setDescription(referer);
                 files.add(fileInfo);
             } catch (PluginImplementationException e) {
@@ -179,6 +188,11 @@ class FilesMonsterFileRunner extends AbstractRunner {
         if (contentAsString.contains("Next download will be available in")) {
             final int time = PlugUtils.getWaitTimeBetween(contentAsString,
                     "Next download will be available in", "min", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("Waiting for next file", time);
+        }
+        if (contentAsString.contains("will be available for download in")) {
+            final int time = PlugUtils.getWaitTimeBetween(contentAsString,
+                    "will be available for download in", "min", TimeUnit.MINUTES);
             throw new YouHaveToWaitException("Waiting for next file", time);
         }
     }

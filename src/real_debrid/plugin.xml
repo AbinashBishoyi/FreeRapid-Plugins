@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.real_debrid.Real_DebridServiceImpl"
-        id="real-debrid.com" vendor="birchie" version="1.0.0">
+        id="real-debrid.com" vendor="birchie" version="1.0.1">
     <attributes>
         <!--
         <attribute id="urlRegex" value="http://(www\.)?realdebrid\.com/not_to_be_used_0.9.0"/>

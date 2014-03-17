@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -45,7 +46,16 @@ class Real_DebridFileRunner extends AbstractRunner {
             final String content = getContentAsString();
             checkRequest(content);
             httpFile.setFileName(PlugUtils.getStringBetween(content, "file_name\":\"", "\","));
-            final HttpMethod dlMethod = getGetMethod(PlugUtils.getStringBetween(content, "main_link\":\"", "\",").replace("\\", ""));
+            final String dlLink = PlugUtils.getStringBetween(content, "main_link\":\"", "\",");
+            final String genLinks = PlugUtils.getStringBetween(content, "generated_links\":[[", "]],");
+            final Matcher match = PlugUtils.matcher("\"(.+?)\",\"(.+?)\",\"(.+?)\"", genLinks);
+            while (match.find()) {
+                if (match.group(3).equals(dlLink)) {
+                    httpFile.setFileName(match.group(1));
+                    break;
+                }
+            }
+            final HttpMethod dlMethod = getGetMethod(dlLink.replace("\\", ""));
             if (!tryDownloadAndSaveFile(dlMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

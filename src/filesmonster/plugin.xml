@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.filesmonster.FilesMonsterServiceImpl"
-        id="filesmonster.com" vendor="Lukiz+ntoskrnl+Stan" version="2.0.4">
+        id="filesmonster.com" vendor="Lukiz+ntoskrnl+Stan+birchie" version="2.0.5">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filesmonster\.com/.+"/>
         <attribute id="minver" value="0.854"/>

@@ -2,229 +2,145 @@ package cz.vity.freerapid.plugins.services.czshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, Jan Smejkal (edit from Hellshare to CZshare)
+ * @author Ladislav Vitasek, Ludek Zika, Jan Smejkal (edit from Hellshare to CZshare), tong2shot
  */
 class CzshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CzshareRunner.class.getName());
-    private final static Map<String, PostMethod> methodsMap = new HashMap<String, PostMethod>();
     private final static int WAIT_TIME = 30;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        if (makeRequest(getGetMethod(fileURL))) {
-            checkNameAndSize(getContentAsString());
-            checkCaptcha();
+        normalizeFileURL();
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+            checkNameAndSize();
         } else {
             checkProblems();
-            makeRedirectedRequest(getGetMethod(fileURL));
-            checkProblems();
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void checkNameAndSize() throws Exception {
+        final Matcher filenameMatcher = getMatcherAgainstContent("CelÃ½ nÃ¡zev:.+?>(.+?)<");
+        if (!filenameMatcher.find()) {
+            throw new PluginImplementationException("Filename not found");
+        }
+        httpFile.setFileName(filenameMatcher.group(1));
+
+        final Matcher filesizeMatcher = getMatcherAgainstContent("<div class=\"tab\" id=\"category\">\\s*Velikost:\\s*(.+?)\\s*</div>");
+        if (!filesizeMatcher.find()) {
+            throw new PluginImplementationException("Filesize not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1).replace("i", "")));
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
+        normalizeFileURL();
         logger.info("Starting download in TASK " + fileURL);
-
-        if (checkInQueue())
-            return;
-
-        final PostMethod postmethod = parseFirstPage();
-        if (makeRequest(postmethod)) {
-            PostMethod method = stepCaptcha();
-            httpFile.setState(DownloadState.GETTING);
-            if (!tryDownloadAndSaveFile(method)) {
-                boolean finish = false;
-                while (!finish) {
-                    method = stepCaptcha();
-                    finish = tryDownloadAndSaveFile(method);
-                }
-            }
-        } else {
+        GetMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
             checkProblems();
-            logger.info(getContentAsString());
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
         }
-    }
+        if (getContentAsString().contains("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.")) {
+            throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
+        }
+        checkProblems();
+        checkNameAndSize();
 
-    private void checkCaptcha() throws Exception {
-        final PostMethod postmethod = parseFirstPage();
-        if (makeRequest(postmethod)) {
-            stepCaptcha();
-        } else {
+        MethodBuilder methodBuilder = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromAHrefWhereATagContains("StÃ¡hnout FREE");
+        methodBuilder.setAction(PlugUtils.unescapeHtml(methodBuilder.getAction()));
+        HttpMethod httpMethod = methodBuilder.toGetMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
-            logger.info(getContentAsString());
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
         }
-    }
+        checkProblems();
 
-    private boolean checkInQueue() throws Exception {
-        if (!methodsMap.containsKey(fileURL))
-            return false;
-
-        PostMethod method = methodsMap.get(fileURL);
-        methodsMap.remove(fileURL);
-
-        httpFile.setState(DownloadState.GETTING);
-        return tryDownloadAndSaveFile(method);
-    }
-
-    private PostMethod parseFirstPage() throws Exception {
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            String content = getContentAsString();
-            checkNameAndSize(content);
-
-            Matcher matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
-            if (matcher.find()) {
-                throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
+        final String downloadPageURL = (httpMethod.getURI().toString());
+        while (getContentAsString().contains("captchastring2")) {
+            httpMethod = getMethodBuilder()
+                    .setReferer(downloadPageURL)
+                    .setActionFromFormWhereTagContains("freedown", true)
+                    .setParameter("captchastring2", stepCaptcha(downloadPageURL))
+                    .toPostMethod();
+            final int httpStatus = client.makeRequest(httpMethod, false);
+            if (httpStatus / 100 == 3) { //redirect to download file location
+                final Header locationHeader = httpMethod.getResponseHeader("Location");
+                if (locationHeader == null)
+                    throw new ServiceConnectionProblemException("Could not find download file location");
+                httpMethod = getMethodBuilder()
+                        .setReferer(downloadPageURL)
+                        .setAction(locationHeader.getValue())
+                        .toGetMethod();
+                break;
             }
-            client.setReferer(fileURL);
-
-
-            matcher = PlugUtils.matcher("<div class=\"free-download\">[ ]*\n[ ]*<form action=\"([^\"]*)\" method=\"post\">", content);
-            if (!matcher.find()) {
-                throw new PluginImplementationException();
-            }
-            String postURL = matcher.group(1);
-
-            final PostMethod method = getPostMethod(postURL);
-
-            PlugUtils.addParameters(method, getContentAsString(), new String[]{"id", "file", "ticket"});
-
-            return method;
-
-        } else
-            throw new PluginImplementationException();
-    }
-
-    private void checkNameAndSize(String content) throws Exception {
-        if (getContentAsString().contains("zev souboru:")) {
-            Matcher matcher = PlugUtils.matcher("<span class=\"text-darkred\"><strong>([^<]*)</strong></span>", content);
-            if (matcher.find()) {
-                String fn = matcher.group(1);
-                httpFile.setFileName(fn);
-            }
-            matcher = PlugUtils.matcher("<td class=\"text-left\">([0-9.]+ .B)</td>", content);
-            if (matcher.find()) {
-                long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                httpFile.setFileSize(a);
-            }
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else {
             checkProblems();
-            logger.info(getContentAsString());
-            throw new PluginImplementationException();
         }
-    }
 
-    private PostMethod stepCaptcha() throws Exception {
-        if ("".equals(getContentAsString())) {
-            throw new YouHaveToWaitException("Neurèité omezení", 4 * WAIT_TIME);
-        }
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("<td class=\"kod\" colspan=\"2\"><img src=\"([^\"]*)\" /></td>");
-        if (!matcher.find()) {
+        if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();
-            throw new PluginImplementationException();
-        }
-
-        String img = "http://czshare.com/" + PlugUtils.replaceEntities(matcher.group(1));
-        boolean emptyCaptcha;
-        String captcha;
-        do {
-            logger.info("Captcha image " + img);
-            captcha = getCaptchaSupport().getCaptcha(img);
-            if (captcha == null) {
-                throw new CaptchaEntryInputMismatchException();
-            }
-            if ("".equals(captcha)) {
-                emptyCaptcha = true;
-                img = img + "1";
-            } else emptyCaptcha = false;
-        } while (emptyCaptcha);
-
-        matcher = getMatcherAgainstContent("<form action=\"([^\"]*)\" method=\"post\">");
-        if (!matcher.find()) {
-            throw new PluginImplementationException();
-        }
-        String finalURL = matcher.group(1);
-
-        final String content = getContentAsString();
-        String finalID = PlugUtils.getParameter("id", content);
-
-        String finalFile = PlugUtils.getParameter("file", content);
-
-        String finalTicket = PlugUtils.getParameter("ticket", content);
-
-        finalURL = "http://czshare.com/" + finalURL + "?id=" + finalID + "&file=" + finalFile + "&ticket=" + finalTicket + "&captchastring=" + captcha;
-
-        final GetMethod method = getGetMethod(finalURL);
-
-        if (makeRequest(method)) {
-            return stepDownload();
-        } else {
-            checkProblems();
-            logger.info(getContentAsString());
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
-    private PostMethod stepDownload() throws Exception {
-
-        Matcher matcher = getMatcherAgainstContent("<form name=\"pre_download_form\" action=\"([^\"]*)\" method=\"post\"");
-        if (!matcher.find()) {
-            throw new PluginImplementationException();
+    private String stepCaptcha(final String referer) throws Exception {
+        CaptchaSupport captchaSupport = getCaptchaSupport();
+        client.setReferer(referer);
+        String captchaURL = "http://czshare.com/captcha.php";
+        String captcha = captchaSupport.getCaptcha(captchaURL);
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
         }
-        String finalURL = matcher.group(1);
-
-        PostMethod method = getPostMethod(finalURL);
-        PlugUtils.addParameters(method, getContentAsString(), new String[]{"id", "ticket", "submit_btn"});
-
-        methodsMap.put(fileURL, method);
-
-        return method;
+        return captcha;
     }
+
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("Soubor nenalezen");
-        if (matcher.find()) {
+        final String contentAsString = getContentAsString();
+        if (contentAsString.contains("Soubor nenalezen")) {
             throw new URLNotAvailableAnymoreException("<b>Soubor nenalezen</b><br>");
         }
-        matcher = getMatcherAgainstContent("Soubor expiroval");
-        if (matcher.find()) {
+        if (contentAsString.contains("Soubor expiroval")) {
             throw new URLNotAvailableAnymoreException("<b>Soubor expiroval</b><br>");
         }
-        matcher = getMatcherAgainstContent("Soubor byl smaz.n jeho odesilatelem</strong>");
-        if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("<b>Soubor byl smazán jeho odesilatelem</b><br>");
+        if (contentAsString.contains("Soubor byl smaz.n jeho odesilatelem</strong>")) {
+            throw new URLNotAvailableAnymoreException("<b>Soubor byl smazï¿½n jeho odesilatelem</b><br>");
         }
-        matcher = getMatcherAgainstContent("Tento soubor byl na upozorn.n. identifikov.n jako warez.</strong>");
-        if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("<b>Tento soubor byl na upozornìní identifikován jako warez</b><br>");
+        if (contentAsString.contains("Tento soubor byl na upozorn.n. identifikov.n jako warez.</strong>")) {
+            throw new URLNotAvailableAnymoreException("<b>Tento soubor byl na upozornï¿½nï¿½ identifikovï¿½n jako warez</b><br>");
         }
-        matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
-        if (matcher.find()) {
-            throw new YouHaveToWaitException("Bohužel je vyèerpána maximální kapacita FREE downloadù", WAIT_TIME);
+        if (contentAsString.contains("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.")) {
+            throw new YouHaveToWaitException("Bohuï¿½el je vyï¿½erpï¿½na maximï¿½lnï¿½ kapacita FREE downloadï¿½", WAIT_TIME);
         }
-        matcher = getMatcherAgainstContent("Nesouhlas. kontroln. kod");
-        if (matcher.find()) {
-            throw new YouHaveToWaitException("Špatný kód", 3);
+        if (contentAsString.contains("Nesouhlas. kontroln. kod")) {
+            throw new YouHaveToWaitException("ï¿½patnï¿½ kï¿½d", 3);
         }
+        if (contentAsString.contains("Z VaÅ¡Ã­ IP adresy momentÃ¡lnÄ› probÃ­hÃ¡ jinÃ© stahovÃ¡nÃ­")) {
+            throw new YouHaveToWaitException("Your IP address is currently downloading another file", 10 * 60);
+        }
+    }
+
+    private void normalizeFileURL() {
+        fileURL = fileURL.replaceFirst("czshare\\.cz", "czshare.com");
     }
 }

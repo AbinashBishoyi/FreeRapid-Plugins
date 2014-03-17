@@ -88,7 +88,7 @@ class FileserveFilesRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             try {
-                downloadTask.sleep(Integer.parseInt(getContentAsString()) + 1);
+                downloadTask.sleep(Integer.parseInt(getContentAsString().trim()) + 1);
             } catch (NumberFormatException e) {
                 throw new PluginImplementationException("Waiting time problem", e);
             }
@@ -126,11 +126,7 @@ class FileserveFilesRunner extends AbstractRunner {
         if (getContentAsString().contains("/error.php")) {
             throw new ServiceConnectionProblemException("Temporary server issue");
         }
-        Matcher matcher = getMatcherAgainstContent("You have to wait (\\d+) seconds to start another download");
-        if (matcher.find()) {
-            throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)));
-        }
-        matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds to start another download");
+        Matcher matcher = getMatcherAgainstContent("You (?:have|need) to wait (\\d+) seconds to start another download");
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)));
         }

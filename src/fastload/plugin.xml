@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="fast-load.net" version="0.1" vendor="JPEXS"
+        class="cz.vity.freerapid.plugins.services.fastload.FastLoadServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?fast-load\.net/data.php\?flid=[0-9a-f]+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="fast-load.net"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="fast-load.net" path="/" type="code"/>
+    </runtime>
+</plugin>

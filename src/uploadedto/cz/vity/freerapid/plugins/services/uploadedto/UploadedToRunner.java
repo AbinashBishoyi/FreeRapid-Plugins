@@ -35,8 +35,7 @@ class UploadedToRunner {
             final String contentAsString = client.getContentAsString();
             Matcher matcher = Pattern.compile("var secs = ([0-9]*);", Pattern.MULTILINE).matcher(contentAsString);
             if (!matcher.find()) {
-                matcher = Pattern.compile("is exceeded", Pattern.MULTILINE).matcher(contentAsString);
-                if (matcher.find()) {
+                if (contentAsString.contains("is exceeded")) {
                     matcher = Pattern.compile("wait ([0-9]*) minute", Pattern.MULTILINE).matcher(contentAsString);
                     if (matcher.find()) {
                         Integer waitMinutes = Integer.valueOf(matcher.group(1));

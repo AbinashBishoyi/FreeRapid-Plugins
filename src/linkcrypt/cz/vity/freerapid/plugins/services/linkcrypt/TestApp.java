@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.sharelinksbiz;
+package cz.vity.freerapid.plugins.services.linkcrypt;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author RickCL
+ * @author ntoskrnl
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,12 +16,13 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://share-links.biz/_7prhvvk7kqii"));
-            httpFile.setNewURL(new URL("http://s2l.biz/np3r7yl3lyceo"));
+            httpFile.setNewURL(new URL("http://linkcrypt.ws/dir/v452559zi726o4l"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final SharelinksBizServiceImpl service = new SharelinksBizServiceImpl(); //instance of service - of our plugin
+            final LinkCryptServiceImpl service = new LinkCryptServiceImpl(); //instance of service - of our plugin
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

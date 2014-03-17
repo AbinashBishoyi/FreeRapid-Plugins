@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="Share-Links.biz Plugin" default="all" basedir=".">
-    <property name="application" value="sharelinksbiz"/>
+<project name="LinkCrypt.ws" default="all" basedir=".">
+    <property name="application" value="linkcrypt"/>
 
-    <property name="version" value="1.00"/>
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="sharelinksbiz.jar"/>
+    <property name="mainjar.file" value="linkcrypt.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -39,7 +39,6 @@
         <include name="**/?*.tld"/>
         <include name="**/?*.mid"/>
         <include name="**/?*.wav"/>
-        <include name="**/?*.js"/>
 
         <exclude name="**/plugin.xml"/>
     </patternset>
@@ -47,12 +46,6 @@
     <path id="cp">
         <fileset refid="jars"/>
     </path>
-
-    <target name="clean" description="clean up">
-        <delete dir="${build.dir}"/>
-        <delete dir="${classes.dir}"/>
-        <delete dir="${dist.dir}/${version.name}.frp"/>
-    </target>
 
     <path id="dist-jars">
         <fileset dir="${build.dir}/${lib.dir}" includes="**/*.jar"/>
@@ -100,6 +93,12 @@
         <mkdir dir="${classes.dir}"/>
         <mkdir dir="${build.dir}"/>
         <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <target name="clean" description="clean up">
+        <delete dir="${build.dir}"/>
+        <delete dir="${classes.dir}"/>
+        <delete dir="${dist.dir}/${version.name}.frp"/>
     </target>
 
     <target name="all" depends="clean,init,compile, build, dist" description="build all"/>

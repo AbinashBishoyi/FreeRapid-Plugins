@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.sharelinksbiz.SharelinksBizServiceImpl" id="share-links.biz" vendor="RickCL" version="0.2.3">
+<plugin class="cz.vity.freerapid.plugins.services.sharelinksbiz.SharelinksBizServiceImpl"
+        id="share-links.biz" vendor="RickCL+ntoskrnl" version="2.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(?:share-links|s2l).biz/([_a-zA-Z0-9]+)"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="urlRegex" value="http://(www\.)?(share\-links\.biz/_|s2l\.biz/).+"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="share-links.biz"/>
+        <attribute id="maxDownloads" value="10"/>
+        <attribute id="removeCompleted" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="container" plugin-version="1.0.9"
+                reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="share-links.biz" path="/" type="code"/>
     </runtime>

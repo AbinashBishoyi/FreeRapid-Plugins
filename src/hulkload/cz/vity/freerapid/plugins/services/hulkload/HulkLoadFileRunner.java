@@ -3,6 +3,8 @@ package cz.vity.freerapid.plugins.services.hulkload;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
+import java.util.List;
+
 /**
  * Class which contains main code
  *
@@ -20,5 +22,12 @@ class HulkLoadFileRunner extends XFileSharingRunner {
             methodBuilder.removeParameter("method_premium");
         }
         return methodBuilder;
+    }
+
+    @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("hulkload.com/files");
+        return downloadPageMarkers;
     }
 }

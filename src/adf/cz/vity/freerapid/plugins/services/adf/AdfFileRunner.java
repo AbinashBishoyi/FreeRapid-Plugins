@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URL;
@@ -26,7 +27,25 @@ class AdfFileRunner extends AbstractRunner {
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            String url = PlugUtils.getStringBetween(getContentAsString(), "var zzz = '", "';");
+
+            String eu = PlugUtils.getStringBetween(getContentAsString(), "var eu = '", "';");
+            int idx1 = eu.indexOf("!HiTommy");
+            if (idx1 != -1) {
+                eu = eu.substring(0, idx1);
+            }
+            String a = "", b = "";
+            for (int i = 0; i < eu.length(); i++) {
+                if (i % 2 == 0) {
+                    a += eu.charAt(i);
+                } else {
+                    b = eu.charAt(i) + b;
+                }
+            }
+            eu = a + b;
+            eu = new String(Base64.decodeBase64(eu));
+            eu = eu.substring(2);
+
+            String url = eu;
             if (url.contains("adf.ly/go.php")) {
                 if (!makeRedirectedRequest(getGetMethod(url))) {
                     throw new ServiceConnectionProblemException();

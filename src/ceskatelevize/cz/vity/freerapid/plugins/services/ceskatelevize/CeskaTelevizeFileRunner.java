@@ -14,7 +14,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.net.URLDecoder;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
@@ -55,7 +55,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             final String callSoapParams = PlugUtils.getStringBetween(getContentAsString(), "callSOAP(", ");");
             final ScriptEngineManager factory = new ScriptEngineManager();
             final ScriptEngine engine = factory.getEngineByName("JavaScript");
-            final Map<String, String> params = new HashMap<String, String>();
+            final Map<String, String> params = new LinkedHashMap<String, String>(); //preserve ordering
             engine.put("params", params);
             try {
                 engine.eval("function isArray(a){return Object.prototype.toString.apply(a) === '[object Array]';}; "

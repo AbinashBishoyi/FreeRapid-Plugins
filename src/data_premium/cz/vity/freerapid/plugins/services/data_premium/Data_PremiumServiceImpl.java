@@ -13,6 +13,7 @@ public class Data_PremiumServiceImpl extends AbstractFileShareService {
     private static final String PLUGIN_CONFIG_FILE = "plugin_data_premium.xml";
     private volatile PremiumAccount config;
 
+    @Override
     public String getName() {
         return "data.hu_premium";
     }
@@ -27,6 +28,7 @@ public class Data_PremiumServiceImpl extends AbstractFileShareService {
         return new Data_PremiumFileRunner();
     }
 
+    @Override
     public void showOptions() throws Exception {
         PremiumAccount pa = showConfigDialog();
         if (pa != null) config = pa;
@@ -45,4 +47,9 @@ public class Data_PremiumServiceImpl extends AbstractFileShareService {
 
         return config;
     }
+
+    void setConfig(PremiumAccount config) {
+        this.config = config;
+    }
+
 }

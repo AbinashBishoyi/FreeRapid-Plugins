@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.data_premium;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -16,12 +17,16 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://data.hu/get/3959775/Metro.part1.rar"));
+            httpFile.setNewURL(new URL("http://data.hu/get/5632303/Oteves_jegyesseg.mp4"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final Data_PremiumServiceImpl service = new Data_PremiumServiceImpl(); //instance of service - of our plugin
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("***");
+            config.setPassword("***");
+            service.setConfig(config);
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

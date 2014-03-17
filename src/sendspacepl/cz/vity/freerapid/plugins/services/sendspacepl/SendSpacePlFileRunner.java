@@ -7,14 +7,13 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -37,20 +36,8 @@ class SendSpacePlFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         checkProblems();
-        final Matcher matcher = getMatcherAgainstContent("Nazwa pliku:<br /><a href=\".+\" class=\".+\" style=\".+;\">([^<]+)</a>");
-        if (matcher.find()) {
-            String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
-//            final String decoded = checkEncodedFileName(fileName);
-//            if (!fileName.equals(decoded)) {
-//                logger.info("File name decoded" + decoded);
-//                fileName = decoded;
-//            }
-            httpFile.setFileName(fileName);
-        } else {
-            throw new PluginImplementationException("File name not found");
-        }
-        PlugUtils.checkFileSize(httpFile, content, "Rozmiar pliku: <b>", "</b><br />");//
+        PlugUtils.checkName(httpFile, content, "<span class=\"blue4\" style=\"font-size: 12px;\"><b>", "</b></span></div>");
+        PlugUtils.checkFileSize(httpFile, content, "<div class=\"info\"><span class=\"blue4\">", "</span></div>");//
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -63,12 +50,13 @@ class SendSpacePlFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final Matcher matcher = getMatcherAgainstContent("href=\"([^\"]+)\"><img src=\"http://www.sendspace.pl/templates/img/button/download_file.gif\"");
+            final Matcher matcher = getMatcherAgainstContent("href=\"([^\"]+)\"><img src=\"http://www.sendspace.pl/media/img/pobierz_grey.gif\" alt=\"Pobierz plik\" title=\"Pobierz plik\" />");
             if(!matcher.find()){
                 logger.warning(getContentAsString());
                 throw new PluginImplementationException("Content not found");
             }
             final String URL = matcher.group(1);
+            logger.info(">>>>> "+URL+" <<<<<");
             client.setReferer(fileURL);
             method = getGetMethod(URL);
             final int resultCode = client.makeRequest(method, false);
@@ -77,14 +65,14 @@ class SendSpacePlFileRunner extends AbstractRunner {
             final Header responseLocation = method.getResponseHeader("Location");//Location does not return correct URL
             if (responseLocation == null)
                 throw new PluginImplementationException("Location header not found");
-            //getNameFromURL(responseLocation.getValue());
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(responseLocation.getValue()).toHttpMethod();
+            logger.info(">>>>> Location header: "+responseLocation.getValue()+" <<<<<");
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(responseLocation.getValue()).toGetMethod();
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 logger.warning(getContentAsString());//log the info
                 throw new PluginImplementationException();//some unknown problem
-            }
+            }  
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -103,16 +91,6 @@ class SendSpacePlFileRunner extends AbstractRunner {
                 (statuscode == HttpStatus.SC_MOVED_PERMANENTLY) ||
                 (statuscode == HttpStatus.SC_SEE_OTHER) ||
                 (statuscode == HttpStatus.SC_TEMPORARY_REDIRECT);
-    }
-
-    private void getNameFromURL(String URL) throws PluginImplementationException {
-        Pattern p = Pattern.compile("http://sv[0-9]+.sendspace.pl/file/[^/]+/[^/]+/(.+)");
-        Matcher m = p.matcher(URL);
-        if(!m.find()){
-            throw new PluginImplementationException("File name not found in URL");
-        }
-        String n = m.group(1);
-        httpFile.setFileName(n);
     }
 
 }

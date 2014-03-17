@@ -56,7 +56,7 @@ class LetitbitRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            final Matcher matcher = getMatcherAgainstContent("(?is)<div[^<>]*?id=\"dvifree\"[^<>]*?>.+?</form>");
+            final Matcher matcher = getMatcherAgainstContent("(?is)<div[^<>]*?id=\"(?:dvifree|content_ifree)\"[^<>]*?>.+?</form>");
             if (!matcher.find()) throw new PluginImplementationException("Free download form not found");
             final HttpMethod httpMethod2 = getMethodBuilder(matcher.group()).setReferer(fileURL).setActionFromFormByIndex(1, true).toPostMethod();
             if (!makeRedirectedRequest(httpMethod2)) {

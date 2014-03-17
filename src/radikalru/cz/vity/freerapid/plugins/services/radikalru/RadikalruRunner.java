@@ -1,62 +1,64 @@
 package cz.vity.freerapid.plugins.services.radikalru;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * @author Alex
+ * @author tong2shot
  */
 
+//URL that ends with t.jpg is thumbnail image, we don't want it to be downloaded, see plugin.xml
 class RadikalruRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RadikalruRunner.class.getName());
-
 
     @Override
     public void run() throws Exception {
         super.run();
-        fileURL = processURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
-        checkName(fileURL);
-
-        GetMethod getMethod = getGetMethod(fileURL);
-
+        GetMethod getMethod;
+        final String imgUrl;
+        if (fileURL.endsWith(".jpg")) {
+            imgUrl = fileURL;
+        } else {
+            getMethod = getGetMethod(fileURL);
+            if (!makeRedirectedRequest(getMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            final Matcher matcher = getMatcherAgainstContent("MainImg\\.Url\\s*=\\s*'(.*?)'");
+            if (!matcher.find()) throw new PluginImplementationException("Image url not found");
+            imgUrl = matcher.group(1);
+            if (imgUrl.isEmpty()) throw new URLNotAvailableAnymoreException("Image not found");
+        }
+        final String filename = imgUrl.substring(imgUrl.lastIndexOf("/") + 1);
+        httpFile.setFileName(filename);
+        getMethod = getGetMethod(imgUrl);
         if (!tryDownloadAndSaveFile(getMethod)) {
             checkProblems();
-            logger.warning(getContentAsString());//something was really wrong, we will explore it from the logs :-)
-            throw new IOException("File input stream is empty.");
+            logger.warning(getContentAsString());
+            throw new ServiceConnectionProblemException();
         }
 
     }
 
-    private String processURL(String mURL) throws Exception {
-        if (mURL.contains("t.jpg")) {
-            return mURL.replace("t.jpg", ".jpg");
-        } else return mURL;
-    }
-
-    private void checkName(String content) throws Exception {
-        Matcher matcher = PlugUtils.matcher("http://[0-9a-z]+.radikal.ru/(.+/)?(.+?.jpg)", content);
-        if (matcher.find()) {
-            httpFile.setFileName(matcher.group(2));
-            logger.info("File Name: " + matcher.group(2));
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        }
-    }
-
-
-    private void checkProblems() throws ServiceConnectionProblemException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("already downloading")) {
             throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
         }
         if (getContentAsString().contains("Currently a lot of users")) {
             throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Currently a lot of users are downloading files."));
+        }
+        if (getContentAsString().contains("might have been removed")) {
+            throw new URLNotAvailableAnymoreException("Image not found");
         }
     }
 

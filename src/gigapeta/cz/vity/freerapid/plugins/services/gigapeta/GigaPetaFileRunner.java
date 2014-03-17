@@ -54,7 +54,7 @@ class GigaPetaFileRunner extends AbstractRunner {
 
 		httpFile.setFileName(name_match.group(1));
 
-		final Matcher size_match=PlugUtils.matcher("Размер(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
+		final Matcher size_match=PlugUtils.matcher("Size(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
 		if(!size_match.find())
 			unimplemented();
 

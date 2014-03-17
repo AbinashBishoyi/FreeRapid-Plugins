@@ -106,7 +106,7 @@ class NetloadInRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        String s = "/" + PlugUtils.replaceEntities(matcher.group(1));
+        String s = "/" + PlugUtils.replaceEntities(matcher.group(2));
         client.setReferer(initURL);
 
         logger.info("Go to URL - " + s);

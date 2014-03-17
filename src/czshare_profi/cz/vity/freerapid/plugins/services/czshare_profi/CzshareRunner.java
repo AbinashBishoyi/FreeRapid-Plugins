@@ -11,6 +11,7 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Jan Smejkal (edit from CZshare and RapidShare premium to CZshare profi)
@@ -62,7 +63,7 @@ class CzshareRunner extends AbstractRunner {
                     Login(getContentAsString());
 
                 content = getContentAsString();
-                matcher = PlugUtils.matcher("<a href=\"(.*czshare.com/" + id + "/[^\"]*)\" title=\"" + httpFile.getFileName() + "\">" + httpFile.getFileName() + "</a>", content);
+                matcher = PlugUtils.matcher("<a href=\"(.*czshare.com/" + id + "/[^\"]*)\" title=\"" + Pattern.quote(httpFile.getFileName()) + "\">" + Pattern.quote(httpFile.getFileName()) + "</a>", content);
                 if (matcher.find()) {
                     String downURL = matcher.group(1);
 
@@ -78,7 +79,7 @@ class CzshareRunner extends AbstractRunner {
                         matcher = PlugUtils.matcher("<form action=\'([^\']+)\' method=\'POST\'>", content);
                         if (matcher.find()) {
                             String delURL = "http://czshare.com/profi/" + matcher.group(1);
-                            matcher = PlugUtils.matcher("<a href=\"" + downURL + "\" title=\"" + httpFile.getFileName() + "\">" + httpFile.getFileName() + "</a></td><td><input type=\'checkbox\' name=\'[^\']+\' value=\'([^\']+)\'></td>", content);
+                            matcher = PlugUtils.matcher("<a href=\"" + downURL + "\" title=\"" + Pattern.quote(httpFile.getFileName()) + "\">" + Pattern.quote(httpFile.getFileName()) + "</a></td><td><input type=\'checkbox\' name=\'[^\']+\' value=\'([^\']+)\'></td>", content);
                             if (matcher.find()) {
                                 String delFile = matcher.group(1);
                                 PostMethod postMethod = getPostMethod(delURL);
@@ -157,7 +158,7 @@ class CzshareRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, NotRecoverableDownloadException {
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, NotRecoverableDownloadException {
         Matcher matcher;
         matcher = getMatcherAgainstContent("Soubor nenalezen");
         if (matcher.find()) {

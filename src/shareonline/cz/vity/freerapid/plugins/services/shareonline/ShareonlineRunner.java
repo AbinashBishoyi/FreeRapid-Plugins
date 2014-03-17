@@ -76,8 +76,9 @@ class ShareonlineRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            final String downloadFreeUrl = PlugUtils.getStringBetween(getContentAsString(), "var url=\"", "\";");
             method = getMethodBuilder()
-                    .setActionFromTextBetween("var url=\"", "\";")
+                    .setAction(downloadFreeUrl)
                     .setParameter("dl_free", "1")
                     .setParameter("choice", "free")
                     .toPostMethod();
@@ -87,8 +88,19 @@ class ShareonlineRunner extends AbstractRunner {
                 final int wait = PlugUtils.getNumberBetween(getContentAsString(), "var wait=", ";") + 1;
                 String dl = new String(Base64.decodeBase64(
                         PlugUtils.getStringBetween(getContentAsString(), "var dl=\"", "\";")), "UTF-8");
+                final String captchaUrl = PlugUtils.getStringBetween(getContentAsString(), "var url='", "';")
+                        .replace("///", "/free/captcha/");
+                method = getMethodBuilder()
+                        .setReferer(downloadFreeUrl)
+                        .setAction("http://www.share-online.biz/alive/")
+                        .toPostMethod();
+                method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
                 if (dl.contains("chk||")) {
-                    dl = stepCaptcha(dl, wait);
+                    dl = stepCaptcha(dl, wait, downloadFreeUrl, captchaUrl);
                 }
                 method = getMethodBuilder().setAction(dl).toGetMethod();
                 downloadTask.sleep(wait);
@@ -133,10 +145,8 @@ class ShareonlineRunner extends AbstractRunner {
         }
     }
 
-    private String stepCaptcha(String dl, final int wait) throws Exception {
+    private String stepCaptcha(String dl, final int wait, final String referer, final String captchaURL) throws Exception {
         final long startTime = System.currentTimeMillis();
-        final String url = PlugUtils.getStringBetween(getContentAsString(), "var url='", "';")
-                .replace("///", "/free/captcha/");
         dl = dl.substring(dl.indexOf("chk||") + "chk||".length());
         String content;
         do {
@@ -147,7 +157,8 @@ class ShareonlineRunner extends AbstractRunner {
             }
             rc.setRecognized(captcha);
             final HttpMethod method = rc.modifyResponseMethod(getMethodBuilder()
-                    .setAction(url)
+                    .setReferer(referer)
+                    .setAction(captchaURL)
                     .setParameter("dl_free", "1")
                     .setParameter("captcha", dl))
                     .toPostMethod();

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.shareonline.ShareonlineShareServiceImpl"
-        id="shareonline.biz" vendor="Lukiz+ntoskrnl" version="2.1.1">
+        id="shareonline.biz" vendor="Lukiz+ntoskrnl" version="2.1.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?share\-online\.biz/dl/.+"/>
         <attribute id="minver" value="0.852"/>

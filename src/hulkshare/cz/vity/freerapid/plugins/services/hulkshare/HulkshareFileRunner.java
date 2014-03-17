@@ -49,23 +49,13 @@ class HulkshareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize(contentAsString);
 
-            Matcher matcher = getMatcherAgainstContent("<a href\\s*=\\s*[\"'](.+?)[\"'].*?class\\s*=\\s*[\"']bigDownloadBtn[\"']");
+            Matcher matcher = getMatcherAgainstContent("<a href\\s*=\\s*[\"'](.+?)[\"'].*?class\\s*=\\s*[\"']bigDownloadBtn");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Download page not found");
             }
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(matcher.group(1))
-                    .toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            checkProblems();
-            final String downloadPageURL = httpMethod.getURI().toString();
-            httpMethod = getMethodBuilder()
-                    .setReferer(downloadPageURL)
-                    .setActionFromAHrefWhereATagContains("Regular Download")
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();

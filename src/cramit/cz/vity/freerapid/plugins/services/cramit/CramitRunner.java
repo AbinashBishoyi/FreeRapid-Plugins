@@ -40,6 +40,7 @@ public class CramitRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            checkProblems();
 
             Matcher matcher = getMatcherAgainstContent("Wait.*\">(\\d+?)</span>");
             if (!matcher.find()) {
@@ -54,6 +55,7 @@ public class CramitRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                checkProblems();
             }
 
             httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Click to download", true).toGetMethod();
@@ -94,6 +96,16 @@ public class CramitRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("File Not Found") || content.contains("No such file with this filename")) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
+        }
+        final Matcher matcher = getMatcherAgainstContent("You have to wait (\\d+? hours?)?(?:, )?(\\d+? minutes?)?(?:, )?(\\d+? seconds?)? till next download");
+        if (matcher.find()) {
+            final String hours = matcher.group(1);
+            final String minutes = matcher.group(2);
+            final String seconds = matcher.group(3);
+            throw new YouHaveToWaitException(matcher.group(),
+                    (hours == null ? 0 : (Integer.parseInt(hours) * 3600))
+                            + (minutes == null ? 0 : (Integer.parseInt(minutes) * 60))
+                            + (seconds == null ? 0 : (Integer.parseInt(seconds))));
         }
     }
 

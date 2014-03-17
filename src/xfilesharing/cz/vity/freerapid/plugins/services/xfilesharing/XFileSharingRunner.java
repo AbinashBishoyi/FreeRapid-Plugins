@@ -107,7 +107,12 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         login();
         HttpMethod method = getGetMethod(fileURL);
-        if (!makeRedirectedRequest(method)) {
+        int httpStatus = client.makeRequest(method, false);
+        if (httpStatus / 100 == 3) {
+            handleDirectDownload(method);
+            return;
+        }
+        if (httpStatus != 200) {
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -127,7 +132,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                 sleepWaitTime(waitTime, startTime);           //   as a captcha of type ReCaptcha
             }
             method = methodBuilder.toPostMethod();
-            final int httpStatus = client.makeRequest(method, false);
+            httpStatus = client.makeRequest(method, false);
             if (httpStatus / 100 == 3) {
                 //redirect to download file location
                 method = stepRedirectToFileLocation(method);
@@ -143,6 +148,10 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             }
             checkDownloadProblems();
         }
+        doDownload(method);
+    }
+
+    protected void doDownload(final HttpMethod method) throws Exception {
         setFileStreamContentTypes("text/plain");
         //some servers prefer to GZIP certain downloads, which we don't want
         method.removeRequestHeader("Accept-Encoding");
@@ -150,6 +159,18 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             checkDownloadProblems();
             throw new ServiceConnectionProblemException("Error starting download");
         }
+    }
+
+    protected void handleDirectDownload(HttpMethod method) throws Exception {
+        logger.info("Direct download");
+        if (httpFile.getFileName() == null) {
+            final Cookie[] cookies = client.getHTTPClient().getState().getCookies();
+            client.getHTTPClient().getState().clearCookies();
+            runCheck();
+            client.getHTTPClient().getState().addCookies(cookies);
+        }
+        method = stepRedirectToFileLocation(method);
+        doDownload(method);
     }
 
     protected String getCookieDomain() throws Exception {

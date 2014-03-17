@@ -18,7 +18,7 @@ import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
- * @author Kajda
+ * @author Kajda+tonyk
  * @since 0.82
  */
 class ZidduFileRunner extends AbstractRunner {
@@ -45,30 +45,35 @@ class ZidduFileRunner extends AbstractRunner {
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
+            System.out.print(getContentAsString());
             checkAllProblems();
             checkNameAndSize();
             final MethodBuilder methodBuilder = getMethodBuilder();
             httpMethod = methodBuilder.setReferer(fileURL).setActionFromFormByName("dfrm", true).toHttpMethod();
             final String redirectURL = methodBuilder.getAction();
-
-            if (makeRedirectedRequest(httpMethod)) {
-                int counter = 0;
-                String content = getContentAsString();
-                while (counter < 5) {
-                    httpMethod = stepCaptcha(redirectURL, content);
-                    if (!tryDownloadAndSaveFile(httpMethod)) {
-                        if (getContentAsString().contains("captchaform")) {
-                            counter++;
-                            continue;
-                        }
-                        checkAllProblems();
-                        logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty");
-                    } else break;
-                }
-            } else {
+            makeRedirectedRequest(httpMethod);
+/*
+            site throws internal server error (SC_INTERNAL_SERVER_ERROR) at every download page, so condition had to be cancelled
+            if (makeRedirectedRequest(httpMethod)){
+*/
+            int counter = 0;
+            String content = getContentAsString();
+            while (counter < 5) {
+                httpMethod = stepCaptcha(redirectURL, content);
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    if (getContentAsString().contains("captchaform")) {
+                        counter++;
+                        continue;
+                    }
+                    checkAllProblems();
+                    logger.warning(getContentAsString());
+                    throw new IOException("File input stream is empty");
+                } else break;
+            }
+/*            } else {
                 throw new ServiceConnectionProblemException();
             }
+  */
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
@@ -93,7 +98,7 @@ class ZidduFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "class=\"fontfamilyverdana textblue14\">", "<");
+        PlugUtils.checkName(httpFile, contentAsString, "top.document.title=\"Download ", " in Ziddu");
         PlugUtils.checkFileSize(httpFile, contentAsString, "td height=\"18\" align=\"left\" class=\"fontfamilyverdana normal12blue\"><span class=\"fontfamilyverdana normal12black\">", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -153,5 +158,6 @@ class ZidduFileRunner extends AbstractRunner {
             }
         }
     }
+
 
 }

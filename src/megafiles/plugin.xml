@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.tusfiles.TusFilesServiceImpl"
-        id="tusfiles.net" vendor="birchie" version="1.0.1">
+<plugin class="cz.vity.freerapid.plugins.services.megafiles.MegaFilesServiceImpl"
+        id="megafiles.se" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?tusfiles\.net/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?megafiles\.se/.+"/>
         <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="tusfiles.net"/>
+        <attribute id="services" value="megafiles.se"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="defaultDownloads" value="1"/>
         <attribute id="premium" value="false"/>
@@ -15,9 +15,9 @@
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.5" reverse-lookup="false"/>
+                plugin-version="1.0.7" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="tusfiles.net" path="/" type="code"/>
+        <library id="megafiles.se" path="/" type="code"/>
     </runtime>
 </plugin>

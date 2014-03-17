@@ -166,7 +166,8 @@ class EdiskRunner extends AbstractRunner {
         if (getContentAsString().contains("neexistuje z ")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Po?adovan? soubor nebyl nalezen.</b><br>"));
         }
-        if (getContentAsString().contains("stahovat pouze jeden soubor")) {
+        if (getContentAsString().contains("stahovat pouze jeden soubor") ||
+                getContentAsString().contains("hnout pouze 1 soubor denn")) {
             throw new ServiceConnectionProblemException(String.format("<b>M?ete stahovat pouze jeden soubor nar?z</b><br>"));
 
         }

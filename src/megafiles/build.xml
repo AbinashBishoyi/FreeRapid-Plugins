@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="WarServer.cz" default="all" basedir=".">
-    <property name="application" value="warservercz"/>
+<project name="MegaFiles.se" default="all" basedir=".">
+    <property name="application" value="megafiles"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="warservercz.jar"/>
+    <property name="mainjar.file" value="megafiles.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -76,6 +76,7 @@
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
             <sourcepath location="../recaptcha"/>
+            <sourcepath location="../xfilesharing/"/>
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

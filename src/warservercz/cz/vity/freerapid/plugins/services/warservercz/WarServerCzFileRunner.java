@@ -1,11 +1,10 @@
 package cz.vity.freerapid.plugins.services.warservercz;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -53,6 +52,20 @@ class WarServerCzFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
+
+            while (getContentAsString().contains("recaptcha/api/noscript?k=")) {
+                final HttpMethod capMethod = reCaptcha(getMethodBuilder()
+                        .setActionFromFormWhereTagContains("manual_challenge", true)
+                        .setAction(fileURL)
+                        .setReferer(fileURL)
+                ).toPostMethod();
+                if (!makeRedirectedRequest(capMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error processing captcha");
+                }
+            }
+            checkProblems();
+
             Matcher matcher = getMatcherAgainstContent("startFreeDownload\\(.+?,\\s*(.+?),\\s*(.+?),\\s*(.+?)\\)");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File id/wait time not found ");
@@ -83,4 +96,14 @@ class WarServerCzFileRunner extends AbstractRunner {
         }
     }
 
+    private MethodBuilder reCaptcha(MethodBuilder dMethod) throws Exception {
+        final String reCaptchaKey = PlugUtils.getStringBetween(getContentAsString(), "recaptcha/api/noscript?k=", "\" ");
+        final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        }
+        r.setRecognized(captcha);
+        return r.modifyResponseMethod(dMethod);
+    }
 }

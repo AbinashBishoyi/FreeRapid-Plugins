@@ -278,7 +278,7 @@ class PluginDevHttpFile implements HttpFile {
      */
     public void setFileState(FileState state) {
         this.fileState = state;
-        logger.info("setting new file state to " + state);
+        logger.info("Setting new file state to " + state);
     }
 
     /**
@@ -294,7 +294,7 @@ class PluginDevHttpFile implements HttpFile {
      */
     public void setPluginID(String pluginID) {
         this.serviceID = pluginID;
-        logger.info("setting new serviceID to " + pluginID);
+        logger.info("Setting new serviceID to " + pluginID);
     }
 
     /**

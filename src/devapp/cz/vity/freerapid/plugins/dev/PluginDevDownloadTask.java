@@ -80,9 +80,9 @@ class PluginDevDownloadTask implements HttpFileDownloadTask {
         final byte[] buffer = new byte[1024 * 2];
         try {
             final int read = inputStream.read(buffer);
-            logger.info(read + " of bytes were succesfully read from the stream");
+            logger.info(read + " of bytes were successfully read from the stream");
             sleep(1);
-            logger.info("File succesfully \"saved\"");
+            logger.info("File successfully \"saved\"");
         } catch (IOException e) {
             logger.info("Closing file stream");
             try {
@@ -105,7 +105,7 @@ class PluginDevDownloadTask implements HttpFileDownloadTask {
     public void sleep(int seconds) throws InterruptedException {
         file.setState(DownloadState.WAITING);
 
-        logger.info("Going to sleep on " + (seconds) + " seconds");
+        logger.info("Going to sleep for " + (seconds) + " seconds");
         for (int i = seconds; i > 0; i--) {
             if (isTerminated())
                 break;

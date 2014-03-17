@@ -15,8 +15,7 @@ public class DevQueueSupport implements MaintainQueueSupport {
 
     @Override
     public boolean addLinksToQueue(HttpFile parentFile, List<URI> uriList) {
-        logger.info("Following files were added into the queue:");
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n");
         for (URI uri : uriList) {
             builder.append(String.format("%s%n", uri));
         }

@@ -50,7 +50,7 @@ class RapidGatorFileRunner extends AbstractRunner {
 
         final Matcher filesizeMatcher = PlugUtils.matcher(filesizeRegexRule, content);
         if (filesizeMatcher.find()) {
-            PlugUtils.getFileSizeFromString(filesizeMatcher.group(1));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
         } else {
             throw new PluginImplementationException("File size not found");
         }
@@ -212,7 +212,7 @@ class RapidGatorFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Delay between downloads must be not less than")) {
             final String waitTime = PlugUtils.getStringBetween(contentAsString, "must be not less than", "min");
-            throw new YouHaveToWaitException("Delay between downloads must be not less than " + waitTime + " minutes", 200);
+            throw new YouHaveToWaitException("Delay between downloads must be not less than " + waitTime + " minutes", Integer.getInteger(waitTime) * 60);
         }
         if (contentAsString.contains("You have reached your daily downloads limit")) {
             throw new PluginImplementationException("You have reached your daily downloads limit");

@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, JPEXS (Captcha)
+ * @author Ladislav Vitasek, Ludek Zika, JPEXS (Captcha), birchie
  */
 class NetloadInRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NetloadInRunner.class.getName());
@@ -36,11 +36,23 @@ class NetloadInRunner extends AbstractRunner {
             if (matcher.find()) {
                 throw new URLNotAvailableAnymoreException("<b>Requested file isn't hosted. Probably was deleted.</b>");
             }
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("dl_first_filename\">\\s*(.*)<span");
+        if (matcher.find()) {
+            httpFile.setFileName(matcher.group(1));
+        }
+        matcher = getMatcherAgainstContent(">, ([0-9.]+ .B)</span>");
+        if (matcher.find()) {
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
@@ -51,6 +63,7 @@ class NetloadInRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
+            checkNameAndSize();
             captchaCount = 0;
             do {
                 stepEnterPage(getContentAsString());
@@ -61,16 +74,7 @@ class NetloadInRunner extends AbstractRunner {
                 captchaCount++;
             } while (getContentAsString().contains("You may forgot the security code or it might be wrong"));
 
-            Matcher matcher = getMatcherAgainstContent(">([0-9.]+ .B)</div>");
-            if (matcher.find()) {
-                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
-            }
-            matcher = getMatcherAgainstContent("Download:\\s*([^<]*)");
-            if (matcher.find()) {
-                httpFile.setFileName(matcher.group(1));
-            } else logger.warning("File name was not found" + getContentAsString());
-
-            matcher = getMatcherAgainstContent(">countdown\\(([0-9]+)");
+            Matcher matcher = getMatcherAgainstContent(">countdown\\(([0-9]+)");
             if (matcher.find()) {
                 int time = Integer.parseInt(matcher.group(1)) / 100;
                 if (time <= 60) {
@@ -242,6 +246,9 @@ class NetloadInRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("unknown_file_data")) {
             throw new URLNotAvailableAnymoreException("Unknown file data");
+        }
+        if (getContentAsString().contains("This file is only for Premium Users")) {
+            throw new NotRecoverableDownloadException("This File is Only for Premium Users");
         }
         if (getContentAsString().contains("currently in maintenance work")) {
             throw new ServiceConnectionProblemException("This Server is currently in maintenance work. Please try again in a few hours.");

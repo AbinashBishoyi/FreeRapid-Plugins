@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -110,22 +111,13 @@ class HotfileFileRunner extends AbstractRunner {
         final MethodBuilder builder = getMethodBuilder();
         builder.setActionFromFormByName("f", true);
         final HttpMethod httpMethod = builder.setReferer(fileURL).setBaseURL(SERVICE_WEB).toHttpMethod();
-        downloadTask.sleep(getWaitTime());
+        final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "", "document.getElementById('dwltxt", TimeUnit.MILLISECONDS);
+        downloadTask.sleep(waitTime);
 
         if (makeRedirectedRequest(httpMethod)) {
             downloadFile();
         } else {
             throw new ServiceConnectionProblemException();
-        }
-    }
-
-    private int getWaitTime() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("([0-9]+?);\\s*document.getElementById\\('dwltxt");
-
-        if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1)) / 1000;
-        } else {
-            throw new PluginImplementationException("Wait time value was not found");
         }
     }
 

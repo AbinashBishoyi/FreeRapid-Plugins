@@ -101,11 +101,18 @@ final class CaptchaRecognizer {
     private BufferedImage prepareSubimage(final BufferedImage image) {
         final int fullW = image.getWidth();
         final int fullH = image.getHeight();
+
         final BufferedImage input = crop(image);
+
         final int cropW = input.getWidth();
         final int cropH = input.getHeight();
+
         final BufferedImage output = new BufferedImage(fullW, fullH, BufferedImage.TYPE_BYTE_BINARY);
-        output.getGraphics().drawImage(input, fullW / 2 - cropW / 2, fullH / 2 - cropH / 2, Color.WHITE, null);//put it in the center
+        final Graphics g = output.getGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, fullW, fullH);
+        g.drawImage(input, fullW / 2 - cropW / 2, fullH / 2 - cropH / 2, Color.WHITE, null);//put it in the center
+
         return output;
     }
 

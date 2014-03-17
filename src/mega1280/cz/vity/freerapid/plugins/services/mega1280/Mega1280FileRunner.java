@@ -91,7 +91,7 @@ class Mega1280FileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let user know in FRD
         }
         if (contentAsString.contains("Vui l\u00F2ng ch\u1EDD cho l\u01B0\u1EE3t download k\u1EBF ti\u1EBFp"))
-            throw new ServiceConnectionProblemException("Please wait for your current download to finish");
+            throw new ServiceConnectionProblemException("Please wait for your previous download to finish");
         if (contentAsString.contains("Limit download xx !")) {
             throw new ServiceConnectionProblemException("Limit download xx ! - unknown error message from server");
         }

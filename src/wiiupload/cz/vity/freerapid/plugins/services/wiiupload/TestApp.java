@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.ultrashare;
+package cz.vity.freerapid.plugins.services.wiiupload;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,12 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://ultrashare.net/hosting/fl/52b3337835/Èeský_test"));
+            httpFile.setNewURL(new URL("http://wiiupload.net/fl/9d09ef8f4e/Èeský_test"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final UltraShareServiceImpl service = new UltraShareServiceImpl(); //instance of service - of our plugin
+            final WiiUploadServiceImpl service = new WiiUploadServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

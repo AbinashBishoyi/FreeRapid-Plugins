@@ -1,16 +1,16 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="ultrashare.net" version="0.5.1" vendor="Kajda"
-        class="cz.vity.freerapid.plugins.services.ultrashare.UltraShareServiceImpl">
+<plugin id="wiiupload.net" version="0.5" vendor="Kajda"
+        class="cz.vity.freerapid.plugins.services.wiiupload.WiiUploadServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?ultrashare\.net/hosting/\w{2}/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?wiiupload\.net/\w{2}/.+"/>
         <attribute id="minver" value="0.81"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="ultrashare.net"/>
+        <attribute id="services" value="wiiupload.net"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="ultrashare.net" path="/" type="code"/>
+        <library id="wiiupload.net" path="/" type="code"/>
     </runtime>
 </plugin>

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="UltraShare.net" default="all" basedir=".">
-    <property name="application" value="ultrashare"/>
+<project name="wiiUpload.net" default="all" basedir=".">
+    <property name="application" value="wiiupload"/>
 
-    <property name="version" value="0.5.1"/>
+    <property name="version" value="0.5"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="ultrashare.jar"/>
+    <property name="mainjar.file" value="wiiupload.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 

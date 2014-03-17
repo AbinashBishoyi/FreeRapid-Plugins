@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.ultrashare;
+package cz.vity.freerapid.plugins.services.wiiupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -8,14 +8,14 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.io.UnsupportedEncodingException;
 
 /**
  * @author Vity
  */
-class UltraShareFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(UltraShareFileRunner.class.getName());
+class WiiUploadFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(WiiUploadFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -28,7 +28,7 @@ class UltraShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("Download</span>\\s(.+?)\\s\\(<", content);
+        Matcher matcher = PlugUtils.matcher("relative;\">\\s*(.+?)\\s*\\(<i", content);
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim(); //method trim removes white characters from both sides of string
             logger.info("File name " + fileName);

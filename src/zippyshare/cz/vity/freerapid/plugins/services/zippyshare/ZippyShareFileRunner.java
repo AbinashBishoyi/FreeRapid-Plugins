@@ -58,32 +58,37 @@ class ZippyShareFileRunner extends AbstractRunner {
                         break;
                     case 114:
                         switch (variant) {
-                            // url = matcher.group(1) + "&time=" + (24 * time % 6743256);//15.2
+
                             case 4:
-                                url = matcher.group(1) + "&time=" + (3 * time % 1424574); //19.2
+                                url = matcher.group(1) + "&time=" + (3 * time % 1424574);
                                 break;
                             case 1:
-                                url = matcher.group(1) + "&time=" + (6 * time % 78678623); //18.2
+                                url = matcher.group(1) + "&time=" + (6 * time % 78678623);
                                 break;
                             case 2:
-                                url = matcher.group(1) + "&time=" + (9 * time % 2374755); //19.2
+                                url = matcher.group(1) + "&time=" + (9 * time % 2374755);
                                 break;
                             case 3:
-                                url = matcher.group(1) + "&time=" + (24 * time % 6743256);  //20.2 12:00
+                                url = matcher.group(1) + "&time=" + (24 * time % 6743256);
                                 break;
                             case 5:
-                                url = matcher.group(1) + "&time=" + (11 * time % 9809328); //19.2
+                                url = matcher.group(1) + "&time=" + (11 * time % 9809328);
                                 break;
                             case 6:
-                                url = matcher.group(1) + "&time=" + (15 * time % 12860893); //19.2
+                                url = matcher.group(1) + "&time=" + (15 * time % 12860893);
                                 break;
                             case 7:
-                                url = matcher.group(1) + "&time=" + (7 * time % 31241678); //19.2
+                                url = matcher.group(1) + "&time=" + (7 * time % 31241678);
+                                break;
+                            case 8:
+                                url = matcher.group(1) + "&time=" + (16 * time % 8977777);
+                                break;
+                            case 9:
+                                url = matcher.group(1) + "&time=" + (2 * time % 1265673);
                                 break;
                             case 0:
-                                url = matcher.group(1) + "&time=" + (16 * time % 8977777); //19.2
+                                url = matcher.group(1) + "&time=" + (8 * time % 46784661);
                                 break;
-
 
                             default:
                                 checkProblems();

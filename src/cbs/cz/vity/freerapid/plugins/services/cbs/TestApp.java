@@ -20,7 +20,6 @@ public class TestApp extends PluginDevApplication {
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
             httpFile.setNewURL(new URL("http://www.cbs.com/shows/48_hours/video/2241801823/secrets-of-a-marriage"));//regular
-            httpFile.setNewURL(new URL("http://www.cbs.com/late_night/late_show/video/?pid=I4s_Zbuvc3tYhvmF0KQwWhUTCEPdH38F&vs=Default&play=true"));//HD
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

@@ -55,7 +55,7 @@ class CbsFileRunner extends AbstractRtmpRunner {
             checkNameAndSize();
             String pid;
             try {
-                pid = PlugUtils.getStringBetween(getContentAsString(), "var pid = \"", "\"");
+                pid = PlugUtils.getStringBetween(getContentAsString(), "pid = '", "'");
             } catch (final PluginImplementationException e) {
                 final Matcher matcher = PlugUtils.matcher("pid=(.+?)(?:&.+?)?$", fileURL);
                 if (!matcher.find()) {
@@ -64,7 +64,7 @@ class CbsFileRunner extends AbstractRtmpRunner {
                 pid = matcher.group(1);
             }
             setFileStreamContentTypes(new String[0], new String[]{"application/smil"});
-            method = getGetMethod("http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&MBR=true&pid=" + pid);
+            method = getGetMethod("http://link.theplatform.com/s/dJ5BDC/" + pid + "?format=SMIL&Tracking=true&mbr=true");
             if (!client.getSettings().isProxySet()) {
                 Tunlr.setupMethod(method);
             }
@@ -94,6 +94,7 @@ class CbsFileRunner extends AbstractRtmpRunner {
     }
 
     private RtmpSession getRtmpSession() throws ErrorDuringDownloadingException {
+        final String baseUrl = PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "<meta base=\"", "\""));
         final List<Stream> list = new LinkedList<Stream>();
         final Matcher matcher = getMatcherAgainstContent("<video src=\"(.+?)\" system\\-bitrate=\"(\\d+)\"");
         while (matcher.find()) {
@@ -102,27 +103,24 @@ class CbsFileRunner extends AbstractRtmpRunner {
         if (list.isEmpty()) {
             throw new PluginImplementationException("No streams found");
         }
-        return Collections.max(list).getRtmpSession();
+        return new RtmpSession(baseUrl, Collections.max(list).getPlayName());
     }
 
     private static class Stream implements Comparable<Stream> {
-        private final String url;
+        private final String playName;
         private final int bitrate;
 
-        public Stream(final String url, final int bitrate) {
-            this.url = url;
+        public Stream(final String playName, final int bitrate) {
+            this.playName = playName;
             this.bitrate = bitrate;
         }
 
-        public RtmpSession getRtmpSession() throws ErrorDuringDownloadingException {
-            final String[] data = url.split("<break>");
-            if (data.length != 2) {
-                throw new PluginImplementationException("Error parsing stream URL");
+        public String getPlayName() throws ErrorDuringDownloadingException {
+            if (playName.contains(".mp4") && !playName.startsWith("mp4:")) {
+                return "mp4:" + playName;
+            } else {
+                return playName;
             }
-            if (data[1].contains(".mp4") && !data[1].startsWith("mp4:")) {
-                data[1] = "mp4:" + data[1];
-            }
-            return new RtmpSession(data[0], data[1]);
         }
 
         @Override

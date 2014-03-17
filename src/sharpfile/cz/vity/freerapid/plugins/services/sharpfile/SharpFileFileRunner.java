@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
@@ -67,14 +68,13 @@ class SharpFileFileRunner extends AbstractRunner {
             boolean bReCaptcha = true;
             while (bReCaptcha) {
                 bReCaptcha = false;
-                contentAsString = getContentAsString();
-
-                Matcher match = PlugUtils.matcher("var x = (\\d+)", contentAsString);
-                if (!match.find()) {
-                    throw new PluginImplementationException("Wait time not found");
-                }
-                Integer iWait = Integer.parseInt(match.group(1));
-                downloadTask.sleep(iWait + 1);
+                /*  contentAsString = getContentAsString();
+            Matcher match = PlugUtils.matcher("var x = (\\d+)", contentAsString);
+            if (!match.find()) {
+                throw new PluginImplementationException("Wait time not found");
+            }
+            Integer iWait = Integer.parseInt(match.group(1));
+            downloadTask.sleep(iWait + 1);  */
 
                 methodBuilder = getMethodBuilder()
                         .setReferer(fileURL)
@@ -137,10 +137,38 @@ class SharpFileFileRunner extends AbstractRunner {
     }
 
     private void stepReCaptcha(MethodBuilder methodBuilder) throws Exception {
+        Matcher match = getMatcherAgainstContent("papi/challenge\\.noscript\\?k=([^\"]+)\"");
+        if (!match.find()) {
+            throw new PluginImplementationException("Captcha not found");
+        }
+        final String captchaKey = match.group(1);
+
+        String mediaType;
+        do {
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL).setAction("https://api-secure.solvemedia.com/papi/_challenge.js")
+                    .setParameter("k", captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/h264,v/ogg,v/webm,h5a,a/mp3,a/ogg,ua/chrome,ua/chrome18,os/nt,os/nt6.0,fwv/htyg64,jslib/jquery,jslib/jqueryui;ts=1339103245;th=custom;r=" + Math.random())
+                    .toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final Matcher mediaTypeMatcher = getMatcherAgainstContent("\"mediatype\"\\s*:\\s*\"(.+?)\",");
+            if (!mediaTypeMatcher.find()) {
+                throw new PluginImplementationException("Captcha media type not found");
+            }
+            mediaType = mediaTypeMatcher.group(1);
+        } while (!mediaType.equals("img"));
+
+        match = getMatcherAgainstContent("\"chid\"\\s*:\\s*\"(.+?)\",");
+        if (!match.find()) throw new PluginImplementationException("Captcha ID not found");
+        final String captchaChID = match.group(1);
+        final String captchaImg = "https://api-secure.solvemedia.com/papi/media?c=" + captchaChID + ";w=300;h=150;fg=333333;bg=ffffff";
+
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaTxt = captchaSupport.getCaptcha("http://sharpfile.com/securimage/securimage_show.php");
-        if (captchaTxt == null)
-            throw new CaptchaEntryInputMismatchException("No Input");
-        methodBuilder.setParameter("captcha_code", captchaTxt);
+        final String captchaTxt = captchaSupport.getCaptcha(captchaImg);
+        if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
+
+        methodBuilder.setParameter("adcopy_challenge", captchaChID);
+        methodBuilder.setParameter("adcopy_response", captchaTxt);
     }
 }

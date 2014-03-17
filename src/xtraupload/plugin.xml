@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="xtraupload.de" version="1.0"
+        class="cz.vity.freerapid.plugins.services.xtraupload.XtrauploadServiceImpl">
+    <runtime>
+        <library id="xtraupload.de" path="/" type="code"/>
+    </runtime>
+</plugin>

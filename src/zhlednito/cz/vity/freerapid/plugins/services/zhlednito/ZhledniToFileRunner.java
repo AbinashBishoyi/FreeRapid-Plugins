@@ -8,10 +8,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -26,8 +23,9 @@ class ZhledniToFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
-        checkURL();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        //     checkURL();
+        checkWww();
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();//make first request
         if (makeRedirectedRequest(getMethod)) {
             String contentAsString = getContentAsString();//check for response
             while (contentAsString.startsWith("<center><a href=\"http://www.netagent.cz\">")) {
@@ -48,17 +46,25 @@ class ZhledniToFileRunner extends AbstractRunner {
         }
     }
 
-    /**
-     * Replacing UTF8 escape sequences in URL.
-     * Needed, otherwise it will fail
-     */
-    private void checkURL(){
-        try{
-        fileURL= URLDecoder.decode(fileURL,"utf8");
-        }catch(UnsupportedEncodingException uex){
-
+    private void checkWww() {
+        //inserting www, otherwise it won't work
+        if (!fileURL.toLowerCase().startsWith("http://www.")) {
+            fileURL = "http://www." + fileURL.substring(7);
+            logger.info("Adding WWW " + fileURL);
         }
     }
+
+//    /**
+//     * Replacing UTF8 escape sequences in URL.
+//     * Needed, otherwise it will fail
+//     */
+//    private void checkURL() {
+//        try {
+//            fileURL = URLDecoder.decode(fileURL, "utf8");
+//        } catch (UnsupportedEncodingException uex) {
+//            //ignore
+//        }
+//    }
 
     private String extractExt(String filename) {
         return filename.substring(filename.lastIndexOf("."));
@@ -72,8 +78,9 @@ class ZhledniToFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        checkURL();
-        final GetMethod method = getGetMethod(fileURL); //create GET request
+//        checkURL();
+        checkWww();
+        final HttpMethod method = getMethodBuilder().setAction(fileURL).toHttpMethod(); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             String contentAsString = getContentAsString();//check for response
             while (contentAsString.startsWith("<center><a href=\"http://www.netagent.cz\">")) {
@@ -100,7 +107,7 @@ class ZhledniToFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
+        //final String contentAsString = getContentAsString();
         if (extractDownloadURL().endsWith("/")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }

@@ -49,7 +49,7 @@ class ToSharedRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "download", "</title>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<h1>", "</h1> download");
         final String fileSize = PlugUtils.getStringBetween(getContentAsString(), "File size:</span>", "&nbsp;");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize.replace(",", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

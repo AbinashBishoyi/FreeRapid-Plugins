@@ -1,8 +1,8 @@
 package cz.vity.freerapid.plugins.services.zippyshare;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -10,13 +10,13 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Vity
+ * @author Vity+ntoskrnl
  * @since 0.82
  */
 class ZippyShareFileRunner extends AbstractRunner {
@@ -28,10 +28,11 @@ class ZippyShareFileRunner extends AbstractRunner {
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            checkSeriousProblems();
+            checkProblems();
             checkNameAndSize();
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -42,33 +43,25 @@ class ZippyShareFileRunner extends AbstractRunner {
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            checkAllProblems();
+            checkProblems();
             checkNameAndSize();
 
             final String contentAsString = getContentAsString();
-            String var;
-            if (contentAsString.contains("var pong = '")) {
-                var = PlugUtils.getStringBetween(contentAsString, "var pong = '", "';");
-                final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
-                logger.info("unescape = " + unescape);
-                var = applyReplace(var, unescape);
-            } else if (contentAsString.contains("var wannaplayagameofpong = '")) {
-                var = PlugUtils.getStringBetween(contentAsString, "var wannaplayagameofpong = '", "';");
-                final int number = PlugUtils.getNumberBetween(contentAsString, "substring(", ");");
-                var = var.substring(number);
-            } else {
-                throw new PluginImplementationException("Can't find download link");
-            }
+            String var = PlugUtils.getStringBetween(contentAsString, "var spong = '", "';");
+            final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
+            logger.info("unescape = " + unescape);
+            var = applyReplace(var, unescape);
 
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(var.replace("%3A", ":").replace("%2F", "/")).toGetMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(URLDecoder.decode(var, "UTF-8")).toGetMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkAllProblems();
+                checkProblems();
                 logger.warning(getContentAsString());
-                throw new IOException("File input stream is empty");
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -90,16 +83,12 @@ class ZippyShareFileRunner extends AbstractRunner {
         return var;
     }
 
-    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("The requsted file does not exist on this server")) {
-            throw new URLNotAvailableAnymoreException("The requsted file does not exist on this server");
+        if (contentAsString.contains("The requsted file does not exist on this server")
+                || contentAsString.contains("<h1>HTTP Status")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
-    }
-
-    private void checkAllProblems() throws ErrorDuringDownloadingException {
-        checkSeriousProblems();
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {

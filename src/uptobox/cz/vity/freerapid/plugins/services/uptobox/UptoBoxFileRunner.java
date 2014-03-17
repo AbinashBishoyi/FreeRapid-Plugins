@@ -24,12 +24,12 @@ class UptoBoxFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UptoBoxFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkFileProblems();
             throw new ServiceConnectionProblemException();
@@ -37,7 +37,7 @@ class UptoBoxFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<div class=\"page-top\">Download File ", "</div>");
+        PlugUtils.checkName(httpFile, content, "<div class=\"page-top\">Download File", "</div>");
         PlugUtils.checkFileSize(httpFile, content, fileURL + " (", ")");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -69,15 +69,14 @@ class UptoBoxFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
             if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new NotRecoverableDownloadException("Invalid UptoBox registered account login information!");
+                throw new BadLoginException("Invalid UptoBox registered account login information!");
 
             return true;
         }
     }
 
     private boolean isPassworded() {
-        boolean passworded = getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
-        return passworded;
+        return getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
     }
 
     @Override
@@ -87,15 +86,14 @@ class UptoBoxFileRunner extends AbstractRunner {
         login();
 
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod method = getGetMethod(fileURL); //create GET request
-        if (!makeRedirectedRequest(method)) { //we make the main request
-            logger.warning(getContentAsString());
+        GetMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
 
-        checkFileProblems();//check problems
-        checkNameAndSize(getContentAsString());//extract file name and size from the page
+        checkFileProblems();
+        checkNameAndSize(getContentAsString());
 
         HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
@@ -105,9 +103,8 @@ class UptoBoxFileRunner extends AbstractRunner {
                 .toPostMethod();
 
         if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException();
         }
         checkDownloadProblems();
 
@@ -116,7 +113,6 @@ class UptoBoxFileRunner extends AbstractRunner {
                 .setAction(fileURL)
                 .removeParameter("method_premium");
 
-        //process wait time
         String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
         Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
         if (waitTimematcher.find()) {
@@ -131,36 +127,20 @@ class UptoBoxFileRunner extends AbstractRunner {
             methodBuilder.setParameter("password", password);
         }
 
-        if (getContentAsString().contains("captcha_code")) { //if contains captcha
+        if (getContentAsString().contains("captcha_code")) {
             methodBuilder = stepCaptcha(methodBuilder);
         }
 
-        httpMethod = methodBuilder.toPostMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
-        }
-        checkDownloadProblems();
-        final String downloadFileURL = PlugUtils.getStringBetween(getContentAsString(),"<a href=\"","\">Click here to start your download</a>");
-
-        httpMethod = getMethodBuilder()
-                .setReferer(fileURL)
-                .setAction(downloadFileURL)
-                .toGetMethod();
-
-        logger.info("Download file URL : "+downloadFileURL);
-        //here is the download link extraction
-        if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+        if (!tryDownloadAndSaveFile(methodBuilder.toPostMethod())) {
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Not Found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
@@ -182,7 +162,7 @@ class UptoBoxFileRunner extends AbstractRunner {
                 if (matcher.find()) xSeconds = new Integer(matcher.group(1));
             }
             waittime = xMinutes * 60 + xSeconds;
-            throw new YouHaveToWaitException("You have to wait " + waittime + " seconds", waittime); //let to know user in FRD
+            throw new YouHaveToWaitException("You have to wait " + waittime + " seconds", waittime);
         }
         if (contentAsString.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Server problem");
@@ -193,12 +173,11 @@ class UptoBoxFileRunner extends AbstractRunner {
     }
 
     private MethodBuilder stepCaptcha(MethodBuilder methodBuilder) throws Exception {
-        //process captcha
         logger.info("Processing captcha");
         final String contentAsString = getContentAsString();
-        String captchaRule = "<span style=\\'position:absolute;padding\\-left:(\\d+)px;padding\\-top:\\d+px;\\'>(\\d+)</span>";
+        String captchaRule = "<span style='position:absolute;padding\\-left:(\\d+)px;padding\\-top:\\d+px;'>(\\d+)</span>";
         Matcher captchaMatcher = PlugUtils.matcher(captchaRule, PlugUtils.unescapeHtml(contentAsString));
-        StringBuffer strbuffCaptcha = new StringBuffer(4);
+        StringBuilder strbuffCaptcha = new StringBuilder(4);
         SortedMap<Integer, String> captchaMap = new TreeMap<Integer, String>();
 
         while (captchaMatcher.find()) {

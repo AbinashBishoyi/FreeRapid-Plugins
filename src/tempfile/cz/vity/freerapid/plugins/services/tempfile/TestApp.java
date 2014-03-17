@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.ugoupload;
+package cz.vity.freerapid.plugins.services.tempfile;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,13 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.ugoupload.net/4oy/RJ111929.part3.rar"));
-            httpFile.setNewURL(new URL("http://www.ugoupload.net/7ep/%28COMIC1%E2%98%867%29_%5BMitarashi_Club_%28Mitarashi_Kousei%29%5D_Together_with_Ami_%28Bishoujo_Senshi_Sailor_Moon%29.zip"));
+            httpFile.setNewURL(new URL("http://tempfile.ru/file/9955551319"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final UgoUploadServiceImpl service = new UgoUploadServiceImpl(); //instance of service - of our plugin
+            final TempFileServiceImpl service = new TempFileServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

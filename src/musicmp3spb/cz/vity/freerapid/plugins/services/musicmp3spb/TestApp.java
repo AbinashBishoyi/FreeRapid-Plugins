@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.ugoupload;
+package cz.vity.freerapid.plugins.services.musicmp3spb;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,13 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.ugoupload.net/4oy/RJ111929.part3.rar"));
-            httpFile.setNewURL(new URL("http://www.ugoupload.net/7ep/%28COMIC1%E2%98%867%29_%5BMitarashi_Club_%28Mitarashi_Kousei%29%5D_Together_with_Ami_%28Bishoujo_Senshi_Sailor_Moon%29.zip"));
+            httpFile.setNewURL(new URL("http://musicmp3spb.org/artist/steelhouse_lane.html"));
+            //httpFile.setNewURL(new URL("http://musicmp3spb.org/allsongs/steelhouse_lane.html"));
+            //httpFile.setNewURL(new URL("http://musicmp3spb.org/album/slaves_of_the_new_world.html"));
+            //httpFile.setNewURL(new URL("http://musicmp3spb.org/covers/slaves_of_the_new_world.html"));
+            //httpFile.setNewURL(new URL("http://musicmp3spb.org/song/slaves_of_the_new_world_turnaround.html"));
+            //httpFile.setNewURL(new URL("http://musicmp3spb.org/download/slaves_of_the_new_world_turnaround/play/3e39078b4a9bb63519d3a92f1c6ce1cc1369106406"));
+            //httpFile.setNewURL(new URL("http://musicmp3spb.org/download/slaves_of_the_new_world_turnaround/3e39078b4a9bb63519d3a92f1c6ce1cc1369106406"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final UgoUploadServiceImpl service = new UgoUploadServiceImpl(); //instance of service - of our plugin
+            final MusicMp3SpbServiceImpl service = new MusicMp3SpbServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

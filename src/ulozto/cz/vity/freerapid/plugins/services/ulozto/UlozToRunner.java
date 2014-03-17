@@ -80,7 +80,6 @@ class UlozToRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         checkURL();
-        setClientParameter(cz.vity.freerapid.plugins.webclient.DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2");
 
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -167,15 +166,14 @@ class UlozToRunner extends AbstractRunner {
         final String captchaSnd = captchaImg.replace("image.gif", "sound.wav");
         String captchaTxt;
         //captchaCount = 9; //for test purpose
-        if (captchaCount++ < 15) {
+        if (captchaCount++ < 8) {
             logger.info("captcha url: " + captchaSnd);
-            final SoundReader captchaReader = new SoundReader();    // This will NOT work running TestApp !!
-            final HttpMethod methodSound = getMethodBuilder()       // It Works as a plugin in FreeRapid   -- birchie
+            final SoundReader captchaReader = new SoundReader(); //load fingerprint from file to test, don't forget to change it back
+            final HttpMethod methodSound = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(captchaSnd)
                     .toGetMethod();
             try {
-                //BufferedInputStream  bis = new BufferedInputStream(client.makeRequestForFile(methodSound));
                 captchaTxt = captchaReader.parse(client.makeRequestForFile(methodSound));
                 logger.info("Auto recog attempt : " + captchaCount);
                 logger.info("Captcha recognized : " + captchaTxt);
@@ -185,6 +183,7 @@ class UlozToRunner extends AbstractRunner {
                     captchaTxtBuilder.append(Character.toChars(random.nextInt(26) + 97)); //throw random chars
                 }
                 captchaTxt = captchaTxtBuilder.toString();
+                logger.info("Generated random captcha : " + captchaTxt);
             } finally {
                 methodSound.releaseConnection();
             }

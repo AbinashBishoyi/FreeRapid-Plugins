@@ -3,10 +3,7 @@ package cz.vity.freerapid.plugins.services.ulozto.captcha;
 import com.musicg.wave.Wave;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -16,7 +13,7 @@ import java.util.zip.InflaterInputStream;
  */
 public class FingerprintFileUtils {
 
-    //public static final String CAPTCHA_DIR = "/media/DATA/kerja/javaProj/FRD/frd/captcha/ulozto/2/";
+    //public static final String CAPTCHA_DIR = "/media/DATA/kerja/javaProj/FRD/frd/captcha/ulozto/3/";
     //public static final String CAPTCHA_ALPHA_DIR = CAPTCHA_DIR + "alpha/";
     //public static final String FINGERPRINT_OUT_FILE = CAPTCHA_DIR + "fingerprint.bin";
 
@@ -24,15 +21,19 @@ public class FingerprintFileUtils {
     }
 
     public static void populateFingerprintList(String dirName, List<Fingerprint> fingerprintList) {
+        File file;
         for (int i = 0; i < 26; i++) {
-            if ((i == 24) || (i == 22)) continue; //skip 'w' and 'y', couldn't find sample
+            //if ((i == 24) || (i == 22)) continue; //skip 'w' and 'y', couldn't find sample
             char character = (char) (i + 97);
+            String fname = dirName + Character.toString(character) + ".wav";
+            file = new File(fname);
+            if (file.exists()) {
+                Wave wave = new Wave(fname);
+                byte[] fingerprintBytes = wave.getFingerprint();
 
-            Wave wave = new Wave(dirName + Character.toString(character) + ".wav");
-            byte[] fingerprintBytes = wave.getFingerprint();
-
-            Fingerprint fingerprint = new Fingerprint(character, fingerprintBytes);
-            fingerprintList.add(fingerprint);
+                Fingerprint fingerprint = new Fingerprint(character, fingerprintBytes);
+                fingerprintList.add(fingerprint);
+            }
         }
     }
 
@@ -67,7 +68,7 @@ public class FingerprintFileUtils {
         DataInputStream dis = null;
         try {
             dis = new DataInputStream(new InflaterInputStream(FingerprintFileUtils.class.getResourceAsStream(fname)));
-            //dis = new DataInputStream(new FileInputStream(fname));
+            //dis = new DataInputStream(new InflaterInputStream(new FileInputStream(fname)));
             fingerprintList.clear();
             int numberOfChars = dis.readInt();
             for (int i = 0; i < numberOfChars; i++) {

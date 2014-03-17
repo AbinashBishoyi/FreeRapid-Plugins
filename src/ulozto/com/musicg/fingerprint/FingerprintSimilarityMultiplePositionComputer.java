@@ -126,14 +126,6 @@ public class FingerprintSimilarityMultiplePositionComputer {
                 }
             }
 
-		/*
-        Iterator<Integer> orderedKeyListIterator=orderedKeyList.iterator();
-		while (orderedKeyListIterator.hasNext()){
-			int offset=orderedKeyListIterator.next();					
-			System.out.println(offset+": "+offset_Score_Table.get(offset));
-		}
-		*/
-
             score /= numFrames;
             float similarity = score;
             // similarity >1 means in average there is at least one match in every frame
@@ -145,9 +137,9 @@ public class FingerprintSimilarityMultiplePositionComputer {
             mostSimilarFramePositions[i] = mostSimilarFramePosition;
         }
 
-        fingerprintSimilarity.setMostSimilarFramePosition(mostSimilarFramePositions);
-        fingerprintSimilarity.setScore(scores);
-        fingerprintSimilarity.setSimilarity(similarities);
+        fingerprintSimilarity.setMostSimilarFramePositions(mostSimilarFramePositions);
+        fingerprintSimilarity.setScores(scores);
+        fingerprintSimilarity.setSimilarities(similarities);
 
         return fingerprintSimilarity;
     }

@@ -6,9 +6,7 @@ import com.musicg.wave.Wave;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 
 import java.io.InputStream;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -20,9 +18,10 @@ import java.util.logging.Logger;
 
 public class SoundReader {
     private final static Logger logger = Logger.getLogger(SoundReader.class.getName());
-    public static final int CAPTCHA_LENGTH = 4;
-
-    private static final List<Fingerprint> fingerprintList = new LinkedList<Fingerprint>();
+    private final static float MIN_TIME_DIFF = 0.2f;
+    private final static int ADDITIONAL_STORAGE_FACTOR = 2;
+    private final static int CAPTCHA_LENGTH = 4;
+    private final static List<Fingerprint> fingerprintList = new LinkedList<Fingerprint>();
 
     static {
         try {
@@ -41,7 +40,7 @@ public class SoundReader {
         Wave waveCaptcha = new Wave(isCaptcha);
         byte[] captchaFingerprint = waveCaptcha.getFingerprint();
 
-        List<SoundPattern> soundPatternList = new LinkedList<SoundPattern>();
+        List<SoundPattern> soundPatternList = new ArrayList<SoundPattern>();
         FingerprintSimilarityMultiplePositionComputer fpsc;
         FingerprintSimilarityMultiplePosition fps;
         for (Fingerprint fingerprint : fingerprintList) {
@@ -49,47 +48,96 @@ public class SoundReader {
             fps = fpsc.getFingerprintsSimilarity(CAPTCHA_LENGTH);
 
             char character = fingerprint.getCharacter();
-            float[] similarity = fps.getSimilarity();
-            float[] score = fps.getScore();
-            float[] timePosition = fps.getsetMostSimilarTimePosition();
+            //float[] similarities = fps.getSimilarities();
+            float[] scores = fps.getScores();
+            float[] timePositions = fps.getsetMostSimilarTimePositions();
+
 
             for (int i = 0; i < CAPTCHA_LENGTH; i++) {
-                SoundPattern soundPattern = new SoundPattern();
-                soundPattern.character = character;
-                soundPattern.score = score[i];
-                soundPattern.timePosition = timePosition[i];
-                if (!soundPatternList.contains(soundPattern)) {
-                    soundPatternList.add(soundPattern);
-                    logger.info(String.format("%c: sim=%.2f sc=%.2f time=%f", character, similarity[i], score[i], timePosition[i]));
+                SoundPattern sp = new SoundPattern(character, scores[i], timePositions[i]);
+                if (!soundPatternList.contains(sp)) { //not too close
+                    soundPatternList.add(sp);
+                    //logger.info(String.format("%c: sim=%.2f sc=%.2f time=%f", character, similarities[i], scores[i], timePositions[i]));
+                } else { //too close
+                    int spInListIdx = soundPatternList.indexOf(sp); //get index of the similar sound pattern, similar->look at equality
+                    SoundPattern spInList = soundPatternList.get(spInListIdx);
+                    if (sp.score > spInList.score) {
+                        soundPatternList.set(spInListIdx, sp); //replace sound pattern with the better one
+                    }
                 }
             }
         }
 
-        Collections.sort(soundPatternList);
+        //sorted by score, descending
+        CharScoreComparator csc = new CharScoreComparator();
+        Collections.sort(soundPatternList, csc);
         Collections.reverse(soundPatternList);
-        List<CharPos> charPosList = new LinkedList<CharPos>();
-        for (int i = 0; i < CAPTCHA_LENGTH; i++) {
-            SoundPattern fp = soundPatternList.get(i);
-            charPosList.add(new CharPos(fp.character, fp.timePosition));
+
+        //sorted by pos, ascending, limit=CAPTCHA_LENGTH*ADDITIONAL_STORAGE_FACTOR
+        List<SoundPattern> charPosList = new ArrayList<SoundPattern>(soundPatternList.subList(0, CAPTCHA_LENGTH * ADDITIONAL_STORAGE_FACTOR));
+        CharPosComparator cpp = new CharPosComparator();
+        Collections.sort(charPosList, cpp);
+
+        //remove sound pattern that is too close each other
+        for (int i = 0; i < charPosList.size(); ) {
+            if (i > 0) {
+                SoundPattern cp = charPosList.get(i);
+                SoundPattern cpPrev = charPosList.get(i - 1);
+                float timeDiff = (cp.timePosition - cpPrev.timePosition);
+                if (timeDiff < MIN_TIME_DIFF) { //too close
+                    if (cp.score > cpPrev.score) { //score as removal criteria
+                        charPosList.remove(i - 1);
+                    } else {
+                        charPosList.remove(i);
+                    }
+                } else {
+                    i++;
+                }
+            } else {
+                i++;
+            }
         }
 
-        Collections.sort(charPosList);
+        //sorted by score, descending
+        soundPatternList = new ArrayList<SoundPattern>(charPosList);
+        Collections.sort(soundPatternList, csc);
+        Collections.reverse(soundPatternList);
+
+        //sorted by pos, ascending, limit=CAPTCHA_LENGTH
+        try {
+            charPosList = new ArrayList<SoundPattern>(soundPatternList.subList(0, CAPTCHA_LENGTH));
+        } catch (Exception e) {
+            throw new PluginImplementationException("Sound patterns size less than captcha length");
+        }
+        Collections.sort(charPosList, cpp);
+
         StringBuilder sb = new StringBuilder(CAPTCHA_LENGTH);
+        float minTimeDiff = Float.MAX_VALUE;
         for (int i = 0; i < CAPTCHA_LENGTH; i++) {
+            SoundPattern cp = charPosList.get(i);
+            if (i > 0) {
+                SoundPattern cpPrev = charPosList.get(i - 1);
+                float timeDiff = (cp.timePosition - cpPrev.timePosition);
+                if (timeDiff < minTimeDiff) {
+                    minTimeDiff = timeDiff;
+                }
+            }
             sb.append(charPosList.get(i).character);
         }
+        logger.info("Min time diff : " + minTimeDiff);
 
         return sb.toString();
     }
 
-    private static class SoundPattern implements Comparable<SoundPattern> {
+    private static class SoundPattern {
         private char character;
         private float score;
         private float timePosition;
 
-        @Override
-        public int compareTo(SoundPattern that) {
-            return Float.compare(this.score, that.score);
+        private SoundPattern(char character, float score, float timePosition) {
+            this.character = character;
+            this.score = score;
+            this.timePosition = timePosition;
         }
 
         @Override
@@ -97,22 +145,21 @@ public class SoundReader {
             return (that != null
                     && that instanceof SoundPattern
                     && ((SoundPattern) that).character == this.character
-                    && (Math.abs(((SoundPattern) that).timePosition - this.timePosition) < 0.5));
+                    && (Math.abs(((SoundPattern) that).timePosition - this.timePosition) < MIN_TIME_DIFF));
         }
     }
 
-    private static class CharPos implements Comparable<CharPos> {
-        private char character;
-        private float timePosition;
-
-        private CharPos(char character, float timePosition) {
-            this.character = character;
-            this.timePosition = timePosition;
-        }
-
+    private static class CharScoreComparator implements Comparator<SoundPattern> {
         @Override
-        public int compareTo(CharPos that) {
-            return Float.compare(this.timePosition, that.timePosition);
+        public int compare(SoundPattern o1, SoundPattern o2) {
+            return Float.compare(o1.score, o2.score);
+        }
+    }
+
+    private static class CharPosComparator implements Comparator<SoundPattern> {
+        @Override
+        public int compare(SoundPattern o1, SoundPattern o2) {
+            return Float.compare(o1.timePosition, o2.timePosition);
         }
     }
 }

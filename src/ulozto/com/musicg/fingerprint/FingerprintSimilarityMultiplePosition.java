@@ -18,80 +18,71 @@ package com.musicg.fingerprint;
 import com.musicg.properties.FingerprintProperties;
 
 /**
- * A class for fingerprint's similarity
+ * A class for fingerprint's similarities
  *
  * @author jacquet
  */
 public class FingerprintSimilarityMultiplePosition {
 
     private FingerprintProperties fingerprintProperties = FingerprintProperties.getInstance();
-    private int[] mostSimilarFramePosition;
-    private float[] score;
-    private float[] similarity;
-
-    /**
-     * Constructor
-     */
-    public FingerprintSimilarityMultiplePosition() {
-        //mostSimilarFramePosition = Integer.MIN_VALUE;
-        //score=-1;
-        //similarity = -1;
-    }
+    private int[] mostSimilarFramePositions;
+    private float[] scores;
+    private float[] similarities;
 
     /**
      * Get the most similar position in terms of frame number
      *
      * @return most similar frame position
      */
-    public int[] getMostSimilarFramePosition() {
-        return mostSimilarFramePosition;
+    public int[] getMostSimilarFramePositions() {
+        return mostSimilarFramePositions;
     }
 
     /**
      * Set the most similar position in terms of frame number
      *
-     * @param mostSimilarFramePosition
+     * @param mostSimilarFramePositions
      */
-    public void setMostSimilarFramePosition(int[] mostSimilarFramePosition) {
-        this.mostSimilarFramePosition = mostSimilarFramePosition;
+    public void setMostSimilarFramePositions(int[] mostSimilarFramePositions) {
+        this.mostSimilarFramePositions = mostSimilarFramePositions;
     }
 
     /**
-     * Get the similarity of the fingerprints
-     * similarity from 0~1, which 0 means no similar feature is found and 1 means in average there is at least one match in every frame
+     * Get the similarities of the fingerprints
+     * similarities from 0~1, which 0 means no similar feature is found and 1 means in average there is at least one match in every frame
      *
-     * @return fingerprints similarity
+     * @return fingerprints similarities
      */
-    public float[] getSimilarity() {
-        return similarity;
+    public float[] getSimilarities() {
+        return similarities;
     }
 
     /**
-     * Set the similarity of the fingerprints
+     * Set the similarities of the fingerprints
      *
-     * @param fingerprints similarity
+     * @param fingerprints similarities
      */
-    public void setSimilarity(float[] similarity) {
-        this.similarity = similarity;
+    public void setSimilarities(float[] similarities) {
+        this.similarities = similarities;
     }
 
     /**
-     * Get the similarity score of the fingerprints
+     * Get the similarities scores of the fingerprints
      * Number of features found in the fingerprints per frame
      *
-     * @return fingerprints similarity score
+     * @return fingerprints similarities scores
      */
-    public float[] getScore() {
-        return score;
+    public float[] getScores() {
+        return scores;
     }
 
     /**
-     * Set the similarity score of the fingerprints
+     * Set the similarities scores of the fingerprints
      *
-     * @param score
+     * @param scores
      */
-    public void setScore(float[] score) {
-        this.score = score;
+    public void setScores(float[] scores) {
+        this.scores = scores;
     }
 
     /**
@@ -99,10 +90,10 @@ public class FingerprintSimilarityMultiplePosition {
      *
      * @return most similar starting time
      */
-    public float[] getsetMostSimilarTimePosition() {
-        float[] ret = new float[mostSimilarFramePosition.length];
-        for (int i = 0, length = mostSimilarFramePosition.length; i < length; i++) {
-            ret[i] = (float) mostSimilarFramePosition[i] / fingerprintProperties.getNumRobustPointsPerFrame() / fingerprintProperties.getFps();
+    public float[] getsetMostSimilarTimePositions() {
+        float[] ret = new float[mostSimilarFramePositions.length];
+        for (int i = 0, length = mostSimilarFramePositions.length; i < length; i++) {
+            ret[i] = (float) mostSimilarFramePositions[i] / fingerprintProperties.getNumRobustPointsPerFrame() / fingerprintProperties.getFps();
         }
         return ret;
     }

@@ -89,7 +89,7 @@ class SharpFileFileRunner extends AbstractRunner {
                     bReCaptcha = true;
             }
 
-            Matcher match = getMatcherAgainstContent("<a href=\"(.+" + httpFile.getFileName() + "[^\"]*)\">");
+            final Matcher match = getMatcherAgainstContent("<a href=\"(.+" + httpFile.getFileName() + "[^\"]*)\">");
             if (!match.find())
                 throw new PluginImplementationException("Unable to find download link");
 
@@ -151,7 +151,8 @@ class SharpFileFileRunner extends AbstractRunner {
         String mediaType;
         do {
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(fileURL).setAction("https://api-secure.solvemedia.com/papi/_challenge.js")
+                    .setReferer(fileURL).setAction("http://api.solvemedia.com/papi/_challenge.js")
+                            //.setReferer(fileURL).setAction("https://api-secure.solvemedia.com/papi/_challenge.js")
                     .setParameter("k", captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/h264,v/ogg,v/webm,h5a,a/mp3,a/ogg,ua/chrome,ua/chrome18,os/nt,os/nt6.0,fwv/htyg64,jslib/jquery,jslib/jqueryui;ts=1339103245;th=custom;r=" + Math.random())
                     .toGetMethod();
             if (!makeRedirectedRequest(httpMethod)) {
@@ -161,13 +162,15 @@ class SharpFileFileRunner extends AbstractRunner {
             if (!mediaTypeMatcher.find()) {
                 throw new PluginImplementationException("Captcha media type not found");
             }
+            httpMethod.releaseConnection();
             mediaType = mediaTypeMatcher.group(1);
         } while (!mediaType.equals("img"));
 
         match = getMatcherAgainstContent("\"chid\"\\s*:\\s*\"(.+?)\",");
         if (!match.find()) throw new PluginImplementationException("Captcha ID not found");
         final String captchaChID = match.group(1);
-        final String captchaImg = "https://api-secure.solvemedia.com/papi/media?c=" + captchaChID + ";w=300;h=150;fg=333333;bg=ffffff";
+        final String captchaImg = "http://api.solvemedia.com/papi/media?c=" + captchaChID + ";w=300;h=150;fg=333333;bg=ffffff";
+        //final String captchaImg = "https://api-secure.solvemedia.com/papi/media?c=" + captchaChID + ";w=300;h=150;fg=333333;bg=ffffff";
 
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaTxt = captchaSupport.getCaptcha(captchaImg);

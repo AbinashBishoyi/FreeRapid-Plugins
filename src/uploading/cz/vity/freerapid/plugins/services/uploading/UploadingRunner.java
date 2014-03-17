@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
+ * @author Ladislav Vitasek, Ludek Zika, ntoskrnl, CapCap
  */
 class UploadingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadingRunner.class.getName());
@@ -78,9 +78,9 @@ class UploadingRunner extends AbstractRunner {
                         .setAction("http://uploading.com/files/get/?JsHttpRequest=" + System.currentTimeMillis() + "-xml")
                                 //.setParameter("file_id", fileId)
                         .setParameter("pass", "")
-                        .setParameter("code", PlugUtils.getStringBetween(fileURL, "get/", "/"))
-                        .setParameter("action", "get_link")
-                        .toGetMethod();
+                        .setParameter("code", PlugUtils.getStringBetween(fileURL+"/", "get/", "/", 1))  //this can cause problems if the url
+                        .setParameter("action", "get_link")                                      // doesn't end in a /, which many dont
+                        .toGetMethod();                                                           //([a-zA-Z0-9]{0,}/{0,2}$) should work
                 if (makeRedirectedRequest(method)) {
                     checkProblems();
                     final Matcher matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");

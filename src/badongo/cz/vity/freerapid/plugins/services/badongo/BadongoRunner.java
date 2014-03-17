@@ -59,7 +59,7 @@ class BadongoFileRunner extends AbstractRunner {
             final String[] filePath = fileURI.getPath().split("/");
 
             if (getContentAsString().contains("This file has been split into") && filePath.length <= 5) { // More files
-                processCaptchaForm();
+                processCaptchaForm(true);
                 parseWebsite();
                 httpFile.getProperties().put("removeCompleted", true);
             } else { // One file
@@ -96,7 +96,7 @@ class BadongoFileRunner extends AbstractRunner {
     }
 
     private String checkFileURL(String fileURL) throws Exception {
-        client.getHTTPClient().getState().addCookie(new Cookie(".badongo.com", "badongoL", "en", "/", 86400, false));
+        addCookie(new Cookie(".badongo.com", "badongoL", "en", "/", 86400, false));
 
         if (fileURL.endsWith("/")) {
             fileURL = fileURL.substring(0, fileURL.length() - 1);
@@ -125,6 +125,10 @@ class BadongoFileRunner extends AbstractRunner {
 
         if (contentAsString.contains("This file has been deleted")) {
             throw new URLNotAvailableAnymoreException("This file has been deleted because it has been inactive for over 30 days");
+        }
+
+        if (contentAsString.contains("This File Has Been Deactivated")) {
+            throw new URLNotAvailableAnymoreException("This file has been deactivated and is no longer available");
         }
 
         if (contentAsString.contains("File not found")) {
@@ -164,19 +168,17 @@ class BadongoFileRunner extends AbstractRunner {
                 logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
-                throw new PluginImplementationException();
+                throw new PluginImplementationException("File size was not found");
             }
         } else {
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
+            throw new PluginImplementationException("File name was not found");
         }
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void processDownloadWithCaptcha() throws Exception {
-        processCaptchaForm();
+        processCaptchaForm(false);
 
         Matcher matcher = getMatcherAgainstContent("req\\.open\\(\"GET\", \"(.+?)/status\"");
 
@@ -185,18 +187,18 @@ class BadongoFileRunner extends AbstractRunner {
             client.setReferer(finalURL + "/ifr?pr=1&zenc=");
             final GetMethod getMethod = getGetMethod(finalURL + "/loc?pr=1");
 
-            matcher = getMatcherAgainstContent("var check_n = (.+?);");
+            matcher = getMatcherAgainstContent("var check_n = (\\d+?);");
+            if (!matcher.find()) throw new PluginImplementationException("Waiting time not found");
+            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
 
-            final int waitSeconds = (matcher.find()) ? Integer.parseInt(matcher.group(1)) : 45;
-            downloadTask.sleep(waitSeconds);
             downloadFile(getMethod);
         } else {
             throw new PluginImplementationException("Download link was not found");
         }
     }
 
-    private void processCaptchaForm() throws Exception {
-        while (!getContentAsString().contains("doDownload")) {
+    private void processCaptchaForm(final boolean moreFiles) throws Exception {
+        while (!getContentAsString().contains(moreFiles ? "doDownload" : "function refresh")) {
             client.setReferer(fileURL);
             final String redirectURL = fileURL + "?rs=displayCaptcha";
             final GetMethod getMethod = getGetMethod(redirectURL);
@@ -205,7 +207,7 @@ class BadongoFileRunner extends AbstractRunner {
                 final String contentAsString = getContentAsString().replaceAll("\\\\\"", "\"");
 
                 if (contentAsString.contains("name=\"downForm\"")) {
-                    final HttpMethod httpMethod = new MethodBuilder(contentAsString, client).setReferer(fileURL).setActionFromFormByName("downForm", true).setParameter("user_code", stepCaptcha(contentAsString)).toHttpMethod();
+                    final HttpMethod httpMethod = new MethodBuilder(contentAsString, client).setReferer(fileURL).setActionFromFormByName("downForm", true).setParameter("user_code", stepCaptcha(contentAsString)).toPostMethod();
 
                     if (!makeRedirectedRequest(httpMethod)) {
                         throw new ServiceConnectionProblemException();

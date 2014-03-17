@@ -1,9 +1,11 @@
 package cz.vity.freerapid.plugins.services.picasa;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -27,15 +29,17 @@ class PicasaFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (fileURL.indexOf("ggpht.com") > 0) {
+        client.setReferer(fileURL);
+        final GetMethod method = getGetMethod(fileURL);
+        if (fileURL.contains("ggpht.com")) {
+            setClientParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true); //some pics don't have "Content-Length" fieldname.
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 logger.warning(getContentAsString());
                 throw new IOException("File input stream is empty");
             }
         } else {
-            if (makeRedirectedRequest(method)) { //we make the main request
+            if (makeRedirectedRequest(method)) {
                 parseWebsite();
             } else {
                 checkProblems();
@@ -44,7 +48,7 @@ class PicasaFileRunner extends AbstractRunner {
         }
     }
 
-    private void parseWebsite() {
+    private void parseWebsite() throws Exception {
         System.out.println(getContentAsString());
         final Matcher matcher = getMatcherAgainstContent("\"media\":\\{\"content\":\\[\\{\"url\":\"(https?://.+?)\"");
         int start = 0;
@@ -57,6 +61,7 @@ class PicasaFileRunner extends AbstractRunner {
                     StringBuilder builder = new StringBuilder(link);
                     builder.insert(i + 1, "d/");
                     link = builder.toString();
+                    link = link.replaceFirst("https://", "http://").replaceFirst("googleusercontent\\.com", "ggpht.com");
                     uriList.add(new URI(link));
                 }
             } catch (URISyntaxException e) {
@@ -64,14 +69,18 @@ class PicasaFileRunner extends AbstractRunner {
             }
             start = matcher.end();
         }
+        if (uriList.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+        httpFile.getProperties().put("removeCompleted", true);
     }
 
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("The server encountered an error and could not complete your request")) {
-            throw new YouHaveToWaitException("The server encountered an error and could not complete your request", 10); //let to know user in FRD
+            throw new YouHaveToWaitException("The server encountered an error and could not complete your request", 10);
         }
     }
 

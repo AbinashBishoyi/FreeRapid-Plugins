@@ -26,6 +26,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://www.facebook.com/video/?id=7677942180")); //album
             //httpFile.setNewURL(new URL("http://www.facebook.com/video/video.php?v=1603402488187"));//requires login
             //httpFile.setNewURL(new URL("http://www.facebook.com/photo.php?fbid=1906729784134&set=a.1892908198603.2097158.1118473909&type=3")); //requires login
+            httpFile.setNewURL(new URL("http://www.facebook.com/media/set/?set=a.1892908198603.2097158.1118473909&type=3")); //requires login
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

@@ -23,18 +23,22 @@ import java.util.regex.Matcher;
  */
 class FaceBookFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FaceBookFileRunner.class.getName());
+    private static boolean isLoggedIn = false;
+    private static Cookie[] cookies;
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".facebook.com", "locale", "en_US", "/", 86400, false));
+        eatCookies();
         client.setReferer(fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             if (getContentAsString().contains("content is currently unavailable")) {
                 login();
+                eatCookies(); // to make sure other threads eat cookies
                 method = getGetMethod(fileURL);
                 if (!makeRedirectedRequest(method)) {
                     checkProblems();
@@ -84,8 +88,20 @@ class FaceBookFileRunner extends AbstractRunner {
         }
     }
 
+    private void eatCookies() {
+        synchronized (FaceBookFileRunner.class) {
+            if (isLoggedIn && (cookies.length > 0)) {
+                for (Cookie cookie : cookies) {
+                    addCookie(cookie);
+                }
+            }
+        }
+    }
+
     private void login() throws Exception {
         synchronized (FaceBookFileRunner.class) {
+            if (isLoggedIn) return;
+            logger.info("Entering login subroutine...");
             FaceBookServiceImpl service = (FaceBookServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
             if (!pa.isSet()) {
@@ -109,6 +125,8 @@ class FaceBookFileRunner extends AbstractRunner {
 
             if (getContentAsString().contains("Incorrect username") || getContentAsString().contains("The password you entered is incorrect") || getContentAsString().contains("Incorrect Email"))
                 throw new BadLoginException("Invalid FaceBook account login information!");
+            isLoggedIn = true;
+            cookies = getCookies();
         }
     }
 

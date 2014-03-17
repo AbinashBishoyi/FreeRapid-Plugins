@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URL;
 import java.util.logging.Logger;
 
 /**
@@ -75,22 +76,11 @@ class LetitbitRunner extends AbstractRunner {
 
             downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
 
-            httpMethod = getMethodBuilder()
-                    .setReferer(pageUrl)
-                    .setActionFromTextBetween("ajax_check_url = '", "';")
-                    .toPostMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
+            final String url = handleCaptcha(pageUrl);
 
-            final String content = getContentAsString().trim();
-            if (content.isEmpty()) {
-                throw new PluginImplementationException("Download link not found");
-            }
             httpMethod = getMethodBuilder()
                     .setReferer(pageUrl)
-                    .setAction(content)
+                    .setAction(url)
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
@@ -117,6 +107,40 @@ class LetitbitRunner extends AbstractRunner {
                 || content.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    private String handleCaptcha(final String pageUrl) throws Exception {
+        final String baseUrl = "http://" + new URL(pageUrl).getHost();
+        while (true) {
+            final String captchaUrl = "/captcha_new.php?rand=" + (int) Math.floor(100000 * Math.random());
+            HttpMethod method = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setBaseURL(baseUrl)
+                    .setAction(captchaUrl)
+                    .toGetMethod();
+            final String captcha = getCaptcha(method);
+            method = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setBaseURL(baseUrl)
+                    .setAction("/ajax/check_captcha.php")
+                    .setParameter("code", captcha)
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final String content = getContentAsString().trim();
+            if (!content.isEmpty()) {
+                return content;
+            }
+        }
+    }
+
+    private String getCaptcha(final HttpMethod method) throws Exception {
+        final String captcha = getCaptchaSupport().askForCaptcha(getCaptchaSupport().loadCaptcha(client.makeRequestForFile(method)));
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        }
+        return captcha;
     }
 
 }

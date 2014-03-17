@@ -86,11 +86,16 @@ class SuperFastFileFileRunner extends AbstractRunner {
                 //here is the download link extraction
 //                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download file").toPostMethod();
                 client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
-                if (!tryDownloadAndSaveFile(methodBuilder.toPostMethod())) {
-                    checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
-                }
+                if (makeRedirectedRequest(methodBuilder.toPostMethod())) {
+                    final String s = PlugUtils.getStringBetween(getContentAsString(), "<a", "</span>");
+                    logger.info(s);
+                    final HttpMethod finalURL = getMethodBuilder("<a " + s).setActionFromAHrefWhereATagContains("http").toGetMethod();
+                    if (!tryDownloadAndSaveFile(finalURL)) {
+                        checkProblems();//if downloading failed
+                        logger.warning(getContentAsString());//log the info
+                        throw new PluginImplementationException();//some unknown problem
+                    }
+                } else throw new PluginImplementationException("create link not found");
 
             } else throw new PluginImplementationException("Main form not found");
         } else {

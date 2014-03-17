@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.plunder;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -41,7 +38,8 @@ class PlunderFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toHttpMethod();
+            //httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toHttpMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.getStringBetween(getContentAsString(), "\"", "\">Download").replaceAll(" ", "%20")).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();
@@ -67,6 +65,10 @@ class PlunderFileRunner extends AbstractRunner {
 
         if (contentAsString.isEmpty() || contentAsString.contains("Bad Request")) {
             throw new PluginImplementationException("Download link is incorrect");
+        }
+
+        if (contentAsString.contains("You must log in to download more this session")) {
+            throw new YouHaveToWaitException("You must log in to download more this session", 60);
         }
     }
 

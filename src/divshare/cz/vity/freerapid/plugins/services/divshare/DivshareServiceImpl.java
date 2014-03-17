@@ -10,13 +10,14 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class DivshareServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "divshare.com";
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return true;
     }
 
     @Override

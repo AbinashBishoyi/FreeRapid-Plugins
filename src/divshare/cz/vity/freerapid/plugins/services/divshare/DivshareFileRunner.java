@@ -1,15 +1,11 @@
 package cz.vity.freerapid.plugins.services.divshare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -25,34 +21,42 @@ import java.util.regex.Matcher;
  */
 class DivshareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DivshareFileRunner.class.getName());
-    private String CONTENT_TYPE;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            if (fileURL.contains("/download/")) checkNameAndSize();
+            if (fileURL.contains("/download/")) {
+                checkNameAndSize();
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher name = getMatcherAgainstContent("<div class=\"file_name\">(?:\\s*?<img src=\"[^<>\"]+?\" valign=\"absmiddle\">)?\\s*?([^\\s][^<>]+?[^\\s])\\s*?</div>");
-        if (!name.find())
-            logger.warning("File name not found");
-        else
-            httpFile.setFileName(name.group(1));
-
-        final Matcher size = getMatcherAgainstContent("<b>File Size:</b>([^<>]+?)<span class=\"tiny\">([^<>]+?)</span>");
-        if (!size.find())
-            logger.warning("File size not found");
-        else
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1) + size.group(2)));
-
+    private void checkNameAndSize() throws Exception {
+        Matcher matcher = getMatcherAgainstContent("<title>(?:.+?\\()?(.+?)\\)? \\- DivShare</title>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found");
+        }
+        httpFile.setFileName(matcher.group(1));
+        final String code = PlugUtils.getStringBetween(getContentAsString(), "var currentFileCode = '", "';");
+        final HttpMethod method = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction("/scripts/ajax/v5/fileStats.php")
+                .setParameter("code", code)
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException();
+        }
+        matcher = getMatcherAgainstContent("<b>File Size:</b>([^<>]+?)<span class=\"tiny\">([^<>]+?)</span>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -61,54 +65,60 @@ class DivshareFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
 
-        final GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
 
             if (fileURL.contains("/folder/")) {
-                CONTENT_TYPE = "folder";
-                final Matcher matcher = getMatcherAgainstContent("<h3 style=\"[^<>\"]+?\">(.+?)<small");
-                if (matcher.find()) httpFile.setFileName(matcher.group(1) + " (folder)");
                 parseWebsite("<div class=\"folder_file_list\"[^<>]+?><a href=\"/download/(.+?)\" title");
 
             } else if (fileURL.contains("/playlist/")) {
-                CONTENT_TYPE = "playlist";
-                final HttpMethod getXML = getMethodBuilder().setReferer(fileURL).setAction("http://www.divshare.com/embed/playlist/" + PlugUtils.getStringBetween(getContentAsString(), "myId=", "\"")).toGetMethod();
-                if (!makeRedirectedRequest(getXML)) throw new ServiceConnectionProblemException();
-                final Matcher matcher = getMatcherAgainstContent("<playlist title=\"(.+?)\">");
-                if (matcher.find()) httpFile.setFileName(matcher.group(1) + " (playlist)");
+                final String data = PlugUtils.getStringBetween(getContentAsString(), "audio_embed?data=", "&");
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction("/embed/audio_embed_xml.php")
+                        .setParameter("data", data)
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
                 parseWebsite("<sound[^<>]+?file_id=\"(.+?)\"");
 
             } else if (fileURL.contains("/gallery/") || fileURL.contains("/slideshow/")) {
-                CONTENT_TYPE = "gallery";
-                final HttpMethod getXML = getMethodBuilder().setReferer(fileURL).setAction("http://www.divshare.com/embed/slideshow/" + PlugUtils.getStringBetween(getContentAsString(), "<a href=\"/download/", "\"")).toGetMethod();
-                if (!makeRedirectedRequest(getXML)) throw new ServiceConnectionProblemException();
-                final Matcher matcher = getMatcherAgainstContent("<album title=\"(.+?)\">");
-                if (matcher.find()) httpFile.setFileName(matcher.group(1) + " (gallery)");
+                final String id = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"/download/", "\"");
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction("/embed/slideshow/" + id)
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
                 parseWebsite("<img src=\"http://www\\.divshare\\.com/img/display/(.+?)\"");
 
             } else if (fileURL.contains("/download/")) {
-
-                CONTENT_TYPE = "regular";
                 checkNameAndSize();
-
                 final String launchURL = fileURL.replace("/download/", "/download/launch/");
-
-                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(launchURL).toGetMethod();
-                if (makeRedirectedRequest(httpMethod)) {
-                    httpMethod = getMethodBuilder().setReferer(launchURL).setActionFromAHrefWhereATagContains("click here").toGetMethod();
-                    client.getHTTPClient().getParams().setParameter("noContentTypeInHeader", true);//accept everything
-                    if (!tryDownloadAndSaveFile(httpMethod)) {
-                        logger.warning(getContentAsString());
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(launchURL)
+                        .toGetMethod();
+                if (makeRedirectedRequest(method)) {
+                    method = getMethodBuilder()
+                            .setReferer(launchURL)
+                            .setActionFromAHrefWhereATagContains("ownload")
+                            .toGetMethod();
+                    setFileStreamContentTypes("text/plain");
+                    if (!tryDownloadAndSaveFile(method)) {
+                        checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
-                } else throw new ServiceConnectionProblemException();
-
+                } else {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
             } else {
-                logger.warning(getContentAsString());
                 throw new InvalidURLOrServiceProblemException("Could not determine content type - Invalid URL?");
             }
-
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -134,25 +144,22 @@ class DivshareFileRunner extends AbstractRunner {
         }
     }
 
-    private void parseWebsite(final String regexp) {
+    private void parseWebsite(final String regexp) throws ErrorDuringDownloadingException {
         final Matcher matcher = getMatcherAgainstContent(regexp);
-        int start = 0;
-        final List<URI> uriList = new LinkedList<URI>();
-        while (matcher.find(start)) {
-            String link = "http://www.divshare.com/download/" + matcher.group(1);
+        final List<URI> list = new LinkedList<URI>();
+        while (matcher.find()) {
+            final String link = "http://www.divshare.com/download/" + matcher.group(1);
             try {
-                uriList.add(new URI(link));
-            } catch (URISyntaxException e) {
+                list.add(new URI(link));
+            } catch (final URISyntaxException e) {
                 LogUtils.processException(logger, e);
             }
-            start = matcher.end();
         }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-    }
-
-    @Override
-    protected String getBaseURL() {
-        return "http://divshare.com";
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
+        httpFile.getProperties().put("removeCompleted", true);
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
     }
 
 }

@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.divshare.com/download/8976227-560"));//regular file
+            httpFile.setNewURL(new URL("http://www.divshare.com/download/16236750-bec"));//regular file
             //httpFile.setNewURL(new URL("http://www.divshare.com/download/9127502-5bc"));//image
             //httpFile.setNewURL(new URL("http://www.divshare.com/download/2280157-d49"));//video
             //httpFile.setNewURL(new URL("http://www.divshare.com/download/9637954-b5f"));//audio

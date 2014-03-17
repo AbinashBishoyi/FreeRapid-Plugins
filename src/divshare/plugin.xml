@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.divshare.DivshareServiceImpl" id="divshare.com" vendor="Vity+ntoskrnl" version="1.1.4">
+<plugin class="cz.vity.freerapid.plugins.services.divshare.DivshareServiceImpl"
+        id="divshare.com" vendor="Vity+ntoskrnl" version="1.2.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?divshare\.com/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="divshare.com"/>
-        <attribute id="maxDownloads" value="9"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
 

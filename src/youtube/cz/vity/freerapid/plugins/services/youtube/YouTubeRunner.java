@@ -54,6 +54,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            fileURL = method.getURI().toString();
+
             checkProblems();
             setConfig();
             checkName();

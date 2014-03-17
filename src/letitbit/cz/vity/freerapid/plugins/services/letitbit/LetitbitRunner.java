@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -45,7 +46,7 @@ class LetitbitRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
         setPageEncoding("Windows-1251");
-        client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
+        setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
 
         HttpMethod httpMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(httpMethod)) {
@@ -62,22 +63,9 @@ class LetitbitRunner extends AbstractRunner {
             }
             String pageUrl = httpMethod.getURI().toString();
 
-            if (!getContentAsString().contains("\"dvifree\"")) {
-                //Russian IPs may see a different page here, let's handle it
-                httpMethod = getMethodBuilder()
-                        .setReferer(pageUrl)
-                        .setActionFromFormWhereTagContains("download4", true)
-                        .toPostMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                pageUrl = httpMethod.getURI().toString();
-            }
-
             httpMethod = getMethodBuilder()
                     .setReferer(pageUrl)
-                    .setActionFromFormByName("dvifree", true)
+                    .setActionFromFormByName("d3_form", true)
                     .toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
@@ -89,7 +77,7 @@ class LetitbitRunner extends AbstractRunner {
 
             httpMethod = getMethodBuilder()
                     .setReferer(pageUrl)
-                    .setAction("/ajax/download3.php")
+                    .setActionFromTextBetween("ajax_check_url = '", "';")
                     .toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();

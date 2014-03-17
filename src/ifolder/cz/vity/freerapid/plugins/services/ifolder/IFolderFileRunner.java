@@ -83,7 +83,7 @@ class IFolderFileRunner extends AbstractRunner {
                 /*
                 * Note: Server sends response with no Status-Line and no headers, Special method must be executed
                 */
-                method = new GetMethodNoStatus("http://ints.ifolder.ru" + method.getPath() + "?" + method.getQueryString());
+                method = new GetMethod("http://ints.ifolder.ru" + method.getPath() + "?" + method.getQueryString());
             }
             do {
                 if (!makeRedirectedRequest(method)) {

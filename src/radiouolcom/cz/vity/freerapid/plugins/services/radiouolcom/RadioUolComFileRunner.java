@@ -157,7 +157,7 @@ class RadioUolComFileRunner extends AbstractRtmpRunner {
 
     private static String mediaHash(final String str) {
         final int iHash = hash(str);
-        return String.format("%x/%02x/%02x/%s", iHash & 0x0f, iHash >> 4 & 0x7f, iHash >> 11 & 0xff, str);
+        return String.format("%X/%02X/%02X/%s", iHash & 0x0f, iHash >> 4 & 0x7f, iHash >> 11 & 0xff, str);
     }
 
 }

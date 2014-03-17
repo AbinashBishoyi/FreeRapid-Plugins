@@ -7,15 +7,15 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
+import java.net.URL;
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,7 +38,6 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        setPageEncoding("Windows-1250");
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -50,90 +49,78 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkName() throws Exception {
-        HttpMethod httpMethod;
-        if (!getContentAsString().contains("callSOAP(")) {
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromIFrameSrcWhereTagContains("iFramePlayer").toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
+        String filename;
+        Matcher matcher;
+        String content;
+
+        matcher = getMatcherAgainstContent("(?i)charset\\s*=\\s*windows-1250");
+        if (matcher.find()) {
+            setPageEncoding("Windows-1250"); //sometimes they use "windows-1250" charset
+            GetMethod method = getGetMethod(fileURL);
+            if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
+            setPageEncoding("UTF-8");
         }
-        if (!getContentAsString().contains("callSOAP(")) {
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Přehrát video").toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-        }
+        content = getContentAsString();
 
-        Matcher matcher;
-        String filename;
-        String nazev;
-        try {
-            nazev = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"nazev\":\"", "\"").trim());
-        } catch (PluginImplementationException e) {
-            throw new PluginImplementationException("Program title not found");
-        }
-        filename = nazev;
-
-        String nazevCasti = "";
-        matcher = getMatcherAgainstContent("\"nazevCasti\":(?:null|\"(.*?)\")");
-        if (matcher.find()) {
-            try {
-                nazevCasti = PlugUtils.unescapeUnicode(matcher.group(1).trim());
-            } catch (Exception e) {
-                //
+        if (content.contains("<h1 id=\"nazev\">")) {
+            matcher = getMatcherAgainstContent("<h1 id=\"nazev\">(?:<a[^<>]+>)?(.+?)(?:</a>)?</h1>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error getting programme title (1)");
             }
-        }
-
-        String nazevCastiProgram = "";
-        matcher = getMatcherAgainstContent("\"nazevCastiProgram\":(?:null|\"(.*?)\")");
-        if (matcher.find()) {
-            try {
-                nazevCastiProgram = PlugUtils.unescapeUnicode(matcher.group(1).trim());
-            } catch (Exception e) {
-                //
-            }
-        }
-
-        //they don't provide a consistent way to get program and episode name, so we have to do this weird thing
-        if (!nazevCastiProgram.isEmpty() && !nazevCasti.isEmpty() && nazevCastiProgram.contains(nazevCasti)) {
-            filename += " - " + nazevCastiProgram;
-        } else {
-            if (!nazevCasti.isEmpty() && !filename.contains(nazevCasti)) {
-                filename += " - " + nazevCasti;
-            }
-            if (!nazevCastiProgram.isEmpty() && !filename.contains(nazevCastiProgram)) {
-                filename += " - " + nazevCastiProgram;
-            }
-        }
-
-        String title;
-        matcher = getMatcherAgainstContent("\"Type\":\"Archive\".+?\"Title\":\"(.*?)\"");
-        if (matcher.find()) {
-            title = PlugUtils.unescapeUnicode(matcher.group(1).trim());
-            if (!title.isEmpty() && !filename.contains(title)) {
-                filename += " - " + title;
-            }
-        }
-
-        //the only way to be sure.. for now...
-        if (filename.equals(nazev)) {
-            String fDodatek;
-            matcher = getMatcherAgainstContent("\"fDodatek\":(?:null|\"(.*?)\")");
-            if (matcher.find()) {
-                try {
-                    fDodatek = PlugUtils.unescapeHtml(PlugUtils.unescapeUnicode(matcher.group(1).trim()));
-                    if (!fDodatek.isEmpty() && !filename.contains(fDodatek)) {
-                        filename += " - " + fDodatek;
-                    }
-                } catch (Exception e) {
-                    //
+            filename = matcher.group(1).trim();
+            if (content.contains("<h2 id=\"nazevcasti\">")) {
+                matcher = getMatcherAgainstContent("<h2 id=\"nazevcasti\">(?:<a[^<>]+>)?(.+?)(?:</a>)?</h2>");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Error getting episode name (1)");
                 }
+                filename += " - " + matcher.group(1).trim();
             }
+        } else if (content.contains("id=\"programmeInfoView\"")) {
+            matcher = getMatcherAgainstContent("(?s)\"programmeInfoView\".+?<h2>(?:<a[^<>]+>)?(.+?)(?:</a>)?</h2>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error getting programme title (2)");
+            }
+            filename = matcher.group(1).trim();
+            if (content.contains("\"episode-title\"")) {
+                matcher = getMatcherAgainstContent("\"episode-title\">(.+?)</");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Error getting episode name (2)");
+                }
+                filename += " - " + matcher.group(1).trim();
+            }
+        } else if (content.contains("id=\"global\"")) {
+            matcher = getMatcherAgainstContent("(?s)id=\"global\".+?<h1>(?:<a[^<>]+>)?(.+?)(?:</a>)?</h1>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error getting programme title (3)");
+            }
+            filename = matcher.group(1).trim();
+            if (content.contains("id=\"titleBox\"")) {
+                matcher = getMatcherAgainstContent("<h2>(?:<a[^<>]+>)?(.+?)(?:</a>)?</h2>");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Error getting episode name (3)");
+                }
+                filename += " - " + matcher.group(1).trim();
+            }
+        } else if (content.contains("<title>")) {
+            matcher = getMatcherAgainstContent("<title>(.+?)</title>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error getting programme title (4)");
+            }
+            filename = matcher.group(1).trim()
+                    .replace("Video &mdash;", "")
+                    .replace("Video —", "")
+                    .replace("&mdash; &#268;esk&aacute; televize", "")
+                    .replace("— Česká televize", "")
+                    .replace("— iVysílání", "");
+        } else {
+            throw new PluginImplementationException("Error getting programme title (5)");
         }
 
+        filename = filename.replaceAll("[\\t\\n]", "");
         filename += ".flv";
         httpFile.setFileName(filename);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -143,72 +130,77 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        setPageEncoding("Windows-1250");
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
 
-            final String callSoapParams = PlugUtils.getStringBetween(getContentAsString(), "callSOAP(", ");");
-            final ScriptEngineManager factory = new ScriptEngineManager();
-            final ScriptEngine engine = factory.getEngineByName("JavaScript");
-            final Map<String, String> params = new LinkedHashMap<String, String>(); //preserve ordering
-            engine.put("params", params);
-            try {
-                engine.eval("function isArray(a){return Object.prototype.toString.apply(a) === '[object Array]';}; "
-                        + "function walkObject(a,path){"
-                        + "if(a==null) {"
-                        + "walk('null',path);"
-                        + "}"
-                        + "for(var key in a){"
-                        + "if(path==''){walk(a[key],key);}"
-                        + " else {walk(a[key],path+'['+key+']');};"
-                        + "}"
-                        + "};"
-                        + "function walk(a,path){"
-                        + " if(isArray(a)) {walkArray(a,path);}"
-                        + " else if(typeof a=='object'){ walkObject(a,path);}"
-                        + " else params.put(path,''+a);"
-                        + "}"
-                        + "function walkArray(a,path){"
-                        + "for(var i=0;i<a.length;i++){"
-                        + " walk(a[i],path+'['+i+']');"
-                        + "}"
-                        + "}"
-                        + "function callSOAP(obj){"
-                        + "walkObject(obj,'');"
-                        + "};"
-                        + "callSOAP(" + callSoapParams + ");");
-            } catch (Exception ex) {
-                throw new PluginImplementationException("Cannot get Playlist");
-            }
-            final MethodBuilder mb = getMethodBuilder().setReferer(fileURL).setAction(getPlaylistUrl());
-            for (final String key : params.keySet()) {
-                mb.setParameter(key, params.get(key));
-            }
-            final HttpMethod getPlayListMethod = mb.toPostMethod();
-            getPlayListMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-            getPlayListMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-            getPlayListMethod.setRequestHeader("x-addr", "127.0.0.1");
-            SwitchItem selectedSwitchItem;
-            Video selectedVideo;
-            setConfig();
-            if (makeRequest(getPlayListMethod)) {
-                final Matcher matcher = getMatcherAgainstContent("(http://[^<>]+)");
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Playlist URL not found");
+            HttpMethod httpMethod;
+            String referer = fileURL;
+            if (!getContentAsString().contains("getPlaylistUrl(")) {
+                httpMethod = getMethodBuilder().setReferer(referer).setActionFromIFrameSrcWhereTagContains("iFramePlayer").toGetMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
                 }
-                final String playlistUrl = URLDecoder.decode(matcher.group(1), "UTF-8").replace("hashedId", "id");
-                final HttpMethod playlistMethod = new GetMethod(playlistUrl);
-                if (!makeRedirectedRequest(playlistMethod)) {
-                    throw new PluginImplementationException("Cannot connect to playlist");
-                }
-                selectedSwitchItem = getSelectedSwitchItem(getContentAsString());
-                selectedVideo = getSelectedVideo(selectedSwitchItem);
-            } else {
                 checkProblems();
-                throw new PluginImplementationException("Cannot load playlist URL");
+                referer = httpMethod.getURI().toString();
             }
+
+            if (!getContentAsString().contains("getPlaylistUrl(")) {
+                httpMethod = getMethodBuilder().setReferer(referer).setActionFromAHrefWhereATagContains("Přehrát video").toGetMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                referer = httpMethod.getURI().toString();
+            }
+
+            URL requestUrl = new URL(referer);
+            String videoId;
+            String type;
+            try {
+                videoId = PlugUtils.getStringBetween(getContentAsString(), "\"id\":\"", "\"");
+            } catch (PluginImplementationException e) {
+                throw new PluginImplementationException("Video ID not found");
+            }
+            try {
+                type = PlugUtils.getStringBetween(getContentAsString(), "\"type\":\"", "\"");
+            } catch (PluginImplementationException e) {
+                throw new PluginImplementationException("Request type not found");
+            }
+            httpMethod = getMethodBuilder()
+                    .setReferer(referer)
+                    .setAjax()
+                    .setAction("http://www.ceskatelevize.cz/ivysilani/ajax/get-playlist-url")
+                    .setParameter("playlist[0][id]", videoId)
+                    .setParameter("playlist[0][startTime]", "")
+                    .setParameter("playlist[0][stopTime]", "")
+                    .setParameter("playlist[0][type]", type)
+                    .setParameter("requestSource", "iVysilani")
+                    .setParameter("requestUrl", requestUrl.getAuthority())
+                    .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                    .setHeader("x-addr", "127.0.0.1")
+                    .toPostMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Cannot load playlist URL");
+
+            }
+
+            Matcher matcher = getMatcherAgainstContent("\"url\":\"(.+?)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Playlist URL not found");
+            }
+            String playlistUrl = URLDecoder.decode(matcher.group(1).replace("\\/", "/"), "UTF-8").replace("hashedId", "id");
+            httpMethod = new GetMethod(playlistUrl);
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Cannot connect to playlist");
+            }
+            setConfig();
+            SwitchItem selectedSwitchItem = getSelectedSwitchItem(getContentAsString());
+            Video selectedVideo = getSelectedVideo(selectedSwitchItem);
             RtmpSession rtmpSession = new RtmpSession(selectedSwitchItem.getBase(), selectedVideo.getSrc());
             rtmpSession.disablePauseWorkaround();
             tryDownloadAndSaveFile(rtmpSession);
@@ -226,14 +218,6 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         if (contentAsString.contains("content is not available at")) {
             throw new PluginImplementationException("This content is not available at your territory due to limited copyright");
         }
-    }
-
-    private String getPlaylistUrl() throws Exception {
-        final HttpMethod method = getGetMethod("http://img.ceskatelevize.cz/libraries/player/ajaxPlaylist.js?ver=1.1");
-        if (!makeRedirectedRequest(method)) {
-            throw new ServiceConnectionProblemException();
-        }
-        return PlugUtils.getStringBetween(getContentAsString(), "url: \"", "\"");
     }
 
     private SwitchItem getSelectedSwitchItem(String playlistContent) throws PluginImplementationException {

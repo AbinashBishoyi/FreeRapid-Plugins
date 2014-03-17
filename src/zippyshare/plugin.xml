@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.zippyshare.ZippyShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?zippyshare\.com(.+?)+file.html"/>
-        <attribute id="minver" value="0.8"/>
-        <attribute id="maxver" value="0.809"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.819"/>
         <attribute id="services" value="zippyshare.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

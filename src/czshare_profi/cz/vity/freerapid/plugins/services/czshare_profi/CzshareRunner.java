@@ -63,7 +63,7 @@ class CzshareRunner extends AbstractRunner {
                     Login(getContentAsString());
 
                 content = getContentAsString();
-                matcher = PlugUtils.matcher("<a href=\"(.*czshare.com/" + id + "/[^\"]*)\" title=\"" + Pattern.quote(httpFile.getFileName()) + "\">" + Pattern.quote(httpFile.getFileName()) + "</a>", content);
+                matcher = PlugUtils.matcher("<a href=\"(.*czshare.com/" + id + "/[^\"]*)\" title=\"[^\"]+\">", content);  //Note (JPEXS): text of the link can contain inserted <br /> tags, url can contain other characters than title parameter
                 if (matcher.find()) {
                     String downURL = matcher.group(1);
 
@@ -170,15 +170,15 @@ class CzshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Soubor byl smaz.n jeho odesilatelem</strong>");
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("<b>Soubor byl smazán jeho odesilatelem</b><br>");
+            throw new URLNotAvailableAnymoreException("<b>Soubor byl smazï¿½n jeho odesilatelem</b><br>");
         }
         matcher = getMatcherAgainstContent("Tento soubor byl na upozorn.n. identifikov.n jako warez\\.</strong>");
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("<b>Tento soubor byl na upozornìní identifikován jako warez</b><br>");
+            throw new URLNotAvailableAnymoreException("<b>Tento soubor byl na upozornï¿½nï¿½ identifikovï¿½n jako warez</b><br>");
         }
         matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Bohužel je vyèerpána maximální kapacita FREE downloadù", WAIT_TIME);
+            throw new YouHaveToWaitException("Bohuï¿½el je vyï¿½erpï¿½na maximï¿½lnï¿½ kapacita FREE downloadï¿½", WAIT_TIME);
         }
         if (badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad CZshare profi account login information!");

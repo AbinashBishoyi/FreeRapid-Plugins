@@ -51,7 +51,7 @@ class ExtabitPremiumFileRunner extends AbstractRunner {
             if (!tryDownloadAndSaveFile(method)) {
                 checkDownloadProblems();
                 //Redirection download Failed.....Using Button from page
-                final String download = PlugUtils.getStringBetween(getContentAsString(), "download-file-btn\" href=\"", "\" onClick");
+                final String download = PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" class=\"styledButton\"");
                 method = getGetMethod(download);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkDownloadProblems();

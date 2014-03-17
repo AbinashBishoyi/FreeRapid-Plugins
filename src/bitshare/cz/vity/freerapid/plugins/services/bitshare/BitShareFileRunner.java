@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.bitshare;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -89,7 +92,12 @@ class BitShareFileRunner extends AbstractRunner {
             postMethodWithID.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
             setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
 
-            if (!makeRequest(captchaMethod) || !getContentAsString().equals("SUCCESS")) {
+            if (makeRequest(captchaMethod)) {
+                if (!getContentAsString().equals("SUCCESS")) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            } else {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
@@ -135,7 +143,7 @@ class BitShareFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (contentAsString.contains("cant download more then 1 files at time")) {
-            throw new YouHaveToWaitException("Cannot download more then 1 files at time", 60);
+            throw new ServiceConnectionProblemException("Cannot download more then 1 files at time");
         }
         if (contentAsString.contains("SESSION ERROR")) {
             throw new ServiceConnectionProblemException("Connection problem");

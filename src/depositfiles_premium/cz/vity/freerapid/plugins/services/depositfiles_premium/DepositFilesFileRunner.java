@@ -85,13 +85,22 @@ class DepositFilesFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher name = getMatcherAgainstContent("File name: <b title=\"(.+?)\"");
-        if (!name.find()) throw new PluginImplementationException("File name not found");
-        httpFile.setFileName(name.group(1));
+        Matcher matcher = getMatcherAgainstContent("eval\\s*\\(\\s*unescape\\s*\\(\\s*'(.+?)'");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found (1)");
+        }
+        final String nameContent = PlugUtils.unescapeUnicode(matcher.group(1).replace("%u", "\\u"));
+        matcher = PlugUtils.matcher("File name: <b title=\"(.+?)\"", nameContent);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found (2)");
+        }
+        httpFile.setFileName(matcher.group(1));
 
-        final Matcher size = getMatcherAgainstContent("File size: <b[^<>]*?>(.+?)</b>");
-        if (!size.find()) throw new PluginImplementationException("File size not found");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
+        matcher = getMatcherAgainstContent("File size: <b[^<>]*?>(.+?)</b>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

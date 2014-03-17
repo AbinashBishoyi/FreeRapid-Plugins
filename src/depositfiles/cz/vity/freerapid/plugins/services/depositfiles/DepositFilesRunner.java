@@ -138,9 +138,14 @@ class DepositFilesRunner extends AbstractRunner {
         if (content.contains("file does not exist"))
             throw new URLNotAvailableAnymoreException("Such file does not exist or it has been removed for infringement of copyrights");
 
-        Matcher matcher = getMatcherAgainstContent("File name: <b title=\"(.+?)\"");
+        Matcher matcher = getMatcherAgainstContent("eval\\s*\\(\\s*unescape\\s*\\(\\s*'(.+?)'");
         if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
+            throw new PluginImplementationException("File name not found (1)");
+        }
+        final String nameContent = PlugUtils.unescapeUnicode(matcher.group(1).replace("%u", "\\u"));
+        matcher = PlugUtils.matcher("File name: <b title=\"(.+?)\"", nameContent);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found (2)");
         }
         httpFile.setFileName(matcher.group(1));
 

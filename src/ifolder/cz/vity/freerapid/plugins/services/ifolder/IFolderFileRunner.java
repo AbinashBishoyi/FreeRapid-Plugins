@@ -61,8 +61,8 @@ class IFolderFileRunner extends AbstractRunner {
             }
             final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
             if (makeRedirectedRequest(method2)) {
-                contentAsString = getContentAsString();
-                matcher = PlugUtils.matcher("<a href=(http\\:\\/\\/s\\.agava\\.ru[^>]*)>", contentAsString);
+                contentAsString = getContentAsString();//http://ints.ifolder.ru/ints/sponsor/?bi=577&session
+                matcher = PlugUtils.matcher("<a href=(http\\:\\/\\/ints\\.ifolder\\.ru/ints/sponsor[^>]*)>", contentAsString);
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Cannot find ads link on second page");
                 }

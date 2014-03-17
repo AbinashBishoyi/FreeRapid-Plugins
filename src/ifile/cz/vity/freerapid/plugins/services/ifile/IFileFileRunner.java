@@ -110,12 +110,10 @@ class IFileFileRunner extends AbstractRunner {
                 logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                checkProblems();
                 logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            checkProblems();
             logger.warning("File name was not found");
             throw new PluginImplementationException();
         }

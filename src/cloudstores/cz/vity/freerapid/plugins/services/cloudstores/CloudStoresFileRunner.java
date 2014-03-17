@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 
 import java.net.URI;
 import java.net.URLDecoder;
@@ -66,7 +67,7 @@ class CloudStoresFileRunner extends AbstractRunner {
             method = mb.toPostMethod();
             if (makeRedirectedRequest(method)) {
                 final String url = getContentAsString().trim();
-                final String path = new URI(url).getPath();
+                final String path = new URI(URIUtil.encodePathQuery(url)).getPath();
                 httpFile.setFileName(URLDecoder.decode(path.substring(path.lastIndexOf('/') + 1), "UTF-8"));
                 method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
                 if (!tryDownloadAndSaveFile(method)) {

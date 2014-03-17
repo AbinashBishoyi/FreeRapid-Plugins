@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.putlocker.PutLockerServiceImpl"
-        id="putlocker.com" vendor="tong2shot" version="1.0.4">
+        id="putlocker.com" vendor="tong2shot" version="1.0.5">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?putlocker\.com/file/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?(putlocker|sockshare)\.com/file/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="putlocker.com"/>
+        <attribute id="services" value="putlocker.com sockshare.com"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

@@ -48,6 +48,7 @@ class PutLockerFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            final String baseURL = "http://" + method.getURI().getAuthority();
             checkProblems();
             checkNameAndSize(getContentAsString());
             /* skip waiting time
@@ -70,7 +71,7 @@ class PutLockerFileRunner extends AbstractRunner {
 
             //refresh the page, if quota exceeded
             if (getContentAsString().contains("exceeded the daily download limit for your country")) {
-                downloadTask.sleep(10);
+                downloadTask.sleep(3);
                 httpMethod = getGetMethod(fileURL);
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
@@ -91,7 +92,8 @@ class PutLockerFileRunner extends AbstractRunner {
             }
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction("http://www.putlocker.com/get_file.php" + downloadURL)
+                    .setBaseURL(baseURL)
+                    .setAction("/get_file.php" + downloadURL)
                     .toGetMethod();
             if (isVideoStream) {
                 if (!makeRedirectedRequest(httpMethod)) {

@@ -100,7 +100,7 @@ class UlozToRunner extends AbstractRunner {
                 }
                 checkProblems();
             }
-            setFileStreamContentTypes("text/plain");
+            setFileStreamContentTypes("text/plain", "text/texmacs");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 if (method != null) {

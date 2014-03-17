@@ -39,7 +39,7 @@ public class SolveMediaCaptcha {
     private final static Logger logger = Logger.getLogger(SolveMediaCaptcha.class.getName());
     private final static String SOLVEMEDIA_CAPTCHA_URL = "http://api.solvemedia.com/papi/";
     private final static String SOLVEMEDIA_CAPTCHA_SECURE_URL = "https://api-secure.solvemedia.com/papi/";
-    private final static String C_FORMAT = "js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox24,os/nt,os/nt6.1,%s,jslib/jquery,jslib/jqueryui";
+    private final static String C_FORMAT = "js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox25,os/nt,os/nt6.1,%s,jslib/jquery,jslib/jqueryui";
 
     private final String publicKey;
     private final HttpDownloadClient client;
@@ -49,9 +49,6 @@ public class SolveMediaCaptcha {
     private String theme;
     private String challenge;
     private String response;
-
-    //TODO : implement noscript method
-    //for example : http://api.solvemedia.com/papi/challenge.noscript?k=oy3wKTaFP368dkJiGUqOVjBR2rOOR7GR
 
     /**
      * Constructor of SolveMediaCaptcha
@@ -128,13 +125,12 @@ public class SolveMediaCaptcha {
                         captchaResponse[i] = x;
                     }
                     response = new String(captchaResponse);
-                }
-                if (client.getContentAsString().contains("base64")) {
+                } else if (client.getContentAsString().contains("base64")) {
                     String base64Str;
                     try {
                         base64Str = PlugUtils.getStringBetween(client.getContentAsString(), "base64,", "\"");
                     } catch (PluginImplementationException e) {
-                        throw new PluginImplementationException("Base64 string image representation not found");
+                        throw new PluginImplementationException("Base64 of image representation not found");
                     }
                     ByteArrayInputStream bais = new ByteArrayInputStream(Base64.decodeBase64(base64Str));
                     response = captchaSupport.askForCaptcha(captchaSupport.loadCaptcha(bais));
@@ -345,7 +341,7 @@ public class SolveMediaCaptcha {
                 .setBaseURL(baseUrl)
                 .setAction(action)
                 .toGetMethod();
-        method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0");
+        method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:25.0) Gecko/20100101 Firefox/25.0");
         method.setRequestHeader("Accept", "*/*");
         method.setRequestHeader("Accept-Language", "en-US,en;q=0.5");
         method.setRequestHeader("Connection", "keep-alive");

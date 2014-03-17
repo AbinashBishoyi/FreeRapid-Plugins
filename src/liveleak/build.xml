@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="LiveLeak.com" default="all" basedir=".">
+    <property name="application" value="liveleak"/>
+
+    <property name="version" value="1.0"/>
+    <property name="version.name" value="${application}"/>
+
+    <property name="mainjar.file" value="liveleak.jar"/>
+
+    <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
+
+    <!-- output data directories -->
+    <property name="build.dir" value="../../plugins/${version.name}"/>
+    <property name="classes.dir" value="../../_classes"/>
+    <property name="dist.dir" value="../../dist"/>
+
+    <!-- input data directories -->
+    <property name="src.dir" value="."/>
+    <!--<property name="etc.dir" value="etc"/>-->
+    <!--<property name="doc.dir" value="doc"/>-->
+    <property name="lib.dir" value="../../lib"/>
+    <!--<property name="dev.dir" value="dev"/>-->
+    <property name="plugins.dir" value="plugins"/>
+
+    <fileset id="jars" dir="${lib.dir}" includes="**/*"/>
+
+    <property name="dev.dir" value="../../dev"/>
+
+    <patternset id="compiler.resources">
+        <include name="**/?*.properties"/>
+        <include name="**/?*.xml"/>
+        <include name="**/?*.txt"/>
+        <include name="**/?*.gif"/>
+        <include name="**/?*.png"/>
+        <include name="**/?*.jpeg"/>
+        <include name="**/?*.jpg"/>
+        <include name="**/?*.html"/>
+        <include name="**/?*.dtd"/>
+        <include name="**/?*.tld"/>
+        <include name="**/?*.mid"/>
+        <include name="**/?*.wav"/>
+
+        <exclude name="**/plugin.xml"/>
+    </patternset>
+
+    <path id="cp">
+        <fileset refid="jars"/>
+    </path>
+
+    <path id="dist-jars">
+        <fileset dir="${build.dir}/${lib.dir}" includes="**/*.jar"/>
+        <fileset dir="${build.dir}" includes="${mainjar.file}"/>
+    </path>
+
+    <pathconvert property="lib.prefix" pathsep=" ">
+        <path location="${lib.dir}"/>
+    </pathconvert>
+
+    <pathconvert property="classpath" refid="jars" pathsep=" " dirsep="/">
+        <map from="${lib.prefix}" to="${lib.dir}"/>
+    </pathconvert>
+
+    <target name="build" depends="compile" description="building ERModeller">
+
+        <copy todir="${build.dir}">
+            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/TestApp*"/>
+        </copy>
+
+        <copy todir="${build.dir}">
+            <fileset dir="${src.dir}" includes="plugin.xml"/>
+        </copy>
+
+    </target>
+
+    <target name="compile" depends="clean, init" description="compiling source codes">
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
+
+            <sourcepath location="../devapp"/>
+        </javac>
+        <!-- zkopirovani resourcu -->
+
+        <copy todir="${classes.dir}">
+            <fileset dir="${src.dir}">
+                <patternset refid="compiler.resources"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <target name="init" description="initialization">
+        <tstamp/>
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <target name="clean" description="clean up">
+        <delete dir="${build.dir}"/>
+        <delete dir="${classes.dir}"/>
+        <delete dir="${dist.dir}/${version.name}.frp"/>
+    </target>
+
+    <target name="all" depends="clean,init,compile, build, dist" description="build all"/>
+
+    <!-- run -->
+
+
+    <target name="dist" depends="build" description="creating release">
+        <zip zipfile="${dist.dir}/${version.name}.frp">
+            <fileset dir="${build.dir}" includes="**/*">
+                <!--<include name="${build.dir}/${version.name}"/>-->
+                <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->
+            </fileset>
+        </zip>
+        <!--<zip destfile="${dist.dir}/${version.name}-src.frp">-->
+        <!--<fileset dir=".">-->
+        <!--<include name="${lib.dir}/"/>-->
+        <!--<include name="${src.dir}/"/>-->
+
+        <!--<include name="${plugins.dir}/"/>-->
+
+        <!--<include name="build.xml"/>-->
+        <!--</fileset>-->
+        <!--</zip>-->
+    </target>
+
+</project>

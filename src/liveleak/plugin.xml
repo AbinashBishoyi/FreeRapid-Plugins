@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.ulozto.UlozToServiceImpl"
-        id="uloz.to" vendor="Lukiz+JPEXS+birchie+Abinash Bishoyi" version="1.0.43">
+<plugin class="cz.vity.freerapid.plugins.services.liveleak.LiveLeakServiceImpl"
+        id="liveleak.com" vendor="tong2shot" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(uloz\.to|ulozto\.net|ulozto\.cz|ulozto\.sk|zachowajto\.pl)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?liveleak\.com/view\?i=.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="uloz.to"/>
+        <attribute id="services" value="liveleak.com"/>
         <attribute id="maxDownloads" value="10"/>
+        <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
+
     <runtime>
-        <library id="uloz.to" path="/" type="code"/>
+        <library id="liveleak.com" path="/" type="code"/>
     </runtime>
 </plugin>

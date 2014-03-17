@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 class MirrorChooser {
-    final static String CONFIGFILE = "rsMirror.xml";
+    public final static String CONFIGFILE = "rsMirror.xml";
     private final static Logger logger = Logger.getLogger(MirrorChooser.class.getName());
     private RapidShareMirrorConfig mirrorConfig;
     private ConfigurationStorageSupport storage;
@@ -21,7 +21,7 @@ class MirrorChooser {
     private String content;
     private DialogSupport dialogSupport;
 
-    MirrorChooser(PluginContext context, RapidShareMirrorConfig mirrorConfig) {
+    public MirrorChooser(PluginContext context, RapidShareMirrorConfig mirrorConfig) {
 
         storage = context.getConfigurationStorageSupport();
         dialogSupport = context.getDialogSupport();
@@ -33,7 +33,7 @@ class MirrorChooser {
         return mirrorConfig;
     }
 
-    MirrorBean getChosen() {
+    public MirrorBean getChosen() {
         return mirrorConfig.getChosen();
     }
 
@@ -46,14 +46,14 @@ class MirrorChooser {
 
     }
 
-    Object[] getArray() {
+    public Object[] getArray() {
         return mirrorConfig.getAr().toArray();
     }
 
     private void makeMirrorList() throws Exception {
         logger.info("Making list of mirrors ");
         initPreferred(mirrorConfig);
-        Matcher matcher = PlugUtils.matcher("<input (checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'http://rs[0-9]+([^.]+)[^']*.';\" /> ([^<]*)<br", content);
+        Matcher matcher = PlugUtils.matcher("<input( checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'http://rs[0-9]+([^.]+)[^']*.';\" /> ([^<]*)<br", content);
         while (matcher.find()) {
 
             String mirrorName = matcher.group(3);
@@ -67,7 +67,7 @@ class MirrorChooser {
         // <input checked type="radio" name="mirror" onclick="document.dlf.action=\'http://rs332gc.rapidshare.com/files/168531395/2434660/rkdr.part3.rar\';" /> GlobalCrossing<br />
     }
 
-    void chooseFromList() throws Exception {
+    public void chooseFromList() throws Exception {
         MirrorChooserUI ms = new MirrorChooserUI(this);
         if (dialogSupport.showOKCancelDialog(ms, "Choose mirror")) {
             setPreffered(ms.getChoosen());
@@ -103,11 +103,11 @@ class MirrorChooser {
 
     }
 
-    static void initPreferred(RapidShareMirrorConfig mirrorConfig) {
+    public static void initPreferred(RapidShareMirrorConfig mirrorConfig) {
         logger.info("Initializing preferred mirror as default ");
 
         MirrorBean defaultBean = MirrorBean.createDefault();
-        if (!mirrorConfig.getAr().contains(defaultBean)) 
+        if (!mirrorConfig.getAr().contains(defaultBean))
             mirrorConfig.getAr().add(defaultBean);
         mirrorConfig.setChosen(defaultBean);
     }

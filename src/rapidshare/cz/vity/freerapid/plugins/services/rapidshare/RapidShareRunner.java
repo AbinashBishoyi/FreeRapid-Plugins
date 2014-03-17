@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.rapidshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -21,9 +20,9 @@ import java.util.regex.Matcher;
 class RapidShareRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
-    ConfigurationStorageSupport storage;
-    PluginContext context;
+    private PluginContext context;
 
+    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -33,9 +32,9 @@ class RapidShareRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
+    @Override
     public void run() throws Exception {
         super.run();
-        //       storage = getPluginService().getPluginContext().getConfigurationStorageSupport();
         context = getPluginService().getPluginContext();
 
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -106,20 +105,9 @@ class RapidShareRunner extends AbstractRunner {
         return chooser.getPreferredURL(getContentAsString());
     }
 
-    private void enterCheck() throws NotRecoverableDownloadException, InvalidURLOrServiceProblemException, ServiceConnectionProblemException, YouHaveToWaitException {
+    private void enterCheck() throws ErrorDuringDownloadingException {
         Matcher matcher;
         if (!getContentAsString().contains("form id=\"ff\" action=")) {
-
-//            matcher = getMatcherAgainstContent("class=\"klappbox\">((\\s|.)*?)</div>");
-//            if (matcher.find()) {
-//                final String error = matcher.group(1);
-//                if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed") || error.contains("file is neither allocated to") || error.contains("limit is reached"))
-//                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
-//                if (error.contains("file could not be found"))
-//                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
-//                logger.warning(getContentAsString());
-//                throw new InvalidURLOrServiceProblemException("<b>RapidShare error:</b><br>" + error);
-//            }
             if (getContentAsString().contains("has removed file"))
                 throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>The uploader has removed this file from the server.");
             if (getContentAsString().contains("file could not be found"))
@@ -167,7 +155,7 @@ class RapidShareRunner extends AbstractRunner {
 
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, NotRecoverableDownloadException, InvalidURLOrServiceProblemException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         if (getContentAsString().contains("You have reached the")) {
             matcher = getMatcherAgainstContent("try again in about ([0-9]+) minute");
@@ -224,24 +212,6 @@ class RapidShareRunner extends AbstractRunner {
             return value;
         }
     }
-
-//
-//    public static void main(String[] args) {
-//        String s = "http://rs617l32.rapidshare.com/files/xxxxxxxxx/xxxxxxx/myfiles.part11.rar";
-//        int i1 = s.toLowerCase().indexOf("http://");
-//        if (i1 == 0) {
-//            i1 += "http://".length();
-//            final int i2 = s.indexOf('/', i1);
-//            if (i2 > 0) {
-//                final String subs = s.substring(i1, i2);
-//                String ip = translateToIP(subs);
-//                logger.info("Changing " + subs + " to " + ip);
-//                s = new StringBuilder(s).replace(i1, i2, ip).toString();
-//            }
-//        }
-//
-//        System.out.println("s = " + s);
-//    }
 
 }
 

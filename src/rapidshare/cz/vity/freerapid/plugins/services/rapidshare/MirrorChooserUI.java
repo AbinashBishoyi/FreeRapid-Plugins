@@ -10,7 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * @author Ludìk
+ * @author Lukiz
  */
 class MirrorChooserUI extends javax.swing.JPanel {
     // Variables declaration - do not modify
@@ -18,6 +18,7 @@ class MirrorChooserUI extends javax.swing.JPanel {
     private javax.swing.DefaultComboBoxModel mirrors;
 
     // End of variables declaration
+
     /**
      * Creates new form MirrorChooser
      *

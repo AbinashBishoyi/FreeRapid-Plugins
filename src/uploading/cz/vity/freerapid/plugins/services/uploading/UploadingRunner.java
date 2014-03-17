@@ -4,14 +4,13 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
+import java.util.Random;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
@@ -38,48 +37,39 @@ class UploadingRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
-            if (getContentAsString().contains("downloadform")) {
-                checkNameAndSize(getContentAsString());
-                client.setReferer(fileURL);
-                PostMethod method = getPostMethod(fileURL);
-                method.addParameter("free", "1");
+            checkProblems();
+            checkNameAndSize(getContentAsString());
+            client.setReferer(fileURL);
+            HttpMethod method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("downloadform", true).toHttpMethod();
+            if (makeRedirectedRequest(method)) {
+                checkProblems();
+                final String fileId = PlugUtils.getStringBetween(getContentAsString(), "file_id: ", ", action:");
+                method = getMethodBuilder().setAction("http://uploading.com/files/get/?JsHttpRequest=" + new Random().nextInt(5000000)).setParameter("file_id", fileId).setParameter("action", "get_link").toHttpMethod();
+                final int wait = PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")");
+                this.downloadTask.sleep(wait + 1);
                 if (makeRedirectedRequest(method)) {
-                    if (!getContentAsString().contains("name=\"x\"")) {
-                        logger.info(getContentAsString());
-                        throw new PluginImplementationException();
-                    }
-                    int timeToWait = 92;
-                    Matcher matcher = getMatcherAgainstContent("<script>\\s*var [^=]+=([0-9]+)");
-                    if (matcher.find()) timeToWait = Integer.decode(matcher.group(1));
-                    downloadTask.sleep(timeToWait);
-                    PostMethod method2 = getPostMethod(fileURL);
-                    method2.addParameter("free", "1");
-                    method2.addParameter("x", "1");
-                    if (!tryDownloadAndSaveFile(method2)) {
+                    checkProblems();
+                    logger.info("Ajax response:" + getContentAsString());
+                    if (!getContentAsString().contains("\"link\""))
+                        throw new PluginImplementationException("Download link not found");
+                    final String link = "http:" + PlugUtils.getStringBetween(getContentAsString(), "\"link\": \"http:", "\" } }").replaceAll("\\\\/", "/");
+                    logger.info("Link:" + link);
+                    method = getMethodBuilder().setAction(link).toHttpMethod();
+                    if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         logger.warning(getContentAsString());
                         throw new IOException("File input stream is empty.");
                     }
-
                 } else {
                     logger.info(getContentAsString());
                     throw new PluginImplementationException();
                 }
             } else {
-                checkProblems();
                 logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
         } else
             throw new PluginImplementationException();
-    }
-
-    private String sicherName(String s) throws UnsupportedEncodingException {
-        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
-        if (matcher.find()) {
-            return matcher.group(2);
-        }
-        return "file01";
     }
 
     private void checkNameAndSize(String content) throws Exception {
@@ -90,30 +80,21 @@ class UploadingRunner extends AbstractRunner {
         }
         checkProblems();
 
-        Matcher matcher = PlugUtils.matcher("Download file </h.> <b>([^<]+)", content);
-        // odebiram jmeno
-        String fn;
-        if (matcher.find()) {
-            fn = matcher.group(1);
-        } else fn = sicherName(fileURL);
-        logger.info("File name " + fn);
-        httpFile.setFileName(fn);
-        // konec odebirani jmena
-
-        matcher = PlugUtils.matcher("([0-9.]+ .B)<br/>", content);
-        if (matcher.find()) {
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        }
-
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "File size: <b>", "</b> <br/>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<h2>", "</h2><br/>");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        if (getContentAsString().contains("FILE REMOVED")) {
-            throw new URLNotAvailableAnymoreException("File removed because of abuse or deleted by owner.");
+        if (getContentAsString().contains("Your IP address is currently downloading")) {
+            throw new ServiceConnectionProblemException("Your IP address is currently downloading a file.\n" + "Please wait until the downloading process has been completed.");
+        }
+        if (getContentAsString().contains("You still need to wait for the start of your download")) {
+            throw new YouHaveToWaitException("You still need to wait for the start of your download", 65);
+        }
+        if (getContentAsString().contains("Requested file not found")) {
+            throw new URLNotAvailableAnymoreException("Requested file not found");
         }
         if (getContentAsString().contains("You have reached the daily downloads limit")) {
             int pause = 20 * 60;

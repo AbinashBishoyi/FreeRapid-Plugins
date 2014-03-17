@@ -62,27 +62,10 @@ class LetitbitRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            int captchas = 0;
-            while (captchas++ < 5) {
-                Matcher matcher = Pattern.compile("form action=\"([^\"]*download[^\"]*)\"(.*)</form>", Pattern.MULTILINE | Pattern.DOTALL).matcher(getContentAsString());
-                if (!matcher.find()) {
-                    checkProblems();
-                    logger.warning(getContentAsString());
-                    throw new InvalidURLOrServiceProblemException("Free download link not found");
-                }
-                String s = matcher.group(1);
-                String form = matcher.group(2);
-                logger.info("Submit form to - " + s);
-                client.setReferer(fileURL);
-                final PostMethod postMethod = getPostMethod(s);
-                PlugUtils.addParameters(postMethod, form, new String[]{"uid", "frameset", "uid2"});
-                postMethod.addParameter("cap", readCaptchaImage());
-                postMethod.addParameter("fix", "1");
-
-                if (!makeRequest(postMethod)) {
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
-                }
+            boolean useOCR = true;
+            while (true) {
+                stepCaptcha(useOCR);
+                Matcher matcher;
                 matcher = PlugUtils.matcher("src=\"([^?]*)\\?link=([^\"]*)\"", getContentAsString());
                 if (matcher.find()) {
                     String t = matcher.group(2);
@@ -103,7 +86,8 @@ class LetitbitRunner extends AbstractRunner {
                 } else {
                     if (getContentAsString().contains("javascript:history.go(-1);")) {
                         logger.info("Wrong captcha");
-                        if (captchas == 3) throw new PluginImplementationException("Too many captcha attempts");
+                        if (useOCR) useOCR = false;
+                        makeRequest(getMethod);
                         continue;
                     }
                     checkProblems();
@@ -115,26 +99,52 @@ class LetitbitRunner extends AbstractRunner {
             throw new PluginImplementationException();
     }
 
-    private String readCaptchaImage() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("src='(.*?/cap.php[^']*)'");
+    private void stepCaptcha(boolean useOCR) throws Exception {
+        Matcher matcher = Pattern.compile("form action=\"([^\"]*download[^\"]*)\"(.*)</form>", Pattern.MULTILINE | Pattern.DOTALL).matcher(getContentAsString());
+        if (!matcher.find()) {
+            checkProblems();
+            logger.warning(getContentAsString());
+            throw new InvalidURLOrServiceProblemException("Free download link not found");
+        }
+        String s = matcher.group(1);
+        String form = matcher.group(2);
+        logger.info("Submit form to - " + s);
+        client.setReferer(fileURL);
+        final PostMethod postMethod = getPostMethod(s);
+        PlugUtils.addParameters(postMethod, form, new String[]{"uid", "frameset", "uid2"});
+        String captcha;
+        if (useOCR) captcha = readCaptchaImage();
+         else captcha = getCaptchaSupport().getCaptcha(getCaptchaImageURL());
+        postMethod.addParameter("cap", captcha);
+        postMethod.addParameter("fix", "1");
+        downloadTask.sleep(4);
+        if (!makeRequest(postMethod)) {
+            logger.info(getContentAsString());
+            throw new PluginImplementationException();
+        }
+    }
+
+    private String getCaptchaImageURL() throws Exception {
+          Matcher matcher = getMatcherAgainstContent("src='(.*?/cap.php[^']*)'");
         if (matcher.find()) {
             String s = PlugUtils.replaceEntities(matcher.group(1));
             logger.info("Captcha - image " + s);
+          return s;
+     } else throw new PluginImplementationException("Captcha URL not found");
+
+   }
+    private String readCaptchaImage() throws Exception {
+            String s = getCaptchaImageURL();
             String captcha;
             final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
             final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2, captchaImage.getHeight() - 2);
             captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
             if (captcha != null) {
                 logger.info("Captcha - OCR recognized " + captcha);
-                //    matcher = PlugUtils.matcher("[A-Z-a-z-0-9]{6}", captcha);
-                //   if (!matcher.find()) {
-                //       captcha = null;
-                //   }
             } else captcha = "";
             captchaImage.flush();//askForCaptcha uvolnuje ten obrazek, takze tady to udelame rucne
             return captcha;
-        }
-        return "";
+
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {

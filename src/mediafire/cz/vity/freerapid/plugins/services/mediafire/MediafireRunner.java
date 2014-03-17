@@ -29,7 +29,7 @@ class MediafireRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
@@ -43,14 +43,16 @@ class MediafireRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
 
-        if (isList()) {
-            runList();
-            return;
-        }
-
-        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
+
+            if (isList()) {
+                runList();
+                return;
+            }
+
+            checkNameAndSize(getContentAsString());
 
             if (getContentAsString().contains("dh('');")) { //if passworded
                 while (getContentAsString().contains("dh('');")) {
@@ -65,6 +67,7 @@ class MediafireRunner extends AbstractRunner {
                     }
                 }
             }
+
             downloadTask.sleep(5);
             if (getContentAsString().contains("unescape")) {
                 String cont = processUnescapeSection(getContentAsString());
@@ -80,7 +83,7 @@ class MediafireRunner extends AbstractRunner {
                 String r = match.group(4);
                 String url = "http://www.mediafire.com/dynamic/download.php?qk=" + qk + "&pk=" + pk + "&r=" + r;
                 logger.info("Script target URL " + url);
-                client.setReferer("http://www.mediafire.com/?" + qk);
+                client.setReferer(fileURL);
                 GetMethod method = getGetMethod(url);
 
                 int functionStart = getContentAsString().indexOf("function " + function);
@@ -90,6 +93,7 @@ class MediafireRunner extends AbstractRunner {
                     throw new PluginImplementationException();
                 }
                 String posID = match2.group(1);
+                logger.info("posID=" + posID);
 
                 if (makeRequest(method)) {
                     String rec = processUnescapeSection(getContentAsString());
@@ -108,7 +112,7 @@ class MediafireRunner extends AbstractRunner {
                     String finalLink = parseLink("h" + rawlink);
                     logger.info("Final URL " + finalLink);
 
-                    client.setReferer("http://www.mediafire.com/?" + qk);
+                    client.setReferer(fileURL);
                     GetMethod method2 = getGetMethod(finalLink);
                     client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                     downloadTask.sleep(5);
@@ -134,7 +138,7 @@ class MediafireRunner extends AbstractRunner {
     }
 
     private String processUnescapeSection(String cont) throws Exception {
-        String regx = "var\\s+?[a-zA-Z0-9]+=unescape\\('([^']*)'\\);var\\s+?[a-zA-Z0-9]+=([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
+        String regx = "[a-zA-Z0-9\\s]+=unescape\\('([^']*)'\\);[a-zA-Z0-9\\s]+=([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
         Boolean loop = true;
         String tuReturn = "";
         while (loop) {
@@ -174,7 +178,7 @@ class MediafireRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("The key you provided for file download was invalid") || contentAsString.contains("How can MediaFire help you?")) {
             throw new URLNotAvailableAnymoreException("File not found");
@@ -182,22 +186,20 @@ class MediafireRunner extends AbstractRunner {
     }
 
     private void runList() throws Exception {
-        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final Matcher matcher = getMatcherAgainstContent("src=\"(/js/myfiles.php[^\"]+?)\"");
+        if (!matcher.find()) throw new PluginImplementationException("URL to list not found");
+        final HttpMethod listMethod = getMethodBuilder().setBaseURL("http://www.mediafire.com").setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
 
-        if (makeRedirectedRequest(getMethod)) {
-            final Matcher matcher = getMatcherAgainstContent("src=\"(/js/myfiles.php[^\"]+?)\"");
-            if (!matcher.find()) throw new PluginImplementationException("URL to list not found");
-            HttpMethod listMethod = getMethodBuilder().setBaseURL("http://www.mediafire.com").setAction(matcher.group(1)).toHttpMethod();
-
-            if (makeRedirectedRequest(listMethod)) parseList();
-            else throw new ServiceConnectionProblemException();
-
-        } else throw new ServiceConnectionProblemException();
+        if (makeRedirectedRequest(listMethod)) {
+            parseList();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
 
     private String parseLink(String rawlink) throws Exception {
-
         String link = "";
 
         Matcher matcher = PlugUtils.matcher("([^'\"]*)(?:'|\")([^'\"]*)'", rawlink);
@@ -205,11 +207,8 @@ class MediafireRunner extends AbstractRunner {
             link = link + matcher.group(1);
             Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(2));
             while (matcher1.find()) {
-
                 link = link + (getVar(matcher1.group(1), getContentAsString()));
             }
-
-
         }
         matcher = PlugUtils.matcher("([^'\"]*)$", rawlink);
         if (matcher.find()) {
@@ -221,11 +220,11 @@ class MediafireRunner extends AbstractRunner {
 
     private String getVar(String s, String content) throws PluginImplementationException {
 
-        Matcher matcher = PlugUtils.matcher("var " + s + "\\s*=\\s*'([^']*)'", content);
+        Matcher matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*'([^']*)'", content);
         if (matcher.find()) {
             return matcher.group(1);
         }
-        matcher = PlugUtils.matcher("var " + s + "\\s*=\\s*([0-9]+)", content);
+        matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*([0-9]+)", content);
         if (matcher.find()) {
             return matcher.group(1);
         }

@@ -12,7 +12,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.net.URLDecoder;
+//import java.net.URLDecoder;
 
 /**
  * @author Alex
@@ -43,16 +43,16 @@ class ForSharedRunner extends AbstractRunner {
             //<a href="http://www.4shared.com/get/62042633/e92a8a5b/RATU_-_Aku_Pasti_Kembali_-_IndoTopSitecom.html" class="dbtn" tabindex="1"><span><span><font>Download Now</font>No virus detected</span></span></a>
             Matcher lMatcher = getMatcherAgainstContent("(http://www.4shared.com/get[^\"]+)");
             if (lMatcher.find()) {
-                System.out.println("TEST1 " + lMatcher.group(1));
+                //System.out.println("TEST1 " + lMatcher.group(1));
                 
                 getMethod = getGetMethod(lMatcher.group(1));
                 if (makeRedirectedRequest(getMethod)) {
                     //<a href='http://dc110.4shared.com/download/62042633/e92a8a5b/RATU_-_Aku_Pasti_Kembali_-_IndoTopSitecom.mp3?tsid=20081219-010049-377c6e2c'>Click here to download this file</a>
                     lMatcher = getMatcherAgainstContent("(http:[^']+)'>Click here to download this file");
                     if (lMatcher.find()) {
-                        System.out.println("TEST2 " + lMatcher.group(1));
+                        //System.out.println("TEST2 " + lMatcher.group(1));
                         getMethod = getGetMethod(lMatcher.group(1));
-                        System.out.println(lMatcher.group(1));
+                        //System.out.println(lMatcher.group(1));
                         //Find delay
                         //DelayTimeSec'>10</b>
                         Matcher sMatcher = getMatcherAgainstContent("DelayTimeSec'>([0-9]+)<");

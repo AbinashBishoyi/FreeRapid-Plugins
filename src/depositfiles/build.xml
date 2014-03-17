@@ -2,7 +2,7 @@
 <project name="DepositFiles Plugin" default="all" basedir=".">
     <property name="application" value="depositfiles"/>
     <property name="version" value="1.01"/>
-    <property name="version.name" value="${application}-${version}"/>
+    <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="depositfiles.jar"/>
 

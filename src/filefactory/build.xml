@@ -2,7 +2,7 @@
 <project name="FileFactory Plugin" default="all" basedir=".">
     <property name="application" value="filefactory"/>
     <property name="version" value="1.01"/>
-    <property name="version.name" value="${application}-${version}"/>
+    <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="filefactory.jar"/>
 

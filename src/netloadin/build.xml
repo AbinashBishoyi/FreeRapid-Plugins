@@ -2,7 +2,7 @@
 <project name="NetloadIn Plugin" default="all" basedir=".">
     <property name="application" value="netloadin"/>
     <property name="version" value="1.0"/>
-    <property name="version.name" value="${application}-${version}"/>
+    <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="netloadin.jar"/>
 

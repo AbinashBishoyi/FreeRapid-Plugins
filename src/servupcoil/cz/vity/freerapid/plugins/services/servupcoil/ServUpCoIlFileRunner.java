@@ -125,7 +125,7 @@ class ServUpCoIlFileRunner extends AbstractRunner {
         } else if (contentAsString.contains("<p class=\"err\">You can download files up to")) {
             Matcher matcher = getMatcherAgainstContent("<p class=\"err\">You can download files up to (\\d+?) Mb");
             if (matcher.find()) {
-                throw new URLNotAvailableAnymoreException("Files above " + matcher.group(1) + " are available for premium users only");
+                throw new URLNotAvailableAnymoreException("Files above " + matcher.group(1) + " Mb are available for premium users only");
             } else {
                 throw new URLNotAvailableAnymoreException("This file is available for premium users only");
             }

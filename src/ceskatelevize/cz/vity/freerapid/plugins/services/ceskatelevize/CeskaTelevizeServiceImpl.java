@@ -20,7 +20,7 @@ public class CeskaTelevizeServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;
+        return false;
     }
 
     @Override
@@ -31,7 +31,6 @@ public class CeskaTelevizeServiceImpl extends AbstractFileShareService {
     @Override
     public void showOptions() throws Exception {
         super.showOptions();
-
         if (getPluginContext().getDialogSupport().showOKCancelDialog(new CeskaTelevizeSettingsPanel(this), "CeskaTelevize settings")) {
             getPluginContext().getConfigurationStorageSupport().storeConfigToFile(config, CONFIG_FILE);
         }
@@ -39,7 +38,6 @@ public class CeskaTelevizeServiceImpl extends AbstractFileShareService {
 
     public CeskaTelevizeSettingsConfig getConfig() throws Exception {
         final ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
-
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new CeskaTelevizeSettingsConfig();
@@ -48,7 +46,6 @@ public class CeskaTelevizeServiceImpl extends AbstractFileShareService {
                 config = storage.loadConfigFromFile(CONFIG_FILE, CeskaTelevizeSettingsConfig.class);
             }
         }
-
         return config;
     }
 

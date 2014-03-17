@@ -16,10 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.ceskatelevize.cz/ivysilani/10084897100-kluci-v-akci/211562221900012/"));//TODO
+            //httpFile.setNewURL(new URL("http://www.ceskatelevize.cz/ivysilani/10084897100-kluci-v-akci/211562221900012/"));
+            httpFile.setNewURL(new URL("http://www.ceskatelevize.cz/loh/videoarchiv/sporty/serm/189028-protest-korejske-sermirky-sin-a-lam/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("195.122.213.61", 3128); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CeskaTelevizeServiceImpl service = new CeskaTelevizeServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

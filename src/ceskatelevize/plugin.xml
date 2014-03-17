@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.ceskatelevize.CeskaTelevizeServiceImpl"
-        id="ceskatelevize.cz" vendor="JPEXS" version="1.0.2">
+        id="ceskatelevize.cz" vendor="JPEXS" version="1.0.3">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?ceskatelevize\.cz/ivysilani/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="urlRegex" value="http://(www\.)?ceskatelevize\.cz/(ivysilani|loh)/.+"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="ceskatelevize.cz"/>
         <attribute id="hasOptions" value="true"/>

@@ -27,6 +27,7 @@ class UploadingRunner extends AbstractRunner {
         super.runCheck();
         addCookie(new Cookie(".uploading.com", "setlang", "en", "/", 86400, false));
         addCookie(new Cookie(".uploading.com", "_lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploading.com", "lang", "1", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -38,6 +39,7 @@ class UploadingRunner extends AbstractRunner {
         super.run();
         addCookie(new Cookie(".uploading.com", "setlang", "en", "/", 86400, false));
         addCookie(new Cookie(".uploading.com", "_lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploading.com", "lang", "1", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {

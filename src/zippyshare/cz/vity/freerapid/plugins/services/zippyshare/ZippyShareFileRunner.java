@@ -42,13 +42,25 @@ class ZippyShareFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
-            final Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?)document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*([^<>]+?)</script>");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Download link not found");
+            final String url;
+            Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?)document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*([^<>]+?)</script>");
+            if (matcher.find()) {
+                final String script = matcher.group(1) + matcher.group(2);
+                logger.info(script);
+                url = ScriptUtils.evaluateJavaScriptToString(script);
+            } else {
+                matcher = getMatcherAgainstContent("url\\s*:\\s*'(.+?)'");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Download link not found");
+                }
+                final String urlParam = matcher.group(1);
+                matcher = getMatcherAgainstContent("seed\\s*:\\s*(\\d+)");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Seed parameter not found");
+                }
+                final int seed = Integer.parseInt(matcher.group(1));
+                url = urlParam + "&time=" + (3 * seed % 1424574);
             }
-            final String script = matcher.group(1) + matcher.group(2);
-            logger.info(script);
-            final String url = ScriptUtils.evaluateJavaScriptToString(script);
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
@@ -71,14 +83,21 @@ class ZippyShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        final Matcher name = getMatcherAgainstContent("document\\.getElementById\\('dlbutton'\\)\\.href.+/(.+?)\";");
-        if (!name.find()) throw new PluginImplementationException("File name not found");
-        httpFile.setFileName(URLDecoder.decode(name.group(1), "UTF-8"));
-
-        final Matcher size = getMatcherAgainstContent("Size:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
-        if (!size.find()) throw new PluginImplementationException("File size not found");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
-
+        Matcher matcher = getMatcherAgainstContent("document\\.getElementById\\('dlbutton'\\)\\.href.+/(.+?)\";");
+        if (matcher.find()) {
+            httpFile.setFileName(URLDecoder.decode(matcher.group(1), "UTF-8"));
+        } else {
+            matcher = getMatcherAgainstContent("Name:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File name not found");
+            }
+            httpFile.setFileName(matcher.group(1));
+        }
+        matcher = getMatcherAgainstContent("Size:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

@@ -36,10 +36,12 @@ class MegauploadRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
-            HTTP_SITE = "http://www.megarotic.com";
-        else if (httpFile.getFileUrl().getHost().contains("megaporn"))
-            HTTP_SITE = "http://www.megaporn.com";
+                String host = httpFile.getFileUrl().getHost();
+        if (host.contains("megarotic") || host.contains("sexuploader")  || host.contains("megaporn") ) {
+           HTTP_SITE = "http://www.megaporn.com";
+         fileURL = fileURL.replace("megarotic","megaporn");
+         fileURL = fileURL.replace("sexuploader","megaporn");
+        }  
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("folderid\",\"")) {
@@ -55,11 +57,12 @@ class MegauploadRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
-
-        if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
-            HTTP_SITE = "http://www.megarotic.com";
-        else if (httpFile.getFileUrl().getHost().contains("megaporn"))
-            HTTP_SITE = "http://www.megaporn.com";
+        String host = httpFile.getFileUrl().getHost();
+        if (host.contains("megarotic") || host.contains("sexuploader")  || host.contains("megaporn") ) {
+           HTTP_SITE = "http://www.megaporn.com";
+         fileURL = fileURL.replace("megarotic","megaporn");
+         fileURL = fileURL.replace("sexuploader","megaporn");
+        }
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
 
@@ -241,7 +244,7 @@ class MegauploadRunner extends AbstractRunner {
 
                 postMethod.addParameter("captcha", captcha);
 
-                if (makeRequest(postMethod)) {
+                if (makeRedirectedRequest(postMethod)) {
                     return true;
                 }
             } else throw new PluginImplementationException("Captcha picture was not found");

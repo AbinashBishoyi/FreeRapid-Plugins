@@ -63,6 +63,7 @@ class CrunchyRollFileRunner extends AbstractRtmpRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            checkProblems();
             final String host = PlugUtils.getStringBetween(getContentAsString(), "<host>", "</host>");
             final String file = PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "<file>", "</file>"));
             final String playerSwfUrl = PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "<default:chromelessPlayerUrl>", "</default:chromelessPlayerUrl>"));
@@ -84,6 +85,15 @@ class CrunchyRollFileRunner extends AbstractRtmpRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("No media found") || getContentAsString().contains("we were unable to find the page you were looking for")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("This video is not available from this website")) {
+            throw new URLNotAvailableAnymoreException("This video is not available from this website");
+        }
+        if (getContentAsString().contains("You are watching a sample clip")) {
+            throw new URLNotAvailableAnymoreException("Sample clips are not supported");
+        }
+        if (getContentAsString().contains("Media not available")) {
+            throw new URLNotAvailableAnymoreException("Media not available");
         }
     }
 

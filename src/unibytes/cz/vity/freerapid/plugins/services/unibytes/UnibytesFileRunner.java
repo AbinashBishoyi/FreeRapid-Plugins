@@ -71,6 +71,10 @@ class UnibytesFileRunner extends AbstractRunner {
         if (getContentAsString().contains("Somebody else is already downloading")) {
             throw new ServiceConnectionProblemException("Somebody else is already downloading using your IP-address");
         }
+        if (getContentAsString().contains("Try to download file later")) {
+            int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "<span id=\"guestDownloadDelayValue\">", "</span>", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("Try to download file later or get the VIP-account on our service. Wait for " + waitTime, waitTime );
+        }
 
     }
 

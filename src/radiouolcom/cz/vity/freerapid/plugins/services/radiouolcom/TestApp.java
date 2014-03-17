@@ -19,7 +19,11 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.radio.uol.com.br/#/programa/lado-bi/edicao/14312793"));
             //httpFile.setNewURL(new URL("http://www.radio.uol.com.br/letras-e-musicas/eric-clapton/strange-brew/2474516"));
             //httpFile.setNewURL(new URL("http://www.radio.uol.com.br/#/letras-e-musicas/daniel/tantinho/2677666"));
-            httpFile.setNewURL(new URL("http://www.radio.uol.com.br/#/letras-e-musicas/psy/gangnam-style/2661687"));
+            //httpFile.setNewURL(new URL("http://www.radio.uol.com.br/#/letras-e-musicas/psy/gangnam-style/2661687"));
+            //httpFile.setNewURL(new URL("http://www.radio.uol.com.br/musica/dado-villa-lobos/piretrum-partenium/194640")); //redirected to letras-e-musicas
+            //httpFile.setNewURL(new URL("http://www.radio.uol.com.br/#/album/varios-artistas/bufo-e-spallanzani---trilha-sonora-original/18146"));
+            httpFile.setNewURL(new URL("http://www.radio.uol.com.br/musica/cassia-eller/bufo-e-spallanzani--dentro-de-ti/194642"));
+
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("187.85.179.170", 3128); //eg we can use local proxy to sniff HTTP communication
             final RadioUolComServiceImpl service = new RadioUolComServiceImpl();

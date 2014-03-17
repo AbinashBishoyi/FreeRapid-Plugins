@@ -85,9 +85,14 @@ class DataCloudFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            final Matcher matcher = getMatcherAgainstContent("<a[^<>]+?href\\s*=\\s*[\"'](.+?)[\"'][^<>]*?>Download</a");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download link not found");
+            }
+            final String downloadLink = matcher.group(1);
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromAHrefWhereATagContains("Download")
+                    .setAction(downloadLink)
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed

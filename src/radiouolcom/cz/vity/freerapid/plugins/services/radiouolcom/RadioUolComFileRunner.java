@@ -4,9 +4,15 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -27,8 +33,17 @@ class RadioUolComFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final String mediaId = getMediaIdFromUrl();
-        final HttpMethod method = getMediaInfoMethod(mediaId);
+        if (isAlbum()) {
+            return;
+        }
+        HttpMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+        final String mediaId = getMediaIdFromUrl(method.getURI().toString());
+        method = getMediaInfoMethod(mediaId);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
@@ -64,8 +79,18 @@ class RadioUolComFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final String mediaId = getMediaIdFromUrl();
-        HttpMethod method = getMediaInfoMethod(mediaId);
+        if (isAlbum()) {
+            parseAlbum();
+            return;
+        }
+        HttpMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+        final String mediaId = getMediaIdFromUrl(method.getURI().toString());
+        method = getMediaInfoMethod(mediaId);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
@@ -132,12 +157,63 @@ class RadioUolComFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private String getMediaIdFromUrl() {
-        return fileURL.substring(fileURL.lastIndexOf("/") + 1);
+    private String getMediaIdFromUrl(String url) {
+        return url.substring(url.lastIndexOf("/") + 1);
+    }
+
+    private boolean isAlbum() {
+        return fileURL.contains("/album/");
     }
 
     private boolean isRtmp() {
         return !fileURL.contains("/programa/");
+    }
+
+    private void parseAlbum() throws Exception {
+        final String mediaId = getMediaIdFromUrl(fileURL);
+        HttpMethod method = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction(String.format("http://www.radio.uol.com.br/search/tracks/release/%s.ws", mediaId))
+                .setAjax()
+                .setHeader("Content-Type", "application/json; charset=utf-8")
+                .toGetMethod();
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+        Matcher matcher = getMatcherAgainstContent("\"volumeurl\",\"#text\": \"(.+?)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Volume url not found");
+        }
+        final String volumeUrl = "http://www.radio.uol.com.br/album" + matcher.group(1) + ".inc";
+        method = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction(volumeUrl)
+                .toGetMethod();
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+
+        //http://www.radio.uol.com.br/musica/dado-villa-lobos/piretrum-partenium/194640
+        final List<URI> uriList = new LinkedList<URI>();
+        matcher = getMatcherAgainstContent("<a[^<>]*?class=\"btnPlay\"[^<>]*?href=[\"'](.+?)[\"']");
+        while (matcher.find()) {
+            final String url = "http://www.radio.uol.com.br" + matcher.group(1);
+            try {
+                uriList.add(new URI(url));
+            } catch (URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+        }
+        if (uriList.isEmpty()) {
+            throw new PluginImplementationException("No song url found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+        httpFile.setState(DownloadState.COMPLETED);
+        httpFile.getProperties().put("removeCompleted", true);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

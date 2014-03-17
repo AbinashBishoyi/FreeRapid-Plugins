@@ -42,7 +42,7 @@ class LetitbitRunner {
                 logger.info("File size " + matcher.group(1));
                 httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
             }
-            matcher = Pattern.compile("File::</span> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = Pattern.compile("File::</span>\\s*([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
                 final String fn = matcher.group(1);
                 logger.info("File name " + fn);
@@ -67,7 +67,7 @@ class LetitbitRunner {
             if (matcher.find()) {
                 String t = matcher.group(2);
                 logger.info("Download URL: " + t);
-                downloader.sleep(2);
+                downloader.sleep(4);
                 if (downloader.isTerminated())
                     throw new InterruptedException();
                 httpFile.setState(DownloadState.GETTING);
@@ -115,7 +115,11 @@ class LetitbitRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException("The page is temporarily unavailable!", 60 * 2);
         }
-
+        matcher = Pattern.compile("You must have static IP", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(client.getContentAsString());
+        if (matcher.find()) {
+            throw new YouHaveToWaitException("You must have static IP! Try again", 60 * 2);
+        }
+        
         matcher = Pattern.compile("file was not found", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("The requested file was not found"));

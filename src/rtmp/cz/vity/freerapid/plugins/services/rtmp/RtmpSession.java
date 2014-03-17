@@ -26,6 +26,7 @@ public class RtmpSession {
     private static final Logger logger = Logger.getLogger(RtmpSession.class.getName());
 
     private static final String RTMP_SESSION_KEY = "RTMP_SESSION_KEY";
+    private static final int DEFAULT_CHUNK_SIZE = 128;
 
     private boolean serverHandshakeReceived;
     private boolean handshakeComplete;
@@ -33,7 +34,8 @@ public class RtmpSession {
     private Map<Integer, Header> prevHeadersOut = new ConcurrentHashMap<Integer, Header>();
     private Map<Integer, Packet> prevPacketsIn = new ConcurrentHashMap<Integer, Packet>();
     private Map<Long, String> invokedMethods = new ConcurrentHashMap<Long, String>();
-    private int chunkSize = 128;
+    private int inChunkSize = DEFAULT_CHUNK_SIZE;
+    private int outChunkSize = DEFAULT_CHUNK_SIZE;
     private long nextInvokeId;
     private long bytesReadLastSent;
     private Map<String, Object> connectParams;
@@ -466,12 +468,20 @@ public class RtmpSession {
         return prevPacketsIn;
     }
 
-    public int getChunkSize() {
-        return chunkSize;
+    public int getInChunkSize() {
+        return inChunkSize;
     }
 
-    public void setChunkSize(int chunkSize) {
-        this.chunkSize = chunkSize;
+    public void setInChunkSize(int inChunkSize) {
+        this.inChunkSize = inChunkSize;
+    }
+
+    public int getOutChunkSize() {
+        return outChunkSize;
+    }
+
+    public void setOutChunkSize(int outChunkSize) {
+        this.outChunkSize = outChunkSize;
     }
 
     public int getStreamDuration() {

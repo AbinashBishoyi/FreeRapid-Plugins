@@ -39,7 +39,7 @@ class RtmpEncoder implements ProtocolEncoder {
         }
 
         Packet packet = (Packet) object;
-        IoBuffer buffer = packet.encode(session.getChunkSize());
+        IoBuffer buffer = packet.encode(session.getOutChunkSize());
         out.write(buffer);
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("sent packet data: " + buffer);

@@ -72,7 +72,7 @@ class Utils {
             buf = new char[length * 2];
         }
         char[] chars;
-        for (int i = offset, j = 0; i < offset + length;) {
+        for (int i = offset, j = 0; i < offset + length; ) {
             chars = toHexChars(ba[i++]);
             buf[j++] = chars[0];
             buf[j++] = chars[1];
@@ -217,7 +217,7 @@ class Utils {
         byte[] bytes = fromHex(hex);
         IoBuffer buf = IoBuffer.wrap(bytes);
         RtmpSession session = new RtmpSession();
-        session.setChunkSize(buf.limit());
+        session.setInChunkSize(buf.limit());
         Packet packet = new Packet();
         packet.decode(buf, session);
         return packet;

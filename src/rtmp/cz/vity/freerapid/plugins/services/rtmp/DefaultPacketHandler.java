@@ -19,7 +19,7 @@ class DefaultPacketHandler implements PacketHandler {
         switch (packet.getHeader().getPacketType()) {
             case CHUNK_SIZE:
                 int newChunkSize = data.getInt();
-                session.setChunkSize(newChunkSize);
+                session.setInChunkSize(newChunkSize);
                 logger.info("new chunk size is: " + newChunkSize);
                 break;
             case CONTROL_MESSAGE:
@@ -132,7 +132,7 @@ class DefaultPacketHandler implements PacketHandler {
                     } else if (resultFor.equals("createStream")) {
                         int streamId = invoke.getLastArgAsInt();
                         logger.info("value of streamId to play: " + streamId);
-                        Invoke play = new Invoke(streamId, "play", 8, null, session.getPlayName());
+                        Invoke play = new Invoke(streamId, "play", 8, null, session.getPlayName(), 0);
                         session.send(play);
                         session.send(Packet.ping(3, streamId, BUFFER_TIME));
                     } else if (resultFor.equals("secureTokenResponse")) {

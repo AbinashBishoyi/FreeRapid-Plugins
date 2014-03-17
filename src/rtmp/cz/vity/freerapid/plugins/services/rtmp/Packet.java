@@ -143,7 +143,7 @@ public class Packet {
             toReadRemaining -= prevPacket.data.position();
         }
 
-        final int chunkSize = session.getChunkSize();
+        final int chunkSize = session.getInChunkSize();
         final int toReadNow = toReadRemaining > chunkSize ? chunkSize : toReadRemaining;
 
         if (in.remaining() < toReadNow) {

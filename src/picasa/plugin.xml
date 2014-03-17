@@ -1,9 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="picasa.com" version="1.0" vendor="Vity"
+<plugin id="picasa.com" version="1.0.1" vendor="Vity"
         class="cz.vity.freerapid.plugins.services.picasa.PicasaServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="(http://(www\.)?picasa.*?\.google.com/.+?/.+)|(http://.+?\.ggpht.com/.+)"/>
+        <attribute id="urlRegex"
+                   value="(http://(www\.)?picasa.*?\.google.[a-z]{2,3}/.+?/.+)|(http://.+?\.ggpht.com/.+)"/>
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="picasa.com"/>

@@ -151,6 +151,11 @@
         <ant dir="${src.dir}/xun6/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/quickshare_premium/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/uploadspace/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/dailymotion/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/uploadline/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/filesmonster/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/picasa/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/freakshare/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

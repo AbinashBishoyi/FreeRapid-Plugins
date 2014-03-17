@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.gigasize;
+package cz.vity.freerapid.plugins.services.uploadline;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Kajda
+ * @author Vity
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,12 +16,15 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.gigasize.com/get.php/3196335804/The_Lair_01x04.avi"));
+
+            //httpFile.setNewURL(new URL("http://www.uploadline.com/772830979392/10.things.i.hate.about.you.s01e08.hdtv.xvid-fqm.avi"));
+            httpFile.setNewURL(new URL("http://www.uploadline.com/182821822066/Official.Windows.7.Wallpaper.Pack-MSi.rar"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final GigaSizeServiceImpl service = new GigaSizeServiceImpl(); //instance of service - of our plugin
+            final UploadLineServiceImpl service = new UploadLineServiceImpl(); //instance of service - of our plugin
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

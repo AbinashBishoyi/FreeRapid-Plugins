@@ -1,16 +1,16 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="yourfiles.biz" version="1.0.2" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.yourfiles.YourFilesServiceImpl">
+<plugin id="uploadline.com" version="1.0.1" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.uploadline.UploadLineServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?yourfiles\.(biz|to)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?uploadline\.com/.+"/>
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="yourfiles.biz"/>
+        <attribute id="services" value="uploadline.com"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
 
     <runtime>
-        <library id="yourfiles.biz" path="/" type="code"/>
+        <library id="uploadline.com" path="/" type="code"/>
     </runtime>
 </plugin>

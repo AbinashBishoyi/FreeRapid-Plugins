@@ -1,7 +1,6 @@
-package cz.vity.freerapid.plugins.services.solidfiles;
+package cz.vity.freerapid.plugins.services.one2up;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -11,15 +10,14 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
  * @author birchie
  */
-class SolidFilesFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(SolidFilesFileRunner.class.getName());
+class One2UpFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(One2UpFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -35,10 +33,8 @@ class SolidFilesFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h2>", "</h2>");
-        final Matcher match = PlugUtils.matcher("File size</dt>\\s*?<dd>(.+?)</dd>", content);
-        if (!match.find()) throw new PluginImplementationException("File size not found");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
+        PlugUtils.checkName(httpFile, content, "<h1>", "</h1>");
+        //PlugUtils.checkFileSize(httpFile, content, "FileSizeLEFT", "FileSizeRIGHT");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -50,11 +46,11 @@ class SolidFilesFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
-            checkNameAndSize(contentAsString);
-            final Matcher match = PlugUtils.matcher("<a.+?id=\"download-button\".+?href=\"(.+?)\".*?>", contentAsString);
-            if (!match.find())
-                throw new PluginImplementationException("Download link not found");
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(match.group(1)).toGetMethod();
+            checkNameAndSize(contentAsString);//extract file name and size from the page
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromTextBetween("txt_URL\" value=\"", "\" ")
+                    .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -67,7 +63,7 @@ class SolidFilesFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("We couldn't find the file you requested")) {
+        if (contentAsString.contains("Not Found Content")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

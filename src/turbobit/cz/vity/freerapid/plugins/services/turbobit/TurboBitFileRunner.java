@@ -15,12 +15,11 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Arthur Gunawan
+ * @author Arthur Gunawan RickCL
  */
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
     private final static String mRef = "http://www.turbobit.net/en";
-
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -41,11 +40,10 @@ class TurboBitFileRunner extends AbstractRunner {
         if (!(content == null)) {
             if (content.contains("&nbsp;</span><b>") && content.contains("</b></h1>") && content.contains(":</b>") && content.contains("</div>")) {
                 PlugUtils.checkName(httpFile, content, "&nbsp;</span><b>", "</b></h1>");
-                PlugUtils.checkFileSize(httpFile, content, ":</b>", "</div>");
+                PlugUtils.checkFileSize(httpFile, content, "\u0420\u0430\u0437\u043c\u0435\u0440 \u0444\u0430\u0439\u043b\u0430:</b>", "</div>");
                 httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
             }
         }
-
     }
 
     @Override
@@ -54,7 +52,7 @@ class TurboBitFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         HttpMethod httpMethod = getMethodBuilder().setReferer(mRef).setAction(parseURL(fileURL)).toGetMethod();
-       
+
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();//if downloading failed
             logger.warning(getContentAsString());//log the info
@@ -65,7 +63,7 @@ class TurboBitFileRunner extends AbstractRunner {
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         Matcher err404Matcher = PlugUtils.matcher("<div class=\"text-404\">(.*?)</div", getContentAsString());
         if (err404Matcher.find()) {
-            if (err404Matcher.group(1).contains("Запро�?енный док�?мент не найден"))
+            if (err404Matcher.group(1).contains("\u00d0\u2014\u00d0\u00b0\u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d1?\u00d0\u00b5\u00d0\u00bd\u00d0\u00bd\u00d1\u2039\u00d0\u00b9 \u00d0\u00b4\u00d0\u00be\u00d0\u00ba\u00d1?\u00d0\u00bc\u00d0\u00b5\u00d0\u00bd\u00d1\u201a \u00d0\u00bd\u00d0\u00b5 \u00d0\u00bd\u00d0\u00b0\u00d0\u00b9\u00d0\u00b4\u00d0\u00b5\u00d0\u00bd"))
                 throw new URLNotAvailableAnymoreException(err404Matcher.group(1));
         }
         if (getContentAsString().contains("\u0424\u0430\u0439\u043B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D."))
@@ -74,18 +72,18 @@ class TurboBitFileRunner extends AbstractRunner {
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
         try {
-            //TODO fix error message in unicode => MS Word - alt+x after each character + \\u before it
-            Matcher waitMatcher = PlugUtils.matcher("Попроб�?йте\\s+повторить.*<span id='timeout'>([^>]*)<", getContentAsString());
+            Matcher waitMatcher = PlugUtils.matcher("\u00d0\u0178\u00d0\u00be\u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d0\u00b1\u00d1?\u00d0\u00b9\u00d1\u201a\u00d0\u00b5\\s+\u00d0\u00bf\u00d0\u00be\u00d0\u00b2\u00d1\u201a\u00d0\u00be\u00d1\u20ac\u00d0\u00b8\u00d1\u201a\u00d1\u0152.*<span id='timeout'>([^>]*)<", getContentAsString());
             if (waitMatcher.find()) {
                 throw new YouHaveToWaitException("You have to wait", Integer.valueOf(waitMatcher.group(1)));
             }
             Matcher errMatcher = PlugUtils.matcher("<div[^>]*class='error'[^>]*>([^<]*)<", getContentAsString());
             if (errMatcher.find() && !errMatcher.group(1).isEmpty()) {
-                if (errMatcher.group(1).contains("�?еверный ответ"))
+                if (errMatcher.group(1).contains("\u00d0?\u00d0\u00b5\u00d0\u00b2\u00d0\u00b5\u00d1\u20ac\u00d0\u00bd\u00d1\u2039\u00d0\u00b9 \u00d0\u00be\u00d1\u201a\u00d0\u00b2\u00d0\u00b5\u00d1\u201a")
+                 || errMatcher.group(1).contains("\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442!") )
                     throw new CaptchaEntryInputMismatchException();
                 throw new PluginImplementationException();
             }
-            if (getContentAsString().contains("С�?ылка про�?рочена")) // it's unlikely we get this...
+            if (getContentAsString().contains("\u00d0\u00a1\u00d1?\u00d1\u2039\u00d0\u00bb\u00d0\u00ba\u00d0\u00b0 \u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d1?\u00d1\u20ac\u00d0\u00be\u00d1\u2021\u00d0\u00b5\u00d0\u00bd\u00d0\u00b0")) // it's unlikely we get this...
                 throw new YouHaveToWaitException("Trying again...", 10);
         } catch (NumberFormatException e) {
             throw new PluginImplementationException();
@@ -137,7 +135,6 @@ class TurboBitFileRunner extends AbstractRunner {
             }
         }
 
-        
         matcher = getMatcherAgainstContent("limit: ([0-9]+),");
         if (!matcher.find()) {
             checkProblems();
@@ -149,14 +146,13 @@ class TurboBitFileRunner extends AbstractRunner {
 
         logger.info("Download URL: " + t);
         downloadTask.sleep(seconds + 1);
-        
+
         myAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
         httpMethod = getMethodBuilder().setReferer(mRef).setAction(myAction).toGetMethod();
         client.setReferer(mRef);
         getRef = client.getReferer();
         logger.info("Get Referer : " + getRef);
 
-        
         // <a href='/download/redirect/c8ca1469cb893d8acbb17305bf01035b/045888zyivux' onclick='mg_switch(this,event);'>
         //matcher = getMatcherAgainstContent("<a href\\s*=\\s*['\"]([^'\"]+)['\"][^>]*['\"]" );
 
@@ -175,9 +171,6 @@ class TurboBitFileRunner extends AbstractRunner {
         logger.info("Final URL: " + finURL);
 
         return finURL;
-
-
     }
-
 
 }

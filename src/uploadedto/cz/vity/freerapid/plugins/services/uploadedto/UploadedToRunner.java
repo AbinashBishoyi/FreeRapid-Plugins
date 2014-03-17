@@ -64,7 +64,7 @@ class UploadedToRunner extends AbstractRunner {
                         if (getContentAsString().contains("limit-parallel")) {
                             throw new ServiceConnectionProblemException("You are already downloading a file");
                         }
-                        if (getContentAsString().contains("limit-size")) {
+                        if (getContentAsString().contains("limit-size") || getContentAsString().contains("In order to download files bigger")) {
                             throw new NotRecoverableDownloadException("Only premium users may download files larger than 1 GB");
                         }
                         method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("url:'", "'").toGetMethod();
@@ -96,7 +96,7 @@ class UploadedToRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Page not found")) {
+        if (getContentAsString().contains("Page not found") || getContentAsString().contains("The requested file isn't available anymore")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (getContentAsString().contains("Our service is currently unavailable in your country")) {

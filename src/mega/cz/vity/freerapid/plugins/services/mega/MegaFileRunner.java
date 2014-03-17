@@ -3,12 +3,15 @@ package cz.vity.freerapid.plugins.services.mega;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,16 +72,29 @@ class MegaFileRunner extends AbstractRunner {
             logger.warning("Content from API request:\n" + content);
             throw e;
         }
+        //the server doesn't send Accept-Ranges, but supports resume
+        setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
         final HttpMethod method = getMethodBuilder()
-                .setAction(url.replaceFirst("https", "http") + "/0")
+                .setAction(url.replaceFirst("https", "http"))
                 .toPostMethod();
-        if (!tryDownloadAndSaveFile(method)) {
+        if (!tryDownloadAndSaveFile(method, api.getDownloadCipher(getStartPosition()))) {
             throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
-    @Override
-    protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
+    private long getStartPosition() throws Exception {
+        long position = 0;
+        final File storeFile = httpFile.getStoreFile();
+        if (storeFile != null && storeFile.exists()) {
+            position = Math.max(httpFile.getRealDownload(), 0);
+            if (position != 0) {
+                logger.info("Download start position: " + position);
+            }
+        }
+        return position;
+    }
+
+    private boolean tryDownloadAndSaveFile(final HttpMethod method, final Cipher cipher) throws Exception {
         if (httpFile.getState() == DownloadState.PAUSED || httpFile.getState() == DownloadState.CANCELLED)
             return false;
         else
@@ -91,7 +107,7 @@ class MegaFileRunner extends AbstractRunner {
         try {
             InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, true);
             if (inputStream != null) {
-                inputStream = new CipherInputStream(inputStream, api.getDownloadCipher());
+                inputStream = new CipherInputStream(inputStream, cipher);
                 logger.info("Saving to file");
                 downloadTask.saveToFile(inputStream);
                 return true;

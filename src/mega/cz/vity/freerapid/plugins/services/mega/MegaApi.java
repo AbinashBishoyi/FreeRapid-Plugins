@@ -17,6 +17,9 @@ import org.apache.commons.httpclient.methods.StringRequestEntity;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -26,7 +29,7 @@ class MegaApi {
 
     private final HttpDownloadClient client;
     private final byte[] key;
-    private final byte[] nonce = new byte[16];
+    private byte[] nonce;
     private int seqno = new Random().nextInt(0x10000000);
 
     public MegaApi(final HttpDownloadClient client, final String key) throws Exception {
@@ -42,7 +45,7 @@ class MegaApi {
         for (int i = 0; i < L; i++) {
             result[i] = (byte) (b[i] ^ b[L + i]);
         }
-        System.arraycopy(b, L, nonce, 0, 8);
+        nonce = Arrays.copyOfRange(b, L, L + 8);
         return result;
     }
 
@@ -63,9 +66,18 @@ class MegaApi {
         return new String(cipher.doFinal(Base64.decodeBase64(data)), "UTF-8");
     }
 
-    public Cipher getDownloadCipher() throws Exception {
+    public Cipher getDownloadCipher(final long startPosition) throws Exception {
         final Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
-        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(nonce));
+        final ByteBuffer buffer = ByteBuffer.allocate(16).put(nonce);
+        buffer.asLongBuffer().put(startPosition / 16);
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(buffer.array()));
+        final int skip = (int) (startPosition % 16);
+        if (skip != 0) {
+            if (cipher.update(new byte[skip]).length != skip) {
+                //that should always work with a CTR mode cipher
+                throw new IOException("Failed to skip bytes from cipher");
+            }
+        }
         return cipher;
     }
 

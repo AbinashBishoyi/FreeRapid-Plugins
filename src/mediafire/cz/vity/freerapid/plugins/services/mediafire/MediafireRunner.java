@@ -26,14 +26,15 @@ public class MediafireRunner extends AbstractRunner {
     public final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
 
     private final static String SCRIPT_HEADER =
-            "function alert(s) { Packages.cz.vity.freerapid.plugins.services.mediafire.MediafireRunner.logger.warning('JS: ' + s); }\n" +
+            "function alert(s) { Packages." + MediafireRunner.class.getName() + ".logger.warning('JS: ' + s); }\n" +
                     "function aa(s) { alert(s); }\n" +
                     "var document = new JsDocument();\n" +
                     "function dummyparent() {\n" +
                     "    this.document = document;\n" +
                     "}\n" +
                     "var parent = new dummyparent();\n" +
-                    "function jQuery() { }\n";
+                    "function jQuery() { }\n" +
+                    "function LoadTemplatesFromSource() { }\n";
 
     @Override
     public void runCheck() throws Exception {
@@ -123,14 +124,10 @@ public class MediafireRunner extends AbstractRunner {
     }
 
     private HttpMethod findFirstUrl(final Context context, final Scriptable scope) throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("(?s)value=\"download\">\\s*?<script[^<>]*?>(?:<!\\-\\-)?(.+?)</script>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("First JavaScript not found");
-        }
-        final String rawScript = matcher.group(1);
+        final String rawScript = findLongestJavascript();
         //logger.info(rawScript);
 
-        matcher = PlugUtils.matcher("function\\s*?[a-z\\d]+?\\(", rawScript);
+        Matcher matcher = PlugUtils.matcher("function\\s*?[a-z\\d]+?\\(", rawScript);
         int lastFunctionIndex = -1;
         while (matcher.find()) {
             lastFunctionIndex = matcher.start();
@@ -169,8 +166,23 @@ public class MediafireRunner extends AbstractRunner {
         return getMethodBuilder().setReferer(fileURL).setAction(result).toGetMethod();
     }
 
+    private String findLongestJavascript() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>\\s*(?!</script>)(?:<!\\-\\-)?(.+?)</script>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("First JavaScript not found");
+        }
+        String currentLongest = matcher.group(1);
+        while (matcher.find()) {
+            final String js = matcher.group(1);
+            if (js.length() > currentLongest.length()) {
+                currentLongest = js;
+            }
+        }
+        return currentLongest;
+    }
+
     private HttpMethod findSecondUrl(final List<String> elementsOnPage, final Context context, final Scriptable scope) throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>\\s*?(?!</script>)(?:<!\\-\\-)?(.+?)</script>");
+        Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>\\s*(?!</script>)(?:<!\\-\\-)?(.+?)</script>");
         if (!matcher.find()) {
             throw new PluginImplementationException("Second JavaScript not found");
         }

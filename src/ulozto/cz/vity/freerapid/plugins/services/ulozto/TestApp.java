@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.ulozto;
 
-import cz.vity.freerapid.plugins.dev.PluginApplication;
+import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
@@ -10,7 +10,7 @@ import java.net.URL;
 /**
  * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
  */
-public class TestApp extends PluginApplication {
+public class TestApp extends PluginDevApplication {
     protected void startup() {
 
         final HttpFile httpFile = getHttpFile();

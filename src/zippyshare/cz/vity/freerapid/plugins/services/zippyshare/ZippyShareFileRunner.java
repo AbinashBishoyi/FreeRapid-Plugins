@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Vity+ntoskrnl+tonyk
+ * @author Vity+ntoskrnl+tonyk+CapCap
  */
 class ZippyShareFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(ZippyShareFileRunner.class.getName());
@@ -111,14 +111,20 @@ class ZippyShareFileRunner extends AbstractRunner {
 
 
             } else {
-                matcher = getMatcherAgainstContent("<script[^<>]*?>\\s*?(var [^\r\n]+)\\s*?var [a-zA-Z\\d]+? ?= ?([^\r\n]+)");
+
+
+                matcher = getMatcherAgainstContent("(<script[^<>]*?>\\n?).*var\\sa\\s(.|\\n)*?</script>");
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Download link not found");
-                }
-                final String script = matcher.group(1) + "\n" + matcher.group(2);
+                }                      //following code makes the js work with eval, should be easy to change for new versions of zippyshare in future
+                final String script= matcher.group(0).replace("document.getElementById('dlbutton').omg =","var fileURL =").
+                      replace("document.getElementById('dlbutton').omg !=","fileURL !=").
+                      replace("document.getElementById('dlbutton').href","fileURL").
+                      replace("</script>","").replace("<script type=\"text/javascript\">","");
                 logger.info(script);
                 url = ScriptUtils.evaluateJavaScriptToString(script);
                 System.out.print(getContentAsString());
+
             }
 
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();

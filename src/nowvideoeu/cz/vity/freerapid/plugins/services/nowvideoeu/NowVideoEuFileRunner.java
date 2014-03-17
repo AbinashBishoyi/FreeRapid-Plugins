@@ -1,11 +1,9 @@
 package cz.vity.freerapid.plugins.services.nowvideoeu;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -56,39 +54,59 @@ class NowVideoEuFileRunner extends AbstractRunner {
             checkNameAndSize();
             final String fileId = PlugUtils.getStringBetween(getContentAsString(), "flashvars.file=\"", "\";");
             final String fileKey = PlugUtils.getStringBetween(getContentAsString(), "flashvars.filekey=\"", "\";");
-            HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction("http://www.nowvideo.eu/api/player.api.php")
-                    .setParameter("cid3", "undefined")
-                    .setParameter("user", "undefined")
-                    .setParameter("cid2", "undefined")
-                    .setParameter("file", fileId)
-                    .setParameter("pass", "undefined")
-                    .setAndEncodeParameter("key", fileKey)
-                    .setParameter("cid", "1")
-                    .toHttpMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            checkProblems();
-            final String downloadUrl = PlugUtils.getStringBetween(getContentAsString(), "url=", "&title=");
-            final String path = new URI(downloadUrl).getPath();
-            final String fname = path.substring(path.lastIndexOf("/") + 1);
-            final String ext = fname.contains(".") ? fname.substring(fname.lastIndexOf(".")) : ".flv";
-            httpFile.setFileName(httpFile.getFileName() + ext);
-            httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(downloadUrl)
-                    .toGetMethod();
+            HttpMethod httpMethod = getVideoMethod(getNowVideoMethodBuilder(fileId, fileKey), true);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+                MethodBuilder mb = getNowVideoMethodBuilder(fileId, fileKey)
+                        .setParameter("numOfErrors", "1")
+                        .setParameter("errorCode", "404")
+                        .setParameter("errorUrl", httpMethod.getURI().toString());
+                if (!tryDownloadAndSaveFile(getVideoMethod(mb, false))) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
             }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private MethodBuilder getNowVideoMethodBuilder(String fileId, String fileKey) throws BuildMethodException {
+        return getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction("http://www.nowvideo.eu/api/player.api.php")
+                .setParameter("cid3", "undefined")
+                .setParameter("user", "undefined")
+                .setParameter("cid2", "undefined")
+                .setParameter("file", fileId)
+                .setParameter("pass", "undefined")
+                .setAndEncodeParameter("key", fileKey)
+                .setParameter("cid", "1");
+    }
+
+    private HttpMethod getVideoMethod(MethodBuilder mb, boolean setFilename) throws Exception {
+        if (!makeRedirectedRequest(mb.toGetMethod())) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+        String videoUrl;
+        try {
+            videoUrl = PlugUtils.getStringBetween(getContentAsString(), "url=", "&title=");
+        } catch (PluginImplementationException e) {
+            throw new PluginImplementationException("Video URL not found");
+        }
+        if (setFilename) {
+            String path = new URI(videoUrl).getPath();
+            String fname = path.substring(path.lastIndexOf("/") + 1);
+            String ext = fname.contains(".") ? fname.substring(fname.lastIndexOf(".")) : ".flv";
+            httpFile.setFileName(httpFile.getFileName() + ext);
+        }
+        return getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction(videoUrl)
+                .toGetMethod();
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

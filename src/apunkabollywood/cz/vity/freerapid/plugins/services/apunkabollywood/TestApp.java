@@ -16,8 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.apunkabollywood.net/browser/category/view/7532/ek-tha-tiger-(2012)"));
-            //httpFile.setNewURL(new URL("http://www.apunkabollywood.net/browser/download/get/71512/01%20-%20Mashallah%20-%20Wajid%20&%20Shreya%20Ghoshal%20(ApunKaBollywood.com).html"));
-            httpFile.setNewURL(new URL("http://www.apunkabollywood.net/browser/category/view/1476/arth-(1982)"));
+            httpFile.setNewURL(new URL("http://www.apunkabollywood.us/browser/download/get/71512/01%20-%20Mashallah%20-%20Wajid%20&%20Shreya%20Ghoshal%20(ApunKaBollywood.com).html"));
+            //httpFile.setNewURL(new URL("http://www.apunkabollywood.us/browser/category/view/1476/arth-(1982)"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final ApunKaBollywoodServiceImpl service = new ApunKaBollywoodServiceImpl();

@@ -14,8 +14,8 @@ import java.util.logging.Logger;
  */
 class RyuShareFileRunner extends RegisteredUserRunner {
     private final static Logger logger = Logger.getLogger(RyuShareFileRunner.class.getName());
-    private static final String SERVICE_TITLE = "RyuShare";
-    private static final String SERVICE_COOKIE_DOMAIN = ".ryushare.com";
+    private final static String SERVICE_TITLE = "RyuShare";
+    private final static String SERVICE_COOKIE_DOMAIN = ".ryushare.com";
     private final static String SERVICE_LOGIN_URL = "http://www.ryushare.com/login.python";
     private final static String SERVICE_LOGIN_ACTION = "http://www.ryushare.com";
 
@@ -24,21 +24,10 @@ class RyuShareFileRunner extends RegisteredUserRunner {
     }
 
     @Override
-    public void runCheck() throws Exception {
-        super.runCheck();
-    }
-
-    @Override
     protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "Download File", "</h2>");
         PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-
-    @Override
-    public void run() throws Exception {
-        super.run();
     }
 
 }

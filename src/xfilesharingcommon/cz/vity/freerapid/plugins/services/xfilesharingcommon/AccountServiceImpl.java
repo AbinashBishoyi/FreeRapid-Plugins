@@ -18,7 +18,7 @@ public class AccountServiceImpl extends XFileSharingCommonServiceImpl implements
     protected final String serviceTitle;
 
     //used for synch
-    //ex : RyuShareFilesServiceImpl.class;
+    //ex : RyuShareServiceImpl.class;
     protected final Class implClass;
 
     public AccountServiceImpl(String configFile, String serviceTitle, Class implClass) {
@@ -31,10 +31,10 @@ public class AccountServiceImpl extends XFileSharingCommonServiceImpl implements
     //check prerequisites
     protected void checkPrerequisites() throws PluginImplementationException {
         if (configFile == null)
-            throw new PluginImplementationException("getPluginConfigFile return value cannot be null");
+            throw new PluginImplementationException("configFile cannot be null");
         if (serviceTitle == null)
-            throw new PluginImplementationException("getPluginServiceTitle return value cannot be null");
-        if (implClass == null) throw new PluginImplementationException("getImplClass return value cannot be null");
+            throw new PluginImplementationException("serviceTitle cannot be null");
+        if (implClass == null) throw new PluginImplementationException("implClass cannot be null");
     }
 
     @Override
@@ -44,11 +44,13 @@ public class AccountServiceImpl extends XFileSharingCommonServiceImpl implements
         if (pa != null) config = pa;
     }
 
+    @Override
     public PremiumAccount showConfigDialog() throws Exception {
         checkPrerequisites();
         return showAccountDialog(getConfig(), serviceTitle, configFile);
     }
 
+    @Override
     public PremiumAccount getConfig() throws Exception {
         checkPrerequisites();
         if (config == null) {
@@ -59,6 +61,7 @@ public class AccountServiceImpl extends XFileSharingCommonServiceImpl implements
         return config;
     }
 
+    @Override
     public void setConfig(final PremiumAccount config) throws PluginImplementationException {
         checkPrerequisites();
         this.config = config;

@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.jalurcepat;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonFileRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -20,14 +19,12 @@ class JalurCepatFileRunner extends XFileSharingCommonFileRunner {
     private static final String SERVICE_COOKIE_DOMAIN = ".jalurcepat.com";
 
     public JalurCepatFileRunner() {
-        this.serviceTitle = SERVICE_TITLE;
-        this.cookieDomain = SERVICE_COOKIE_DOMAIN;
-        this.numberOfPages=1;
+        super(SERVICE_COOKIE_DOMAIN, SERVICE_TITLE);
     }
 
     @Override
-    public void runCheck() throws Exception {
-        super.runCheck();
+    protected int getNumberOfPages() {
+        return 2;
     }
 
     @Override
@@ -38,26 +35,12 @@ class JalurCepatFileRunner extends XFileSharingCommonFileRunner {
     }
 
     @Override
-    public void run() throws Exception {
-        super.run();
-    }
-
-    @Override
     protected void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Not Found") || contentAsString.contains("No such file") || contentAsString.contains("<font class=\"err\">")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         super.checkFileProblems();
-    }
-
-    @Override
-    protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("this file reached max downloads limit")) {
-            throw new PluginImplementationException("Sorry but this file reached max downloads limit");
-        }
-        super.checkDownloadProblems();
     }
 
 }

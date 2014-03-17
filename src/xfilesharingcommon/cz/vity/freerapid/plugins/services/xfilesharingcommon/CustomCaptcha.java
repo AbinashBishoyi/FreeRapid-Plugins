@@ -7,9 +7,9 @@ import org.apache.commons.httpclient.HttpMethod;
  * @author tong2shot
  */
 public interface CustomCaptcha {
-    public HttpMethod stepCaptcha(MethodBuilder methodBuilder) throws Exception;
+    public HttpMethod stepCustomCaptcha(MethodBuilder methodBuilder) throws Exception;
 
-    public void setRegex(String regex);
+    //public void setRegex(String regex);
 
-    public String getRegex();
+    public String getCustomCaptchaRegex();
 }

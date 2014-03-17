@@ -104,18 +104,8 @@ class MovZapFileRunner extends RegisteredUserRunner implements CustomRun {
     }
 
     @Override
-    public void runCheck() throws Exception {
-        super.runCheck();
-    }
-
-    @Override
     protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    @Override
-    public void run() throws Exception {
-        super.run();
     }
 
 }

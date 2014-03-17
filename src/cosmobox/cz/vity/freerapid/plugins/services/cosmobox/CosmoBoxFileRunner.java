@@ -24,20 +24,10 @@ class CosmoBoxFileRunner extends RegisteredUserRunner {
     }
 
     @Override
-    public void runCheck() throws Exception {
-        super.runCheck();
-    }
-
-    @Override
     protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<h2>Download File", "</h2>");
         PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    @Override
-    public void run() throws Exception {
-        super.run();
     }
 
 }

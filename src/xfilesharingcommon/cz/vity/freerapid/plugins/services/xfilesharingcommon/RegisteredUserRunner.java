@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.xfilesharingcommon;
 
 import cz.vity.freerapid.plugins.exceptions.BadLoginException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import org.apache.commons.httpclient.Cookie;
@@ -18,14 +19,25 @@ public class RegisteredUserRunner extends XFileSharingCommonFileRunner implement
     protected final Class implClass; // ex : RyuShareServiceImpl.class
 
     public RegisteredUserRunner(String cookieDomain, String serviceTitle, String loginURL, String loginAction, Class runnerClass, Class implClass) {
-        super();
-        this.cookieDomain = cookieDomain;
-        this.serviceTitle = serviceTitle;
+        super(cookieDomain, serviceTitle);
         this.loginURL = loginURL;
         this.loginAction = loginAction;
         this.runnerClass = runnerClass;
         this.implClass = implClass;
         registeredUser = this;
+    }
+
+    @Override
+    protected void checkPrerequisites() throws PluginImplementationException {
+        super.checkPrerequisites();
+        if (loginURL == null) throw new PluginImplementationException("loginURL cannot be null");
+        if (loginAction == null) throw new PluginImplementationException("loginAction cannot be null");
+        if (runnerClass == null) throw new PluginImplementationException("runnerClass cannot be null");
+        if (implClass == null) throw new PluginImplementationException("implClass cannot be null");
+    }
+
+    protected String getIncorrectLoginContains() {
+        return "Incorrect Login or Password";
     }
 
     @Override
@@ -51,8 +63,8 @@ public class RegisteredUserRunner extends XFileSharingCommonFileRunner implement
             addCookie(new Cookie(cookieDomain, "xfss", "", "/", null, false));
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
-            if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new BadLoginException("Invalid " + serviceTitle + " registered account login information!");
+            if (getContentAsString().contains(getIncorrectLoginContains()))
+                throw new BadLoginException("Invalid " + serviceTitle + " login information!");
             return true;
         }
     }

@@ -26,16 +26,6 @@ class AsixFilesFileRunner extends RegisteredUserRunner {
     }
 
     @Override
-    public void runCheck() throws Exception {
-        super.runCheck();
-    }
-
-    @Override
-    public void run() throws Exception {
-        super.run();
-    }
-
-    @Override
     protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         final String nameAndSizeRule = "You have requested.*?http://(?:www\\.)?" + "asixfiles.com" + "/[a-z0-9]{12}/(.*)</font> \\((.*?)\\)</font>$";
         final Matcher matcher = PlugUtils.matcher(nameAndSizeRule, content);

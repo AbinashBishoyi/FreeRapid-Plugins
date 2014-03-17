@@ -30,28 +30,42 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
     protected String cookieDomain; //ex : ".ryushare.com"
     protected String serviceTitle; //ex : "RyuShare"
 
-    //value should be 1 or 2
-    //mostly there are 2 pages that contains 'method_free' in FORM tag,
-    //but some sites only show 1 page that contains 'method_free' in FORM tag
-    protected int numberOfPages = 2;
-
     protected RegisteredUser registeredUser;
     protected CustomCaptcha customCaptcha;
     protected CustomRun customRun;
+
+    public XFileSharingCommonFileRunner() {
+        super();
+    }
+
+    public XFileSharingCommonFileRunner(String cookieDomain, String serviceTitle) {
+        super();
+        this.cookieDomain = cookieDomain;
+        this.serviceTitle = serviceTitle;
+    }
 
     protected void checkPrerequisites() throws PluginImplementationException {
         if (cookieDomain == null)
             throw new PluginImplementationException("cookieDomain cannot be null.");
         if (serviceTitle == null)
             throw new PluginImplementationException("serviceTitle cannot be null.");
-        if ((numberOfPages < 1) || (numberOfPages > 2))
+        if ((getNumberOfPages() < 1) || (getNumberOfPages() > 2))
             throw new PluginImplementationException("Number of pages should be 1 or 2.");
+        if ((customCaptcha != null) && (customCaptcha.getCustomCaptchaRegex() == null))
+            throw new PluginImplementationException("getCustomCaptchaRegex cannot be null");
     }
 
     //should be overrided.
     //if filename and size doesn't need to be checked, simply type : httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         throw new PluginImplementationException("checkNameAndSize should be overrided");
+    }
+
+    //return value should be 1 or 2
+    //mostly there are 2 pages that contains 'method_free' in FORM tag,
+    //but some sites only show 1 page that contains 'method_free' in FORM tag
+    protected int getNumberOfPages() {
+        return 2;
     }
 
     protected String getWaitTimeRegex() {
@@ -73,7 +87,7 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
 
     protected boolean isCaptchaExistInContent(String content) {
         String captchaRegex = "(" + getReCaptchaRegex() + "|" + getFourTokensCaptchaRegex() + "|" + Pattern.quote(getCaptchasImgTagContains());
-        if (customCaptcha != null) captchaRegex = captchaRegex + "|" + customCaptcha.getRegex();
+        if (customCaptcha != null) captchaRegex = captchaRegex + "|" + customCaptcha.getCustomCaptchaRegex();
         captchaRegex = captchaRegex + ")";
         return PlugUtils.find(captchaRegex, content);
     }
@@ -144,10 +158,10 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         checkNameAndSize(getContentAsString());
 
         HttpMethod httpMethod;
-        if (numberOfPages == 2) {
+        if (getNumberOfPages() == 2) {
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("method_free", true)
+                    .setActionFromFormWhereTagContains("method_free", true) //@TODO : I haven't yet found site that doesn't use 'method_free'. Should the value be able to be customized ?
                     .setAction(fileURL)
                     .removeParameter("method_premium")
                     .toPostMethod();
@@ -171,7 +185,7 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         while (true) {
             MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("method_free", true)
+                    .setActionFromFormWhereTagContains("method_free", true)  //@TODO : I haven't yet found site that doesn't use 'method_free'. Should the value be able to be customized ?
                     .setAction(fileURL)
                     .removeParameter("method_premium");
             if (isPassworded(getContentAsString())) {
@@ -180,13 +194,11 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
             if (PlugUtils.find(getReCaptchaRegex(), getContentAsString())) {
                 httpMethod = stepReCaptcha(methodBuilder);
             } else if (PlugUtils.find(getFourTokensCaptchaRegex(), getContentAsString())) {
-                methodBuilder.setParameter("code", stepFourTokensCaptcha());
-                httpMethod = methodBuilder.toPostMethod();
+                httpMethod = stepFourTokensCaptcha(methodBuilder);
             } else if (getContentAsString().contains(getCaptchasImgTagContains())) {
-                methodBuilder.setParameter("code", stepCaptchas());
-                httpMethod = methodBuilder.toPostMethod();
-            } else if ((customCaptcha != null) && PlugUtils.find(customCaptcha.getRegex(), getContentAsString())) {
-                httpMethod = customCaptcha.stepCaptcha(methodBuilder);
+                httpMethod = stepCaptchas(methodBuilder);
+            } else if ((customCaptcha != null) && PlugUtils.find(customCaptcha.getCustomCaptchaRegex(), getContentAsString())) {
+                httpMethod = customCaptcha.stepCustomCaptcha(methodBuilder);
             } else { //no captcha found
                 httpMethod = methodBuilder.toPostMethod();
             }
@@ -227,7 +239,6 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         }
     }
 
-
     protected HttpMethod stepReCaptcha(MethodBuilder methodBuilder) throws Exception {
         final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent(getReCaptchaRegex());
         if (!reCaptchaKeyMatcher.find())
@@ -243,7 +254,7 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         return r.modifyResponseMethod(methodBuilder).toPostMethod();
     }
 
-    protected String stepFourTokensCaptcha() throws Exception {
+    protected HttpMethod stepFourTokensCaptcha(MethodBuilder methodBuilder) throws Exception {
         final Matcher captchaMatcher = getMatcherAgainstContent(getFourTokensCaptchaRegex());
         final StringBuilder strbuffCaptcha = new StringBuilder(4);
         final SortedMap<Integer, String> captchaMap = new TreeMap<Integer, String>();
@@ -260,15 +271,16 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
             strCaptcha = strbuffCaptcha.toString();
         }
         logger.info("Captcha : " + strCaptcha);
+        methodBuilder.setParameter("code", strCaptcha);
 
-        return strCaptcha;
+        return methodBuilder.toPostMethod();
     }
 
     //'captchas' image captcha
-    protected String stepCaptchas() throws Exception {
+    protected HttpMethod stepCaptchas(MethodBuilder methodBuilder) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final MethodBuilder methodBuilder = getMethodBuilder().setActionFromImgSrcWhereTagContains(getCaptchasImgTagContains());
-        final String captchaURL = methodBuilder.getEscapedURI();
+        final MethodBuilder methodBuilder2 = getMethodBuilder().setActionFromImgSrcWhereTagContains(getCaptchasImgTagContains());
+        final String captchaURL = methodBuilder2.getEscapedURI();
         logger.info("Captcha URL " + captchaURL);
         String captcha;
         if (captchaCounter <= captchaMax) {
@@ -281,7 +293,8 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
             if (captcha == null) throw new CaptchaEntryInputMismatchException();
             logger.info("Manual captcha " + captcha);
         }
-        return captcha;
+        methodBuilder.setParameter("code", captcha);
+        return methodBuilder.toPostMethod();
     }
 
     protected void checkFileProblems() throws ErrorDuringDownloadingException {

@@ -55,11 +55,9 @@ class DepositFilesRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
             checkProblems();
 
-            if (getContentAsString().contains("FREE downloading")) {
-                method = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("free_btn", "FREE downloading").toPostMethod();
-                if (!makeRedirectedRequest(method)) {
-                    throw new ServiceConnectionProblemException();
-                }
+            method = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("free_btn", "Regular downloading").toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
             }
 
             Matcher matcher = getMatcherAgainstContent("setTimeout\\s*\\(\\s*'load_form\\s*\\(\\s*fid\\s*,\\s*msg\\s*\\)\\s*'\\s*,\\s*(\\d+)\\s*\\)");
@@ -77,7 +75,7 @@ class DepositFilesRunner extends AbstractRunner {
             final String getFileUrl = matcher.group(1);
             final String fid = matcher.group(2);
 
-            downloadTask.sleep(seconds + 5);
+            downloadTask.sleep(seconds + 1);
 
             String reCaptchaUrl = "";
             matcher = getMatcherAgainstContent("Recaptcha\\.create\\s*\\(\\s*'([^']+)'");

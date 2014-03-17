@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.minus;
+package cz.vity.freerapid.plugins.services.uploadjet;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Tommy
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,14 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-//            httpFile.setNewURL(new URL("http://minus.com/m3NkzQYFn"));       // file list of 1 file
-            httpFile.setNewURL(new URL("http://minus.com/lyGHOEFKYlVVa"));
-//            httpFile.setNewURL(new URL("http://min.us/mIIOD4rnI/1"));
+            httpFile.setNewURL(new URL("http://uploadjet.net/cgrcx63w48e5/dmd-bf-cd1.avi.htm"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("127.0.0.1", 8098); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final MinusServiceImpl service = new MinusServiceImpl(); //instance of service - of our plugin
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            final UploadJetServiceImpl service = new UploadJetServiceImpl(); //instance of service - of our plugin
+
+            //we set premium account details
+            //final PremiumAccount config = new PremiumAccount();
+            //config.setUsername("****");
+            //config.setPassword("****");
+            //service.setConfig(config);
+
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

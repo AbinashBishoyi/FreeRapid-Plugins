@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.minus.MinusServiceImpl"
-        id="minus.com" vendor="Tommy+ntoskrnl+birchie" version="1.0.2">
+<plugin class="cz.vity.freerapid.plugins.services.uploadc.UploadCServiceImpl"
+        id="uploadc.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(minus\.com|min\.us)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?uploadc\.com/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="minus.com"/>
-        <attribute id="maxDownloads" value="10"/>
+        <attribute id="services" value="uploadc.com"/>
+        <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="minus.com" path="/" type="code"/>
+        <library id="uploadc.com" path="/" type="code"/>
     </runtime>
 </plugin>

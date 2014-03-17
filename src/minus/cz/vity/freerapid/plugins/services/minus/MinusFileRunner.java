@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.minus;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -66,8 +63,13 @@ class MinusFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("The page you requested does not exist")) {
+        final String content = getContentAsString();
+        if (content.contains("The page you requested does not exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        int pos = content.indexOf("<div class=\"grid_items_container\">");
+        if (0 <= content.substring(pos + 1).indexOf("<div class=\"grid_items_container\">")) {
+            throw new NotRecoverableDownloadException("This is a file list - Not currently supported");
         }
     }
 

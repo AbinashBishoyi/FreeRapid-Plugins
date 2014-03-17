@@ -86,6 +86,9 @@ class YourFilesFileRunner extends AbstractRunner {
         if (contentAsString.contains("Die angefragte Datei wurde nicht gefunden")) {
             throw new URLNotAvailableAnymoreException("Die angefragte Datei wurde nicht gefunden"); //let to know user in FRD
         }
+        if (contentAsString.contains("Connection to database server failed")) {
+            throw new ServiceConnectionProblemException("Connection to database server failed"); //let to know user in FRD
+        }
     }
 
 }

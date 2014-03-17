@@ -25,6 +25,7 @@ class UploadedtoFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception {
+        checkUrl();
         super.runCheck();
         addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
@@ -52,8 +53,18 @@ class UploadedtoFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
+    private void checkUrl() {
+        if (fileURL.contains("uploaded.to/")) {
+            fileURL = fileURL.replaceFirst("uploaded.to/", "uploaded.net/");
+        }
+        if (fileURL.contains("ul.to/")) {
+            fileURL = fileURL.replaceFirst("ul.to/", "uploaded.net/file/");
+        }
+    }
+
     @Override
     public void run() throws Exception {
+        checkUrl();
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));

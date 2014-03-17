@@ -39,7 +39,7 @@ class UploadedtoFileRunner extends AbstractRunner {
             throw new PluginImplementationException("File name/size not found");
         }
         httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).replace(".", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -50,7 +50,7 @@ class UploadedtoFileRunner extends AbstractRunner {
         addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));
         login();
         HttpMethod method = getGetMethod(fileURL);
-        if (!tryDownloadAndSaveFile(method)) {
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
             method = getMethodBuilder().setActionFromFormWhereTagContains("Premium Download", true).toGetMethod();
@@ -58,6 +58,9 @@ class UploadedtoFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 

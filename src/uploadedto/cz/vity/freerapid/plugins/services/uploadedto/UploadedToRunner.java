@@ -93,7 +93,7 @@ class UploadedToRunner extends AbstractRunner {
             throw new PluginImplementationException("File name/size not found");
         }
         httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).replace(".", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

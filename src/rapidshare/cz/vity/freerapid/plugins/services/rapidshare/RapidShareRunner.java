@@ -142,6 +142,7 @@ class RapidShareRunner extends AbstractRunner {
         }
         if (content.contains("File deleted")
                 || content.contains("File not found")
+                || content.contains("Folder not found")
                 || content.contains("File physically not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }

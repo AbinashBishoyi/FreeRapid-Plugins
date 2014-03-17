@@ -27,10 +27,11 @@ class UploadJockeyRunner extends AbstractRunner {
 
     public String dpURL ="Invalid";
     public String upURL = "Invalid";
-    public String rpURL = "Invalid";
+    public String rsURL = "Invalid";
     public String esURL = "Invalid";
     public String ffURL = "Invalid";
     public String muURL = "Invalid";
+
 
     @Override
     public void run() throws Exception {
@@ -60,20 +61,41 @@ class UploadJockeyRunner extends AbstractRunner {
                     final String mContent = getContentAsString();
 
 
-
-                    ffURL = checkServer(mContent,"FileFactory");
                     dpURL = checkServer(mContent,"DepositFiles");
+                    upURL = checkServer(mContent,"Uploaded");
+                    rsURL = checkServer(mContent,"Rapidshare");
+                    esURL = checkServer(mContent,"Easy");
+                    ffURL = checkServer(mContent,"FileFactory");
+                    muURL = checkServer(mContent,"Megaupload");
+
+                    
 
 
-
-                    if (ffOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(ffURL));
-                    }  else
 
                     if (dpOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(dpURL));
-                            
-                    }
+                    }  else
+
+                    if (ffOK.equals("up")) {
+                            this.httpFile.setNewURL(new URL(upURL));
+                    } else
+
+                    if (dpOK.equals("rs")) {
+                            this.httpFile.setNewURL(new URL(rsURL));
+                    }  else
+
+                    if (ffOK.equals("es")) {
+                            this.httpFile.setNewURL(new URL(esURL));
+                    } else
+                    if (dpOK.equals("ff")) {
+                            this.httpFile.setNewURL(new URL(ffURL));
+                    }  else
+
+                    if (ffOK.equals("mu")) {
+                            this.httpFile.setNewURL(new URL(muURL));
+                    } else throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+
+
 
                     this.httpFile.setPluginID("");
                     this.httpFile.setState(DownloadState.QUEUED);
@@ -121,10 +143,29 @@ class UploadJockeyRunner extends AbstractRunner {
                                                 if (tService.equals("DepositFiles")) {
                                                     dpOK = checkDepositFiles(dpContent);
                                                 } else
+                                                if (tService.equals("Uploaded")) {
+                                                    ffOK = checkUploaded(dpContent);
+                                                }
+                                                if (tService.equals("Rapidshare")) {
+                                                    ffOK = checkRapidshare(dpContent);
+                                                }
+                                                if (tService.equals("Easy")) {
+                                                    ffOK = checkEasy(dpContent);
+                                                }
+
                                                 if (tService.equals("FileFactory")) {
                                                     ffOK = checkFileFactory(dpContent);
                                                 }
+                                                if (tService.equals("Megaupload")) {
+                                                    ffOK = checkMegaupload(dpContent);
+                                                }
 
+                                                //dpURL = checkServer(mContent,"DepositFiles");
+                                                //upURL = checkServer(mContent,"Uploaded");
+                                                //rsURL = checkServer(mContent,"Rapidshare");
+                                                //esURL = checkServer(mContent,"Easy");
+                                                //ffURL = checkServer(mContent,"FileFactory");
+                                                //muURL = checkServer(mContent,"Megaupload");
 
                                                 return cURL;
                                             }
@@ -160,34 +201,54 @@ class UploadJockeyRunner extends AbstractRunner {
         } else return "not available";
             return "ok";
    }
-    
- //       private String checkUploadedto(String content) throws Exception {
-//
-//        if (!content.contains("uploaded.to")) {
-//            return "not available";
-//        }
-//        if (content.contains("File doesn")) {
-//            return "not available";
-//        }
-//
-//        Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
-//        if (matcher.find()) {
-//            final String fileSize = matcher.group(1);
-//            logger.info("File size " + fileSize);
-//            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
 
-//        } else return "not available";
-//        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-//        return "ok";
+        private String checkUploaded(String content) throws Exception {
 
-//    }
-        private String checkFileFactory(String contentAsString) throws URLNotAvailableAnymoreException, YouHaveToWaitException, InvalidURLOrServiceProblemException {
-        Matcher matcher = PlugUtils.matcher("Size: ([0-9-\\.]* .B)", contentAsString);
+        if (!content.contains("uploaded.to")) {
+            return "not available";
+        }
+        if (content.contains("File doesn")) {
+            return "not available";
+        }
+
+       Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
+        if (matcher.find()) {
+            final String fileSize = matcher.group(1);
+            logger.info("File size " + fileSize);
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
+
+        } else return "not available";
+        //httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        return "ok";
+
+    }
+        
+        private String checkMegaupload(String content) throws Exception {
+
+        if (content.contains("link you have clicked is not available")) {
+            return "not available";
+
+        }
+
+        Matcher matcher = PlugUtils.matcher("Filename:(</font>)?</b> ([^<]*)", content);
+        if (matcher.find()) {
+            //final String fn = PlugUtils.unescapeHtml(matcher.group(2));
+            //logger.info("File name " + fn);
+            //httpFile.setFileName(fn);
+            //httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            return "ok";
+        } else return "not available";
+
+    }
+
+
+        private String checkFileFactory(String content) throws URLNotAvailableAnymoreException, YouHaveToWaitException, InvalidURLOrServiceProblemException {
+        Matcher matcher = PlugUtils.matcher("Size: ([0-9-\\.]* .B)", content);
         if (!matcher.find()) {
-            if (contentAsString.contains("file has been deleted") || contentAsString.contains("file is no longer available")) {
+            if (content.contains("file has been deleted") || content.contains("file is no longer available")) {
                 return "not available";
             } else {
-                if (contentAsString.contains("no free download slots")) {
+                if (content.contains("no free download slots")) {
                     throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server.", 120);
                 }
                 return "not available";
@@ -197,5 +258,55 @@ class UploadJockeyRunner extends AbstractRunner {
         //httpFile.setFileSize(PlugUtils.getFileSizeFromString(s));
         //httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         return "ok";
+        }
+
+        private String checkEasy(String content) throws Exception {
+
+        if (!content.contains("easy-share")) {
+            return "not available";
+        }
+
+        if (content.contains("File not found")) {
+            return "not available";
+
+        }
+        Matcher matcher = PlugUtils.matcher("Download ([^,]+), upload", content);
+        if (matcher.find()) {
+            //final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
+            //logger.info("File name " + fn);
+            //httpFile.setFileName(fn);
+            return "ok";
+        } else logger.warning("File name was not found" + content);
+        return "not available";
     }
+
+        private String checkRapidshare(String content) throws URLNotAvailableAnymoreException {
+        Matcher matcher;
+        if (!content.contains("form id=\"ff\" action=")) {
+
+            matcher = PlugUtils.matcher("class=\"klappbox\">((\\s|.)*?)</div>",content);
+
+            if (matcher.find()) {
+                final String error = matcher.group(1);
+                if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed") || error.contains("file is neither allocated to") || error.contains("limit is reached"))
+                    return "not available";
+                if (error.contains("file could not be found"))
+                    return "not available";
+
+
+            if (content.contains("has removed file") || content.contains("file could not be found") || content.contains("illegal content") || content.contains("file has been removed") || content.contains("limit is reached"))
+                return "not available";
+
+        }
+        //| 5277 KB</font>
+        matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
+        if (matcher.find()) {
+            //Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+            return "ok";
+        }
+
+    }
+       return "not available";
 }
+}
+

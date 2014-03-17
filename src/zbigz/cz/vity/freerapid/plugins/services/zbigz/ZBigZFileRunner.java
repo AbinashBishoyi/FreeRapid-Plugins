@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.zbigz;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
@@ -69,6 +70,8 @@ class ZBigZFileRunner extends AbstractRunner {
             method2.releaseConnection();
         } while (locationHeader != null);
         httpFile.setFileName(findName(action));
+        setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
+        httpFile.setResumeSupported(true);
         method = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
         return super.tryDownloadAndSaveFile(method);
     }

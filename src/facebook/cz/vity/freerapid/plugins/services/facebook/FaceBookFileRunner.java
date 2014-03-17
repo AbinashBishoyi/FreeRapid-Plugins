@@ -68,10 +68,17 @@ class FaceBookFileRunner extends AbstractRunner {
                 videoUrl = URLDecoder.decode(PlugUtils.unescapeUnicode(videoUrl), "UTF-8");
                 method = getGetMethod(videoUrl);
             } else { //pic
-                final MethodBuilder methodBuilder = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setActionFromAHrefWhereATagContains("Download");
-                final Matcher matcher = PlugUtils.matcher("http://.+?/([^/]+)(?:\\?.+?)$", methodBuilder.getAction());
+                MethodBuilder methodBuilder;
+                try {
+                    methodBuilder = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setActionFromAHrefWhereATagContains("Download");
+                } catch (Exception e) {
+                    methodBuilder = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setActionFromImgSrcWhereTagContains("fbPhotoImage");
+                }
+                final Matcher matcher = PlugUtils.matcher("https?://.+?/([^/]+)(?:\\?.+?)?$", methodBuilder.getAction());
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Error parsing picture url");
                 }
@@ -135,11 +142,11 @@ class FaceBookFileRunner extends AbstractRunner {
     }
 
     private boolean isAlbumUrl() {
-        return fileURL.matches("http://(?:www\\.)facebook\\.com/(media/set/.+|.+?/videos|video/\\?id=.+)");
+        return fileURL.matches("https?://(?:www\\.)?facebook\\.com/(media/set/.+|.+?/videos|video/\\?id=.+)");
     }
 
     private void processAlbum() throws Exception {
-        final Matcher matcher = getMatcherAgainstContent("href=\"(http://(?:www\\.)facebook\\.com/(?:photo\\.php\\?[^#]+?|video/video\\.php?[^#]+?))\"");
+        final Matcher matcher = getMatcherAgainstContent("href=\"(https?://(?:www\\.)?facebook\\.com/(?:photo\\.php\\?[^#]+?|video/video\\.php\\?[^#]+?))\"");
         final List<URI> uriList = new LinkedList<URI>();
         while (matcher.find()) {
             URI uri = new URI(PlugUtils.unescapeHtml(matcher.group(1)));

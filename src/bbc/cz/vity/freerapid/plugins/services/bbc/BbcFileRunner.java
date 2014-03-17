@@ -8,30 +8,44 @@ import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import jlibs.core.net.URLUtil;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
  * @author ntoskrnl
+ * @author tong2shot
  */
 class BbcFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(BbcFileRunner.class.getName());
 
     private final static String SWF_URL = "http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
+    private final static String DEFAULT_EXT = ".flv";
+    private final static String SUBTITLE_FILENAME_PARAM = "fname";
+
+    private SettingsConfig config;
+
+    private void setConfig() throws Exception {
+        final BbcServiceImpl service = (BbcServiceImpl) getPluginService();
+        config = service.getConfig();
+    }
 
     private void checkUrl() {
         fileURL = fileURL.replace("/programmes/", "/iplayer/episode/");
@@ -40,6 +54,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        if (isSubtitle(fileURL)) {
+            return;
+        }
         checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -69,7 +86,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 }
             }
         }
-        httpFile.setFileName(name + ".flv");
+        httpFile.setFileName(name + DEFAULT_EXT);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -78,12 +95,19 @@ class BbcFileRunner extends AbstractRtmpRunner {
         super.run();
         checkUrl();
         logger.info("Starting download in TASK " + fileURL);
+
+        if (isSubtitle(fileURL)) {
+            downloadSubtitle();
+            return;
+        }
+
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
             //sometimes they redirect, set fileURL to the new page
             fileURL = method.getURI().toString();
+            setConfig();
             final String pid;
             Matcher matcher = PlugUtils.matcher("/programmes/([a-z\\d]+)", fileURL);
             if (matcher.find()) {
@@ -129,9 +153,13 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 for (int i = 0, n = nodeList.getLength(); i < n; i++) {
                     try {
                         final Element element = (Element) nodeList.item(i);
-                        final Stream stream = Stream.get(element);
-                        if (stream != null) {
-                            list.add(stream);
+                        if (config.isDownloadSubtitles() && element.getAttribute("kind").equals("captions")) {
+                            queueSubtitle(element);
+                        } else {
+                            final Stream stream = Stream.build(element);
+                            if (stream != null) {
+                                list.add(stream);
+                            }
                         }
                     } catch (Exception e) {
                         LogUtils.processException(logger, e);
@@ -141,7 +169,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 throw new PluginImplementationException("Error parsing playlist XML", e);
             }
             if (list.isEmpty()) throw new PluginImplementationException("No suitable streams found");
-            final RtmpSession rtmpSession = Collections.min(list).getRtmpSession();
+            final RtmpSession rtmpSession = getRtmpSession(Collections.max(list));
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
             helper.setSwfVerification(rtmpSession, client);
@@ -161,6 +189,86 @@ class BbcFileRunner extends AbstractRtmpRunner {
         }
     }
 
+    private RtmpSession getRtmpSession(Stream stream) {
+        return new RtmpSession(stream.server, 1935, stream.app, stream.play, stream.encrypted);
+    }
+
+    private boolean isSubtitle(String fileUrl) {
+        return fileUrl.contains("/subtitles/");
+    }
+
+    private void queueSubtitle(Element media) throws Exception {
+        Element connection = (Element) media.getElementsByTagName("connection").item(0);
+        String subtitleUrl = connection.getAttribute("href") + "?" + SUBTITLE_FILENAME_PARAM + "="
+                + URLEncoder.encode(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_EXT) + "$", ""), "UTF-8"); //add fname param
+        List<URI> uriList = new LinkedList<URI>();
+        uriList.add(new URI(new org.apache.commons.httpclient.URI(subtitleUrl, false, "UTF-8").toString()));
+        if (uriList.isEmpty()) {
+            logger.warning("No subtitles found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+    }
+
+    private void downloadSubtitle() throws Exception {
+        URL url = new URL(fileURL);
+        String filename = URLUtil.getQueryParams(url.toString(), "UTF-8").get(SUBTITLE_FILENAME_PARAM);
+        if (filename == null) {
+            throw new PluginImplementationException("File name not found");
+        }
+        httpFile.setFileName(URLDecoder.decode(filename, "UTF-8") + ".srt");
+        fileURL = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
+
+        HttpMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+
+        //Timed Text to SubRip
+        StringBuilder subtitleSb = new StringBuilder();
+        try {
+            Element body = (Element) DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(getContentAsString().getBytes("UTF-8"))).getElementsByTagName("body").item(0);
+            NodeList pElements = body.getElementsByTagName("p");
+            for (int i = 0, pElementsLength = pElements.getLength(); i < pElementsLength; i++) {
+                Element pElement = (Element) pElements.item(i);
+                subtitleSb.append(i + 1).append("\n");
+                subtitleSb.append(pElement.getAttribute("begin").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d{1})$", ",00$1")); //pad out, 3 digits
+                subtitleSb.append(" --> ");
+                subtitleSb.append(pElement.getAttribute("end").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d{1})$", ",00$1"));
+                subtitleSb.append("\n");
+                addSubtitleElement(subtitleSb, pElement.getChildNodes(), pElement.getChildNodes().getLength(), 0);
+                subtitleSb.append("\n");
+            }
+        } catch (Exception e) {
+            LogUtils.processException(logger, e);
+        }
+
+        final byte[] subtitle = subtitleSb.toString().getBytes("UTF-8");
+        httpFile.setFileSize(subtitle.length);
+        try {
+            downloadTask.saveToFile(new ByteArrayInputStream(subtitle));
+        } catch (Exception e) {
+            LogUtils.processException(logger, e);
+            throw new PluginImplementationException("Error saving subtitle", e);
+        }
+    }
+
+    private void addSubtitleElement(StringBuilder sb, NodeList childNodes, int childNodeLength, int childNodeCounter) throws PluginImplementationException {
+        if (childNodeCounter < childNodeLength) {
+            Node childNode = childNodes.item(childNodeCounter);
+            if (childNode.getNodeName().equals("br")) {
+                sb.append("\n");
+            } else if (childNode.getNodeName().equals("#text")) {
+                sb.append(PlugUtils.unescapeUnicode(childNode.getNodeValue()));
+            } else if (childNode.getNodeName().equals("span")) {
+                addSubtitleElement(sb, childNode.getChildNodes(), childNode.getChildNodes().getLength(), 0);
+            }
+            int i = childNodeCounter + 1;
+            addSubtitleElement(sb, childNodes, childNodeLength, i);
+        }
+    }
+
     private static class Stream implements Comparable<Stream> {
         private final String server;
         private final String app;
@@ -168,7 +276,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
         private final boolean encrypted;
         private final int bitrate;
 
-        public static Stream get(final Element media) {
+        public static Stream build(final Element media) {
             final Element connection = (Element) media.getElementsByTagName("connection").item(0);
             String protocol = connection.getAttribute("protocol");
             if (protocol == null || protocol.isEmpty()) {
@@ -193,21 +301,23 @@ class BbcFileRunner extends AbstractRtmpRunner {
             this.play = play;
             this.encrypted = encrypted;
             this.bitrate = bitrate;
-            logger.info("server = " + server);
-            logger.info("app = " + app);
-            logger.info("play = " + play);
-            logger.info("encrypted = " + encrypted);
-            logger.info("bitrate = " + bitrate);
-        }
-
-        public RtmpSession getRtmpSession() {
-            return new RtmpSession(server, 1935, app, play, encrypted);
+            logger.info("Found stream : " + this);
         }
 
         @Override
         public int compareTo(final Stream that) {
-            return Integer.valueOf(that.bitrate).compareTo(this.bitrate);
+            return Integer.valueOf(this.bitrate).compareTo(that.bitrate);
+        }
+
+        @Override
+        public String toString() {
+            return "Stream{" +
+                    "server='" + server + '\'' +
+                    ", app='" + app + '\'' +
+                    ", play='" + play + '\'' +
+                    ", encrypted=" + encrypted +
+                    ", bitrate=" + bitrate +
+                    '}';
         }
     }
-
 }

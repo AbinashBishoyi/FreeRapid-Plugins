@@ -67,7 +67,7 @@ class BrontoFileFileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
                 checkProblems();
-                referer= httpMethod.getURI().toString();
+                referer = httpMethod.getURI().toString();
             }
 
             httpMethod = getMethodBuilder()
@@ -82,10 +82,7 @@ class BrontoFileFileRunner extends AbstractRunner {
 
             final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "var timeout='", "'");
             downloadTask.sleep(waitTime + 1);
-            httpMethod = getMethodBuilder()
-                    .setReferer(httpMethod.getURI().toString())
-                    .setActionFromAHrefWhereATagContains("download file")
-                    .toGetMethod();
+            httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "document.location='", "';"));
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

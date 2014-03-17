@@ -63,12 +63,17 @@ class IndowebsterRunner extends AbstractRunner {
             final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "var s = ", ";");
             final PostMethod ajaxMethod = getPostMethod(PlugUtils.getStringBetween(getContentAsString(), "$.post('", "',{"));
             httpFile.setFileName(filename.replace("[www.indowebster.com]", ""));
-            downloadTask.sleep(waitTime);
-            matcher = PlugUtils.matcher("([^,]*?):'(.*?)'", PlugUtils.getStringBetween(getContentAsString(), "$.post('http://www.indowebster.com/ajax/downloads/gdl',{", "},function"));
+            matcher = getMatcherAgainstContent("\\$\\.post\\('http://(?:.+?\\.)?indowebster\\.com/ajax/downloads/gdl',\\{(.+?)\\},function");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Ajax download params not found");
+            }
+            final String ajaxDownloadParams = matcher.group(1);
+            matcher = PlugUtils.matcher("([^,]*?):'(.*?)'", ajaxDownloadParams);
             while (matcher.find()) {
                 ajaxMethod.setParameter(matcher.group(1), matcher.group(2));
             }
             ajaxMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            downloadTask.sleep(waitTime);
             if (!makeRequest(ajaxMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -142,8 +147,11 @@ class IndowebsterRunner extends AbstractRunner {
         if (contentAsString.contains("502 Bad Gateway")) {
             throw new ServiceConnectionProblemException("Bad Gateway");
         }
-        if (contentAsString.contains("di curi si Buaya Jahat")) {
+        if (contentAsString.contains("di curi si Buaya Jahat") || contentAsString.contains("Web Server may be down")) {
             throw new YouHaveToWaitException("Server sibuk, tunggu beberapa saat..", 5 * 60);
+        }
+        if (contentAsString.contains("File upload in progress")) {
+            throw new YouHaveToWaitException("File upload in progress", 15 * 60);
         }
     }
 

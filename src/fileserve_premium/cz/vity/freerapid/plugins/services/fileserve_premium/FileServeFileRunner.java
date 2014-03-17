@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.fileserve_premium;
 
-import cz.vity.freerapid.plugins.exceptions.BadLoginException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
@@ -11,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -48,7 +46,11 @@ class FileServeFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, getContentAsString(), "<h1>", "<");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span><strong>", "</strong>");
+        final Matcher size = getMatcherAgainstContent("<strong>\\s*(\\d).+?\\s*</strong>");
+        if (!size.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

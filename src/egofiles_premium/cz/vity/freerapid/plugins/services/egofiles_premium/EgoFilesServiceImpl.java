@@ -1,6 +1,5 @@
 package cz.vity.freerapid.plugins.services.egofiles_premium;
 
-import cz.vity.freerapid.plugins.services.depositfiles_premium.DepositFilesServiceImpl;
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -41,7 +40,7 @@ public class EgoFilesServiceImpl extends AbstractFileShareService {
 
     PremiumAccount getConfig() throws Exception {
         if (config == null) {
-            synchronized (DepositFilesServiceImpl.class) {
+            synchronized (EgoFilesServiceImpl.class) {
                 config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
             }
         }

@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -27,14 +28,17 @@ import java.util.regex.Matcher;
  */
 class DepositFilesFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DepositFilesFileRunner.class.getName());
-    private boolean badConfig = false;
 
     private void setLanguageEN() {
-        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
-        addCookie(new Cookie(".depositfiles.org", "lang_current", "en", "/", 86400, false));
-        addCookie(new Cookie(".dfiles.eu", "lang_current", "en", "/", 86400, false));
-        addCookie(new Cookie(".dfiles.ru", "lang_current", "en", "/", 86400, false));
+        setCookieOnAllDomains("lang_current", "en");
         fileURL = fileURL.replaceFirst("/[^/]{2}/(files|folders)/", "/$1/"); // remove language id from URL
+    }
+
+    private void setCookieOnAllDomains(final String name, final String value) {
+        addCookie(new Cookie(".depositfiles.com", name, value, "/", 86400, false));
+        addCookie(new Cookie(".depositfiles.org", name, value, "/", 86400, false));
+        addCookie(new Cookie(".dfiles.eu", name, value, "/", 86400, false));
+        addCookie(new Cookie(".dfiles.ru", name, value, "/", 86400, false));
     }
 
     @Override
@@ -123,21 +127,14 @@ class DepositFilesFileRunner extends AbstractRunner {
         synchronized (DepositFilesFileRunner.class) {
             DepositFilesServiceImpl service = (DepositFilesServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
-            if (!pa.isSet() || badConfig) {
+            if (!pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
                     throw new BadLoginException("No DepositFiles Premium account login information!");
                 }
-                badConfig = false;
             }
-            HttpMethod httpMethod = getMethodBuilder()
+            final HttpMethod httpMethod = getMethodBuilder()
                     .setAction("/login.php")
-                    .toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                throw new ServiceConnectionProblemException();
-            }
-            httpMethod = getMethodBuilder()
-                    .setAction(httpMethod.getURI().toString())
                     .setParameter("go", "1")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
@@ -147,6 +144,13 @@ class DepositFilesFileRunner extends AbstractRunner {
             }
             if (getContentAsString().contains("Your password or login is incorrect")) {
                 throw new BadLoginException("Invalid DepositFiles Premium account login information!");
+            }
+            for (final Header h : httpMethod.getResponseHeaders("Set-Cookie")) {
+                final Matcher matcher = PlugUtils.matcher("autologin=(.+?);", h.getValue());
+                if (matcher.find()) {
+                    setCookieOnAllDomains("autologin", matcher.group(1));
+                    break;
+                }
             }
         }
     }

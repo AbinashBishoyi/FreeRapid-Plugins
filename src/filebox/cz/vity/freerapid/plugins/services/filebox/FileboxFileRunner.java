@@ -33,6 +33,7 @@ class FileboxFileRunner extends XFileSharingRunner {
     protected List<String> getDownloadPageMarkers() {
         final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
         downloadPageMarkers.add(0, "product_download_url");
+        downloadPageMarkers.add(0, ">> Download File <<");
         return downloadPageMarkers;
     }
 
@@ -40,12 +41,17 @@ class FileboxFileRunner extends XFileSharingRunner {
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = new LinkedList<String>();
         downloadLinkRegexes.add("product_download_url=[\"']?(.+?)[\"']?>");
+        downloadLinkRegexes.add("href=\"(.+?)\">>>> Download File");
         return downloadLinkRegexes;
     }
 
     @Override
     protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
-        httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "product_file_name=", "&product_download_url"));
+        try {
+            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "product_file_name=", "&product_download_url"));
+        } catch (Exception e) {
+            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "File Name : <span>", "</span>"));
+        }
         return super.getDownloadLinkFromRegexes();
     }
 

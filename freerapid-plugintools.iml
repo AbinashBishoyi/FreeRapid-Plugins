@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module relativePaths="true" type="JAVA_MODULE" version="4">
+  <component name="BuildJarSettings">
+    <containerInfo>
+      <containerElement type="module" name="freerapid-plugintools">
+        <attribute name="method" value="1" />
+        <attribute name="URI" value="/" />
+      </containerElement>
+    </containerInfo>
+    <setting name="jarUrl" value="file://$MODULE_DIR$/rapidshare.zip" />
+    <setting name="buildJar" value="true" />
+    <setting name="mainClass" value="" />
+  </component>
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_6" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src/applemovies" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/cryptography" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/getthebit" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/linksavegroup" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/localhost" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/netgull" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/subory" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/xfilesend" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/xsupershare" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/hotfile" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/devapp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/recaptcha" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/nova" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/czshare_profi" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/rapidshare" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/novaup" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/rtmp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/ulozto" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/filesonic" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/filesonic_premium" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/picasa" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/uploading" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/fsx" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/fileserve" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/bitshare" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/hellshare" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/hellshare_full" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/spankwire" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/facebook" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/fsx_premium" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/linksafe" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/depositfiles" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/depositfiles_premium" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/mediafire" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/linkdecrypter" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/titulky" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/bezvadata" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/webshare" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/speedfile" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/youtube" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/rapidshare_premium" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/rajce" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/u115" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/wupload" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/_classes" />
+      <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/plugins" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="lib1" level="project" />
+  </component>
+</module>
+

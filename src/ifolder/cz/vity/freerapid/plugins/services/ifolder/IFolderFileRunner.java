@@ -10,6 +10,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import org.apache.commons.httpclient.HttpClient;
 
 /**
  * Class which contains main code
@@ -59,62 +60,38 @@ class IFolderFileRunner extends AbstractRunner {
             if (!matcher.find()) {
                 throw new PluginImplementationException("Cannot find link on first page");
             }
-            final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
+            String secondUrl = matcher.group(1);
+            HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(secondUrl).toGetMethod();
+            HttpClient hc = client.getHTTPClient();
+            hc.executeMethod(method2);
+            String redirectedUrl = method2.getResponseHeader("Location").getValue();
+            method2 = getMethodBuilder().setReferer(fileURL).setAction(redirectedUrl).toGetMethod();
+
             if (makeRedirectedRequest(method2)) {
-                contentAsString = getContentAsString();//http://ints.ifolder.ru/ints/sponsor/?bi=577&session
-                matcher = PlugUtils.matcher("<a href=(http\\:\\/\\/ints\\.ifolder\\.ru/ints/sponsor[^>]*)>", contentAsString);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Cannot find ads link on second page");
-                }
-                String nextAction = matcher.group(1);
-                final HttpMethod method3 = getMethodBuilder().setReferer("").setAction(nextAction).toHttpMethod();
-                if (makeRedirectedRequest(method3)) {
-                    final HttpMethod method4 = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();
-                    if (makeRedirectedRequest(method4)) {
-                        String sdelay = PlugUtils.getStringBetween(getContentAsString(), "var delay = ", ";");
-                        int delay = 30;
-                        try {
-                            delay = Integer.parseInt(sdelay);
-                        } catch (NumberFormatException nex) {
-                        }
-                        downloadTask.sleep(delay);
-                        if (makeRedirectedRequest(method4)) {
-                            do {
-                                CaptchaSupport captchaSupport = getCaptchaSupport();
-                                String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
-                                s = "http://ints.ifolder.ru" + s;
-                                logger.info("Captcha URL " + s);
-                                String interstitials_session = PlugUtils.getStringBetween(getContentAsString(), "if(tag){tag.value = \"", "\"");
-                                String captchaR = captchaSupport.getCaptcha(s);
-                                if (captchaR == null) {
-                                    throw new CaptchaEntryInputMismatchException();
-                                }
-                                final HttpMethod method5 = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true).setParameter("confirmed_number", captchaR).setParameter("interstitials_session", interstitials_session).setBaseURL("http://ints.ifolder.ru/ints/frame/").toHttpMethod();
-                                if (!makeRedirectedRequest(method5)) {
-                                    throw new ServiceConnectionProblemException();
-                                }
-                            } while (getContentAsString().contains("name=\"confirmed_number\""));
-                            downloadTask.sleep(5); //Needed for full speed
+                do {
+                    contentAsString = getContentAsString();
+                    String sessionId = PlugUtils.getStringBetween(contentAsString, "session=", "&mem");
+                    CaptchaSupport captchaSupport = getCaptchaSupport();
+                    String host = PlugUtils.getStringBetween(fileURL, "http://", "/");
+                    String hidden_code = PlugUtils.getStringBetween(contentAsString, "var c = ['hidden_code', 'hh", "'];");
 
-                            final HttpMethod method6 = getMethodBuilder().setReferer("").setActionFromAHrefWhereATagContains("download").toHttpMethod();
-                            if (!tryDownloadAndSaveFile(method6)) {
-                                logger.warning(getContentAsString());//log the info
-                                throw new PluginImplementationException();//some unknown problem
-                            }
+                    String captchaR = captchaSupport.getCaptcha("http://" + host + "/random/images/?session=" + sessionId + "&mem");
 
-                        } else {
-                            throw new ServiceConnectionProblemException();
-                        }
-                    } else {
-                        throw new ServiceConnectionProblemException();
+                    final HttpMethod method3 = getMethodBuilder().setReferer(redirectedUrl).setActionFromFormByName("form1", true).setParameter("confirmed_number", captchaR).setParameter("hidden_code", hidden_code).setParameter("activate_ads_free", "0").setAction(redirectedUrl).toHttpMethod();
+                    if(!makeRedirectedRequest(method3)){
+                        throw new PluginImplementationException();
                     }
-                } else {
-                    throw new ServiceConnectionProblemException();
-                }
-            } else {
-                throw new ServiceConnectionProblemException();
-            }
+                } while (getContentAsString().contains("confirmed_number"));
 
+                final HttpMethod method4 = getMethodBuilder().setReferer(redirectedUrl).setActionFromAHrefWhereATagContains("c\u043A\u0430\u0447\u0430\u0442\u044C").toHttpMethod();
+                if (!tryDownloadAndSaveFile(method4)) {
+                    logger.warning(getContentAsString());//log the info
+                    throw new PluginImplementationException();//some unknown problem
+                }
+
+            } else {
+                throw new PluginImplementationException();
+            }            
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

@@ -1,15 +1,18 @@
 package cz.vity.freerapid.plugins.services.videoweed;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URLDecoder;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -50,8 +53,9 @@ class VideoWeedFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String file = PlugUtils.getStringBetween(getContentAsString(), ".file=\"", "\";");
-            final String key = PlugUtils.getStringBetween(getContentAsString(), ".filekey=\"", "\";");
+            final String content = findParameterContent();
+            final String file = PlugUtils.getStringBetween(content, ".file=\"", "\";");
+            final String key = PlugUtils.getStringBetween(content, ".filekey=\"", "\";");
             method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://www.videoweed.es/api/player.api.php")
@@ -89,6 +93,28 @@ class VideoWeedFileRunner extends AbstractRunner {
         if (content.contains("The file is being converted")) {
             throw new ServiceConnectionProblemException("The file is being converted");
         }
+    }
+
+    private String findParameterContent() throws Exception {
+        final Matcher matcher = getMatcherAgainstContent("eval([^\r\n]+)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Parameters not found (1)");
+        }
+        String content = ScriptUtils.evaluateJavaScriptToString(matcher.group(1));
+
+        String[] split = content.split("eval");
+        if (split.length != 2) {
+            throw new PluginImplementationException("Parameters not found (2)");
+        }
+        content = ScriptUtils.evaluateJavaScriptToString(split[1]);
+
+        split = content.split("eval");
+        if (split.length != 3) {
+            throw new PluginImplementationException("Parameters not found (3)");
+        }
+        content = ScriptUtils.evaluateJavaScriptToString(split[2]);
+
+        return content;
     }
 
 }

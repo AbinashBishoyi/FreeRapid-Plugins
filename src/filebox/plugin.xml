@@ -4,7 +4,7 @@
         vendor="Kajda+Vity+birchie" version="0.6.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filebox\.com/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="filebox.com"/>
         <attribute id="maxDownloads" value="9"/>

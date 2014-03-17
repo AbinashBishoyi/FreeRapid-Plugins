@@ -168,6 +168,9 @@ class LetitbitRunner extends AbstractRunner {
         if (content.contains("file was not found") || content.contains("\u043D\u0430\u0439\u0434\u0435\u043D") || content.contains("<title>404</title>")) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
+        Matcher deletedMatcher = PlugUtils.matcher("Request file [^<]* Deleted", getContentAsString());
+        if(deletedMatcher.find())
+        	throw new URLNotAvailableAnymoreException("File deleted");
     }
 
 }

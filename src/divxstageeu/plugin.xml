@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.divxstageeu.DivxStageEuServiceImpl"
+        id="divxstage.eu" vendor="tong2shot" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?divxstage\.eu/video/.+"/>
+        <attribute id="minver" value="0.853"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="divxstage.eu"/>
+        <attribute id="maxDownloads" value="10"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="divxstage.eu" path="/" type="code"/>
+    </runtime>
+</plugin>

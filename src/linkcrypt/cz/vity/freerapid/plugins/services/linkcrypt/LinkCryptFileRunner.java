@@ -68,6 +68,9 @@ class LinkCryptFileRunner extends AbstractRunner {
         if (stepCaptcha(content)) {
             content = getContentAsString();
         }
+        if (stepPassword(content)) {
+            content = getContentAsString();
+        }
 
         if (!addContainer(content) && !addWebLinks(content)) {
             throw new PluginImplementationException("No links found");
@@ -90,6 +93,28 @@ class LinkCryptFileRunner extends AbstractRunner {
         } catch (final Exception e) {
             LogUtils.processException(logger, e);
         }
+    }
+
+    private boolean stepPassword(final String content) throws Exception {
+        if (content.contains("Enter your password")) {
+            do {
+                final String password = getDialogSupport().askForPassword("LinkCrypt.ws");
+                if (password == null) {
+                    throw new PluginImplementationException("This folder is secured with a password");
+                }
+                final HttpMethod method = getMethodBuilder()
+                        .setAction(fileURL).setReferer(fileURL)
+                        .setParameter("password", password)
+                        .setParameter("x", "" + (int) (Math.random() * 50))
+                        .setParameter("y", "" + (int) (Math.random() * 15))
+                        .toPostMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+            } while (getContentAsString().contains("Enter your password"));
+            return true;
+        }
+        return false;
     }
 
     private boolean stepCaptcha(final String content) throws Exception {

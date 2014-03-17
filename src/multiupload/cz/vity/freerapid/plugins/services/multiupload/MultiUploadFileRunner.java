@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -53,13 +54,17 @@ class MultiUploadFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final List<URI> list = new LinkedList<URI>();
-        if (PlugUtils.find("/.._", fileURL)) {
+        if (PlugUtils.find("/.._", fileURL)) {  // single link
             processLink(fileURL, list);
-        } else {
+        } else {   // list of links
             final GetMethod getMethod = getGetMethod(fileURL);
             if (makeRedirectedRequest(getMethod)) {
+                final Matcher match = getMatcherAgainstContent("<a href=\"(http://www\\d*?\\.multiupload\\.(com|co.uk|nl):.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
+                if (match.find()) {    //direct download
+                    list.add(new URI(match.group(1)));
+                }
                 final Matcher matcher = getMatcherAgainstContent(">(http://www\\.multiupload\\.(com|co.uk|nl)/.._.+?)<");
-                while (matcher.find()) {
+                while (matcher.find()) {  //download links
                     processLink(matcher.group(1), list);
                 }
             } else {

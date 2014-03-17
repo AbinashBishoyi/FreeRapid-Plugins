@@ -31,17 +31,21 @@ class MegauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
     private String HTTP_SITE = "http://www.megaupload.com";
     private String LINK_TYPE = "single";
+    private final static int captchaMax = 5;
     private int captchaCount;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-                String host = httpFile.getFileUrl().getHost();
-        if (host.contains("megarotic") || host.contains("sexuploader")  || host.contains("megaporn") ) {
-           HTTP_SITE = "http://www.megaporn.com";
-         fileURL = fileURL.replace("megarotic","megaporn");
-         fileURL = fileURL.replace("sexuploader","megaporn");
-        }  
+        final String host = httpFile.getFileUrl().getHost();
+        if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
+            HTTP_SITE = "http://www.megaporn.com";
+            fileURL = fileURL.replace("megarotic", "megaporn");
+            fileURL = fileURL.replace("sexuploader", "megaporn");
+        }
+
+        addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
+
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("folderid\",\"")) {
@@ -57,14 +61,16 @@ class MegauploadRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
-        String host = httpFile.getFileUrl().getHost();
-        if (host.contains("megarotic") || host.contains("sexuploader")  || host.contains("megaporn") ) {
-           HTTP_SITE = "http://www.megaporn.com";
-         fileURL = fileURL.replace("megarotic","megaporn");
-         fileURL = fileURL.replace("sexuploader","megaporn");
+        final String host = httpFile.getFileUrl().getHost();
+        if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
+            HTTP_SITE = "http://www.megaporn.com";
+            fileURL = fileURL.replace("megarotic", "megaporn");
+            fileURL = fileURL.replace("sexuploader", "megaporn");
         }
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
+
+        addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
 
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         getMethod.setFollowRedirects(true);
@@ -223,7 +229,7 @@ class MegauploadRunner extends AbstractRunner {
 //                        }
 //                    }
 
-                if (captchaCount++ < 3) {
+                if (captchaCount++ < captchaMax) {
                     captcha = CaptchaReader.read(captchaImage);
                     if (captcha == null) {
                         logger.warning("Cant read captcha");

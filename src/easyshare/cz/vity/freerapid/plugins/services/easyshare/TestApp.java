@@ -11,10 +11,12 @@ import java.net.URL;
  * @author Ladislav Vitasek
  */
 public class TestApp extends PluginDevApplication {
+
+    @Override
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://w17.easy-share.com/1701853057.html"));
+            httpFile.setNewURL(new URL("http://www.easy-share.com/1910799097/logovq.zip"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081);
             testRun(new EasyShareServiceImpl(), httpFile, connectionSettings);

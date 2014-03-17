@@ -12,6 +12,13 @@ import java.util.List;
 class one80UploadFileRunner extends XFileSharingRunner {
 
     @Override
+    protected void setLanguageCookie() throws Exception {
+        if (fileURL.contains("180upload.nl/"))
+            fileURL = fileURL.replaceFirst("180upload.nl/", "180upload.com/");
+        super.setLanguageCookie();
+    }
+
+    @Override
     protected List<String> getDownloadPageMarkers() {
         final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
         downloadPageMarkers.add("By downloading the file you agree to the TOS");

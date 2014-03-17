@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.one80upload;
+package cz.vity.freerapid.plugins.services.unlimitzone;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,19 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://180upload.com/a6al6eh4s86m"));
-            httpFile.setNewURL(new URL("http://180upload.nl/4y7auoa8l5hi/ArabSeed.CoM.P.E.14.P.1.2.By.AhmedTiger.part1.rar.html"));
+            httpFile.setNewURL(new URL("http://unlimitzone.com/q93d8tjdj4ub/Memory_Booster_5.9.54.rar.html‎"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final one80UploadServiceImpl service = new one80UploadServiceImpl(); //instance of service - of our plugin
-
+            final UnlimitZoneServiceImpl service = new UnlimitZoneServiceImpl(); //instance of service - of our plugin
+            /*
             //we set premium account details
-            //final PremiumAccount config = new PremiumAccount();
-            //config.setUsername("****");
-            //config.setPassword("****");
-            //service.setConfig(config);
-
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

@@ -11,7 +11,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -29,7 +28,6 @@ class RuTubeFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        setPageEncoding("KOI8-R");
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -43,30 +41,25 @@ class RuTubeFileRunner extends AbstractRtmpRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String name = PlugUtils.getStringBetween(getContentAsString(), "<meta property=\"og:title\" content=\"", "\" />");
         httpFile.setFileName(name + ".flv");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"icn-size\" itemprop=\"contentSize\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
-        setPageEncoding("KOI8-R");
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final Matcher matcher = getMatcherAgainstContent("player\\.swf\\?.*?file=([^&='\"]+)");
+            final Matcher matcher = getMatcherAgainstContent("video.rutube.ru/([A-Za-z\\d]{32})");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Playlist URL not found");
             }
-            String playlistUrl = URLDecoder.decode(matcher.group(1), "UTF-8");
-            playlistUrl = playlistUrl.substring(0, playlistUrl.lastIndexOf('.') + 1) + "f4m";
+            final String playlistUrl = "http://bl.rutube.ru/" + matcher.group(1) + ".f4m?referer=" + fileURL;
             logger.info("playlistUrl = " + playlistUrl);
-            setPageEncoding("UTF-8");
             method = getGetMethod(playlistUrl);
             if (!makeRedirectedRequest(method)) {
-                checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             final String baseUrl = PlugUtils.getStringBetween(getContentAsString(), "<baseURL>", "</baseURL>");
@@ -83,7 +76,7 @@ class RuTubeFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Нет такой страницы")) {
+        if (getContentAsString().contains("Запрашиваемая вами страница не найдена")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

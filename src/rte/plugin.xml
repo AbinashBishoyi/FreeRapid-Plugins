@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.rte.RteServiceImpl" id="rte.ie" vendor="ntoskrnl" version="1.0.2">
+<plugin class="cz.vity.freerapid.plugins.services.rte.RteServiceImpl"
+        id="rte.ie" vendor="ntoskrnl" version="1.0.3">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?rte\.ie/player/#v=\d+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="urlRegex" value="http://(www\.)?rte\.ie/player/#!?v=\d+"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="rte.ie"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.8" reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.8"
+                reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="rte.ie" path="/" type="code"/>

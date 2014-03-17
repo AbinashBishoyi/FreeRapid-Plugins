@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
  */
 class FileserveFilesRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileserveFilesRunner.class.getName());
-    private static final String URI_BASE = "http://fileserve.com";
+    private final static String URI_BASE = "http://www.fileserve.com";
 
     @Override
     public void runCheck() throws Exception {
@@ -38,13 +38,13 @@ class FileserveFilesRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize(getContentAsString());
 
-            String fileKey = fileURL.substring(fileURL.lastIndexOf('/') + 1);
-            Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?fileserve\\.com/[^/]*/([\\w]*)", fileURL);
-            if (matcher.find()) {
-                fileKey = matcher.group(1);
+            Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?fileserve\\.com/[^/]*/(\\w+)", fileURL);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error parsing download link");
             }
+            final String fileKey = matcher.group(1);
 
-            matcher = getMatcherAgainstContent("reCAPTCHA_publickey='([\\d\\w-]*)'");
+            matcher = getMatcherAgainstContent("reCAPTCHA_publickey='([\\w-]*)'");
             if (!matcher.find()) {
                 throw new PluginImplementationException("ReCaptcha key not found");
             }
@@ -57,8 +57,7 @@ class FileserveFilesRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
 
-                //var RecaptchaState = {site:'6LdSvrkSAAAAAOIwNj-IY-Q-p90hQrLinRIpZBPi',challenge:'03AHJ_VuuJMcPAWa2rH-CzfLfoAmJfSgx3d0UyaU7r51_A-8-OiQmN_tMtpuZS8Cv-KaQ9wobLil_oxs2Ou399l3goQU8SfJQ3yM3r4ErIDf6XgEIFCHf67mB5Lt44qzuTlIqxOtOPi_Om4VJxZTiv6wooz7rzJcYgoQ',is_incorrect:false,programming_error:'',error_message:'',server:'http://www.google.com/recaptcha/api/',timeout:18000}; Recaptcha.challenge_callback();
-                matcher = getMatcherAgainstContent("challenge\\s?:\\s?'([\\w-]*)'(?:,.*)?,\\s?server\\s?:\\s?'([^']*)'");
+                matcher = getMatcherAgainstContent("(?s)challenge\\s*:\\s*'([\\w-]+)'.*?server\\s*:\\s*'([^']+)'");
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Error parsing ReCaptcha response");
                 }
@@ -80,7 +79,7 @@ class FileserveFilesRunner extends AbstractRunner {
                 if (!makeRedirectedRequest(postMethod)) {
                     throw new ServiceConnectionProblemException();
                 }
-            } while (!getContentAsString().equalsIgnoreCase("success"));
+            } while (!getContentAsString().trim().equalsIgnoreCase("success"));
 
             HttpMethod pMethod = getMethodBuilder().setAction(fileURL).setReferer(fileURL)
                     .setParameter("downloadLink", "wait")
@@ -106,7 +105,6 @@ class FileserveFilesRunner extends AbstractRunner {
 
             if (!tryDownloadAndSaveFile(pMethod)) {
                 checkProblems();
-                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
@@ -116,7 +114,7 @@ class FileserveFilesRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1>", "</h1>");
+        PlugUtils.checkName(httpFile, content, "<h1>", "<");
         PlugUtils.checkFileSize(httpFile, content, "<span><strong>", "</strong>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -124,6 +122,9 @@ class FileserveFilesRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("The file could not be found") || getContentAsString().contains("Page not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("/error.php")) {
+            throw new ServiceConnectionProblemException("Temporary server issue");
         }
         Matcher matcher = getMatcherAgainstContent("You have to wait (\\d+) seconds to start another download");
         if (matcher.find()) {

@@ -1,11 +1,15 @@
 package cz.vity.freerapid.plugins.services.shareflare;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.shareflare.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.awt.image.BufferedImage;
@@ -17,40 +21,25 @@ import java.util.logging.Logger;
 class ShareflareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareflareRunner.class.getName());
 
-    private int captchatry = 0;
+    private int captchatry = 10;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-
+        addCookie(new Cookie(".shareflare.net", "lang", "en", "/", 86400, false));
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
-
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
-            checkNameAndSize1();
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize1() throws Exception {
-        final String content = getContentAsString();
-        try {
-            PlugUtils.checkName(httpFile, content, "name=\"name\" value=\"", "\"");
-        } catch (PluginImplementationException e) {
-            logger.warning("File name not found (1)");
-        }
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    private void checkNameAndSize2() throws Exception {
-        final String content = getContentAsString();
-        try {
-            PlugUtils.checkName(httpFile, content, "<strong>", "</strong>");
-        } catch (PluginImplementationException e) {
-            logger.warning("File name not found (2)");
-        }
+    private void checkNameAndSize() throws Exception {
+        PlugUtils.checkName(httpFile, getContentAsString(), "<p>File:", "</p>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<p>Size:", "</p>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -58,23 +47,22 @@ class ShareflareRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".shareflare.net", "lang", "en", "/", 86400, false));
 
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
-        checkNameAndSize1();
+        checkNameAndSize();
 
-        final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dvifree", true).toPostMethod();
+        final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dvifree", true).toPostMethod();
         if (!makeRedirectedRequest(httpMethod2)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
-        checkNameAndSize2();
 
-        final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dvifree", true);
-
+        final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dvifree", true);
         final String captchaurl = getCaptchaImageURL();
         do {
             final HttpMethod captchaMethod = methodBuilder.setParameter("cap", readCaptchaImage(captchaurl)).toPostMethod();
@@ -85,7 +73,7 @@ class ShareflareRunner extends AbstractRunner {
             captchatry++;
         } while (getContentAsString().contains("history.go(-1)"));
 
-        final HttpMethod httpMethod3 = getMethodBuilder().setReferer(methodBuilder.getAction()).setActionFromIFrameSrcWhereTagContains("topFrame").toGetMethod();
+        final HttpMethod httpMethod3 = getMethodBuilder().setReferer(methodBuilder.getEscapedURI()).setActionFromIFrameSrcWhereTagContains("topFrame").toGetMethod();
         if (!makeRedirectedRequest(httpMethod3)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -99,11 +87,10 @@ class ShareflareRunner extends AbstractRunner {
 
         final HttpMethod httpMethod4 = getMethodBuilder()
                 .setActionFromAHrefWhereATagContains("Your link to file download")
-                .setReferer(methodBuilder.getAction())
+                .setReferer(methodBuilder.getEscapedURI())
                 .toGetMethod();
         if (!tryDownloadAndSaveFile(httpMethod4)) {
             checkProblems();
-            logger.warning(getContentAsString());
             throw new ServiceConnectionProblemException("Error starting download");
         }
     }
@@ -139,7 +126,7 @@ class ShareflareRunner extends AbstractRunner {
     }
 
     private String getCaptchaImageURL() throws ErrorDuringDownloadingException {
-        final String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getAction();
+        final String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getEscapedURI();
         logger.info("Captcha image: " + s);
         return s;
     }
@@ -153,6 +140,11 @@ class ShareflareRunner extends AbstractRunner {
         if (content.contains("File not found") || content.contains("deleted for abuse") || content.contains("<h1>404 Not Found</h1>")) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://shareflare.net";
     }
 
 }

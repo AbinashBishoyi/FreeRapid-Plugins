@@ -175,7 +175,8 @@ class DailymotionRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
                 checkProblems();
-                final String baseUrl = new URI(url).getAuthority();
+                //final String baseUrl = new URI(url).getAuthority();
+                final String baseUrl = "vid2.ec.dmcdn.net";
                 url = "http://" + baseUrl + PlugUtils.getStringBetween(getContentAsString(), "\"template\":\"", "\",").replace("frag($fragment$)/", "");
             }
             client.setReferer(fileURL);

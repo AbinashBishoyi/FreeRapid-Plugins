@@ -23,8 +23,9 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xkzttp_test-subtitle-in-dailymotion_shortfilms")); //video with subtitle
             //httpFile.setNewURL(new URL("http://static2.dmcdn.net/static/video/339/362/35263933:subtitle_en.srt/test%20subtitle%20in%20dailymotion?en")); //subtitle
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xuihv3_joli-but-acrobatique-au-mexique_sport"));
-            httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xupie7_zapping-tele-du-30"));
-            //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/x11gd1n_edson-montano-marque-un-but-d-anthologie_news"));
+            //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xupie7_zapping-tele-du-30"));
+            httpFile.setNewURL(new URL("http://www.dailymotion.com/video/x11gd1n_edson-montano-marque-un-but-d-anthologie_news"));
+            //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/x11hdie_le-lob-magnifique-de-neymar-face-a-messi_news"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("23.29.113.100", 3128);
             final DailymotionServiceImpl service = new DailymotionServiceImpl();

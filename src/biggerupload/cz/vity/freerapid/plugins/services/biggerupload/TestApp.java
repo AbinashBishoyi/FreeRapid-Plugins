@@ -16,14 +16,13 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.biggerupload.com/vmr2scsbi1xf/GetRipped-Techniques.part1.rar.html "));
+            httpFile.setNewURL(new URL("http://biggerupload.com/kzokjkl9o4ut/Joe_Francis_Schweiger_-_06_-_Eins,_zwei,_drei.mp3.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final BiggerUploadServiceImpl service = new BiggerUploadServiceImpl(); //instance of service - of our plugin
-            //runcheck makes the validation
-            testRunCheck(service, httpFile, connectionSettings);//download file with service and its Runner
+            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console

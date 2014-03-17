@@ -16,10 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.filebox.com/h8a0vh7yia4a"));
+            //httpFile.setNewURL(new URL("http://filebox.com/eba20k9t95b2"));
+            httpFile.setNewURL(new URL("http://www.filebox.com/xev0d3nnqlaa"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("23.23.203.198", 3128); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final FileboxServiceImpl service = new FileboxServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

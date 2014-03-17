@@ -1,21 +1,20 @@
 package cz.vity.freerapid.plugins.services.filebox;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author Kajda
  */
-public class FileboxServiceImpl extends AbstractFileShareService {
-    private final static String SERVICE_NAME = "filebox.com";
-
-    public String getName() {
-        return SERVICE_NAME;
+public class FileboxServiceImpl extends XFileSharingServiceImpl {
+    @Override
+    public String getServiceTitle() {
+        return "FileBox";
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;
+    public String getName() {
+        return "filebox.com";
     }
 
     @Override

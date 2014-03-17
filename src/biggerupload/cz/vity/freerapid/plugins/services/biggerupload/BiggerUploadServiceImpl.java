@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.biggerupload;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,15 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author Vity
  */
-public class BiggerUploadServiceImpl extends AbstractFileShareService {
+public class BiggerUploadServiceImpl extends XFileSharingServiceImpl {
 
-    public String getName() {
-        return "biggerupload.com";
+    @Override
+    public String getServiceTitle() {
+        return "BiggerUpload";
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;//ok
+    public String getName() {
+        return "biggerupload.com";
     }
 
     @Override

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="zippyshare.com" version="1.7.1" vendor="Vity+ntoskrnl"
+<plugin id="zippyshare.com" version="1.7.2" vendor="Vity+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.zippyshare.ZippyShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www(\d+)?\.)?zippyshare\.com/v/.+"/>

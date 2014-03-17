@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Kajda
+ * @author JPEXS
  */
 public class IFileServiceImpl extends AbstractFileShareService {
     private final static String SERVICE_NAME = "ifile.it";
@@ -14,7 +14,7 @@ public class IFileServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 9;
+        return 2;
     }
 
     @Override

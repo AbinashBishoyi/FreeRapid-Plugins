@@ -1,24 +1,32 @@
 package cz.vity.freerapid.plugins.services.ifile;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.ifile.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.io.IOException;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.io.IOException;
-import java.net.URI;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Kajda
- * @since 0.82
+ * @author JPEXS
+ * @since 0.83
  */
 class IFileFileRunner extends AbstractRunner {
+
     private final static Logger logger = Logger.getLogger(IFileFileRunner.class.getName());
-    private final static String REDIRECT_URL = "http://ifile.it/dl";
+    private final static String BASE_URL = "http://ifile.it/";
+    private final static String REDIRECT_URL = BASE_URL + "dl";
+    private String __x_fsa;
+    private String __x_fs;
+    private String __x_c;
+    private String __esn;
+    private String __recaptcha_public;
 
     @Override
     public void runCheck() throws Exception {
@@ -33,52 +41,59 @@ class IFileFileRunner extends AbstractRunner {
         }
     }
 
+    private void finalRequest() throws Exception {
+        final HttpMethod method = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
+        makeRedirectedRequest(method);
+        final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("download").setReferer(REDIRECT_URL).toHttpMethod();
+        if (!tryDownloadAndSaveFile(finalMethod)) {
+            logger.warning(getContentAsString());
+            throw new IOException("File input stream is empty.");
+        }
+    }
+
+    private void makeUrl(String a, String b) throws Exception {
+        String c = BASE_URL + "download:dl_request?" + __x_fsa + "&type=" + a + "&esn=" + __esn + b;
+        c += "&" + __x_fs;
+        HttpMethod method = getMethodBuilder().setAction(c).toHttpMethod();
+        method.addRequestHeader("X-Requested-With", "XMLHttpRequest"); //We use AJAX :-)
+        if (makeRedirectedRequest(method)) {
+            String content = getContentAsString();
+            //Response looks like this: {"status":"ok","captcha":"none","retry":"none"}
+            String respStatus = PlugUtils.getStringBetween(content, "\"status\":\"", "\"");
+            String respCaptcha = PlugUtils.getStringBetween(content, "\"captcha\":\"", "\"");
+            // Retry is not used...
+            //String respRetry = PlugUtils.getStringBetween(content, "\"retry\":\"", "\"");
+            if (respStatus.equals("ok")) {
+                MethodBuilder mb = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL);
+                if (respCaptcha.equals("none")) {
+                    finalRequest();
+                } else if (respCaptcha.equals("recaptcha")) {
+                    stepReCaptcha();
+                } else {
+                    stepCaptchaSimple();
+                }
+            } else {
+                throw new PluginImplementationException("Server returned wrong status: " + respStatus);
+            }
+        } else {
+            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
+    }
+
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setEncodePathAndQuery(true).toHttpMethod();
-
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            final URI fileURI = new URI(fileURL);
-            final String[] filePath = fileURI.getPath().split("/");
-
-            if (filePath.length > 1) {
-                final String contentAsString = getContentAsString();
-                final String redirectURL = PlugUtils.getStringBetween(contentAsString, "var url = '", "'") + filePath[1] + ",type=simple" + PlugUtils.getStringBetween(getContentAsString(), "var url = url + '", "'") + PlugUtils.getStringBetween(contentAsString, "esn='+__esn+'", "' + c;");
-                httpMethod = getMethodBuilder().setReferer(REDIRECT_URL).setAction(redirectURL).toHttpMethod();
-
-                if (makeRedirectedRequest(httpMethod)) {
-                    while (getContentAsString().contains("\"message\":\"show_captcha\"")) {
-                        httpMethod = stepCaptcha(redirectURL);
-
-                        if (!makeRedirectedRequest(httpMethod)) {
-                            throw new ServiceConnectionProblemException();
-                        }
-                    }
-
-                    checkAllProblems();
-                    httpMethod = getMethodBuilder().setReferer(REDIRECT_URL).setAction(REDIRECT_URL).toHttpMethod();
-
-                    if (makeRedirectedRequest(httpMethod)) {
-                        httpMethod = getMethodBuilder().setReferer(REDIRECT_URL).setAction(PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\">Download<")).toHttpMethod();
-
-                        if (!tryDownloadAndSaveFile(httpMethod)) {
-                            checkAllProblems();
-                            logger.warning(getContentAsString());
-                            throw new IOException("File input stream is empty");
-                        }
-                    } else {
-                        throw new ServiceConnectionProblemException();
-                    }
-                } else {
-                    throw new ServiceConnectionProblemException();
-                }
-            } else {
-                throw new PluginImplementationException("File key was not found");
-            }
+            __x_fsa = PlugUtils.getStringBetween(getContentAsString(), "var __x_fsa = '", "';");
+            __x_fs = PlugUtils.getStringBetween(getContentAsString(), "var __x_fs = '", "';");
+            __x_c = PlugUtils.getStringBetween(getContentAsString(), "var __x_c = '", "';");
+            __esn = PlugUtils.getStringBetween(getContentAsString(), "var	__esn = ", ";");
+            __recaptcha_public = PlugUtils.getStringBetween(getContentAsString(), "var __recaptcha_public		=	'", "';");
+            makeUrl("na", "");
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
@@ -86,8 +101,7 @@ class IFileFileRunner extends AbstractRunner {
 
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("file removed") || contentAsString.contains("no such file exists") || contentAsString.contains("file expired")) {
+        if (contentAsString.contains("file removed") || contentAsString.contains("no such file") || contentAsString.contains("file expired")) {
             throw new URLNotAvailableAnymoreException("File was not found");
         }
     }
@@ -97,41 +111,47 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("gray;\">((?:.|\\s)+?)&nbsp;\\s*\\(");
+        Matcher matcher = getMatcherAgainstContent("gray;\">\\s*([^<]*)\\s*&nbsp;\\s*([^<]*)\\s*</span>");
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
-
-            matcher = getMatcherAgainstContent("gray;\">(?:.|\\s)+?\\((.+?)\\)");
-
-            if (matcher.find()) {
-                final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
-                httpFile.setFileSize(fileSize);
-            } else {
-                logger.warning("File size was not found");
-                throw new PluginImplementationException();
-            }
+            final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(2));
+            logger.info("File size " + fileSize);
+            httpFile.setFileSize(fileSize);
         } else {
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
+            logger.warning("File size and size were not found");
+            throw new PluginImplementationException("File name and size not found");
         }
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private HttpMethod stepCaptcha(String redirectURL) throws ErrorDuringDownloadingException {
+    private void stepReCaptcha() throws Exception {
+        ReCaptcha r = new ReCaptcha(__recaptcha_public, client);
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = "http://ifile.it/download:captcha";
-        logger.info("Captcha URL " + captchaSrc);
+        final String captchaSrc = r.getImageURL();
+        logger.info("ReCaptcha URL " + captchaSrc);
+        final String captcha = captchaSupport.getCaptcha(captchaSrc);
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        } else {
+            r.setRecognized(captcha);
+            makeUrl("recaptcha", "&" + r.getResponseParams());
+        }
+    }
+
+    private void stepCaptchaSimple() throws Exception {
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final String captchaSrc = BASE_URL + "download:captcha";
+        logger.info("Simple captcha URL " + captchaSrc);
         final String captcha = captchaSupport.getCaptcha(captchaSrc);
 
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            return getMethodBuilder().setReferer(REDIRECT_URL).setAction(redirectURL + captcha).toHttpMethod();
+            makeUrl("simple", "&" + __x_c + "=" + captcha);
         }
     }
 }

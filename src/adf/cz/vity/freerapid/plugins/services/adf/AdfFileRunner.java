@@ -26,7 +26,14 @@ class AdfFileRunner extends AbstractRunner {
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            final String url = PlugUtils.getStringBetween(getContentAsString(), "var zzz = '", "';");
+            String url = PlugUtils.getStringBetween(getContentAsString(), "var zzz = '", "';");
+            if (url.contains("adf.ly/go.php")) {
+                if (!makeRedirectedRequest(getGetMethod(url))) {
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();
+                url = PlugUtils.getStringBetween(getContentAsString(), " URL=", "\"");
+            }
             httpFile.setNewURL(new URL(url));
             httpFile.setPluginID("");
             httpFile.setState(DownloadState.QUEUED);

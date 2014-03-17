@@ -75,6 +75,7 @@ class RdioFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
         logger.info(getContentAsString());
+        checkProblems();
         method = getMethodBuilder()
                 .setReferer(fileURL)
                 .setActionFromTextBetween("\"surl\": \"", "\"")
@@ -95,6 +96,9 @@ class RdioFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("Object not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("No permissions to stream")) {
+            throw new PluginImplementationException("No permissions to stream");
         }
     }
 

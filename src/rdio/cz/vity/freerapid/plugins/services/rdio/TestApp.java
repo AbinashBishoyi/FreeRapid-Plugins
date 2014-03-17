@@ -26,7 +26,12 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Anna_Veleva/album/Famous_Soprano_Opera_Arias/track/Lucia_Lammermoor%2C_Act_1_-_%22Regnava_nel_silenzio%22/"));
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Anna_Veleva/album/Famous_Soprano_Opera_Arias/"));
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Barros_De_Alencar/album/Grandes_Sucessos_-_Barros_De_Alencar/track/N%C3%A3o_V%C3%A1_Embora_(Tu_Me_Plais_Et_Je_T%27Aime)/"));
-            httpFile.setNewURL(new URL("http://www.rdio.com/artist/Nouman_Khalid%2CBilal_Saeed/album/Jugni_(feat._Bilal_Saeed)/track/Jugni_(feat._Bilal_Saeed)/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Nouman_Khalid%2CBilal_Saeed/album/Jugni_(feat._Bilal_Saeed)/track/Jugni_(feat._Bilal_Saeed)/"));
+
+            httpFile.setNewURL(new URL("http://www.rdio.com/artist/Luiz_Melodia/album/Bis_-_Luiz_Melodia/track/Ser_Bo%C3%AAmio/"));  //No permissions to stream
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Luiz_Melodia/album/Esta%C3%A7%C3%A3o_Melodia/track/Rei_do_Samba/")); //No permissions to stream
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Luiz_Melodia/album/Dois_Ases_4/track/Malandrando/")); //No permissions to stream
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Luiz_Melodia/album/Luiz_Melodia_Especial_MTV/track/Eu_Agora_Sou_Feliz/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

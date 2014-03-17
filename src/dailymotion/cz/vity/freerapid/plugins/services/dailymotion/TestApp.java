@@ -20,18 +20,18 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/playlist/xy4h8_jeje2255_cinema-2000-vol-3")); //playlist
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/group/makeitSICK#video=xa2cdj")); //group
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/group/makeitSICK/1"));
-            httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xkzttp_test-subtitle-in-dailymotion_shortfilms")); //video with subtitle
+            //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xkzttp_test-subtitle-in-dailymotion_shortfilms")); //video with subtitle
             //httpFile.setNewURL(new URL("http://static2.dmcdn.net/static/video/339/362/35263933:subtitle_en.srt/test%20subtitle%20in%20dailymotion?en")); //subtitle
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xuihv3_joli-but-acrobatique-au-mexique_sport"));
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xupie7_zapping-tele-du-30"));
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xx5iis_jade-bryce-golden-soul-nude_sexy"));
-            //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xx39ue_amanda-paige-sexy-carwash_sexy")); //via swf
+            httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xx39ue_amanda-paige-sexy-carwash_sexy")); //via swf
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("23.29.113.100", 3128);
             final DailymotionServiceImpl service = new DailymotionServiceImpl();
             DailymotionSettingsConfig config = new DailymotionSettingsConfig();
             config.setQualitySetting(2);
-            config.setSubtitleDownload(true);
+            config.setSubtitleDownload(false);
             service.setConfig(config);
 
             testRun(service, httpFile, connectionSettings);

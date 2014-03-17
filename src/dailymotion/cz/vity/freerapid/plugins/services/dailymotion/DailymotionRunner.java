@@ -105,26 +105,49 @@ class DailymotionRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             final String sequence;
-            if (getContentAsString().contains("\"sequence\":\"")) {
-                sequence = urlDecode(PlugUtils.getStringBetween(getContentAsString(), "\"sequence\":\"", "\""));
-                logger.info("Sequence in page");
-            } else { //download swf, then read sequence from swf
-                method = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setAction(String.format("http://www.dailymotion.com/swf/video/%s?autoPlay=1", getVideoIdFromURL()))
-                        .toGetMethod();
-                final InputStream is = client.makeRequestForFile(method);
-                if (is == null) {
-                    throw new ServiceConnectionProblemException("Error downloading SWF");
-                }
-                final String swfStr = swfToString(is);
+            boolean sequenceInManifest = false;
+            final String swfUrl = String.format("http://www.dailymotion.com/swf/video/%s?autoPlay=1", getVideoIdFromURL());
+            method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(swfUrl)
+                    .toGetMethod();
+            final InputStream is = client.makeRequestForFile(method);
+            if (is == null) {
+                throw new ServiceConnectionProblemException("Error downloading SWF");
+            }
+            final String swfStr = swfToString(is);
+            if (swfStr.contains("ldURL")) {
+                //sequence found in swf
                 Matcher matcher = PlugUtils.matcher(String.format("(%s%s%s:%s\\p{Graph}+?)%s", Pattern.quote("\\\""), "ldURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote(",\\\"cdn")), swfStr);
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Sequence not found in SWF");
                 }
                 sequence = matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/");
                 logger.info("Sequence in SWF");
+            } else {
+                //find sequence in manifest
+                Matcher matcher = PlugUtils.matcher(String.format("%s%s%s:%s(\\p{Graph}+?)%s", Pattern.quote("\\\""), "autoURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote("\\\",\\\"cdn")), swfStr);
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Manifest not found in SWF");
+                }
+                final String manifestUrl = matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/");
+                setTextContentTypes("application/vnd.lumberjack.manifest");
+                method = getMethodBuilder()
+                        .setReferer(swfUrl)
+                        .setAction(manifestUrl)
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();
+                logger.info(getContentAsString());
+                sequence = manifestToSequence(getContentAsString());
+                sequenceInManifest = true;
+                httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", ".flv"));
+                logger.info("Sequence in manifest");
             }
+
             logger.info("Quality setting : " + config.getQualitySetting());
             final List<DailymotionVideo> dmvList = new LinkedList<DailymotionVideo>();
             for (int i = 0; i < qualityUrlKeyMap.length; i++) {
@@ -139,7 +162,20 @@ class DailymotionRunner extends AbstractRunner {
                 }
             }
             if (dmvList.isEmpty()) throw new PluginImplementationException("Unable to find video URL");
-            final String url = Collections.min(dmvList).url;
+            String url = Collections.min(dmvList).url;
+            if (sequenceInManifest) {
+                method = getMethodBuilder()
+                        .setReferer(swfUrl)
+                        .setAction(url)
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();
+                final String baseUrl = new URI(url).getAuthority();
+                url = "http://" + baseUrl + PlugUtils.getStringBetween(getContentAsString(), "\"template\":\"", "\",").replace("frag($fragment$)/", "");
+            }
             client.setReferer(fileURL);
             method = getGetMethod(urlDecode(url).replace("\\", ""));
             if (!tryDownloadAndSaveFile(method)) {
@@ -150,6 +186,18 @@ class DailymotionRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private String manifestToSequence(final String manifest) {
+        final Matcher matcher = PlugUtils.matcher("\"name\":\"(\\d+)\".+?\"template\":\"(.+?)\"", manifest);
+        final StringBuilder sequenceSb = new StringBuilder();
+        while (matcher.find()) {
+            sequenceSb.append(matcher.group(1).replace("240", "\"ldURL\"").replace("380", "\"sdURL\"").replace("480", "\"hqURL\"").replace("720", "\"hd720URL\""));
+            sequenceSb.append(":\"");
+            sequenceSb.append(matcher.group(2));
+            sequenceSb.append("\",");
+        }
+        return sequenceSb.toString();
     }
 
     private String swfToString(InputStream is) throws Exception {

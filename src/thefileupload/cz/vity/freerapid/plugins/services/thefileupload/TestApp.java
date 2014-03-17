@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.akafile;
+package cz.vity.freerapid.plugins.services.thefileupload;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,11 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://akafile.com/o2oufngret5e"));
+            httpFile.setNewURL(new URL("http://www.thefileupload.com/2hq2lf3efm5y"));
+            //httpFile.setNewURL(new URL("http://www.efileuploading.com/92mwp72k9f0a"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final AkaFileServiceImpl service = new AkaFileServiceImpl(); //instance of service - of our plugin
+            final TheFileUploadServiceImpl service = new TheFileUploadServiceImpl(); //instance of service - of our plugin
             /*
             //we set premium account details
             final PremiumAccount config = new PremiumAccount();

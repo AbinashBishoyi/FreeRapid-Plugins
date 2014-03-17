@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.akafile.AkaFileServiceImpl"
-        id="akafile.com" vendor="birchie" version="1.0.3">
+<plugin class="cz.vity.freerapid.plugins.services.thefileupload.TheFileUploadServiceImpl"
+        id="thefileupload.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?akafile\.com/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?(thefileupload|efileuploading)\.com/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="akafile.com"/>
+        <attribute id="services" value="thefileupload.com efileuploading.com"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="defaultDownloads" value="1"/>
         <attribute id="premium" value="false"/>
@@ -18,6 +18,6 @@
                 plugin-version="1.0.12" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="akafile.com" path="/" type="code"/>
+        <library id="thefileupload.com" path="/" type="code"/>
     </runtime>
 </plugin>

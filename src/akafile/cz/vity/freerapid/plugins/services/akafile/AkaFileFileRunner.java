@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandl
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -19,6 +20,13 @@ class AkaFileFileRunner extends XFileSharingRunner {
         final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
         fileSizeHandlers.add(new FileSizeHandlerNoSize());
         return fileSizeHandlers;
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "<a.+?href\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')[^>]*?>.*?Click Here To Download.*?</a>");
+        return downloadLinkRegexes;
     }
 
     @Override

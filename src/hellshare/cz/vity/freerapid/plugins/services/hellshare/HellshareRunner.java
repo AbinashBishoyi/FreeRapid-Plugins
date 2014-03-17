@@ -16,9 +16,9 @@ class HellshareRunner extends AbstractRunner {
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -27,18 +27,18 @@ class HellshareRunner extends AbstractRunner {
         super.run(downloader);
         logger.info("Starting download in TASK " + fileURL);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
-            Matcher matcher = PlugUtils.matcher("([0-9.]+)%", client.getContentAsString());
+            checkNameAndSize(getContentAsString());
+            Matcher matcher = getMatcherAgainstContent("([0-9.]+)%");
             if (matcher.find()) {
                 if (matcher.group(1).equals("100"))
                     throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
             }
             client.setReferer(fileURL);
 
-            final PostMethod postmethod = client.getPostMethod(fileURL);
+            final PostMethod postmethod = getPostMethod(fileURL);
             postmethod.addParameter("free_download_iframe", "FREE DOWNLOAD");
             if (makeRequest(postmethod)) {
                 PostMethod method = stepCaptcha();
@@ -52,7 +52,7 @@ class HellshareRunner extends AbstractRunner {
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
 
@@ -61,7 +61,7 @@ class HellshareRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        if (client.getContentAsString().contains("free_download_iframe")) {
+        if (getContentAsString().contains("free_download_iframe")) {
             Matcher matcher = PlugUtils.matcher("<div class=\"download-filename\">([^<]*)</div>", content);
             if (matcher.find()) {
                 String fn = matcher.group(matcher.groupCount());
@@ -77,17 +77,17 @@ class HellshareRunner extends AbstractRunner {
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
-            logger.info(client.getContentAsString());
+            logger.info(getContentAsString());
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
         }
     }
 
     private PostMethod stepCaptcha() throws Exception {
-        if ("".equals(client.getContentAsString())) {
+        if ("".equals(getContentAsString())) {
             throw new YouHaveToWaitException("Neurèité omezení", 120);
         }
         Matcher matcher;
-        matcher = PlugUtils.matcher("<img id=\"captcha-img\" src=\"([^\"]*)\"", client.getContentAsString());
+        matcher = getMatcherAgainstContent("<img id=\"captcha-img\" src=\"([^\"]*)\"");
         if (!matcher.find()) {
             checkProblems();
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
@@ -106,15 +106,15 @@ class HellshareRunner extends AbstractRunner {
                 img = img + "1";
             } else emptyCaptcha = false;
         } while (emptyCaptcha);
-        matcher = PlugUtils.matcher("form action=\"([^\"]*)\"", client.getContentAsString());
+        matcher = getMatcherAgainstContent("form action=\"([^\"]*)\"");
         if (!matcher.find()) {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
         }
 
         String finalURL = matcher.group(1);
-        String free_download_uri = PlugUtils.getParameter("free_download_uri", client.getContentAsString());
+        String free_download_uri = PlugUtils.getParameter("free_download_uri", getContentAsString());
 
-        final PostMethod method = client.getPostMethod(finalURL);
+        final PostMethod method = getPostMethod(finalURL);
 
         method.addParameter("free_download_uri", free_download_uri);
         method.addParameter("captcha", captcha);
@@ -124,11 +124,11 @@ class HellshareRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = PlugUtils.matcher("Soubor nenalezen", client.getContentAsString());
+        matcher = getMatcherAgainstContent("Soubor nenalezen");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }
-        matcher = PlugUtils.matcher("Na serveru jsou .* free download", client.getContentAsString());
+        matcher = getMatcherAgainstContent("Na serveru jsou .* free download");
         if (matcher.find()) {
             throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
         }

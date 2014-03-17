@@ -21,9 +21,9 @@ class ShareatorRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareatorRunner.class.getName());
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
@@ -33,17 +33,17 @@ class ShareatorRunner extends AbstractRunner {
         super.run(downloader);
         logger.info("Starting download in TASK " + fileURL);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            if (client.getContentAsString().contains("btn_download")) {
-                checkNameAndSize(client.getContentAsString());
+            if (getContentAsString().contains("btn_download")) {
+                checkNameAndSize(getContentAsString());
                 downloader.sleep(5);
-                String id = PlugUtils.getParameter("id", client.getContentAsString());
-                String rand = PlugUtils.getParameter("rand", client.getContentAsString());
+                String id = PlugUtils.getParameter("id", getContentAsString());
+                String rand = PlugUtils.getParameter("rand", getContentAsString());
 
                 client.setReferer(fileURL);
-                final PostMethod postMethod = client.getPostMethod(fileURL);
+                final PostMethod postMethod = getPostMethod(fileURL);
                 postMethod.addParameter("op", "download2");
                 postMethod.addParameter("id", id);
                 postMethod.addParameter("rand", rand);
@@ -52,27 +52,27 @@ class ShareatorRunner extends AbstractRunner {
                 postMethod.addParameter("method_premium", "");
 
                 if (makeRequest(postMethod)) {
-                    Matcher matcher = PlugUtils.matcher("((<[^>]*>)|\\s)+(http://shareator.com[^<]+)<", client.getContentAsString());
+                    Matcher matcher = getMatcherAgainstContent("((<[^>]*>)|\\s)+(http://shareator.com[^<]+)<");
                     if (!matcher.find()) {
                         checkProblems();
                         throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                     }
                     final String fn = encodeURL(matcher.group(matcher.groupCount()));
                     logger.info("Found file URL " + fn);
-                    final GetMethod method = client.getGetMethod(fn);
+                    final GetMethod method = getGetMethod(fn);
                     if (!tryDownload(method)) {
                         checkProblems();
-                        logger.info(client.getContentAsString());
+                        logger.info(getContentAsString());
                         throw new IOException("File input stream is empty.");
                     }
                 } else {
                     checkProblems();
-                    logger.info(client.getContentAsString());
+                    logger.info(getContentAsString());
                     throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
         } else
@@ -82,11 +82,11 @@ class ShareatorRunner extends AbstractRunner {
     private void checkNameAndSize(String content) throws Exception {
 
         if (!content.contains("shareator.com")) {
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
-        if (client.getContentAsString().contains("No such file")) {
+        if (getContentAsString().contains("No such file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>No such file with this filename</b><br>"));
         }
 
@@ -95,7 +95,7 @@ class ShareatorRunner extends AbstractRunner {
             String fn = matcher.group(matcher.groupCount());
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
-        } else logger.warning("File name was not found" + client.getContentAsString());
+        } else logger.warning("File name was not found" + getContentAsString());
         matcher = PlugUtils.matcher("([0-9.]+ bytes)", content);
         if (matcher.find()) {
             Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
@@ -113,11 +113,11 @@ class ShareatorRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        if (client.getContentAsString().contains("No such file")) {
+        if (getContentAsString().contains("No such file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>No such file with this filename</b><br>"));
         }
 
-        Matcher matcher = PlugUtils.matcher("using all download slots for IP ([0-9.]+)", client.getContentAsString());
+        Matcher matcher = getMatcherAgainstContent("using all download slots for IP ([0-9.]+)");
         if (matcher.find()) {
             final String ip = matcher.group(1);
             throw new ServiceConnectionProblemException(String.format("You're using all download slots for IP %s<br>Please wait till current downloads finish.", ip));

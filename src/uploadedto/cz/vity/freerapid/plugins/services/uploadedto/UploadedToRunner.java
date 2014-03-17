@@ -1,7 +1,10 @@
 package cz.vity.freerapid.plugins.services.uploadedto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -16,9 +19,9 @@ class UploadedToRunner extends AbstractRunner {
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkSize(client.getContentAsString());
+            checkSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -26,10 +29,10 @@ class UploadedToRunner extends AbstractRunner {
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            final String contentAsString = client.getContentAsString();
+            final String contentAsString = getContentAsString();
             checkSize(contentAsString);
 
             Matcher matcher = PlugUtils.matcher("var secs = ([0-9]+);", contentAsString);
@@ -51,26 +54,22 @@ class UploadedToRunner extends AbstractRunner {
             String s = matcher.group(1);
             int seconds = new Integer(s);
             downloader.sleep(seconds + 1);
-            if (downloader.isTerminated())
-                throw new InterruptedException();
 
-            matcher = PlugUtils.matcher("action=\"([^\"]*)\"", client.getContentAsString());
+            matcher = PlugUtils.matcher("action=\"([^\"]*)\"", getContentAsString());
             if (matcher.find()) {
                 s = matcher.group(1);
                 logger.info("Found File URL - " + s);
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
-                httpFile.setState(DownloadState.GETTING);
-                final GetMethod method = client.getGetMethod(s);
+
+                final GetMethod method = getGetMethod(s);
                 //method.addParameter("mirror", "on");
                 if (!tryDownload(method)) {
                     checkProblems();
-                    logger.warning(client.getContentAsString());
+                    logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
 
@@ -81,7 +80,7 @@ class UploadedToRunner extends AbstractRunner {
     private void checkSize(String content) throws Exception {
 
         if (!content.contains("uploaded.to")) {
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (content.contains("File doesn")) {
@@ -101,13 +100,10 @@ class UploadedToRunner extends AbstractRunner {
 
 
     private void checkProblems() throws ServiceConnectionProblemException {
-        Matcher matcher;//Your IP address XXXXXXX is already downloading a file.  Please wait until the download is completed.
-        matcher = PlugUtils.matcher("already downloading", client.getContentAsString());
-        if (matcher.find()) {
-            final String ip = matcher.group(1);
-            throw new ServiceConnectionProblemException(String.format("<b>Uploaded.to Error:</b><br>Your IP address %s is already downloading a file. <br>Please wait until the download is completed.", ip));
+        if (getContentAsString().contains("already downloading")) {
+            throw new ServiceConnectionProblemException(String.format("<b>Uploaded.to Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
         }
-        if (client.getContentAsString().indexOf("Currently a lot of users") >= 0) {
+        if (getContentAsString().contains("Currently a lot of users")) {
             throw new ServiceConnectionProblemException(String.format("<b>Uploaded to Error:</b><br>Currently a lot of users are downloading files."));
         }
     }

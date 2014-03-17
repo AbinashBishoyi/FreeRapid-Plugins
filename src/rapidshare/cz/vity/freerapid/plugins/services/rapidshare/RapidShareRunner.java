@@ -23,14 +23,13 @@ class RapidShareRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
             Matcher matcher = getMatcherAgainstContent("form id=\"ff\" action=\"([^\"]*)\"");
@@ -40,13 +39,13 @@ class RapidShareRunner extends AbstractRunner {
             String s = matcher.group(1);
             logger.info("Found File URL - " + s);
             client.setReferer(fileURL);
-            final PostMethod postMethod = client.getPostMethod(s);
+            final PostMethod postMethod = getPostMethod(s);
             postMethod.addParameter("dl.start", "Free");
             if (makeRequest(postMethod)) {
                 matcher = getMatcherAgainstContent("var c=([0-9]+);");
                 if (!matcher.find()) {
                     checkProblems();
-                    logger.warning(client.getContentAsString());
+                    logger.warning(getContentAsString());
                     throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
                 }
                 s = matcher.group(1);
@@ -56,9 +55,7 @@ class RapidShareRunner extends AbstractRunner {
                     s = matcher.group(1);
                     logger.info("Download URL: " + s);
                     downloader.sleep(seconds + 1);
-                    if (downloader.isTerminated())
-                        throw new InterruptedException();
-                    final PostMethod method = client.getPostMethod(s);
+                    final PostMethod method = getPostMethod(s);
                     method.addParameter("mirror", "on");
                     if (!tryDownload(method)) {
                         checkProblems();
@@ -66,7 +63,7 @@ class RapidShareRunner extends AbstractRunner {
                     }
                 } else {
                     checkProblems();
-                    logger.info(client.getContentAsString());
+                    logger.info(getContentAsString());
                     throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                 }
             }
@@ -85,7 +82,7 @@ class RapidShareRunner extends AbstractRunner {
                     throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                 if (error.contains("file could not be found"))
                     throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
-                logger.warning(client.getContentAsString());
+                logger.warning(getContentAsString());
                 throw new InvalidURLOrServiceProblemException("<b>RapidShare error:</b><br>" + error);
             }
             if (getContentAsString().contains("has removed file"))
@@ -107,6 +104,7 @@ class RapidShareRunner extends AbstractRunner {
             Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
             logger.info("File size " + a);
             httpFile.setFileSize(a);
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         }
 
     }
@@ -114,19 +112,19 @@ class RapidShareRunner extends AbstractRunner {
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         if (getContentAsString().contains("You have reached the")) {
-            matcher = PlugUtils.matcher("try again in about ([0-9]+) minute", getContentAsString());
+            matcher = getMatcherAgainstContent("try again in about ([0-9]+) minute");
             if (matcher.find()) {
                 throw new YouHaveToWaitException("You have reached the download-limit for free-users.", Integer.parseInt(matcher.group(1)) * 60 + 10);
             }
             throw new ServiceConnectionProblemException("<b>RapidShare error:</b><br>You have reached the download-limit for free-users.");
         }
-        matcher = PlugUtils.matcher("IP address (.*?) is already", getContentAsString());
+        matcher = getMatcherAgainstContent("IP address (.*?) is already");
         if (matcher.find()) {
             final String ip = matcher.group(1);
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Your IP address %s is already downloading a file. <br>Please wait until the download is completed.", ip));
         }
         if (getContentAsString().contains("Currently a lot of users")) {
-            matcher = PlugUtils.matcher("Please try again in ([0-9]+) minute", getContentAsString());
+            matcher = getMatcherAgainstContent("Please try again in ([0-9]+) minute");
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);
             }

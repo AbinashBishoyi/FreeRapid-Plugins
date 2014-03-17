@@ -30,9 +30,9 @@ class ShareonlineRunner extends AbstractRunner {
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
@@ -43,30 +43,28 @@ class ShareonlineRunner extends AbstractRunner {
         client = downloader.getClient();
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
 
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
 
             do {
                 checkProblems();
-                if (!client.getContentAsString().contains("Please enter the number")) {
-                    logger.info(client.getContentAsString());
+                if (!getContentAsString().contains("Please enter the number")) {
+                    logger.info(getContentAsString());
                     throw new PluginImplementationException("No captcha.\nCannot find requested page content");
                 }
-                stepCaptcha(client.getContentAsString());
+                stepCaptcha(getContentAsString());
 
-            } while (client.getContentAsString().contains("Please enter the number"));
+            } while (getContentAsString().contains("Please enter the number"));
 
-            Matcher matcher = Pattern.compile("decode\\(\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = getMatcherAgainstContent("decode\\(\"([^\"]*)\"");
             if (matcher.find()) {
                 String s = decode(matcher.group(1));
                 logger.info("Found File URL - " + s);
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
 
-                final GetMethod method = client.getGetMethod(s);
+                final GetMethod method = getGetMethod(s);
                 Date newDate = new Date();
                 if (tryDownload(method)) setTicket(newDate);
                 else {
@@ -75,7 +73,7 @@ class ShareonlineRunner extends AbstractRunner {
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
 
@@ -100,7 +98,7 @@ class ShareonlineRunner extends AbstractRunner {
             final String fn = matcher.group(matcher.groupCount());
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
-        } else logger.warning("File name was not found" + client.getContentAsString());
+        } else logger.warning("File name was not found" + getContentAsString());
     }
 
 
@@ -168,7 +166,7 @@ class ShareonlineRunner extends AbstractRunner {
                     }
                     s = matcher.group(1);
                     client.setReferer(initURL);
-                    final PostMethod postMethod = client.getPostMethod(s);
+                    final PostMethod postMethod = getPostMethod(s);
 
                     postMethod.addParameter("captchacode", captcha);
 
@@ -202,16 +200,16 @@ class ShareonlineRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = Pattern.compile("You have got max allowed download sessions from the same IP", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = getMatcherAgainstContent("You have got max allowed download sessions from the same IP");
         if (matcher.find()) {
             throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP!", 5 * 60);
         }
-        matcher = Pattern.compile("this download is too big for your", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = getMatcherAgainstContent("this download is too big for your");
         if (matcher.find()) {
 
             throw new YouHaveToWaitException("Sorry, this download is too big for your remaining download volume per hour!!", getTimeToWait());
         }
-        matcher = Pattern.compile("Your requested file could not be found", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = getMatcherAgainstContent("Your requested file could not be found");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("Your requested file could not be found");
         }

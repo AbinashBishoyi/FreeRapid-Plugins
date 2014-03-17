@@ -25,9 +25,9 @@ class UlozToRunner extends AbstractRunner {
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
@@ -36,19 +36,19 @@ class UlozToRunner extends AbstractRunner {
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            if (client.getContentAsString().contains("id=\"captcha\"")) {
-                checkNameAndSize(client.getContentAsString());
-                while (client.getContentAsString().contains("id=\"captcha\"")) {
-                    PostMethod method = stepCaptcha(client.getContentAsString());
+            if (getContentAsString().contains("id=\"captcha\"")) {
+                checkNameAndSize(getContentAsString());
+                while (getContentAsString().contains("id=\"captcha\"")) {
+                    PostMethod method = stepCaptcha(getContentAsString());
                     //    method.setFollowRedirects(true);
                     if (tryDownload(method)) break;
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
         } else
@@ -66,10 +66,10 @@ class UlozToRunner extends AbstractRunner {
     private void checkNameAndSize(String content) throws Exception {
 
         if (!content.contains("uloz.to")) {
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-        Matcher matcher = PlugUtils.matcher("soubor nebyl nalezen", client.getContentAsString());
+        Matcher matcher = getMatcherAgainstContent("soubor nebyl nalezen");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
@@ -110,14 +110,14 @@ class UlozToRunner extends AbstractRunner {
 
                     matcher = PlugUtils.matcher("form name=\"dwn\" action=\"([^\"]*)\"", contentAsString);
                     if (!matcher.find()) {
-                        logger.info(client.getContentAsString());
+                        logger.info(getContentAsString());
                         throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                     }
                     String postTargetURL;
                     postTargetURL = matcher.group(1);
                     logger.info("Captcha target URL " + postTargetURL);
                     client.setReferer(fileURL);
-                    final PostMethod postMethod = client.getPostMethod(postTargetURL);
+                    final PostMethod postMethod = getPostMethod(postTargetURL);
                     postMethod.addParameter("captcha_nb", captcha_nb);
                     postMethod.addParameter("captcha_user", captcha);
                     postMethod.addParameter("download", PlugUtils.unescapeHtml("--%3E+St%C3%A1hnout+soubor+%3C--"));
@@ -134,11 +134,11 @@ class UlozToRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = PlugUtils.matcher("soubor nebyl nalezen", client.getContentAsString());
+        matcher = getMatcherAgainstContent("soubor nebyl nalezen");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
-        matcher = PlugUtils.matcher("stahovat pouze jeden soubor", client.getContentAsString());
+        matcher = getMatcherAgainstContent("stahovat pouze jeden soubor");
         if (matcher.find()) {
             throw new ServiceConnectionProblemException(String.format("<b>Mùžete stahovat pouze jeden soubor naráz</b><br>"));
 

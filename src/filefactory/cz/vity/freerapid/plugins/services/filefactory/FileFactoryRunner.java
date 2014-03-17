@@ -37,9 +37,9 @@ class FileFactoryRunner extends AbstractRunner {
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkSize(client.getContentAsString());
+            checkSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -101,37 +101,35 @@ class FileFactoryRunner extends AbstractRunner {
 
     private void mainStep(String stepURL) throws Exception {
         if (--deep <= 0) {
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Captcha input timeout");
         }
-        final GetMethod getMethod = client.getGetMethod(stepURL);
+        final GetMethod getMethod = getGetMethod(stepURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            String contentAsString = client.getContentAsString();
+            String contentAsString = getContentAsString();
             checkSize(contentAsString);
             Matcher matcher;
             String s;
             //href="/dlf/f/a3f880/b/2/h/dd8f6f6df8ec3d79aef99536de9aab06/j/0/n/KOW_-_Monica_divx_002" id="basicLink"
-            matcher = PlugUtils.matcher("href=\"(.*?)\" id=\"basicLink\"", client.getContentAsString());
+            matcher = getMatcherAgainstContent("href=\"(.*?)\" id=\"basicLink\"");
             if (matcher.find()) {
                 s = matcher.group(1);
                 logger.info("Found File URL - " + s);
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
                 final String basicLinkURL = HTTP_FILEFACTORY_COM + s;
-                GetMethod method = client.getGetMethod(basicLinkURL);
+                GetMethod method = getGetMethod(basicLinkURL);
                 if (makeRequest(method)) {
-                    contentAsString = client.getContentAsString();
+                    contentAsString = getContentAsString();
                     logger.info(contentAsString);
                     matcher = PlugUtils.matcher("<iframe src=\"(.*?)\"", contentAsString);
                     if (matcher.find()) {
                         client.setReferer(basicLinkURL);
                         s = matcher.group(1);
                         iframeURL = PlugUtils.replaceEntities(s);
-                        method = client.getGetMethod(HTTP_FILEFACTORY_COM + iframeURL);
+                        method = getGetMethod(HTTP_FILEFACTORY_COM + iframeURL);
                         if (!makeRequest(method))
                             throw new PluginImplementationException("IFrame with captcha not found");
-                        iframeContent = client.getContentAsString();//iframes content
+                        iframeContent = getContentAsString();//iframes content
                         step = Step.FRAME;
                     } else throw new PluginImplementationException("IFrame with captcha not found");
                 } else throw new PluginImplementationException("Retrieving page with free download failed");
@@ -173,14 +171,14 @@ class FileFactoryRunner extends AbstractRunner {
                     String h = PlugUtils.getParameter("h", contentAsString);
                     String b = PlugUtils.getParameter("b", contentAsString);
 
-                    final PostMethod postMethod = client.getPostMethod(HTTP_FILEFACTORY_COM + "/check/?" + "f=" + f + "&b=" + b + "&h=" + h);
+                    final PostMethod postMethod = getPostMethod(HTTP_FILEFACTORY_COM + "/check/?" + "f=" + f + "&b=" + b + "&h=" + h);
                     postMethod.addParameter("f", f);
                     postMethod.addParameter("h", h);
                     postMethod.addParameter("b", b);
                     postMethod.addParameter("captcha", captcha);
 
                     if (makeRequest(postMethod)) {
-                        iframeContent = client.getContentAsString();
+                        iframeContent = getContentAsString();
                         return true;
                     }
                 }
@@ -190,15 +188,15 @@ class FileFactoryRunner extends AbstractRunner {
     }
 
     private void saveFileOnURL(String finalFileURL) throws Exception {
-        HttpMethod getMethod = client.getGetMethod(finalFileURL);
+        HttpMethod getMethod = getGetMethod(finalFileURL);
         if (tryDownload(getMethod)) {
             step = Step.FINISHED;
         } else {
-            if (checkLimit(client.getContentAsString())) {
+            if (checkLimit(getContentAsString())) {
                 return;
             }
-            if (checkRestart(client.getContentAsString())) return;
-            logger.warning(client.getContentAsString());
+            if (checkRestart(getContentAsString())) return;
+            logger.warning(getContentAsString());
             throw new IOException("File input stream is empty.");
         }
     }

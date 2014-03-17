@@ -17,7 +17,7 @@ class FilebaseToRunner extends AbstractRunner {
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkProblems();
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -29,33 +29,33 @@ class FilebaseToRunner extends AbstractRunner {
         fileURL = httpFile.getFileUrl().toString() + "&dl=1";
         logger.info("Starting download in TASK " + fileURL);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
 
-            while (client.getContentAsString().contains("Captcha-Code:")) {
-                stepCaptcha(client.getContentAsString());
+            while (getContentAsString().contains("Captcha-Code:")) {
+                stepCaptcha(getContentAsString());
             }
 
-            Matcher matcher = PlugUtils.matcher("form name=\"waitform\" action=\"([^\"]*)\"", client.getContentAsString());
+            Matcher matcher = getMatcherAgainstContent("form name=\"waitform\" action=\"([^\"]*)\"");
             if (matcher.find()) {
                 String t = matcher.group(1);
                 logger.info("Submit form to: " + t);
 
-                matcher = PlugUtils.matcher("Filesize:((<[^>]*>)|\\s)*([0-9.]+ .B)<", client.getContentAsString());
+                matcher = getMatcherAgainstContent("Filesize:((<[^>]*>)|\\s)*([0-9.]+ .B)<");
                 if (matcher.find()) {
                     logger.info("File size " + matcher.group(matcher.groupCount()));
                     httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(matcher.groupCount())));
                 }
-                matcher = PlugUtils.matcher("\"Download ([^\"]+)\"", client.getContentAsString());
+                matcher = getMatcherAgainstContent("\"Download ([^\"]+)\"");
                 if (matcher.find()) {
                     final String fn = matcher.group(1);
                     logger.info("File name " + fn);
                     httpFile.setFileName(fn);
-                } else logger.warning("File name was not found" + client.getContentAsString());
+                } else logger.warning("File name was not found" + getContentAsString());
 
 
-                matcher = PlugUtils.matcher("Please wait ([0-9]+) seconds", client.getContentAsString());
+                matcher = getMatcherAgainstContent("Please wait ([0-9]+) seconds");
                 if (matcher.find()) {
                     String s = matcher.group(1);
                     int seconds = new Integer(s);
@@ -63,17 +63,15 @@ class FilebaseToRunner extends AbstractRunner {
                     downloader.sleep(seconds + 1);
                 }
 
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
                 client.setReferer(fileURL);
-                String code = PlugUtils.getParameter("code", client.getContentAsString());
-                String cid = PlugUtils.getParameter("cid", client.getContentAsString());
-                String userid = PlugUtils.getParameter("userid", client.getContentAsString());
-                String usermd5 = PlugUtils.getParameter("usermd5", client.getContentAsString());
+                String code = PlugUtils.getParameter("code", getContentAsString());
+                String cid = PlugUtils.getParameter("cid", getContentAsString());
+                String userid = PlugUtils.getParameter("userid", getContentAsString());
+                String usermd5 = PlugUtils.getParameter("usermd5", getContentAsString());
 
 
                 httpFile.setState(DownloadState.GETTING);
-                final PostMethod method = client.getPostMethod(t);
+                final PostMethod method = getPostMethod(t);
 
                 method.addParameter("code", code);
                 method.addParameter("cid", cid);
@@ -87,7 +85,7 @@ class FilebaseToRunner extends AbstractRunner {
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
         } else
@@ -110,7 +108,7 @@ class FilebaseToRunner extends AbstractRunner {
                     String cid = PlugUtils.getParameter("cid", contentAsString);
 
                     client.setReferer(fileURL);
-                    final PostMethod postMethod = client.getPostMethod(fileURL);
+                    final PostMethod postMethod = getPostMethod(fileURL);
                     postMethod.addParameter("cid", cid);
                     postMethod.addParameter("uid", captcha);
                     postMethod.addParameter("go", "Ok!");
@@ -130,7 +128,7 @@ class FilebaseToRunner extends AbstractRunner {
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
 
-        matcher = PlugUtils.matcher("Du bist keinem g.ltigen Link gefolgt", client.getContentAsString());
+        matcher = getMatcherAgainstContent("Du bist keinem g.ltigen Link gefolgt");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed.</b><br>"));
 

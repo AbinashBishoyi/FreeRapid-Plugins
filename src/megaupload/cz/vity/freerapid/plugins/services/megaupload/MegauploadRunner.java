@@ -1,7 +1,10 @@
 package cz.vity.freerapid.plugins.services.megaupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -26,9 +29,9 @@ class MegauploadRunner extends AbstractRunner {
         super.runCheck(downloader);
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -41,26 +44,26 @@ class MegauploadRunner extends AbstractRunner {
             HTTP_SITE = "http://www.megarotic.com";
         logger.info("Starting download in TASK " + fileURL);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
             Matcher matcher;
             captchaCount = 0;
-            while (client.getContentAsString().contains("Please enter")) {
-                stepCaptcha(client.getContentAsString());
+            while (getContentAsString().contains("Please enter")) {
+                stepCaptcha(getContentAsString());
             }
 
-            if (client.getContentAsString().contains("Click here to download")) {
-                matcher = PlugUtils.matcher("=([0-9]+);[^/w]*function countdown", client.getContentAsString());
+            if (getContentAsString().contains("Click here to download")) {
+                matcher = getMatcherAgainstContent("=([0-9]+);[^/w]*function countdown");
                 if (!matcher.find()) {
                     throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
                 }
                 String s = matcher.group(1);
                 int seconds = new Integer(s);
-                s = new LinkInJSResolver(logger).findUrl(client.getContentAsString());
+                s = new LinkInJSResolver(logger).findUrl(getContentAsString());
 
-                if ("".equals(s)) logger.warning("Link was not found" + client.getContentAsString());
+                if ("".equals(s)) logger.warning("Link was not found" + getContentAsString());
                 logger.info("Found File URL - " + s);
                 matcher = PlugUtils.matcher(".*/([^/]*)$", s);
                 if (matcher.find()) {
@@ -70,19 +73,15 @@ class MegauploadRunner extends AbstractRunner {
 
                 }
                 downloader.sleep(seconds + 1);
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
-
-                httpFile.setState(DownloadState.GETTING);
-                final GetMethod method = client.getGetMethod(encodeURL(s));
+                final GetMethod method = getGetMethod(encodeURL(s));
                 if (!tryDownload(method)) {
                     checkProblems();
-                    logger.warning(client.getContentAsString());
+                    logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
 
@@ -107,22 +106,22 @@ class MegauploadRunner extends AbstractRunner {
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else logger.warning("File name was not found" + client.getContentAsString());
+        } else logger.warning("File name was not found" + getContentAsString());
 
     }
 
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, IOException, YouHaveToWaitException {
 
-        final String contentAsString = client.getContentAsString();
+        final String contentAsString = getContentAsString();
         if (contentAsString.contains("trying to access is temporarily unavailable"))
             throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
 
 
         if (contentAsString.contains("Download limit exceeded")) {
-            final GetMethod getMethod = client.getGetMethod(HTTP_SITE + "/premium/???????????????");
+            final GetMethod getMethod = getGetMethod(HTTP_SITE + "/premium/???????????????");
             if (makeRequest(getMethod)) {
-                Matcher matcher = PlugUtils.matcher("Please wait ([0-9]+)", client.getContentAsString());
+                Matcher matcher = getMatcherAgainstContent("Please wait ([0-9]+)");
                 if (matcher.find()) {
                     throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60 * Integer.parseInt(matcher.group(1)));
                 }
@@ -174,7 +173,7 @@ class MegauploadRunner extends AbstractRunner {
                 String imagecode = PlugUtils.getParameter("imagecode", contentAsString);
                 String megavar = PlugUtils.getParameter("megavar", contentAsString);
 
-                final PostMethod postMethod = client.getPostMethod(HTTP_SITE);
+                final PostMethod postMethod = getPostMethod(HTTP_SITE);
 
                 postMethod.addParameter("d", d);
                 postMethod.addParameter("imagecode", imagecode);

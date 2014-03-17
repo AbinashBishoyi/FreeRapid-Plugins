@@ -12,7 +12,6 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
@@ -25,9 +24,9 @@ class EasyShareRunner extends AbstractRunner {
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkName(client.getContentAsString());
+            checkName(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -35,7 +34,7 @@ class EasyShareRunner extends AbstractRunner {
     private void checkName(String contentAsString) throws Exception {
 
         if (!contentAsString.contains("easy-share")) {
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
@@ -48,7 +47,7 @@ class EasyShareRunner extends AbstractRunner {
             final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
-        } else logger.warning("File name was not found" + client.getContentAsString());
+        } else logger.warning("File name was not found" + getContentAsString());
     }
 
 
@@ -57,50 +56,50 @@ class EasyShareRunner extends AbstractRunner {
         baseURL = fileURL;
         httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod getMethod = client.getGetMethod(fileURL);
+        GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            checkName(client.getContentAsString());
-            if (!(client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))) {
+            checkName(getContentAsString());
+            if (!(getContentAsString().contains("Please enter") || getContentAsString().contains("w="))) {
                 checkProblems();
-                logger.warning(client.getContentAsString());
+                logger.warning(getContentAsString());
                 throw new PluginImplementationException("Plugin implementation problem");
 
             }
 
-            while (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w=")) {
+            while (getContentAsString().contains("Please enter") || getContentAsString().contains("w=")) {
                 Matcher matcher;
 
-                if (client.getContentAsString().contains("w=")) {
-                    matcher = PlugUtils.matcher("w='([0-9]+?)';", client.getContentAsString());
+                if (getContentAsString().contains("w=")) {
+                    matcher = getMatcherAgainstContent("w='([0-9]+?)';");
                     if (matcher.find()) {
                         downloader.sleep(Integer.parseInt(matcher.group(1)));
                     } else {
-                        logger.warning(client.getContentAsString());
+                        logger.warning(getContentAsString());
                         throw new PluginImplementationException("Plugin implementation problem");
                     }
 
-                    matcher = PlugUtils.matcher("u='(/.*?)';", client.getContentAsString());
+                    matcher = getMatcherAgainstContent("u='(/.*?)';");
                     if (matcher.find()) {
                         final String link = matcher.group(1);
-                        getMethod = client.getGetMethod(httpSite + link);
+                        getMethod = getGetMethod(httpSite + link);
                         if (!makeRequest(getMethod)) {
-                            logger.warning(client.getContentAsString());
+                            logger.warning(getContentAsString());
                             throw new ServiceConnectionProblemException("Unknown error");
                         }
                     }
 
-                } else if (!client.getContentAsString().contains("Please enter")) {
+                } else if (!getContentAsString().contains("Please enter")) {
                     checkProblems();
-                    logger.warning(client.getContentAsString());
+                    logger.warning(getContentAsString());
                     throw new PluginImplementationException("Plugin implementation problem");
                 }
-                matcher = PlugUtils.matcher("File size: ([0-9.]+( )?.B).?</div>", client.getContentAsString());
+                matcher = getMatcherAgainstContent("File size: ([0-9.]+( )?.B).?</div>");
                 if (matcher.find()) {
                     logger.info("File size " + matcher.group(1));
                     httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
                 }
-                if (stepCaptcha(client.getContentAsString())) break;
+                if (stepCaptcha(getContentAsString())) break;
             }
 
 
@@ -110,9 +109,7 @@ class EasyShareRunner extends AbstractRunner {
 
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = Pattern.compile("File not found", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
+        if (getContentAsString().contains("File not found")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
 
         }
@@ -144,20 +141,20 @@ class EasyShareRunner extends AbstractRunner {
                         s = matcher.group(1);
                         logger.info(s);
 
-                        final PostMethod method = client.getPostMethod(s);
+                        final PostMethod method = getPostMethod(s);
                         client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
                         method.addParameter("id", id);
                         method.addParameter("captcha", captcha);
                         if (tryDownload(method)) return true;
                         else {
                             checkProblems();
-                            if (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))
+                            if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))
                                 return false;
-                            logger.warning(client.getContentAsString());
+                            logger.warning(getContentAsString());
                             throw new IOException("File input stream is empty.");
                         }
                     } else {
-                        logger.warning(client.getContentAsString());
+                        logger.warning(getContentAsString());
                         throw new PluginImplementationException("Action was not found");
                     }
                 }

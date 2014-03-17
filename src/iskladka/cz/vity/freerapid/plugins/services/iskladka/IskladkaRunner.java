@@ -23,27 +23,23 @@ class IskladkaRunner extends AbstractRunner {
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
 
-            checkName(client.getContentAsString());
-            GetMethod method = parseMethod(client.getContentAsString());
-            downloader.sleep(getTimeToWait(client.getContentAsString()));
-            if (downloader.isTerminated())
-                throw new InterruptedException();
+            checkName(getContentAsString());
+            GetMethod method = parseMethod(getContentAsString());
+            downloader.sleep(getTimeToWait(getContentAsString()));
             httpFile.setState(DownloadState.GETTING);
 
             if (!tryDownload(method)) {
                 boolean finish = false;
                 int steps = 0;
-                while (!finish && steps < 20 && client.getContentAsString().contains("ekejte!")) {
-                    Matcher matcher = PlugUtils.matcher("DL je ([0-9]+)", client.getContentAsString());
+                while (!finish && steps < 20 && getContentAsString().contains("ekejte!")) {
+                    Matcher matcher = getMatcherAgainstContent("DL je ([0-9]+)");
                     if (matcher.find()) logger.info("Request wasnt final, length of queue is " + matcher.group(1));
-                    GetMethod method2 = parseMethod(client.getContentAsString());
-                    downloader.sleep(10 * getTimeToWait(client.getContentAsString()));
-                    if (downloader.isTerminated())
-                        throw new InterruptedException();
+                    GetMethod method2 = parseMethod(getContentAsString());
+                    downloader.sleep(10 * getTimeToWait(getContentAsString()));
                     httpFile.setState(DownloadState.GETTING);
                     finish = tryDownload(method2);
                     steps++;
@@ -74,7 +70,7 @@ class IskladkaRunner extends AbstractRunner {
             }
         } else {
             checkProblems();
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
@@ -108,12 +104,12 @@ class IskladkaRunner extends AbstractRunner {
             logger.info("Found target URL: " + target);
         } else {
             logger.info("Not found target URL");
-            logger.info(client.getContentAsString());
+            logger.info(getContentAsString());
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
         }
 
         String finallink = target + "?file=" + link + "&ticket=" + ticket;
-        final GetMethod method = client.getGetMethod(finallink);
+        final GetMethod method = getGetMethod(finallink);
         method.setFollowRedirects(true);
         return method;
     }
@@ -132,7 +128,7 @@ class IskladkaRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = PlugUtils.matcher("Tento soubor ji. na .* nem.me", client.getContentAsString());
+        matcher = getMatcherAgainstContent("Tento soubor ji. na .* nem.me");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Tento soubor již není k dispozici.</b><br>"));
         }

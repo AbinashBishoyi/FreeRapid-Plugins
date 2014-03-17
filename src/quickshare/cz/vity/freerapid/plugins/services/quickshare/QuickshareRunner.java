@@ -19,9 +19,9 @@ class QuickshareRunner extends AbstractRunner {
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
@@ -29,23 +29,23 @@ class QuickshareRunner extends AbstractRunner {
 
     public void run(HttpFileDownloader downloader) throws Exception {
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            if (client.getContentAsString().contains("var server")) {
-                checkNameAndSize(client.getContentAsString());
+            if (getContentAsString().contains("var server")) {
+                checkNameAndSize(getContentAsString());
                 downloader.sleep(5);
-                String server = getVar("server", client.getContentAsString());
-                String id1 = getVar("ID1", client.getContentAsString());
-                String id2 = getVar("ID2", client.getContentAsString());
-                String id3 = getVar("ID3", client.getContentAsString());
-                String id4 = getVar("ID4", client.getContentAsString());
+                String server = getVar("server", getContentAsString());
+                String id1 = getVar("ID1", getContentAsString());
+                String id2 = getVar("ID2", getContentAsString());
+                String id3 = getVar("ID3", getContentAsString());
+                String id4 = getVar("ID4", getContentAsString());
 
                 client.setReferer(fileURL);
                 final String fn = server + "/download.php";
                 logger.info("Found file URL " + fn);
 
-                final PostMethod method = client.getPostMethod(fn);
+                final PostMethod method = getPostMethod(fn);
                 method.addParameter("ID1", id1);
                 method.addParameter("ID2", id2);
                 method.addParameter("ID3", id3);
@@ -53,12 +53,12 @@ class QuickshareRunner extends AbstractRunner {
 
                 if (!tryDownload(method)) {
                     checkProblems();
-                    logger.info(client.getContentAsString());
+                    logger.info(getContentAsString());
                     throw new ServiceConnectionProblemException("Všechny volné sloty jsou obsazeny nebo se z této IP již stahuje");
                 }
             } else {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
         } else
@@ -67,7 +67,7 @@ class QuickshareRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws Exception {
         if (!content.contains("QuickShare")) {
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
@@ -97,7 +97,7 @@ class QuickshareRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        String content = client.getContentAsString();
+        String content = getContentAsString();
         if (content.contains("location.href='/chyba'")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zøejmì neexistuje</b><br>"));
         }

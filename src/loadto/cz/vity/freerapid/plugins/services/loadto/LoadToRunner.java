@@ -22,9 +22,9 @@ class LoadToRunner extends AbstractRunner {
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
 
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -33,20 +33,20 @@ class LoadToRunner extends AbstractRunner {
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            checkNameAndSize(client.getContentAsString());
+            checkNameAndSize(getContentAsString());
             downloader.sleep(5);
-            Matcher matcher = PlugUtils.matcher("<form method=\"post\" action=\"(http[^\"]*)\"", client.getContentAsString());
+            Matcher matcher = PlugUtils.matcher("<form method=\"post\" action=\"(http[^\"]*)\"", getContentAsString());
             if (!matcher.find()) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
             }
-            final PostMethod method = client.getPostMethod(matcher.group(1));
+            final PostMethod method = getPostMethod(matcher.group(1));
             if (!tryDownload(method)) {
                 checkProblems();
-                logger.info(client.getContentAsString());
+                logger.info(getContentAsString());
                 throw new IOException("File input stream is empty.");
             }
 
@@ -57,7 +57,7 @@ class LoadToRunner extends AbstractRunner {
     private void checkNameAndSize(String content) throws Exception {
 
         if (!content.contains("Load.to")) {
-            logger.warning(client.getContentAsString());
+            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
@@ -84,7 +84,7 @@ class LoadToRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = PlugUtils.matcher("Can't find file.", client.getContentAsString());
+        matcher = getMatcherAgainstContent("Can't find file.");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Can't find file. Please check URL.</b><br>"));
         }

@@ -31,10 +31,15 @@ import java.util.regex.Pattern;
 public abstract class XFileSharingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XFileSharingRunner.class.getName());
 
-    private final List<FileNameHandler> fileNameHandlers = getFileNameHandlers();
-    private final List<FileSizeHandler> fileSizeHandlers = getFileSizeHandlers();
     private final List<CaptchaType> captchaTypes = getCaptchaTypes();
-    private final List<String> downloadPageMarkers = getDownloadPageMarkers();
+
+    protected List<CaptchaType> getCaptchaTypes() {
+        final List<CaptchaType> captchaTypes = new LinkedList<CaptchaType>();
+        captchaTypes.add(new ReCaptchaType());
+        captchaTypes.add(new FourTokensCaptchaType());
+        captchaTypes.add(new CaptchasCaptchaType());
+        return captchaTypes;
+    }
 
     protected List<FileNameHandler> getFileNameHandlers() {
         final List<FileNameHandler> fileNameHandlers = new LinkedList<FileNameHandler>();
@@ -50,14 +55,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         fileSizeHandlers.add(new FileSizeHandlerB());
         fileSizeHandlers.add(new FileSizeHandlerC());
         return fileSizeHandlers;
-    }
-
-    protected List<CaptchaType> getCaptchaTypes() {
-        final List<CaptchaType> captchaTypes = new LinkedList<CaptchaType>();
-        captchaTypes.add(new ReCaptchaType());
-        captchaTypes.add(new FourTokensCaptchaType());
-        captchaTypes.add(new CaptchasCaptchaType());
-        return captchaTypes;
     }
 
     protected List<String> getDownloadPageMarkers() {
@@ -169,7 +166,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     }
 
     protected void checkFileName() throws ErrorDuringDownloadingException {
-        for (final FileNameHandler fileNameHandler : fileNameHandlers) {
+        for (final FileNameHandler fileNameHandler : getFileNameHandlers()) {
             try {
                 fileNameHandler.checkFileName(httpFile, getContentAsString());
                 logger.info("Name handler: " + fileNameHandler.getClass().getSimpleName());
@@ -182,7 +179,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     }
 
     protected void checkFileSize() throws ErrorDuringDownloadingException {
-        for (final FileSizeHandler fileSizeHandler : fileSizeHandlers) {
+        for (final FileSizeHandler fileSizeHandler : getFileSizeHandlers()) {
             try {
                 fileSizeHandler.checkFileSize(httpFile, getContentAsString());
                 logger.info("Size handler: " + fileSizeHandler.getClass().getSimpleName());
@@ -235,7 +232,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     }
 
     protected boolean checkDownloadPageMarker() {
-        for (final String downloadPageMarker : downloadPageMarkers) {
+        for (final String downloadPageMarker : getDownloadPageMarkers()) {
             if (getContentAsString().contains(downloadPageMarker)) {
                 return true;
             }

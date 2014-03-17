@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.depositfiles_premium.DepositFilesServiceImpl"
-        id="depositfiles.com_premium" vendor="ntoskrnl" version="1.0.7">
+        id="depositfiles.com_premium" vendor="ntoskrnl" version="1.0.8">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(depositfiles\.com|dfiles\.eu)/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?(depositfiles\.(com|org)|dfiles\.eu)/.+"/>
         <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="depositfiles.com dfiles.eu"/>
+        <attribute id="services" value="depositfiles.com depositfiles.org dfiles.eu"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>

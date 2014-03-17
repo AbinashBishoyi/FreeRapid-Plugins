@@ -31,6 +31,7 @@ class DepositFilesFileRunner extends AbstractRunner {
 
     private void setLanguageEN() {
         addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
+        addCookie(new Cookie(".depositfiles.org", "lang_current", "en", "/", 86400, false));
         addCookie(new Cookie(".dfiles.eu", "lang_current", "en", "/", 86400, false));
         fileURL = fileURL.replaceFirst("/[^/]{2}/(files|folders)/", "/$1/"); // remove language id from URL
     }

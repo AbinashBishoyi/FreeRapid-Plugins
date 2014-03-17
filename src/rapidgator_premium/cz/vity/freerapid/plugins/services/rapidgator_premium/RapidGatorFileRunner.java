@@ -46,7 +46,7 @@ class RapidGatorFileRunner extends AbstractRunner {
 
         final Matcher filesizeMatcher = PlugUtils.matcher(filesizeRegexRule, content);
         if (filesizeMatcher.find()) {
-            PlugUtils.getFileSizeFromString(filesizeMatcher.group(1));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
         } else {
             throw new PluginImplementationException("File size not found");
         }
@@ -91,7 +91,7 @@ class RapidGatorFileRunner extends AbstractRunner {
                 }
             }
             final HttpMethod method = getMethodBuilder()
-                    .setAction("http://rapidgator.net/auth/login")
+                    .setAction("https://rapidgator.net/auth/login")
                     .setParameter("LoginForm[email]", pa.getUsername())
                     .setParameter("LoginForm[password]", pa.getPassword())
                     .setParameter("LoginForm[rememberMe]", "1")

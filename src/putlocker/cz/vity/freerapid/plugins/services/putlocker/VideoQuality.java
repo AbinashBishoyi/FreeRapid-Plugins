@@ -8,7 +8,8 @@ import java.util.Collections;
  */
 public enum VideoQuality {
     Low,
-    High;
+    High,
+    Mobile;
 
     public static VideoQuality[] getItems() {
         final VideoQuality[] items = values();

@@ -21,15 +21,19 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/65AADB926B140666"));
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/B982BF0B0F93EA0D"));
             //httpFile.setNewURL(new URL("http://www.sockshare.com/file/815F22F09D74B38F"));
-            //httpFile.setNewURL(new URL("http://www.putlocker.com/file/359B64625F4CBEA4"));
-            httpFile.setNewURL(new URL("http://www.putlocker.com/file/7777D7AA580C02A4"));
+            httpFile.setNewURL(new URL("http://www.putlocker.com/file/359B64625F4CBEA4")); //hi=low=714616832, mobile=128611192
+            //httpFile.setNewURL(new URL("http://www.putlocker.com/file/7777D7AA580C02A4")); //mobile failed
+            //httpFile.setNewURL(new URL("http://www.putlocker.com/file/249AA5C3E5093044")); //filesize hi is same as low = 421852611, mobile=failed
+            //httpFile.setNewURL(new URL("http://www.sockshare.com/file/4UCF3DXJDNK084")); //hi=734791680, low not available, mobile=210841596
+            //httpFile.setNewURL(new URL("http://www.sockshare.com/file/QR840MSX6Z48KC")); //mobile=299419540
+            //httpFile.setNewURL(new URL("http://www.putlocker.com/file/94275B918C2D5E20")); //rar
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final PutLockerServiceImpl service = new PutLockerServiceImpl(); //instance of service - of our plugin
             PutLockerSettingsConfig config = new PutLockerSettingsConfig();
-            config.setVideoQuality(VideoQuality.Low);
+            config.setVideoQuality(VideoQuality.High);
             service.setConfig(config);
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

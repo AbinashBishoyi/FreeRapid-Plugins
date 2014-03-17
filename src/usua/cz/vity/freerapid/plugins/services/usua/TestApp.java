@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.gorillavid;
+package cz.vity.freerapid.plugins.services.usua;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -15,11 +15,11 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://www.gorillavid.in/cnb/382tq3tx1la3"));
-            httpFile.setNewURL(new URL("http://gorillavid.com/m4vl88f54cv4"));
+            //httpFile.setNewURL(new URL("http://us.ua/1068835/"));
+            httpFile.setNewURL(new URL("http://us.ua/1069995/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081);
-            final GorillaVidServiceImpl service = new GorillaVidServiceImpl();
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            final UsUaServiceImpl service = new UsUaServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

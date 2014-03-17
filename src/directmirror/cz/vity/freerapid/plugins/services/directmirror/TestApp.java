@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.gorillavid;
+package cz.vity.freerapid.plugins.services.directmirror;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -15,11 +15,14 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://www.gorillavid.in/cnb/382tq3tx1la3"));
-            httpFile.setNewURL(new URL("http://gorillavid.com/m4vl88f54cv4"));
+            //httpFile.setNewURL(new URL("http://directmirror.com/files/6LUSGJFO"));
+            httpFile.setNewURL(new URL("http://www.directmirror.com/files/1IMY5U32"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081);
-            final GorillaVidServiceImpl service = new GorillaVidServiceImpl();
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            final DirectMirrorServiceImpl service = new DirectMirrorServiceImpl();
+            DirectMirrorSettingsConfig config = new DirectMirrorSettingsConfig();
+            config.setQueueAllLinks(false);
+            service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

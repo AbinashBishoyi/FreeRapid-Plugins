@@ -11,6 +11,9 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,18 +30,25 @@ class DepositFilesRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         fileURL = CheckURL(fileURL);
-        final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
-            checkNameAndSize(getContentAsString());
-        } else
-            throw new PluginImplementationException();
+        if( !checkIsFolder() ) {
+            final GetMethod getMethod = getGetMethod(fileURL);
+            getMethod.setFollowRedirects(true);
+            if (makeRequest(getMethod)) {
+                checkNameAndSize(getContentAsString());
+            } else
+                throw new PluginImplementationException();
+        }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         fileURL = CheckURL(fileURL);
+        //Support to Folder
+        if( checkIsFolder() ) {
+            runFolder();
+            return;
+        }
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
@@ -67,7 +77,7 @@ class DepositFilesRunner extends AbstractRunner {
                 }
 
             }
-            
+
             //	<img src="http://depositfiles.com/en/get_download_img_code.php?icid=yxcWQT8XPbxGNQxdTxTfEg__"/>
             matcher = getMatcherAgainstContent("src=\"(.*?/get_download_img_code.php[^\"]*)\"" );
             if (matcher.find()) {
@@ -89,8 +99,8 @@ class DepositFilesRunner extends AbstractRunner {
                     throw new PluginImplementationException();
                 }
             }
-            
-            
+
+
             //        <span id="download_waiter_remain">60</span>
             matcher = getMatcherAgainstContent("download_waiter_remain\">([0-9]+)");
             if (!matcher.find()) {
@@ -182,5 +192,40 @@ class DepositFilesRunner extends AbstractRunner {
 
     }
 
+    private boolean checkIsFolder() {
+        return fileURL.contains("/folders/");
+    }
+
+    public void runFolder() throws Exception {
+        HashSet<URI> queye = new HashSet<URI>();
+
+        final String REGEX = "href=\"(http://(?:www\\.)?depositfiles\\.com/files/[^\"]+)\"";
+
+        final GetMethod getMethod = getGetMethod(fileURL);
+        getMethod.setFollowRedirects(true);
+        if (makeRequest(getMethod)) {
+            Matcher matcher = getMatcherAgainstContent(REGEX);
+            while(matcher.find()) {
+                queye.add( new URI(matcher.group(1)) );
+            }
+            Matcher matcherPages = getMatcherAgainstContent("href=\"[^\\?]+\\?(page=\\d+)\"");
+            while(matcherPages.find()) {
+                GetMethod getPageMethod = getGetMethod(fileURL + "?" + matcherPages.group(1) );
+                if (makeRequest(getPageMethod)) {
+                    matcher = getMatcherAgainstContent(REGEX);
+                    while(matcher.find()) {
+                        queye.add( new URI(matcher.group(1)) );
+                    }
+                } else
+                    throw new PluginImplementationException("Folder " + matcherPages.group(1) + " Can't be Loaded !!");
+            }
+        } else
+            throw new PluginImplementationException("Folder Can't be Loaded !!");
+
+        synchronized ( getPluginService().getPluginContext().getQueueSupport() ) {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, new ArrayList<URI>(queye));
+        }
+
+    }
 
 }

@@ -7,6 +7,7 @@
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="uloz.to"/>
+        <attribute id="maxDownloads" value="9"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

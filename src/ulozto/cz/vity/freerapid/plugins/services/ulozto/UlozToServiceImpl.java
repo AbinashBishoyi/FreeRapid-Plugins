@@ -14,7 +14,7 @@ public class UlozToServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 1;
+        return 9;
     }
 
     @Override

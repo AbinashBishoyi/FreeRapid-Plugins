@@ -69,6 +69,7 @@ class DepositFilesFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            fileURL = method.getURI().toString();
 
             if (getContentAsString().contains("Advantages of the Gold account"))
                 throw new BadLoginException("Problem logging in, account not premium?");
@@ -129,18 +130,24 @@ class DepositFilesFileRunner extends AbstractRunner {
                 }
                 badConfig = false;
             }
-
-            final HttpMethod httpMethod = getMethodBuilder()
+            HttpMethod httpMethod = getMethodBuilder()
                     .setAction("/login.php")
+                    .toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+            httpMethod = getMethodBuilder()
+                    .setAction(httpMethod.getURI().toString())
                     .setParameter("go", "1")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
                     .toPostMethod();
-            if (!makeRedirectedRequest(httpMethod))
+            if (!makeRedirectedRequest(httpMethod)) {
                 throw new ServiceConnectionProblemException("Error posting login info");
-
-            if (getContentAsString().contains("Your password or login is incorrect"))
+            }
+            if (getContentAsString().contains("Your password or login is incorrect")) {
                 throw new BadLoginException("Invalid DepositFiles Premium account login information!");
+            }
         }
     }
 

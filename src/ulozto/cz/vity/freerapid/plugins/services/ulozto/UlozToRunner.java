@@ -113,7 +113,7 @@ class UlozToRunner extends AbstractRunner {
         PlugUtils.checkName(httpFile, content, "class=\"jsShowDownload\">", "</a>");
         String size;
         try {
-            size = PlugUtils.getStringBetween(content, "<span class=\"fileSize\">", "</span>");
+            size = PlugUtils.getStringBetween(content, "<span id=\"fileSize\">", "</span>");
             if (size.contains("|")) {
                 size = size.substring(size.indexOf("|") + 1).trim();
             }

@@ -1,11 +1,9 @@
 package cz.vity.freerapid.plugins.services.datoid;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -55,8 +53,9 @@ class DatoidFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
+            login();
 
-            final Matcher match = PlugUtils.matcher("<a.+?href=\"(.*?/f/.+?)\">st.hnout", getContentAsString());
+            final Matcher match = PlugUtils.matcher("<a.+?href=\"(.*?/f/.+?)\">\\s*?[Ss]t.hnout", getContentAsString());
             if (!match.find())
                 throw new PluginImplementationException("Download options not found");
             String linkUrl = match.group(1);
@@ -89,15 +88,23 @@ class DatoidFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (content.contains("error\":\"IP in use")) {
-            throw new ErrorDuringDownloadingException("IP address is already downloading");
+            throw new ServiceConnectionProblemException("IP address is already downloading");
         }
         if (content.contains("error\":\"User in use")) {
-            throw new ErrorDuringDownloadingException("File already downloading");
+            throw new ServiceConnectionProblemException("File already downloading");
+        }
+        if (content.contains("error\":\"No free slots")) {
+            throw new ServiceConnectionProblemException("No free slots");
+        }
+        if (content.contains("error\":\"No anonymous free slots")) {
+            throw new ServiceConnectionProblemException("No anonymous free slots");
         }
         if (content.contains("error\":\"Wrong request")) {
-            throw new PluginImplementationException("Plugin implementation error");
+            throw new ServiceConnectionProblemException("File too large for you to download");
         }
-
+        if (content.contains("error\":\"")) {
+            throw new PluginImplementationException(PlugUtils.getStringBetween(content, "error\":\"", "\""));
+        }
     }
 
     private String getValue(final String content, final String name) throws Exception {
@@ -105,6 +112,30 @@ class DatoidFileRunner extends AbstractRunner {
         if (!match.find())
             throw new PluginImplementationException("Value for " + name + " not found");
         return match.group(1);
+    }
+
+
+    private void login() throws Exception {
+        synchronized (DatoidFileRunner.class) {
+            final DatoidServiceImpl service = (DatoidServiceImpl) getPluginService();
+            final PremiumAccount pa = service.getConfig();
+            if (pa.isSet()) {
+                final HttpMethod method = getMethodBuilder()
+                        .setActionFromFormWhereActionContains("signInForm", true)
+                        .setParameter("username", pa.getUsername())
+                        .setParameter("password", pa.getPassword())
+                        .setReferer(fileURL)
+                        .toPostMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException("Error posting login info");
+                }
+                if (getContentAsString().contains("Zadali jste špatné přihlašovací údaje.")) {
+                    throw new BadLoginException("Invalid Datoid.cz account login information!");
+                }
+                logger.info("Logged in.");
+            }
+
+        }
     }
 
 }

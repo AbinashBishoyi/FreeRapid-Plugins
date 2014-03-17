@@ -16,12 +16,21 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://datoid.cz/a4zyxr/metro-last-light-part02-rar"));
+            httpFile.setNewURL(new URL("http://datoid.cz/a4zyxr/metro-last-light-part02-rar"));     // < 1gb
+            //httpFile.setNewURL(new URL("http://datoid.cz/QhYg0X/europe-905-4754-part1-rar"));       // > 1gb
+            //httpFile.setNewURL(new URL("http://datoid.cz/CxB5WA/krotitele-duchu-2-mkv"));           // > 3gb
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final DatoidServiceImpl service = new DatoidServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set Registered(Premium not supported) account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

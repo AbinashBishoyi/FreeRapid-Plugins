@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.dev.plugimpl.DevPluginContextImpl;
 import cz.vity.freerapid.plugins.dev.plugimpl.DevStorageSupport;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
@@ -60,8 +61,12 @@ public abstract class PluginDevApplication extends Application {
         service.setPluginContext(plugContext);
         final HttpFileDownloadTask fileDownloader = getHttpFileDownloader(file, settings);
         try {
-            if (service.supportsRunCheck())
+            if (service.supportsRunCheck()) {
                 service.runCheck(fileDownloader);
+                if (fileDownloader.getDownloadFile().getFileState() == FileState.NOT_CHECKED) {
+                    throw new IllegalStateException("File state cannot be set to NOT_CHECKED after runCheck()");
+                }
+            }
             service.run(fileDownloader);
         } catch (ErrorDuringDownloadingException e) {
             if (fileDownloader != null)
@@ -85,6 +90,9 @@ public abstract class PluginDevApplication extends Application {
             try {
                 service.setPluginContext(plugContext);
                 service.runCheck(fileDownloader);
+                if (fileDownloader.getDownloadFile().getFileState() == FileState.NOT_CHECKED) {
+                    throw new IllegalStateException("File state cannot be set to NOT_CHECKED after runCheck()");
+                }
             } catch (ErrorDuringDownloadingException e) {
                 logger.warning(fileDownloader.getClient().getContentAsString());
                 throw e;

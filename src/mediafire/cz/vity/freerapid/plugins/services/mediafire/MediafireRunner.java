@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.mediafire;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -36,11 +35,12 @@ public class MediafireRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         if (!isFolder()) {
-            final String content = getContentAsString();
-            PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
-            if (!isPassworded()) {
-                PlugUtils.checkFileSize(httpFile, content, "<span class='dlFileSize'>(", ")</span>");
+            final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('[^']+?','([^']+?)','(\\d+?)'");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File name/size not found");
             }
+            httpFile.setFileName(matcher.group(1));
+            httpFile.setFileSize(Long.parseLong(matcher.group(2)));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -70,7 +70,7 @@ public class MediafireRunner extends AbstractRunner {
                 stepPassword();
                 checkNameAndSize();
             }
-            method = getMethodBuilder().setActionFromAHrefWhereATagContains("Download <span class='dlFileSize'>").toGetMethod();
+            method = getMethodBuilder().setActionFromTextBetween("kNO = \"", "\";").toGetMethod();
             setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();

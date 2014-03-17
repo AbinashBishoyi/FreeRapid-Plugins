@@ -36,7 +36,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     private static String PHPSESSID = "";
     private static String versionUrl="http://www.multishare.cz/html/mms_support.php?version";
 
-    private static String version="1.1.12";
+    private static String version="1.1.13";
 
     @Override
     public void runCheck() throws Exception { //this method validates file

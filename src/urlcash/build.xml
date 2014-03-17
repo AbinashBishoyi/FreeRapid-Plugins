@@ -2,7 +2,7 @@
 <project name="Ulrcash.net Plugin" default="all" basedir=".">
     <property name="application" value="urlcash"/>
 
-    <property name="version" value="1.00"/>
+    <property name="version" value="1.10"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="urlcash.jar"/>

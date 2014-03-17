@@ -48,7 +48,7 @@ class FileSonicFileRunner extends AbstractRunner {
         if (!isFolder()) {
             final String content = getContentAsString();
             PlugUtils.checkName(httpFile, content, "<title>Download", "for free on Filesonic.com</title>");
-            final String size = PlugUtils.getStringBetween(content, "<span class=\"size\">", "</span>");
+            final String size = PlugUtils.getStringBetween(content, "<span class=\"fileSize\">", "</span>");
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.replace(",", "")));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.filesonic.FileSonicServiceImpl"
-        id="filesonic.com" vendor="JPEXS+ntoskrnl" version="1.0.17">
+        id="filesonic.com" vendor="JPEXS+ntoskrnl" version="1.0.18">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filesonic\.[a-z]{2,3}(\.[a-z]{2,3})?/([^/]+/)?(file|folder)/.+"/>
         <attribute id="minver" value="0.852"/>

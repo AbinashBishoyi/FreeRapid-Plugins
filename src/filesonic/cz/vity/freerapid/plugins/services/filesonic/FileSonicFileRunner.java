@@ -48,7 +48,7 @@ class FileSonicFileRunner extends AbstractRunner {
         if (!isFolder()) {
             final String content = getContentAsString();
             PlugUtils.checkName(httpFile, content, "<title>Download", "for free on Filesonic.com</title>");
-            final String size = PlugUtils.getStringBetween(content, "<span class=\"size\">", "</span>");
+            final String size = PlugUtils.getStringBetween(content, "<span class=\"fileSize\">", "</span>");
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.replace(",", "")));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -100,8 +100,8 @@ class FileSonicFileRunner extends AbstractRunner {
                     } catch (PluginImplementationException e) {
                         method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
                     }
-                } else if (content.contains("Start download now")) {
-                    method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start download now").toGetMethod();
+                } else if (content.contains("Start Download Now")) {
+                    method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start Download Now").toGetMethod();
                     setFileStreamContentTypes("\"application/octet-stream\"");
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();

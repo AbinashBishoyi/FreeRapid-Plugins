@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="easyshare.com" version="1.0.6" vendor="Lukiz"
+<plugin id="easyshare.com" version="1.0.7" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.easyshare.EasyShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://([a-zA-Z_0-9])*?\.easy-share\.com/.+"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="easy-share.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

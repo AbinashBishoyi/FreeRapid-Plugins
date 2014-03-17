@@ -65,7 +65,7 @@ class LetitbitRunner extends AbstractRunner {
             if (!matcher.find()) {
                 checkProblems();
                 logger.warning(getContentAsString());
-                throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+                throw new InvalidURLOrServiceProblemException("Free download link not found");
             }
             String s = matcher.group(1);
             String form = matcher.group(2);

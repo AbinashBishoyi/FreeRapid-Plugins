@@ -58,9 +58,6 @@ class UploadedToRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException();
                     }
                     if (!getMatcherAgainstContent("err\"?:\"?captcha").find()) {
-                        /**
-                         * Abinash Bishoyi: Updated the error message
-                         */
                         if (getContentAsString().contains("You have reached")) {
                             throw new ServiceConnectionProblemException("Free download limit reached");
                         }

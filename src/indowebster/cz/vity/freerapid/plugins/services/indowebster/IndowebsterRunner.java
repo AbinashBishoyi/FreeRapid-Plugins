@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Alex,JPEXS,zid,tong2shot
+ * @author Alex, JPEXS, zid, tong2shot
  */
 class IndowebsterRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(IndowebsterRunner.class.getName());
@@ -82,16 +82,6 @@ class IndowebsterRunner extends AbstractRunner {
                     .setReferer(fileURL)
                     .setAction(getContentAsString().replace("[", "%5B").replace("]", "%5D"))
                     .toGetMethod();
-            client.makeRequest(httpMethod, false);  //will be redirected to new location
-            if (httpMethod.getResponseHeader("location") == null) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Download link not found");
-            }
-            final URI finalURI = new URI(httpMethod.getResponseHeader("location").getValue().replace("[", "%5B").replace("]", "%5D"), true, httpMethod.getParams().getUriCharset());
-            httpMethod = getMethodBuilder()
-                    .setAction(finalURI.toString())
-                    .setReferer(fileURL)
-                    .toGetMethod();
             setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
@@ -107,8 +97,26 @@ class IndowebsterRunner extends AbstractRunner {
     protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
         for (int i = 0; i < 3; i++) { //give it a couple of more tries if error occurs
             downloadTask.sleep(6);
-            if (super.tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString()).toGetMethod()))  //"cloning" method, to prevent method being aborted
-                return true;
+            try {
+                if (super.tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString()).toGetMethod())) {  //"cloning" method, to prevent method being aborted
+                    return true;
+                }
+            } catch (org.apache.commons.httpclient.InvalidRedirectLocationException e) {
+                //they use "[" and "]" chars in redirect url, we have to replace it.
+                client.makeRequest(method, false);
+                if (method.getResponseHeader("location") == null) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Download link not found");
+                }
+                final URI finalURI = new URI(method.getResponseHeader("location").getValue().replace("[", "%5B").replace("]", "%5D"), true, method.getParams().getUriCharset());
+                method = getMethodBuilder()
+                        .setAction(finalURI.toString())
+                        .setReferer(fileURL)
+                        .toGetMethod();
+                if (super.tryDownloadAndSaveFile(method)) {
+                    return true;
+                }
+            }
             logger.warning(method.getURI().toString());
             logger.warning(getContentAsString());
         }

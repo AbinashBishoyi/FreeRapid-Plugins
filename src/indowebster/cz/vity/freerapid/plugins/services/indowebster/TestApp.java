@@ -25,7 +25,10 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.indowebster.com/idfl_us_the_station_agent_2003_dvdrip_h264_aac_antix.html"));
             //httpFile.setNewURL(new URL("http://files.indowebster.com/utux_idfl_us_babymakersdvr_ganool.html"));
             //httpFile.setNewURL(new URL("http://files.indowebster.com/download/files/wmmib3482012"));
-            httpFile.setNewURL(new URL("http://files.indowebster.com/download/video/_t_n_kamen_rider_ooo_junction06_2665979c_dvd"));
+            //httpFile.setNewURL(new URL("http://files.indowebster.com/download/video/_t_n_kamen_rider_ooo_junction06_2665979c_dvd"));
+            //httpFile.setNewURL(new URL("http://files.indowebster.com/wmrsdntevl5482012_part1.html"));
+            //httpFile.setNewURL(new URL("http://files.indowebster.com/download/files/wmrsdntevl5482012_part1"));
+            httpFile.setNewURL(new URL("http://files.indowebster.com/wmnysm482013_part1.html"));
 
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

@@ -1,12 +1,10 @@
 package cz.vity.freerapid.plugins.services.vimeo;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
@@ -17,6 +15,7 @@ import java.util.regex.Pattern;
  * Class which contains main code
  *
  * @author ntoskrnl
+ * @author tong2shot
  */
 class VimeoFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(VimeoFileRunner.class.getName());
@@ -24,9 +23,11 @@ class VimeoFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".vimeo.com", "language", "en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
+            if (isPasswordProtected()) return;
             checkNameAndSize();
         } else {
             checkProblems();
@@ -35,7 +36,11 @@ class VimeoFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<meta property=\"og:title\" content=\"", "\"");
+        if (getContentAsString().contains("<meta property=\"og:title\" content=\"")) {
+            PlugUtils.checkName(httpFile, getContentAsString(), "<meta property=\"og:title\" content=\"", "\"");
+        } else {
+            PlugUtils.checkName(httpFile, getContentAsString(), "<h1 itemprop=\"name\">", "</h1>");
+        }
         httpFile.setFileName(httpFile.getFileName() + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -50,8 +55,25 @@ class VimeoFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod method = getGetMethod(fileURL);
+        addCookie(new Cookie(".vimeo.com", "language", "en", "/", 86400, false));
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            checkProblems();
+            while (isPasswordProtected()) {
+                final String xsrft = PlugUtils.getStringBetween(getContentAsString(), "xsrft: '", "'");
+                final String password = getDialogSupport().askForPassword("Vimeo");
+                if (password == null) {
+                    throw new NotRecoverableDownloadException("This file is secured with a password");
+                }
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setActionFromFormWhereActionContains("password", true)
+                        .setParameter("password", password)
+                        .setParameter("token", xsrft)
+                        .toPostMethod();
+                addCookie(new Cookie(".vimeo.com", "xsrft", xsrft, "/", 86400, false));
+                makeRedirectedRequest(method); //http code : 418, if the entered password wrong
+            }
             checkProblems();
             checkNameAndSize();
             if (!tryDownloadAndSaveFile(getPlayMethod())) {
@@ -81,6 +103,10 @@ class VimeoFileRunner extends AbstractRunner {
                 "moogaloop_local",
                 ""
         ));
+    }
+
+    private boolean isPasswordProtected() {
+        return getContentAsString().contains("please provide the correct password");
     }
 
     private static class JSON {

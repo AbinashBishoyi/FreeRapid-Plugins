@@ -113,8 +113,8 @@ class UploadingRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "File size: <b>", "</b> <br/>");
-        PlugUtils.checkName(httpFile, getContentAsString(), "<h2>", "</h2><br/>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span>File size:", "</span>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download", " for");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

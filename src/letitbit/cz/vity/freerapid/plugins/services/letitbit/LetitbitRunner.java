@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.letitbit.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -14,6 +11,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
@@ -58,18 +56,23 @@ class LetitbitRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            final MethodBuilder methodBuilder2 = getMethodBuilder().setReferer(fileURL);
-            if (getContentAsString().contains("\"dvifree\"")) {
-                methodBuilder2.setActionFromFormByName("dvifree", true);
-            } else {
-                //Russian IPs may see a different page here
-                methodBuilder2.setActionFromFormByIndex(1, true);
-            }
-            final HttpMethod httpMethod2 = methodBuilder2.toPostMethod();
-            final String secondPageUrl = httpMethod2.getURI().toString();
+            final Matcher matcher = getMatcherAgainstContent("(?is)<div[^<>]*?id=\"dvifree\"[^<>]*?>.+?</form>");
+            if (!matcher.find()) throw new PluginImplementationException("Free download form not found");
+            final HttpMethod httpMethod2 = getMethodBuilder(matcher.group()).setReferer(fileURL).setActionFromFormByIndex(1, true).toPostMethod();
             if (!makeRedirectedRequest(httpMethod2)) {
                 checkProblems();
-                throw new ServiceConnectionProblemException("Download link 1 issue");
+                throw new ServiceConnectionProblemException();
+            }
+            String secondPageUrl = httpMethod2.getURI().toString();
+
+            if (!getContentAsString().contains("\"dvifree\"")) {
+                //Russian IPs may see a different page here, let's handle it
+                final HttpMethod httpMethodR = getMethodBuilder().setReferer(secondPageUrl).setActionFromFormByIndex(1, true).toPostMethod();
+                if (!makeRedirectedRequest(httpMethodR)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                secondPageUrl = httpMethodR.getURI().toString();
             }
 
             final MethodBuilder captchaBuilder = getMethodBuilder().setReferer(secondPageUrl).setActionFromFormByName("dvifree", true);
@@ -78,7 +81,7 @@ class LetitbitRunner extends AbstractRunner {
                 final HttpMethod captchaMethod = captchaBuilder.setParameter("cap", readCaptchaImage(captchaurl)).toPostMethod();
                 if (!makeRedirectedRequest(captchaMethod)) {
                     checkProblems();
-                    throw new ServiceConnectionProblemException("Captcha post issue");
+                    throw new ServiceConnectionProblemException();
                 }
                 captchatry++;
             } while (getContentAsString().contains("history.go(-1)"));
@@ -89,14 +92,14 @@ class LetitbitRunner extends AbstractRunner {
             final String thirdPageUrl = httpMethod3.getURI().toString();
             if (!makeRedirectedRequest(httpMethod3)) {
                 checkProblems();
-                throw new ServiceConnectionProblemException("Download link 3 issue");
+                throw new ServiceConnectionProblemException();
             }
 
             downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "<span id=\"errt\">", "</span>") + 1);
 
             if (!makeRedirectedRequest(httpMethod3)) {
                 checkProblems();
-                throw new ServiceConnectionProblemException("Download link 4 issue");
+                throw new ServiceConnectionProblemException();
             }
 
             final HttpMethod httpMethod4 = getMethodBuilder()

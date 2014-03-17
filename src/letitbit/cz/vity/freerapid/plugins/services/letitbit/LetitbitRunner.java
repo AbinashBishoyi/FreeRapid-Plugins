@@ -66,28 +66,48 @@ class LetitbitRunner extends AbstractRunner {
                     logger.info("Posted form #" + i);
                 }
 
+                final boolean type2 = getContentAsString().contains("/ajax/check_recaptcha2.php");
+
+                if (type2) {
+                    httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("redirect_to_pin", true).toPostMethod();
+                }
+
                 downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
 
-                url = handleCaptcha(pageUrl);
+                url = handleCaptcha(pageUrl, type2);
 
-                logger.info("Ajax response : " + url);
+                if (type2) {
+                    if (!makeRedirectedRequest(httpMethod)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                    httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("redirect_to_pin", true).toPostMethod();
+                    if (!makeRedirectedRequest(httpMethod)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                    pageUrl = httpMethod.getURI().toString();
+                    url = getMethodBuilder().setActionFromAHrefWhereATagContains("Скачать медленно").getEscapedURI();
+                } else {
+                    logger.info("Ajax response : " + url);
 
-                if (url.contains("[\"")) {
-                    url = PlugUtils.getStringBetween(url, "[", "]").replaceAll("\\\\", "");
-                    final StringTokenizer st = new StringTokenizer(url, ",");
-                    while (st.hasMoreTokens()) {
-                        String testUrl = st.nextToken().replaceAll("\"", "");
-                        logger.info("Url match : " + testUrl);
-                        httpMethod = getGetMethod(testUrl + "&check=1");
-                        logger.info("Url to be checked : " + httpMethod.getURI().toString());
-                        httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
-                        if (!makeRequest(httpMethod)) {
-                            checkProblems();
-                            throw new PluginImplementationException();
-                        }
-                        if (httpMethod.getStatusCode() == HttpStatus.SC_OK) {
-                            url = testUrl;
-                            break;
+                    if (url.contains("[\"")) {
+                        url = PlugUtils.getStringBetween(url, "[", "]").replaceAll("\\\\", "");
+                        final StringTokenizer st = new StringTokenizer(url, ",");
+                        while (st.hasMoreTokens()) {
+                            String testUrl = st.nextToken().replaceAll("\"", "");
+                            logger.info("Url match : " + testUrl);
+                            httpMethod = getGetMethod(testUrl + "&check=1");
+                            logger.info("Url to be checked : " + httpMethod.getURI().toString());
+                            httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                            if (!makeRequest(httpMethod)) {
+                                checkProblems();
+                                throw new PluginImplementationException();
+                            }
+                            if (httpMethod.getStatusCode() == HttpStatus.SC_OK) {
+                                url = testUrl;
+                                break;
+                            }
                         }
                     }
                 }
@@ -128,6 +148,9 @@ class LetitbitRunner extends AbstractRunner {
     }
 
     private boolean postFreeForm() throws Exception {
+        if (getContentAsString().contains("recaptcha")) {
+            return false;
+        }
         final Matcher matcher = getMatcherAgainstContent("(?is)(<form\\b.+?</form>)");
         while (matcher.find()) {
             final String content = matcher.group(1);
@@ -142,10 +165,18 @@ class LetitbitRunner extends AbstractRunner {
         return false;
     }
 
-    private String handleCaptcha(final String pageUrl) throws Exception {
+    private String handleCaptcha(final String pageUrl, final boolean type2) throws Exception {
         final String baseUrl = "http://" + new URL(pageUrl).getHost();
         final String rcKey = "6Lc9zdMSAAAAAF-7s2wuQ-036pLRbM0p8dDaQdAM";
-        final String rcControl = PlugUtils.getStringBetween(getContentAsString(), "var recaptcha_control_field = '", "';");
+        final String action;
+        final String rcControl;
+        if (type2) {
+            action = "/ajax/check_recaptcha2.php";
+            rcControl = null;
+        } else {
+            action = "/ajax/check_recaptcha.php";
+            rcControl = PlugUtils.getStringBetween(getContentAsString(), "var recaptcha_control_field = '", "';");
+        }
         while (true) {
             final ReCaptcha rc = new ReCaptcha(rcKey, client);
             final String captcha = getCaptchaSupport().getCaptcha(rc.getImageURL());
@@ -157,7 +188,7 @@ class LetitbitRunner extends AbstractRunner {
                     .setAjax()
                     .setReferer(pageUrl)
                     .setBaseURL(baseUrl)
-                    .setAction("/ajax/check_recaptcha.php"))
+                    .setAction(action))
                     .setParameter("recaptcha_control_field", rcControl)
                     .toPostMethod();
             if (!makeRedirectedRequest(method)) {

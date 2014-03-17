@@ -45,16 +45,21 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize();
             final String contentAsString = getContentAsString();
-            String var = PlugUtils.getStringBetween(contentAsString, "var pong = '", "';");
-            final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
-            logger.info("unescape = " + unescape);
-            var = applyReplace(var, unescape);
+            String var;
+            if (contentAsString.contains("var pong = '")) {
+                var = PlugUtils.getStringBetween(contentAsString, "var pong = '", "';");
+                final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
+                logger.info("unescape = " + unescape);
+                var = applyReplace(var, unescape);
+            } else if (contentAsString.contains("var wannaplayagameofpong = '")) {
+                var = PlugUtils.getStringBetween(contentAsString, "var wannaplayagameofpong = '", "';");
+                final int number = PlugUtils.getNumberBetween(contentAsString, "substring(", ");");
+                var = var.substring(number);
+            } else {
+                throw new PluginImplementationException("Can't find download link");
+            }
 
-            //final int number = PlugUtils.getNumberBetween(contentAsString, "substring(", ");");
-            //final String decodedURL = URLDecoder.decode(var, "UTF-8");
-            //logger.info("Decoded URL:" + decodedURL);
-
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.unescapeHtml(var.replace("%3A", ":").replace("%2F", "/"))).toGetMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(var.replace("%3A", ":").replace("%2F", "/")).toGetMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();

@@ -42,7 +42,7 @@ public class MultiUploadServiceImpl extends AbstractFileShareService {
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new MultiUploadSettingsConfig();
-                config.setServices();
+                config.setDefault();
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, MultiUploadSettingsConfig.class);
             }

@@ -20,9 +20,9 @@ public class TestApp extends PluginDevApplication {
 //            httpFile.setNewURL(new URL("http://min.us/mIIOD4rnI/1"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("127.0.0.1", 8098); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("127.0.0.1", 8098); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final minusServiceImpl service = new minusServiceImpl(); //instance of service - of our plugin
+            final MinusServiceImpl service = new MinusServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

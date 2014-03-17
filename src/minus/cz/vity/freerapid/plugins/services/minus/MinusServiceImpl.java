@@ -1,6 +1,6 @@
-package cz.vity.freerapid.plugins.services.filearning;
+package cz.vity.freerapid.plugins.services.minus;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,11 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author Tommy
  */
-public class filearningServiceImpl extends AbstractFileShareService {
+public class MinusServiceImpl extends XFileSharingServiceImpl {
 
     @Override
     public String getName() {
-        return "filearning.com";
+        return "minus.com";
+    }
+
+    @Override
+    public String getServiceTitle() {
+        return "Minus";
     }
 
     @Override
@@ -22,7 +27,7 @@ public class filearningServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new filearningFileRunner();
+        return new MinusFileRunner();
     }
 
 }

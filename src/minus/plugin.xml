@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.minus.minusServiceImpl"
-        id="minus.com" vendor="Tommy" version="1.0.0">
+<plugin class="cz.vity.freerapid.plugins.services.minus.MinusServiceImpl"
+        id="minus.com" vendor="Tommy+ntoskrnl" version="1.0.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(minus\.com|min\.us)/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="minus.com"/>
-        <attribute id="maxDownloads" value="5"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-    <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.4" reverse-lookup="false"/>
-    </requires>
+
     <runtime>
         <library id="minus.com" path="/" type="code"/>
     </runtime>

@@ -18,8 +18,8 @@ import java.util.regex.Matcher;
  *
  * @author Tommy
  */
-class filearningFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(filearningFileRunner.class.getName());
+class FilearningFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(FilearningFileRunner.class.getName());
     private boolean isDownloadBegin = false;
 
     @Override

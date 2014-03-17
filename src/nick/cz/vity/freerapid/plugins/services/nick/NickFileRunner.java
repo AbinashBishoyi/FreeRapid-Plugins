@@ -62,7 +62,7 @@ class NickFileRunner extends AbstractRtmpRunner {
             checkProblems();
             checkNameAndSize();
             final String mgid = getMgid();
-            method = getGetMethod("http://www.nick.com/dynamo/video/data/mrssGen.jhtml?mgid=" + mgid);
+            method = getGetMethod("http://www.nick.com/dynamo/video/data/mrssGen.jhtml?type=normal&mgid=" + mgid);
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -118,10 +118,13 @@ class NickFileRunner extends AbstractRtmpRunner {
             final NodeList nodeList = (NodeList) xpath.evaluate("/rss/channel/item/link", document, XPathConstants.NODESET);
             final List<URI> list = new LinkedList<URI>();
             for (int i = 0; i < nodeList.getLength(); i++) {
-                try {
-                    list.add(new URI(nodeList.item(i).getTextContent()));
-                } catch (final URISyntaxException e) {
-                    LogUtils.processException(logger, e);
+                final String url = nodeList.item(i).getTextContent();
+                if (!url.contains("embed-bumper-generic")) {
+                    try {
+                        list.add(new URI(url));
+                    } catch (final URISyntaxException e) {
+                        LogUtils.processException(logger, e);
+                    }
                 }
             }
             if (list.isEmpty()) {

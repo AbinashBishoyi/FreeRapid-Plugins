@@ -6,26 +6,46 @@ import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
+import jlibs.core.net.URLUtil;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.ByteArrayInputStream;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
  * @author ntoskrnl
+ * @author tong2shot
  */
 class CbsFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(CbsFileRunner.class.getName());
     private final static String SWF_URL = "http://www.cbs.com/thunder/canplayer/canplayer.swf";
+    private final static String DEFAULT_EXT = ".flv";
+    private final static String SUBTITLE_FILENAME_PARAM = "fname";
+    private SettingsConfig config;
+
+    private void setConfig() throws Exception {
+        final CbsServiceImpl service = (CbsServiceImpl) getPluginService();
+        config = service.getConfig();
+    }
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        if (isSubtitle(fileURL)) {
+            return;
+        }
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -49,10 +69,15 @@ class CbsFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        if (isSubtitle(fileURL)) {
+            downloadSubtitle();
+            return;
+        }
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            setConfig();
             String pid;
             try {
                 pid = PlugUtils.getStringBetween(getContentAsString(), "pid = '", "'");
@@ -73,6 +98,17 @@ class CbsFileRunner extends AbstractRtmpRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
+
+            String subtitleUrl = null;
+            try {
+                subtitleUrl = PlugUtils.getStringBetween(getContentAsString(), "<param name=\"ClosedCaptionURL\" value=\"", "\"");
+            } catch (PluginImplementationException e) {
+                // do nothing
+            }
+            if (config.isDownloadSubtitles() && subtitleUrl != null && !subtitleUrl.isEmpty()) {
+                queueSubtitle(subtitleUrl);
+            }
+
             final RtmpSession rtmpSession = getRtmpSession();
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
@@ -105,6 +141,52 @@ class CbsFileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("No streams found");
         }
         return new RtmpSession(baseUrl, Collections.max(list).getPlayName());
+    }
+
+    private boolean isSubtitle(String fileURL) {
+        return fileURL.contains("/videos/captions/");
+    }
+
+    private void queueSubtitle(String subtitleUrl) throws Exception {
+        String subtitleFnameUrl = subtitleUrl + "?" + SUBTITLE_FILENAME_PARAM + "="
+                + URLEncoder.encode(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_EXT) + "$", ""), "UTF-8"); //add fname param
+        List<URI> uriList = new LinkedList<URI>();
+        uriList.add(new URI(new org.apache.commons.httpclient.URI(subtitleFnameUrl, false, "UTF-8").toString()));
+        if (uriList.isEmpty()) {
+            logger.warning("No subtitles found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+    }
+
+    private void downloadSubtitle() throws Exception {
+        URL url = new URL(fileURL);
+        String filename = null;
+        try {
+            filename = URLUtil.getQueryParams(url.toString(), "UTF-8").get(SUBTITLE_FILENAME_PARAM);
+        } catch (Exception e) {
+            //
+        }
+        if (filename == null) {
+            throw new PluginImplementationException("File name not found");
+        }
+        httpFile.setFileName(URLDecoder.decode(filename, "UTF-8") + ".srt");
+        fileURL = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
+
+        HttpMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+
+        final byte[] subtitle = TimedText2Srt.convert(getContentAsString()).getBytes("UTF-8");
+        httpFile.setFileSize(subtitle.length);
+        try {
+            downloadTask.saveToFile(new ByteArrayInputStream(subtitle));
+        } catch (Exception e) {
+            LogUtils.processException(logger, e);
+            throw new PluginImplementationException("Error saving subtitle", e);
+        }
     }
 
     private static class Stream implements Comparable<Stream> {

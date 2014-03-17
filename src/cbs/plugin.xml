@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.cbs.CbsServiceImpl"
-        id="cbs.com" vendor="ntoskrnl" version="1.1.2">
+        id="cbs.com" vendor="ntoskrnl" version="1.2.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?cbs\.com/.+?/video/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?(cbs\.com/.+?/video|cbsnews.com/videos/captions)/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="cbs.com"/>
+        <attribute id="hasOptions" value="true"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.7"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.13"
                 reverse-lookup="false"/>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="tunlr.net" plugin-version="1.0.0"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="tunlr.net" plugin-version="1.0.5"
                 reverse-lookup="false"/>
     </requires>
     <runtime>

@@ -19,7 +19,10 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("C:\\Users\\Administrator\\Desktop\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.cbs.com/shows/48_hours/video/2241801823/secrets-of-a-marriage"));//regular
+            //httpFile.setNewURL(new URL("http://www.cbs.com/shows/48_hours/video/2241801823/secrets-of-a-marriage"));//regular
+            httpFile.setNewURL(new URL("http://www.cbs.com/shows/cbs_evening_news/video/H_TIHNUkVN_jBPNl_mG5UKVleBEMvPzE/1-15-air-force-cheating-scandal-leaves-cloud-hanging-over-missile-force-how-prepared-is-calif-for-next-big-quake-/")); //contains subtitle
+            //httpFile.setNewURL(new URL("http://www.cbs.com/shows/cbs_evening_news/video/kCouvpWtR5KsA61cue2whOe_S9ul87vd/1-18-w-va-residents-skeptical-of-water-safety-reports-iraqis-pray-for-peace-brace-for-more-violence/")); //doesn't contain subtitle
+            //httpFile.setNewURL(new URL("http://www.cbsnews.com/videos/captions/H_TIHNUkVN_jBPNl_mG5UKVleBEMvPzE.adb_xml?fname=CBS+Evening+News+-+The+full+episode+of+the+CBS+Evening+News+from+January+15%252C+2014")); //subtitle
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

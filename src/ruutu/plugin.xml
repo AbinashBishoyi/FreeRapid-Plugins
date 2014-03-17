@@ -1,13 +1,12 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="nova.cz" version="1.0.1" vendor="JPEXS"
-        class="cz.vity.freerapid.plugins.services.nova.NovaServiceImpl">
+<plugin id="ruutu.fi" version="1.0.0" vendor="ntoskrnl"
+        class="cz.vity.freerapid.plugins.services.ruutu.RuutuServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://archiv\.nova\.cz/multimedia/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?ruutu\.fi/video\?.+"/>
         <attribute id="minver" value="0.849"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="nova.cz"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
+        <attribute id="services" value="ruutu.fi"/>
         <attribute id="maxDownloads" value="9"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
@@ -15,6 +14,6 @@
         <import plugin-id="rtmp" plugin-version="1.0.0" match="greater-or-equal"/>
     </requires>
     <runtime>
-        <library id="nova.cz" path="/" type="code"/>
+        <library id="ruutu.fi" path="/" type="code"/>
     </runtime>
 </plugin>

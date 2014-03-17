@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.nova;
+package cz.vity.freerapid.plugins.services.videolectures;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -6,18 +6,17 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 /**
  * Class that provides basic info about plugin
  *
- * @author JPEXS
+ * @author ntoskrnl
  */
-public class NovaServiceImpl extends AbstractFileShareService {
+public class VideoLecturesServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "nova.cz";
+        return "videolectures.net";
     }
 
     @Override
     public int getMaxDownloadsFromOneIP() {
-        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
         return 9;
     }
 
@@ -28,7 +27,7 @@ public class NovaServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new NovaFileRunner();
+        return new VideoLecturesFileRunner();
     }
 
 }

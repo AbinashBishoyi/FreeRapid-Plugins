@@ -82,7 +82,8 @@ class FileFactoryRunner extends AbstractRunner {
         if (contentAsString.contains("Sorry, this file is no longer available") ||
                 contentAsString.contains("the file you are requesting is no longer available") ||
                 contentAsString.contains("This file has been deleted") ||
-                contentAsString.contains("Invalid Download Link")) {
+                contentAsString.contains("Invalid Download Link") ||
+                contentAsString.contains("This file has been removed")) {
             throw new URLNotAvailableAnymoreException("Sorry, this file is no longer available. It may have been deleted by the uploader, or has expired");
         }
         if (contentAsString.contains("This file is forbidden to be shared")) {
@@ -99,9 +100,15 @@ class FileFactoryRunner extends AbstractRunner {
         if (contentAsString.contains("Sorry, the server hosting the file you are requesting is currently down for maintenance")) {
             throw new YouHaveToWaitException("File's server currently down for maintenance", 30 * 60);
         }
+        if (contentAsString.contains("Server Load Too High") ||
+                contentAsString.contains("The server hosting this file is temporarily overloaded")) {
+            throw new YouHaveToWaitException("File's server is temporarily overloaded", 5 * 60);
+        }
         if (contentAsString.contains("Sorry, this file can only be downloaded by Premium members")
                 || contentAsString.contains("this file can only be downloaded by FileFactory Premium")
-                || contentAsString.contains("This file is only available to Premium Members")) {
+                || contentAsString.contains("This file is only available to Premium Members")
+                || contentAsString.contains("Premium Account Required")
+                || contentAsString.contains("Please purchase an account to download this file")) {
             throw new NotRecoverableDownloadException("This file is only for Premium members");
         }
     }

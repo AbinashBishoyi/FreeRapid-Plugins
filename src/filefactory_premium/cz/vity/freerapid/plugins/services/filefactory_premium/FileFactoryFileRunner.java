@@ -84,7 +84,8 @@ class FileFactoryFileRunner extends AbstractRunner {
         if (content.contains("Sorry, this file is no longer available") ||
                 content.contains("the file you are requesting is no longer available") ||
                 content.contains("This file has been deleted") ||
-                content.contains("Invalid Download Link")) {
+                content.contains("Invalid Download Link") ||
+                content.contains("This file has been removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("You have presently exceeded your Download allowance")) {
@@ -92,6 +93,10 @@ class FileFactoryFileRunner extends AbstractRunner {
             if (!matcher.find())
                 throw new PluginImplementationException("You have presently exceeded your download allowance, but waiting time was not found");
             throw new YouHaveToWaitException("You have presently exceeded your download allowance", 3600 * Integer.valueOf(matcher.group(1)) + 60 * 5);
+        }
+        if (content.contains("Server Load Too High") ||
+                content.contains("The server hosting this file is temporarily overloaded")) {
+            throw new YouHaveToWaitException("File's server is temporarily overloaded", 5 * 60);
         }
     }
 

@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.sharerapid;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -14,7 +17,7 @@ import java.util.regex.Matcher;
 
 /**
  * @author Jan Smejkal (edit from CZshare profi to RapidShare)
- * @edit František Musil (lister@gamesplit.cz, repair multidownload)
+ * @ edit František Musil (lister@gamesplit.cz, repair multidownload)
  */
 class ShareRapidRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareRapidRunner.class.getName());
@@ -83,36 +86,27 @@ class ShareRapidRunner extends AbstractRunner {
                 if (getContentAsString().equals(""))
                     throw new NotRecoverableDownloadException("No credit for download this file or too many downloads!");
                 checkProblems();
-                logger.info(getContentAsString());
                 throw new PluginImplementationException();
             } else {
                 checkProblems();
-                logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
         } else
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
 
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        if (getContentAsString().contains("<td class=\"i\">Velikost:</td>")) {
-            Matcher matcher = PlugUtils.matcher("<title>(.*) - Share-Rapid</title>", content);
-            if (matcher.find()) {
-                String fn = matcher.group(1);
-                httpFile.setFileName(fn);
-            }
-            matcher = PlugUtils.matcher("<td class=\"i\">Velikost:</td>[^<]+<td class=\"h\"><strong>[^0-9]+([0-9.]+ .B)</strong></td>", content);
-            if (matcher.find()) {
-                long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                httpFile.setFileSize(a);
-            }
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else {
-            checkProblems();
-            logger.info(getContentAsString());
-            throw new PluginImplementationException();
+        Matcher matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\">(.+?)<br", content);
+        if (!matcher.find())
+            throw new PluginImplementationException("Filename not found");
+        httpFile.setFileName(matcher.group(1).trim());
+
+        matcher = PlugUtils.matcher("<td class=\"i\">Velikost:</td>[^<]+<td class=\"h\"><strong>[^0-9]+([0-9.]+ .B)</strong></td>", content);
+        if (matcher.find()) {
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
         }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void Login(String serverURL) throws Exception {
@@ -122,7 +116,7 @@ class ShareRapidRunner extends AbstractRunner {
             if (!pa.isSet() || badConfig) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
-                    throw new NotRecoverableDownloadException("No ShareRapid account login information!");
+                    throw new NotRecoverableDownloadException("No ShareRapid account login information!, Stahování je přístupné pouze přihlášeným uživatelům");
                 }
                 badConfig = false;
             }
@@ -154,7 +148,15 @@ class ShareRapidRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, NotRecoverableDownloadException {
+    private void checkProblems() throws Exception {
+        final String content = getContentAsString();
+        if (content.contains("Soubor byl smazán"))
+            throw new URLNotAvailableAnymoreException("Soubor byl smazán");
+        //if (content.contains("Stahování je přístupné pouze přihlášeným uživatelům"))
+        //    throw new ErrorDuringDownloadingException("Stahování je přístupné pouze přihlášeným uživatelům");
+        if (content.contains("Stahování zdarma je možné jen přes náš"))
+            throw new NotRecoverableDownloadException("Stahování zdarma je možné jen přes náš download manager");
+
         Matcher matcher;
         matcher = getMatcherAgainstContent("<h1>Po.adovan. str.nka nebyla nalezena</h1>");
         if (matcher.find()) {

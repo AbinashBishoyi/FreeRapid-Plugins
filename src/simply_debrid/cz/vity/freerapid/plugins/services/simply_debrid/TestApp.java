@@ -1,44 +1,34 @@
-package cz.vity.freerapid.plugins.services.sharerapid;
+package cz.vity.freerapid.plugins.services.simply_debrid;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
-import cz.vity.freerapid.utilities.LogUtils;
 import org.jdesktop.application.Application;
 
 import java.net.URL;
-import java.util.logging.Logger;
 
 /**
- * @author Vity
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
-    private final static Logger logger = Logger.getLogger(TestApp.class.getName());
-
     @Override
     protected void startup() {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://rapids.cz/stahuj/1047774/windows-7-loader.rar"));
-            //httpFile.setNewURL(new URL("http://www.share-rapid.cz/stahuj/4294279/kol-sv-90-2010.rar"));
-            httpFile.setNewURL(new URL("http://share-rapid.cz/stahuj/as081zu1"));
+            //httpFile.setNewURL(new URL("http://www.filefactory.com/file/1cfblf4u7v8v/n/%5BACX%5DBlade_of_the_Immortal_-_11_-_Wings_%5BSaintDeath%5D_%5B40407F56%5D.mkv"));
+            httpFile.setNewURL(new URL("http://uptobox.com/ndowcvrxt4m3/Blackknight_Anifecta__Sekirei_PE_BD_-_13.mkv"));
+            //httpFile.setNewURL(new URL("http://www.speedyshare.com/SuXtj/Dragonball-038-Five-Murasakis.mkv"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final ShareRapidServiceImpl service = new ShareRapidServiceImpl(); //instance of service - of our plugin
-            /*
-            //we set premium account details
-            final PremiumAccount config = new PremiumAccount();
-            config.setUsername("****");
-            config.setPassword("****");
-            service.setConfig(config);
-            */
+            final Simply_DebridServiceImpl service = new Simply_DebridServiceImpl(); //instance of service - of our plugin
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception
-            LogUtils.processException(logger, e); //writes error output - stack trace to console
+            e.printStackTrace(); //writes error output - stack trace to console
         }
         this.exit();//exit application
     }

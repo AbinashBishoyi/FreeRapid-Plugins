@@ -39,6 +39,24 @@ class UlozToRunner extends AbstractRunner {
         }
     }
 
+    private void passwordProtectedCheck() throws Exception {
+        while (getContentAsString().contains("passwordProtectedFile")) {
+            final String password = getDialogSupport().askForPassword("Ulozto password protected file");
+            if (password == null) {
+                throw new PluginImplementationException("This file is secured with a password");
+            }
+            HttpMethod hm = getMethodBuilder()
+                    .setActionFromFormWhereActionContains("passwordProtected", true)
+                    .setReferer(fileURL)
+                    .setParameter("password", password)
+                    .toPostMethod();
+            if (!makeRedirectedRequest(hm)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+        }
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
@@ -46,6 +64,7 @@ class UlozToRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
+            passwordProtectedCheck();
             ageCheck(getContentAsString());
             checkNameAndSize(getContentAsString());
         } else {
@@ -63,6 +82,7 @@ class UlozToRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
+            passwordProtectedCheck();
             ageCheck(getContentAsString());
             checkNameAndSize(getContentAsString());
             captchaCount = 0;
@@ -81,6 +101,7 @@ class UlozToRunner extends AbstractRunner {
                 }
                 checkProblems();
             }
+            setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 if (method != null) {
@@ -109,8 +130,8 @@ class UlozToRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
-        }        
-        PlugUtils.checkName(httpFile, content, "<title>", " | Ulo");        
+        }
+        PlugUtils.checkName(httpFile, content, "<title>", " | Ulo");
         String size;
         try {
             //tady nema byt id=, jinak to prestane fungovat

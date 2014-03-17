@@ -1,29 +1,31 @@
-package cz.vity.freerapid.plugins.services.sharerapid;
+package cz.vity.freerapid.plugins.services.simply_debrid;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Jan Smejkal (edit from CZshare profi to RapidShare)
+ * Class that provides basic info about plugin
+ *
+ * @author birchie
  */
-public class ShareRapidServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "share-rapid.com";
-    private static final String PLUGIN_CONFIG_FILE = "plugin_ShareRapid.xml";
+public class Simply_DebridServiceImpl extends AbstractFileShareService {
+    private static final String PLUGIN_CONFIG_FILE = "plugin_SimplyDebrid_Premium.xml";
     private volatile PremiumAccount config;
 
+    @Override
     public String getName() {
-        return SERVICE_NAME;
+        return "simply-debrid.com";
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;
+        return false;
     }
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new ShareRapidRunner();
+        return new Simply_DebridFileRunner();
     }
 
     @Override
@@ -32,21 +34,20 @@ public class ShareRapidServiceImpl extends AbstractFileShareService {
         if (pa != null) config = pa;
     }
 
-    public PremiumAccount showConfigDialog() throws Exception {
-        return showAccountDialog(getConfig(), "ShareRapid", PLUGIN_CONFIG_FILE);
+    PremiumAccount showConfigDialog() throws Exception {
+        return showAccountDialog(getConfig(), "Simply-Debrid", PLUGIN_CONFIG_FILE);
     }
 
     PremiumAccount getConfig() throws Exception {
-        if (config == null) {
-            synchronized (ShareRapidServiceImpl.class) {
+        synchronized (Simply_DebridServiceImpl.class) {
+            if (config == null) {
                 config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
             }
         }
         return config;
     }
 
-    void setConfig(PremiumAccount pa) {
-        this.config = pa;
+    void setConfig(final PremiumAccount config) {
+        this.config = config;
     }
-
 }

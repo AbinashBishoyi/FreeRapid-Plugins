@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.simply_debrid.Simply_DebridServiceImpl"
+        id="simply-debrid.com" vendor="birchie" version="0.9.0">
+    <attributes>
+        <attribute id="urlRegex"
+                   value="(http://(www\.)?2shared\.com/.+)|(https?://(www\.)?crocko\.com/.+)|(http://(www\.)?filecloud\.ws/.+)|(http://(www\.)?fileflyer\.com/view/.+)|(http://(www\.)?filerio\.(?:com|in)/.+)|(http://(www\.)?filesflash\.com/.+)|(https?://.*?hotfile\.com/(dl|links)/.+)|(http://(www\.)?load\.to/.+)|(http://(www\.)?mediafire\.com/(download\.php)?\?.+)|(http://(www\.)?(putlocker|sockshare)\.com/file/.+)|(http://(www\.)?sendspace\.com/file/.+)|(http://(www\.)?(speedyshare\.com|speedy.sh)/.+)|(http://(www\.)?uploading\.com/.+)|(http://(www\.)?uptobox\.com/.+)|(http://(.*?\.)?yunfile\.com/.+)|(http://(www\.)?1st-files\.com/.+)|(http://(www\.)?albafile\.com/.+)|(http://\w+\.1fichier\.com.*)|(https?://(www\.)?bitshare\.com/.+)|(http://(www\.)?(cloudzer\.net|clz\.to)/.+)|(https?://(www\.)?(i-filez|depfile)\.com/.+)|(http://(www\.)?easybytez\.com/.+)|(http://(www\.)?filefactory\.com/file/.+)|(https?://(www\.)?filepost\.com/files/.+)|(http://(www\.)?freakshare\.(com|net)/.+)|(http://(www\.)?hipfile\.com/.+)|(http://(www\.)?lumfile\.com/.+)|(http://d\d\d\.megashares\.com/.+)|(https?://(www\.)?netload\.in/.+)|(https?://(www\.)?oteupload\.com/.+)|(http://(www\.)?rapidgator\.net/file/.*)|(http://(www\.)?ryushare\.com/.+)|(http://(www\.)?share\-online\.biz/dl/.+)|(http://(www\.)?slingfile\.com/(dl|file)/.+)|(http://(www\.)?(uploaded\.net|uploaded\.to|ul\.to)/.+)|(http://(www\.)?extmatrix\.com/files/.+)|(http://(www\.)?nakido\.com/.+)"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services"
+                   value="...FREE... 2shared Crocko Filecloud Fileflyer Filerio Filesflah Hotfile Load.to Mediafire Putlocker Sendspace Sockshare Speedyshare Uploading Uptobox Yunfile 1st-files Albafile ...PREMIUM... 1Fichier Bitshare Cloudzer Depfile Easybytez Filefactory Filepost Freakshare Hipfile Lumfile Megashares Netload Oteupload Rapidgator Ryushare Share-online Slingfile Uploaded Extmatrix Nakido"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="simply_debrid.com" path="/" type="code"/>
+    </runtime>
+</plugin>

@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.itv;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
@@ -61,6 +64,7 @@ class ItvFileRunner extends AbstractRtmpRunner {
             checkProblems();
             checkNameAndSize();
             final String videoId = PlugUtils.getStringBetween(getContentAsString(), "<param name=\"videoId\" value=\"", "\"");
+            final String productionId = PlugUtils.getStringBetween(getContentAsString(), "\"productionId\":\"", "\"").replace("\\/", "/");
             method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("https://www.itv.com/itvplayer/api/user/player-token/" + videoId)
@@ -77,7 +81,7 @@ class ItvFileRunner extends AbstractRtmpRunner {
                     .setHeader("SOAPAction", "http://tempuri.org/PlaylistService/GetPlaylist")
                     .toPostMethod();
             ((PostMethod) method).setRequestEntity(new StringRequestEntity(
-                    String.format(PLAYLIST_REQUEST_BASE, getRandomGuid(), userToken), "text/xml", "utf-8"));
+                    String.format(PLAYLIST_REQUEST_BASE, productionId, getRandomGuid(), userToken), "text/xml", "utf-8"));
             if (!client.getSettings().isProxySet()) {
                 Tunlr.setupMethod(method);
             }
@@ -95,14 +99,12 @@ class ItvFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Page not found")) {
+        if (getContentAsString().contains("Page not found")
+                || getContentAsString().contains("ContentUnavailable")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (getContentAsString().contains("InvalidGeoRegion")) {
             throw new URLNotAvailableAnymoreException("This video is not available in your region");
-        }
-        if (getContentAsString().contains("UserToken Error 853")) {
-            throw new YouHaveToWaitException("Server error", 20);
         }
     }
 
@@ -151,7 +153,7 @@ class ItvFileRunner extends AbstractRtmpRunner {
                     "  <soapenv:Body>\n" +
                     "    <tem:GetPlaylist>\n" +
                     "      <tem:request>\n" +
-                    "        <itv:ProductionId>1/1658/0544#001</itv:ProductionId>\n" +
+                    "        <itv:ProductionId>%s</itv:ProductionId>\n" +
                     "        <itv:RequestGuid>%s</itv:RequestGuid>\n" +
                     "        <itv:Vodcrid>\n" +
                     "          <com:Id/>\n" +

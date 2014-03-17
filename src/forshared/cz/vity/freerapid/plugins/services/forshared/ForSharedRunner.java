@@ -27,7 +27,7 @@ class ForSharedRunner extends AbstractRunner {
     private void checkUrl() {
         fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
         addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
-        addCookie(new Cookie(".4shared.com", "Login", "97537138", "/", 86400, false));
+        addCookie(new Cookie(".4shared.com", "Login", "16802594", "/", 86400, false));
         addCookie(new Cookie(".4shared.com", "Password", "89768e17adf70fa33790fa71abdc8366", "/", 86400, false));
     }
 

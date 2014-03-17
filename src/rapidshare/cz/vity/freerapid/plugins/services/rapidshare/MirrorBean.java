@@ -2,8 +2,8 @@ package cz.vity.freerapid.plugins.services.rapidshare;
 
 
 public class MirrorBean {
-    private String name;
-    private String ident;
+    private String name = "default";
+    private String ident = "default";
 
     public MirrorBean() {
 
@@ -36,7 +36,7 @@ public class MirrorBean {
 
 
     public static MirrorBean createDefault() {
-        return new MirrorBean("default", "default");
+        return new MirrorBean();
     }
 
     public boolean equals(Object o) {
@@ -45,9 +45,8 @@ public class MirrorBean {
 
         MirrorBean that = (MirrorBean) o;
 
-        if (ident != null ? !ident.equals(that.ident) : that.ident != null) return false;
+        return !(ident != null ? !ident.equals(that.ident) : that.ident != null);
 
-        return true;
     }
 
     public int hashCode() {

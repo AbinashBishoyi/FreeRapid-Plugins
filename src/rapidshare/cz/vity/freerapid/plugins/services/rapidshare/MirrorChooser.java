@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 class MirrorChooser {
-    final static String CONFIGFILE = "rapidMirror.xml";
+    final static String CONFIGFILE = "rsMirror.xml";
     private final static Logger logger = Logger.getLogger(MirrorChooser.class.getName());
     private RapidShareMirrorConfig mirrorConfig;
     private ConfigurationStorageSupport storage;

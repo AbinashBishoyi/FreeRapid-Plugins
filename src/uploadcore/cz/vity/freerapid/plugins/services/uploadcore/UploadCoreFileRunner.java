@@ -20,7 +20,7 @@ class UploadCoreFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadPageMarkers() {
         final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
-        downloadPageMarkers.add("This Ticket Will be Active For Your Computer");
+        downloadPageMarkers.add("Download Your File Super Fast !!");
         return downloadPageMarkers;
     }
 

@@ -91,8 +91,8 @@ class IndowebsterRunner extends AbstractRunner {
                             if (!tryDownloadAndSaveFile(method4)) {
                                 checkProblems();
                                 logger.warning(getContentAsString());
-                                throw new IOException("File input stream is empty.");
-                            } else throw new InvalidURLOrServiceProblemException("Download failed");
+                                throw new IOException("Download failed");
+                            }
                         } else throw new InvalidURLOrServiceProblemException("Final link not found");
                     } else throw new InvalidURLOrServiceProblemException("Can't get third url");
                 } else throw new InvalidURLOrServiceProblemException("Can't get second url");

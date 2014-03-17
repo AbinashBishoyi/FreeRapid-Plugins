@@ -8,8 +8,13 @@ import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.crypto.Cipher;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -20,13 +25,13 @@ import java.util.regex.Matcher;
  */
 class YleAreenaFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(YleAreenaFileRunner.class.getName());
-
-    private String id;
+    private final static String SWF_URL = "http://areena.yle.fi/static/player/1.2.8/flowplayer/flowplayer.commercial-3.2.7-encrypted.swf";
+    private final static byte[] KEY = "hjsadf89hk123ghk".getBytes(Charset.forName("UTF-8"));
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getGetMethod(checkFileUrl());
+        final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();
@@ -37,40 +42,40 @@ class YleAreenaFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        httpFile.setFileName(PlugUtils.unescapeHtml(PlugUtils.getStringBetween(getContentAsString(), "<h1 class=\"cliptitle\">", "</h1>"))
-                .replace(": ", " - ") + ".flv");
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    private String checkFileUrl() throws ErrorDuringDownloadingException {
-        // "video" works for audio too
-        return "http://areena.yle.fi/video/" + getId();
-    }
-
-    private String getId() throws ErrorDuringDownloadingException {
-        if (id == null) {
-            final Matcher matcher = PlugUtils.matcher("/(?:video/|audio/|player/index\\.php\\?clip=)(\\d+)", fileURL);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing file URL");
-            }
-            id = matcher.group(1);
+        final Matcher matcher = getMatcherAgainstContent("<span itemprop=\"name\">\\s*(.+?)\\s*</span>(?:\\s*<span class=\"episode-number\">\\s*(.+?)\\s*</span>)?");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found");
         }
-        return id;
+        String name = matcher.group(1).replace(": ", " - ");
+        if (matcher.group(2) != null) {
+            name += " - " + matcher.group(2);
+        }
+        httpFile.setFileName(name + ".flv");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod method = getGetMethod(checkFileUrl());
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final RtmpSession rtmpSession = new RtmpSession("flashk.yle.fi", 1935, "AreenaServer", null /* will be set by custom PacketHandler */);
-            rtmpSession.addPacketHandler(new YleAreenaPacketHandler(getId()));
-            rtmpSession.getConnectParams().put("swfUrl", "http://areena.yle.fi/player/Application.swf");
-            rtmpSession.getConnectParams().put("pageUrl", fileURL);
-            tryDownloadAndSaveFile(rtmpSession);
+            final String id = PlugUtils.getStringBetween(getContentAsString(), "id: '", "'");
+            method = getGetMethod("http://papi.yle.fi/ng/mod/rtmp/" + id);
+            if (makeRedirectedRequest(method)) {
+                final String content = decryptContent();
+                final String url = PlugUtils.getStringBetween(content, "<connect>", "</connect>");
+                final String play = PlugUtils.getStringBetween(content, "<stream>", "</stream>");
+                final RtmpSession rtmpSession = new RtmpSession(url, play);
+                rtmpSession.getConnectParams().put("pageUrl", fileURL);
+                rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
+                tryDownloadAndSaveFile(rtmpSession);
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -78,10 +83,17 @@ class YleAreenaFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("etsimääsi ohjelmaa tai ohjelmaklippiä ei löytynyt")
-                || getContentAsString().contains("Osoitteemme ovat muuttuneet")) {
+        if (getContentAsString().contains("Valitettavasti etsimääsi sivua ei löytynyt")
+                || getContentAsString().contains("Tyvärr kunde sidan du sökte inte hittas")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    private String decryptContent() throws Exception {
+        final byte[] content = Base64.decodeBase64(getContentAsString());
+        final Cipher cipher = Cipher.getInstance("AES/CFB128/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(KEY, "AES"), new IvParameterSpec(content, 0, 16));
+        return new String(cipher.doFinal(content, 16, content.length - 16), "UTF-8");
     }
 
 }

@@ -14,7 +14,7 @@ public class ForSharedServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 3;
+        return 9;
     }
 
     @Override

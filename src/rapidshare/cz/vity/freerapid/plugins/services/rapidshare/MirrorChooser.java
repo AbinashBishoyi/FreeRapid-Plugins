@@ -33,7 +33,7 @@ class MirrorChooser {
         return mirrorConfig;
     }
 
-    String getChosen() {
+    MirrorBean getChosen() {
         return mirrorConfig.getChosen();
     }
 
@@ -41,7 +41,7 @@ class MirrorChooser {
     private void setPreffered(Object object) {
         if (object instanceof MirrorBean) {
             MirrorBean mirror = (MirrorBean) object;
-            mirrorConfig.setChosen(mirror.getIdent());
+            mirrorConfig.setChosen(mirror);
         }
 
     }
@@ -50,16 +50,9 @@ class MirrorChooser {
         return mirrorConfig.getAr().toArray();
     }
 
-    private void add(String name, String ident) {
-        MirrorBean m = new MirrorBean();
-        m.setName(name);
-        m.setIdent(ident);
-        mirrorConfig.getAr().add(m);
-    }
-
     private void makeMirrorList() throws Exception {
         logger.info("Making list of mirrors ");
-        add("default", "default");
+        mirrorConfig.getAr().add(MirrorBean.createDefault());
         Matcher matcher = PlugUtils.matcher("<input (checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'http://rs[0-9]+([^.]+)[^']*.';\" /> ([^<]*)<br", content);
         while (matcher.find()) {
 
@@ -67,18 +60,15 @@ class MirrorChooser {
             String ident = matcher.group(2);
 
             logger.info("Found mirror " + mirrorName + " ident " + ident);
-            add(mirrorName, ident);
-
-
+            mirrorConfig.getAr().add(new MirrorBean(mirrorName, ident));
         }
-        getMirrorConfig().setChosen("default");
+        getMirrorConfig().setChosen(new MirrorBean());
         logger.info("Saving config ");
         storage.storeConfigToFile(getMirrorConfig(), CONFIGFILE);
         // <input checked type="radio" name="mirror" onclick="document.dlf.action=\'http://rs332gc.rapidshare.com/files/168531395/2434660/rkdr.part3.rar\';" /> GlobalCrossing<br />
     }
 
     void chooseFromList() throws Exception {
-
         MirrorChooserUI ms = new MirrorChooserUI(this);
         if (dialogSupport.showOKCancelDialog(ms, "Choose mirror")) {
             setPreffered(ms.getChoosen());
@@ -110,7 +100,7 @@ class MirrorChooser {
             makeMirrorList();
         }
 
-        return findURL(getChosen());
+        return findURL(getChosen().getIdent());
 
     }
 

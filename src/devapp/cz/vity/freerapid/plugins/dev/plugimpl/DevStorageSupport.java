@@ -43,15 +43,16 @@ public class DevStorageSupport implements ConfigurationStorageSupport {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public <E> E loadConfigFromFile(String fileName, Class<E> type) {
+    public <E> E loadConfigFromFile(String fileName, Class<E> type) throws Exception {
         XMLDecoder xmlDecoder = null;
         try {
             final File directory = context.getLocalStorage().getDirectory();
             logger.config("Storage directory:" + directory);
             xmlDecoder = new XMLDecoder(context.getLocalStorage().openInputFile(fileName), null, null, type.getClassLoader());
             return (E) xmlDecoder.readObject();
-        } catch (Exception ex) {
-            return null;
+        } catch (Exception e) {
+            LogUtils.processException(logger, e);
+            throw e;
         } finally {
             if (xmlDecoder != null) {
                 try {
@@ -76,6 +77,9 @@ public class DevStorageSupport implements ConfigurationStorageSupport {
                 logger.config("Storage directory:" + directory);
                 xmlEncoder = new XMLEncoder(context.getLocalStorage().openOutputFile(fileName));
                 xmlEncoder.writeObject(object);
+            } catch (Exception e) {
+                LogUtils.processException(logger, e);
+                throw e;
             } finally {
                 if (xmlEncoder != null) {
                     try {
@@ -89,7 +93,6 @@ public class DevStorageSupport implements ConfigurationStorageSupport {
             if (threadCL != null)
                 Thread.currentThread().setContextClassLoader(threadCL);
         }
-        context.getLocalStorage().save(object, fileName);
     }
 
 }

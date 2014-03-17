@@ -30,11 +30,11 @@ class UserCashRunner extends AbstractRunner {
                 final String s = matcher.group(1);
                 try {
                     this.httpFile.setNewURL(new URL(s));
-                    this.httpFile.setPluginID("");
-                    this.httpFile.setState(DownloadState.QUEUED);
                 } catch (MalformedURLException e) {
                     throw new URLNotAvailableAnymoreException("Invalid URL");
                 }
+                this.httpFile.setPluginID("");
+                this.httpFile.setState(DownloadState.QUEUED);
             } else {
                 checkProblems();
                 throw new PluginImplementationException();

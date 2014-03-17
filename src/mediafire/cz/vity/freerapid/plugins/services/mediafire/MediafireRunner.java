@@ -25,6 +25,7 @@ public class MediafireRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2");
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -51,11 +52,15 @@ public class MediafireRunner extends AbstractRunner {
                 || content.contains("How can MediaFire help you?")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (content.contains("File Removed for Violation")) {
+            throw new URLNotAvailableAnymoreException("File was removed for violation");
+        }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2");
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -82,10 +87,8 @@ public class MediafireRunner extends AbstractRunner {
                 PlugUtils.checkFileSize(httpFile, getContentAsString(), "Download <span>(", ")</span>");
             }
             method = getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
-            //setFileStreamContentTypes("text/plain");
             String allowedCT[] = {"text/plain"}; //add allowed content-type
-            DefaultFileStreamRecognizer refileRecognizer = new DefaultFileStreamRecognizer(allowedCT,false);
-            client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER,refileRecognizer);
+            setFileStreamContentTypes(allowedCT);
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.ifile_login;
+package cz.vity.freerapid.plugins.services.ifile_login.recaptcha;
 
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;

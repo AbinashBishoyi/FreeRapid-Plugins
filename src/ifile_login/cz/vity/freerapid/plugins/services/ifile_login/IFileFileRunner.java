@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.ifile_login;
 
+import cz.vity.freerapid.plugins.services.ifile_login.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -30,6 +31,7 @@ class IFileFileRunner extends AbstractRunner {
     private String __x_c;
     private String __esn;
     private String __recaptcha_public;
+    private String additional;
 
     @Override
     public void runCheck() throws Exception {
@@ -47,7 +49,8 @@ class IFileFileRunner extends AbstractRunner {
     private void finalRequest() throws Exception {
         final HttpMethod method = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
         makeRedirectedRequest(method);
-        final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("download").setReferer(REDIRECT_URL).toHttpMethod();
+        String finalURL=PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn2\" target=\"_blank\" href=\"", "\"");
+        final HttpMethod finalMethod = getMethodBuilder().setAction(finalURL).setReferer(REDIRECT_URL).toHttpMethod();
         if (!tryDownloadAndSaveFile(finalMethod)) {
             logger.warning(getContentAsString());
             throw new IOException("File input stream is empty.");
@@ -89,9 +92,9 @@ class IFileFileRunner extends AbstractRunner {
         return content;
     }
 
-    private void makeUrl(String a, String b) throws Exception {
-        String c = BASE_URL + "download:dl_request?" + __x_fsa + "&type=" + a + "&esn=" + __esn + b;
-        c += "&" + __x_fs;
+    private void makeUrl(String type, String extra) throws Exception {
+        String c = BASE_URL + "download:dl_request?" + __x_fsa + "&type=" + type + "&esn=" + __esn + extra;
+        c += "&" + __x_fs+additional;
         HttpMethod method = getMethodBuilder().setAction(c).toHttpMethod();
         method.addRequestHeader("X-Requested-With", "XMLHttpRequest"); //We use AJAX :-)
 
@@ -140,6 +143,7 @@ class IFileFileRunner extends AbstractRunner {
 //            __esn = PlugUtils.getStringBetween(getContentAsString(), "var	__esn = ", ";");
             __esn = "0";
             __recaptcha_public = PlugUtils.getStringBetween(content, "var __recaptcha_public		=	'", "';");
+            additional = PlugUtils.getStringBetween(content, "url += \"&\" + __x_fs + \"", "\";");
             makeUrl("na", "");
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");

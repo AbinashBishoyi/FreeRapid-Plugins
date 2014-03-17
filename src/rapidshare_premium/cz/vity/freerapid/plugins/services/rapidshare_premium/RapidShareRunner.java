@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 2485 2010-07-02 08:44:01Z wordrider $
+ * $Id: RapidShareRunner.java 2588 2010-08-02 21:29:50Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -115,7 +115,6 @@ class RapidShareRunner extends AbstractRunner {
         try {
             status = client.makeRequest(method, true);
             responseString = client.getContentAsString();
-            System.out.println("Response check:" + responseString);
             logger.log(Level.INFO, "Response check:{0}", responseString);
         } finally {
             method.abort();
@@ -174,8 +173,7 @@ class RapidShareRunner extends AbstractRunner {
             throw new InterruptedException();
         }
         httpFile.setState(DownloadState.GETTING);
-        final PostMethod method = client.getPostMethod(url);
-        method.addParameter("mirror", "on");
+        final GetMethod method = client.getGetMethod(url);
         try {
             final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, true);
             if (inputStream != null) {

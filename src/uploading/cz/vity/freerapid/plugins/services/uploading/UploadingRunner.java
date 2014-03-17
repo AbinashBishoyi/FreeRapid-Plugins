@@ -50,7 +50,7 @@ class UploadingRunner extends AbstractRunner {
             if (makeRedirectedRequest(method)) {
                 checkProblems();
                 final String fileId = PlugUtils.getStringBetween(getContentAsString(), "file_id: ", ", ");
-                method = getMethodBuilder().setAction("http://uploading.com/files/get/?JsHttpRequest=" + new Random().nextInt(5000000)).setParameter("file_id", fileId).setParameter("action", "get_link").toHttpMethod();
+                method = getMethodBuilder().setAction("http://uploading.com/files/get/?JsHttpRequest=" + new Random().nextInt(5000000)).setParameter("file_id", fileId).setParameter("pass", "").setParameter("code", PlugUtils.getStringBetween(fileURL, "files/", "/")).setParameter("action", "get_link").toHttpMethod();
                 final int wait = PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")");
                 this.downloadTask.sleep(wait + 1);
                 if (makeRedirectedRequest(method)) {

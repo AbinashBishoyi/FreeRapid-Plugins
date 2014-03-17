@@ -33,7 +33,11 @@ class ExtabitPremiumFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "download Extabit.com - file hosting</title>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size:", "</div>");
+        try {
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size:", "</div>");
+        } catch (Exception e) {
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "<td class=\"col-fileinfo\">", "</td>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -51,7 +55,12 @@ class ExtabitPremiumFileRunner extends AbstractRunner {
             if (!tryDownloadAndSaveFile(method)) {
                 checkDownloadProblems();
                 //Redirection download Failed.....Using Button from page
-                final String download = PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" class=\"styledButton\"");
+                String download;
+                try {
+                    download = PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" class=\"styledButton\"");
+                } catch (Exception e) {
+                    download = PlugUtils.getStringBetween(getContentAsString(), "download-file-btn\" href=\"", "\" onClick");
+                }
                 method = getGetMethod(download);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkDownloadProblems();

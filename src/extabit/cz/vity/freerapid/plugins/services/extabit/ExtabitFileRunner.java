@@ -34,7 +34,11 @@ class ExtabitFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "download Extabit.com - file hosting</title>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size:", "</div>");
+        try {
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size:", "</div>");
+        } catch (Exception e) {
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "<td class=\"col-fileinfo\">", "</td>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

@@ -65,18 +65,27 @@ class MediafireRunner extends AbstractRunner {
             if (getContentAsString().contains("unescape")) {
                 String cont = processUnescapeSection(getContentAsString());
 
-                Matcher match = PlugUtils.matcher("\\('([^']*)','([^']*)','([^']*)'\\)", cont);
+                Matcher match = PlugUtils.matcher("([0-9A-Za-z]*)\\('([^']*)','([^']*)','([^']*)'\\)", cont);
 
                 if (!match.find()) {
                     throw new PluginImplementationException();
                 }
-                String qk = match.group(1);
-                String pk = match.group(2);
-                String r = match.group(3);
+                String function = match.group(1);
+                String qk = match.group(2);
+                String pk = match.group(3);
+                String r = match.group(4);
                 String url = "http://www.mediafire.com/dynamic/download.php?qk=" + qk + "&pk=" + pk + "&r=" + r;
                 logger.info("Script target URL " + url);
                 client.setReferer("http://www.mediafire.com/?" +  qk);
                 GetMethod method = getGetMethod(url);
+
+                int functionStart = getContentAsString().indexOf("function " + function);
+                String regToId = "getElementById\\('([^']*)'\\).innerHTML";
+               Matcher match2 =  getMatcherAgainstContent(regToId);
+                 if(!match2.find(functionStart)) {
+                     throw new PluginImplementationException();
+                  }
+                String posID = match2.group(1);
 
                 if (makeRequest(method)) {
                     String rec = processUnescapeSection(getContentAsString());
@@ -84,7 +93,7 @@ class MediafireRunner extends AbstractRunner {
                     if (!rec.contains("'download")) {
                       throw new ServiceConnectionProblemException();   
                     }
-                    String rawlink =  PlugUtils.getStringBetween(rec, "href=\"h", "\"> Click");
+                    String rawlink =  PlugUtils.getStringBetween(rec, posID + "').innerHTML = 'Your download is starting..';\" href=\"h", "\"> Click");
                     logger.info("raw URL " + rawlink);
                     String finalLink = parseLink("h" + rawlink);
                     logger.info("Final URL " + finalLink);
@@ -120,6 +129,7 @@ class MediafireRunner extends AbstractRunner {
         String regx = "var [a-zA-Z0-9]+=unescape\\('([^']*)'\\);for\\(.=.;.<([a-zA-Z0-9]+);.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
         Boolean loop = true;
         String globalCont = cont;
+        String tuReturn = "";
         while (loop) {
             cont = cont.replace("\\", "");
             Matcher matcher = PlugUtils.matcher(regx, cont);
@@ -131,7 +141,7 @@ class MediafireRunner extends AbstractRunner {
                 try {
                     toFor = Integer.parseInt(matcher.group(2));
                 } catch (NumberFormatException e) {
-                    toFor = Integer.parseInt(getVar(matcher.group(2), cont + globalCont));
+                    toFor = Integer.parseInt(getVar(matcher.group(2), cont + tuReturn + globalCont));
                 }
                 String shift = matcher.group(3);
                 String shiftA[] = shift.split("\\^");
@@ -141,22 +151,22 @@ class MediafireRunner extends AbstractRunner {
                 }
                 String new_cont = "";
                 esc = URLDecoder.decode(esc, "UTF-8");
-                toFor = Math.min(toFor,esc.length());
-                
+              //  toFor = Math.min(toFor,esc.length());
+                 toFor = esc.length();
                 for (int i = 0; i < toFor; i++) {
                     //  System.out.println(esc.codePointAt(i));
                     new_cont = new_cont + ((char) (esc.codePointAt(i) ^ nax));
                 }
-                cont = cont + "\n" + new_cont;
+                cont = cont + "\n" + new_cont.replace("\\", "");
              //   logger.info(cont);
             }
 
-            globalCont = globalCont + "\n" + cont;
+            tuReturn = tuReturn + "\n" + cont;
             if (findTime == 0) loop = false;
 
         }
-        logger.info(cont);
-        return cont;
+        logger.info(tuReturn);
+        return tuReturn;
     }
 
     private void checkNameAndSize(String content) throws Exception {

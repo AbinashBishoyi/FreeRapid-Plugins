@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.ulozto.captcha;
 
-import com.musicg.fingerprint.FingerprintSimilarity;
-import com.musicg.fingerprint.FingerprintSimilarityComputer;
+import com.musicg.fingerprint.FingerprintSimilarityMultiplePosition;
+import com.musicg.fingerprint.FingerprintSimilarityMultiplePositionComputer;
 import com.musicg.wave.Wave;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 
@@ -33,30 +33,36 @@ public class SoundReader {
         }
     }
 
-    public String parse(InputStream isCaptcha) {
+    public String parse(InputStream isCaptcha) throws PluginImplementationException {
+        if (fingerprintList.isEmpty()) {
+            throw new PluginImplementationException("Fingerprint database is empty");
+        }
+
         Wave waveCaptcha = new Wave(isCaptcha);
         byte[] captchaFingerprint = waveCaptcha.getFingerprint();
 
         List<SoundPattern> soundPatternList = new LinkedList<SoundPattern>();
-        FingerprintSimilarityComputer fpsc;
-        FingerprintSimilarity fps;
+        FingerprintSimilarityMultiplePositionComputer fpsc;
+        FingerprintSimilarityMultiplePosition fps;
         for (Fingerprint fingerprint : fingerprintList) {
-            fpsc = new FingerprintSimilarityComputer(captchaFingerprint, fingerprint.getFingerprint());
-            fps = fpsc.getFingerprintsSimilarity();
+            fpsc = new FingerprintSimilarityMultiplePositionComputer(captchaFingerprint, fingerprint.getFingerprint());
+            fps = fpsc.getFingerprintsSimilarity(CAPTCHA_LENGTH);
 
             char character = fingerprint.getCharacter();
-            float similarity = fps.getSimilarity();
-            float score = fps.getScore();
-            float timePosition = fps.getsetMostSimilarTimePosition();
+            float[] similarity = fps.getSimilarity();
+            float[] score = fps.getScore();
+            float[] timePosition = fps.getsetMostSimilarTimePosition();
 
-            SoundPattern soundPattern = new SoundPattern();
-            soundPattern.character = character;
-            soundPattern.fingerprintSimilarity = similarity;
-            soundPattern.score = score;
-            soundPattern.timePosition = timePosition;
-            soundPatternList.add(soundPattern);
-
-            logger.info(String.format("%c: sim=%.2f sc=%.2f time=%.2f", character, similarity, score, timePosition));
+            for (int i = 0; i < CAPTCHA_LENGTH; i++) {
+                SoundPattern soundPattern = new SoundPattern();
+                soundPattern.character = character;
+                soundPattern.score = score[i];
+                soundPattern.timePosition = timePosition[i];
+                if (!soundPatternList.contains(soundPattern)) {
+                    soundPatternList.add(soundPattern);
+                    logger.info(String.format("%c: sim=%.2f sc=%.2f time=%f", character, similarity[i], score[i], timePosition[i]));
+                }
+            }
         }
 
         Collections.sort(soundPatternList);
@@ -78,14 +84,20 @@ public class SoundReader {
 
     private static class SoundPattern implements Comparable<SoundPattern> {
         private char character;
-        private byte[] fingerprint;
-        private float fingerprintSimilarity;
         private float score;
         private float timePosition;
 
         @Override
         public int compareTo(SoundPattern that) {
             return Float.compare(this.score, that.score);
+        }
+
+        @Override
+        public boolean equals(Object that) {
+            return (that != null
+                    && that instanceof SoundPattern
+                    && ((SoundPattern) that).character == this.character
+                    && (Math.abs(((SoundPattern) that).timePosition - this.timePosition) < 0.5));
         }
     }
 

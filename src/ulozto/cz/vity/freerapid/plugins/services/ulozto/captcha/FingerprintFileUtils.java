@@ -8,15 +8,17 @@ import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 /**
  * @author tong2shot
  */
 public class FingerprintFileUtils {
 
-    public static final String CAPTCHA_DIR = "/media/DATA/kerja/javaProj/FRD/frd/captcha/ulozto/2/";
-    public static final String CAPTCHA_ALPHA_DIR = CAPTCHA_DIR + "alpha/";
-    public static final String FINGERPRINT_OUT_FILE = CAPTCHA_DIR + "fingerprint.bin";
+    //public static final String CAPTCHA_DIR = "/media/DATA/kerja/javaProj/FRD/frd/captcha/ulozto/2/";
+    //public static final String CAPTCHA_ALPHA_DIR = CAPTCHA_DIR + "alpha/";
+    //public static final String FINGERPRINT_OUT_FILE = CAPTCHA_DIR + "fingerprint.bin";
 
     private FingerprintFileUtils() {
     }
@@ -37,7 +39,7 @@ public class FingerprintFileUtils {
     public static void save(String fname, List<Fingerprint> fingerprintList) throws PluginImplementationException {
         DataOutputStream dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(fname));
+            dos = new DataOutputStream(new DeflaterOutputStream(new FileOutputStream(fname)));
             dos.writeInt(fingerprintList.size());
             for (Fingerprint fingerprint : fingerprintList) {
                 dos.writeChar(fingerprint.getCharacter());
@@ -64,7 +66,7 @@ public class FingerprintFileUtils {
     public static void load(String fname, List<Fingerprint> fingerprintList) throws PluginImplementationException {
         DataInputStream dis = null;
         try {
-            dis = new DataInputStream(FingerprintFileUtils.class.getResourceAsStream(fname));
+            dis = new DataInputStream(new InflaterInputStream(FingerprintFileUtils.class.getResourceAsStream(fname)));
             //dis = new DataInputStream(new FileInputStream(fname));
             fingerprintList.clear();
             int numberOfChars = dis.readInt();

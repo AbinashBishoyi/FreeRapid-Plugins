@@ -17,8 +17,6 @@
 package com.musicg.wave;
 
 import com.musicg.fingerprint.FingerprintManager;
-import com.musicg.fingerprint.FingerprintSimilarity;
-import com.musicg.fingerprint.FingerprintSimilarityComputer;
 import com.musicg.wave.extension.NormalizedSampleAmplitudes;
 import com.musicg.wave.extension.Spectrogram;
 
@@ -317,8 +315,10 @@ public class Wave implements Serializable {
         return fingerprint;
     }
 
+    /*
     public FingerprintSimilarity getFingerprintSimilarity(Wave wave) {
         FingerprintSimilarityComputer fingerprintSimilarityComputer = new FingerprintSimilarityComputer(this.getFingerprint(), wave.getFingerprint());
         return fingerprintSimilarityComputer.getFingerprintsSimilarity();
     }
+    */
 }

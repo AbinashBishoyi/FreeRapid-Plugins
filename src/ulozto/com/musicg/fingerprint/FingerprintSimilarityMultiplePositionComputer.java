@@ -27,9 +27,9 @@ import java.util.List;
  *
  * @author jacquet
  */
-public class FingerprintSimilarityComputer {
+public class FingerprintSimilarityMultiplePositionComputer {
 
-    private FingerprintSimilarity fingerprintSimilarity;
+    private FingerprintSimilarityMultiplePosition fingerprintSimilarity;
     byte[] fingerprint1, fingerprint2;
 
     /**
@@ -38,12 +38,12 @@ public class FingerprintSimilarityComputer {
      * @param fingerprint1
      * @param fingerprint2
      */
-    public FingerprintSimilarityComputer(byte[] fingerprint1, byte[] fingerprint2) {
+    public FingerprintSimilarityMultiplePositionComputer(byte[] fingerprint1, byte[] fingerprint2) {
 
         this.fingerprint1 = fingerprint1;
         this.fingerprint2 = fingerprint2;
 
-        fingerprintSimilarity = new FingerprintSimilarity();
+        fingerprintSimilarity = new FingerprintSimilarityMultiplePosition();
     }
 
     /**
@@ -51,11 +51,9 @@ public class FingerprintSimilarityComputer {
      *
      * @return fingerprint similarity object
      */
-    public FingerprintSimilarity getFingerprintsSimilarity() {
+    public FingerprintSimilarityMultiplePosition getFingerprintsSimilarity(int numberOfPos) {
         HashMap<Integer, Integer> offset_Score_Table = new HashMap<Integer, Integer>();    // offset_Score_Table<offset,count>
         int numFrames = 0;
-        float score = 0;
-        int mostSimilarFramePosition = Integer.MIN_VALUE;
 
         // one frame may contain several points, use the shorter one be the denominator
         if (fingerprint1.length > fingerprint2.length) {
@@ -104,42 +102,52 @@ public class FingerprintSimilarityComputer {
         MapRank mapRank = new MapRankInteger(offset_Score_Table, false);
 
         // get the most similar positions and scores
+        float[] scores = new float[numberOfPos];
+        float[] similarities = new float[numberOfPos];
+        int[] mostSimilarFramePositions = new int[numberOfPos];
         List<Integer> orderedKeyList = mapRank.getOrderedKeyList(100, true);
-        if (orderedKeyList.size() > 0) {
-            int key = orderedKeyList.get(0);
-            // get the highest score position
-            if (mostSimilarFramePosition == Integer.MIN_VALUE) {
-                mostSimilarFramePosition = key;
-                score = offset_Score_Table.get(key);
+        for (int i = 0; i < numberOfPos; i++) {
+            float score = 0;
+            int mostSimilarFramePosition = Integer.MIN_VALUE;
+            if (orderedKeyList.size() > 0) {
+                int key = orderedKeyList.get(i);
+                // get the highest score position
+                if (mostSimilarFramePosition == Integer.MIN_VALUE) {
+                    mostSimilarFramePosition = key;
+                    score = offset_Score_Table.get(key);
 
-                // accumulate the scores from neighbours
-                if (offset_Score_Table.containsKey(key - 1)) {
-                    score += offset_Score_Table.get(key - 1) / 2;
-                }
-                if (offset_Score_Table.containsKey(key + 1)) {
-                    score += offset_Score_Table.get(key + 1) / 2;
+                    // accumulate the scores from neighbours
+                    if (offset_Score_Table.containsKey(key - 1)) {
+                        score += offset_Score_Table.get(key - 1) / 2;
+                    }
+                    if (offset_Score_Table.containsKey(key + 1)) {
+                        score += offset_Score_Table.get(key + 1) / 2;
+                    }
                 }
             }
-        }
 
 		/*
-		Iterator<Integer> orderedKeyListIterator=orderedKeyList.iterator();
+        Iterator<Integer> orderedKeyListIterator=orderedKeyList.iterator();
 		while (orderedKeyListIterator.hasNext()){
 			int offset=orderedKeyListIterator.next();					
 			System.out.println(offset+": "+offset_Score_Table.get(offset));
 		}
 		*/
 
-        score /= numFrames;
-        float similarity = score;
-        // similarity >1 means in average there is at least one match in every frame
-        if (similarity > 1) {
-            similarity = 1;
+            score /= numFrames;
+            float similarity = score;
+            // similarity >1 means in average there is at least one match in every frame
+            if (similarity > 1) {
+                similarity = 1;
+            }
+            scores[i] = score;
+            similarities[i] = similarity;
+            mostSimilarFramePositions[i] = mostSimilarFramePosition;
         }
 
-        fingerprintSimilarity.setMostSimilarFramePosition(mostSimilarFramePosition);
-        fingerprintSimilarity.setScore(score);
-        fingerprintSimilarity.setSimilarity(similarity);
+        fingerprintSimilarity.setMostSimilarFramePosition(mostSimilarFramePositions);
+        fingerprintSimilarity.setScore(scores);
+        fingerprintSimilarity.setSimilarity(similarities);
 
         return fingerprintSimilarity;
     }

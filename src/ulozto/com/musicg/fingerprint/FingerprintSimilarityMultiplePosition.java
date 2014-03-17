@@ -22,20 +22,20 @@ import com.musicg.properties.FingerprintProperties;
  *
  * @author jacquet
  */
-public class FingerprintSimilarity {
+public class FingerprintSimilarityMultiplePosition {
 
     private FingerprintProperties fingerprintProperties = FingerprintProperties.getInstance();
-    private int mostSimilarFramePosition;
-    private float score;
-    private float similarity;
+    private int[] mostSimilarFramePosition;
+    private float[] score;
+    private float[] similarity;
 
     /**
      * Constructor
      */
-    public FingerprintSimilarity() {
-        mostSimilarFramePosition = Integer.MIN_VALUE;
-        score = -1;
-        similarity = -1;
+    public FingerprintSimilarityMultiplePosition() {
+        //mostSimilarFramePosition = Integer.MIN_VALUE;
+        //score=-1;
+        //similarity = -1;
     }
 
     /**
@@ -43,7 +43,7 @@ public class FingerprintSimilarity {
      *
      * @return most similar frame position
      */
-    public int getMostSimilarFramePosition() {
+    public int[] getMostSimilarFramePosition() {
         return mostSimilarFramePosition;
     }
 
@@ -52,7 +52,7 @@ public class FingerprintSimilarity {
      *
      * @param mostSimilarFramePosition
      */
-    public void setMostSimilarFramePosition(int mostSimilarFramePosition) {
+    public void setMostSimilarFramePosition(int[] mostSimilarFramePosition) {
         this.mostSimilarFramePosition = mostSimilarFramePosition;
     }
 
@@ -62,7 +62,7 @@ public class FingerprintSimilarity {
      *
      * @return fingerprints similarity
      */
-    public float getSimilarity() {
+    public float[] getSimilarity() {
         return similarity;
     }
 
@@ -71,7 +71,7 @@ public class FingerprintSimilarity {
      *
      * @param fingerprints similarity
      */
-    public void setSimilarity(float similarity) {
+    public void setSimilarity(float[] similarity) {
         this.similarity = similarity;
     }
 
@@ -81,7 +81,7 @@ public class FingerprintSimilarity {
      *
      * @return fingerprints similarity score
      */
-    public float getScore() {
+    public float[] getScore() {
         return score;
     }
 
@@ -90,7 +90,7 @@ public class FingerprintSimilarity {
      *
      * @param score
      */
-    public void setScore(float score) {
+    public void setScore(float[] score) {
         this.score = score;
     }
 
@@ -99,7 +99,11 @@ public class FingerprintSimilarity {
      *
      * @return most similar starting time
      */
-    public float getsetMostSimilarTimePosition() {
-        return (float) mostSimilarFramePosition / fingerprintProperties.getNumRobustPointsPerFrame() / fingerprintProperties.getFps();
+    public float[] getsetMostSimilarTimePosition() {
+        float[] ret = new float[mostSimilarFramePosition.length];
+        for (int i = 0, length = mostSimilarFramePosition.length; i < length; i++) {
+            ret[i] = (float) mostSimilarFramePosition[i] / fingerprintProperties.getNumRobustPointsPerFrame() / fingerprintProperties.getFps();
+        }
+        return ret;
     }
 }

@@ -16,8 +16,8 @@ import java.util.logging.Logger;
  *
  * @author birchie
  */
-class onefichierFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(onefichierFileRunner.class.getName());
+class OneFichierFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(OneFichierFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception { //this method validates file

@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class onefichierServiceImpl extends AbstractFileShareService {
+public class OneFichierServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
@@ -22,7 +22,7 @@ public class onefichierServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new onefichierFileRunner();
+        return new OneFichierFileRunner();
     }
 
 }

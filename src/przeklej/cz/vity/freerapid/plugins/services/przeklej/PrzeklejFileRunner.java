@@ -32,8 +32,8 @@ class PrzeklejFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "plik:</strong> <h1>", "</h1>");
-        PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\"> (", ")</span></div>");
+        PlugUtils.checkName(httpFile, content, "title=\"Pobierz plik\">", "</a></h1><span class=\"size");
+        PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\" style=\"font-weight: normal;\"> (", ")</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -47,7 +47,7 @@ class PrzeklejFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             //<a class="download" href="/download/0001pbb7n03p/testbitmap-rar" >Pobierz plik</a>
-            final String finalURL = "http://przeklej.pl" + PlugUtils.getStringBetween(contentAsString, "a class=\"download\" href=\"", "\" >Pobierz plik");
+            final String finalURL = "http://przeklej.pl" + PlugUtils.getStringBetween(contentAsString, "<h1><a href=\"", "\" title=\"Pobierz plik\"");
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(finalURL).toHttpMethod();
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {

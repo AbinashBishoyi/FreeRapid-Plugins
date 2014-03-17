@@ -38,8 +38,12 @@ class UploadedToRunner {
                 matcher = Pattern.compile("is exceeded", Pattern.MULTILINE).matcher(contentAsString);
                 if (matcher.find()) {
                     matcher = Pattern.compile("wait ([0-9]*) minute", Pattern.MULTILINE).matcher(contentAsString);
-                    if (matcher.find())
-                        throw new YouHaveToWaitException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!", (Integer.valueOf(matcher.group(1)) * 60));
+                    if (matcher.find()) {
+                        Integer waitMinutes = Integer.valueOf(matcher.group(1));
+                        if (waitMinutes == 0)
+                            waitMinutes = 1;
+                        throw new YouHaveToWaitException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!", (waitMinutes * 60));
+                    }
                     throw new InvalidURLOrServiceProblemException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!");
                 }
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");

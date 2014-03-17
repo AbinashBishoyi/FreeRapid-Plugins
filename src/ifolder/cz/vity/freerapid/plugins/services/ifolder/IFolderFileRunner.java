@@ -51,72 +51,60 @@ class IFolderFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
+        HttpMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            Matcher matcher = getMatcherAgainstContent("(http://ints\\.ifolder\\.ru/ints/\\?(?:[a-zA-Z0-9\\-]+?.)?(?:ifolder\\.ru|files\\.metalarea\\.org)/[0-9]+\\?ints_code=)");
+            Matcher matcher = getMatcherAgainstContent("\"location.href\\s=\\s'(.+)';\"");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Cannot find link on first page");
             }
-            final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
-            if (makeRedirectedRequest(method2)) {
-                contentAsString = getContentAsString();//http://ints.ifolder.ru/ints/sponsor/?bi=577&session
-                matcher = PlugUtils.matcher("<a href=(http\\:\\/\\/ints\\.ifolder\\.ru/ints/sponsor[^>]*)>", contentAsString);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Cannot find ads link on second page");
-                }
-                String nextAction = matcher.group(1);
-                final HttpMethod method3 = getMethodBuilder().setReferer("").setAction(nextAction).toHttpMethod();
-                if (makeRedirectedRequest(method3)) {
-                    final HttpMethod method4 = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();
-                    if (makeRedirectedRequest(method4)) {
-                        int delay = PlugUtils.getWaitTimeBetween(getContentAsString(), "var delay = ", ";", TimeUnit.SECONDS);
-                        downloadTask.sleep(delay);
 
-
-                        /*
-                         * Note: Server sends response with no Status-Line and no headers, Special method must be executed
-                         */
-                        final HttpMethod method4b = new GetMethodNoStatus("http://ints.ifolder.ru" + method4.getPath() + "?" + method4.getQueryString());
-                        if (makeRedirectedRequest(method4b)) {
-                            do {
-                                CaptchaSupport captchaSupport = getCaptchaSupport();
-                                String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
-                                s = "http://ints.ifolder.ru" + s;
-                                logger.info("Captcha URL " + s);
-                                String interstitials_session = PlugUtils.getStringBetween(getContentAsString(), "if(tag){tag.value = \"", "\"");
-                                String captchaR = captchaSupport.getCaptcha(s);
-                                if (captchaR == null) {
-                                    throw new CaptchaEntryInputMismatchException();
-                                }
-                                final HttpMethod method5 = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true).setParameter("confirmed_number", captchaR).setParameter("interstitials_session", interstitials_session).setBaseURL("http://ints.ifolder.ru/ints/frame/").toHttpMethod();
-                                if (!makeRedirectedRequest(method5)) {
-                                    throw new ServiceConnectionProblemException();
-                                }
-                            } while (getContentAsString().contains("name=\"confirmed_number\""));
-                            downloadTask.sleep(5); //Needed for full speed
-
-                            final HttpMethod method6 = getMethodBuilder().setReferer("").setActionFromAHrefWhereATagContains("download").toHttpMethod();
-                            if (!tryDownloadAndSaveFile(method6)) {
-                                logger.warning(getContentAsString());//log the info
-                                throw new PluginImplementationException();//some unknown problem
-                            }
-
-                        } else {
-                            throw new ServiceConnectionProblemException();
-                        }
-                    } else {
-                        throw new ServiceConnectionProblemException();
-                    }
-                } else {
-                    throw new ServiceConnectionProblemException();
-                }
-            } else {
+            method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            method = getMethodBuilder().setReferer("").setAction(PlugUtils.getStringBetween(getContentAsString(), "<font size=\"+1\"><a href=", ">")).toHttpMethod();
+            if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
 
+            method = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            int delay = PlugUtils.getWaitTimeBetween(getContentAsString(), "var delay = ", ";", TimeUnit.SECONDS);
+            downloadTask.sleep(delay);
+            /*
+            * Note: Server sends response with no Status-Line and no headers, Special method must be executed
+            */
+            method = new GetMethodNoStatus("http://ints.ifolder.ru" + method.getPath() + "?" + method.getQueryString());
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            do {
+                CaptchaSupport captchaSupport = getCaptchaSupport();
+                String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
+                s = "http://ints.ifolder.ru" + s;
+                logger.info("Captcha URL " + s);
+                String interstitials_session = PlugUtils.getStringBetween(getContentAsString(), "if(tag){tag.value = \"", "\"");
+                String captchaR = captchaSupport.getCaptcha(s);
+                if (captchaR == null) {
+                    throw new CaptchaEntryInputMismatchException();
+                }
+                method = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true).setParameter("confirmed_number", captchaR).setParameter("interstitials_session", interstitials_session).setBaseURL("http://ints.ifolder.ru/ints/frame/").toHttpMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+            } while (getContentAsString().contains("name=\"confirmed_number\""));
+            downloadTask.sleep(5); //Needed for full speed
+
+            final HttpMethod method6 = getMethodBuilder().setReferer("").setActionFromAHrefWhereATagContains("download").toHttpMethod();
+            if (!tryDownloadAndSaveFile(method6)) {
+                logger.warning(getContentAsString());//log the info
+                throw new PluginImplementationException();//some unknown problem
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

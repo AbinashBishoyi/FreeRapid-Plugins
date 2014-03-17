@@ -193,7 +193,7 @@ public class Header {
                 break;
         }
 
-        if (time == 0xffffff) {
+        if (headerType != Type.TINY && time == 0xffffff) {
             time = in.getInt();
         }
 
@@ -214,21 +214,24 @@ public class Header {
         }
         switch (headerType) {
             case LARGE:
-                Utils.writeInt24(out, time);
+                Utils.writeInt24(out, Math.min(time, 0xffffff));
                 Utils.writeInt24(out, size);
                 out.put(packetType.byteValue());
                 Utils.writeInt32Reverse(out, streamId);
                 break;
             case MEDIUM:
-                Utils.writeInt24(out, time);
+                Utils.writeInt24(out, Math.min(time, 0xffffff));
                 Utils.writeInt24(out, size);
                 out.put(packetType.byteValue());
                 break;
             case SMALL:
-                Utils.writeInt24(out, time);
+                Utils.writeInt24(out, Math.min(time, 0xffffff));
                 break;
             case TINY:
                 break;
+        }
+        if (headerType != Type.TINY && time >= 0xffffff) {
+            out.putInt(time);
         }
         if (logger.isLoggable(Level.FINE)) {
             byte[] bytes = new byte[out.position()];

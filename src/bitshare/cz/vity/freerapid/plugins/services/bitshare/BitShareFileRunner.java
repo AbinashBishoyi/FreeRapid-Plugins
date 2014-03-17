@@ -11,6 +11,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.Locale;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -43,8 +44,11 @@ class BitShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1>Downloading ", " - ");
-        PlugUtils.checkFileSize(httpFile, content, " - ", "</h1>");
+        final Matcher match = PlugUtils.matcher("<h1>Downloading (.+?) - (.+?)</h1>", content);
+        if (!match.find())
+            throw new PluginImplementationException("File name/size not found");
+        httpFile.setFileName(match.group(1).trim());
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(2).trim()));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         final int i = fileURL.lastIndexOf('/');
         if (i > 0) {

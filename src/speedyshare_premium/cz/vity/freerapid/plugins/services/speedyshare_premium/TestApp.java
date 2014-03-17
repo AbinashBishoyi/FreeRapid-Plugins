@@ -1,14 +1,15 @@
-package cz.vity.freerapid.plugins.services.bitshare;
+package cz.vity.freerapid.plugins.services.speedyshare_premium;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
 import java.net.URL;
 
 /**
- * @author Stan
+ * @author ntoskrnl, premium by birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,14 +17,16 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://bitshare.com/?f=j1m7ath9"));
-            httpFile.setNewURL(new URL("http://bitshare.com/files/gyzbvfvn/-E-D--When-They-Cry-mtHD-Dual-02.mkv.html"));
+            httpFile.setNewURL(new URL("http://speedy.sh/bpj7H/Dragon-Ball-Z-1x03-Unlikely-Alliance.mkv"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final BitShareServiceImpl service = new BitShareServiceImpl(); //instance of service - of our plugin
-            //runcheck makes the validation
+            final SpeedyShareServiceImpl service = new SpeedyShareServiceImpl(); //instance of service - of our plugin
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("***");
+            config.setPassword("***");
+            service.setConfig(config);//runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.queenshare.QueenShareServiceImpl"
-        id="queenshare.com" vendor="birchie" version="2.0.4">
+<plugin class="cz.vity.freerapid.plugins.services.ifile_ws.iFile_wsServiceImpl"
+        id="ifile.ws" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?queenshare\.com/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?ifile\.ws/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="queenshare.com"/>
+        <attribute id="services" value="ifile.ws"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="defaultDownloads" value="1"/>
         <attribute id="premium" value="false"/>
@@ -18,6 +18,6 @@
                 plugin-version="1.0.10" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="queenshare.com" path="/" type="code"/>
+        <library id="ifile.ws" path="/" type="code"/>
     </runtime>
 </plugin>

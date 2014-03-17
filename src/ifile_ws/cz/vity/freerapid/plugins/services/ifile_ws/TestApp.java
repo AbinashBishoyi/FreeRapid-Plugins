@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.bitshare;
+package cz.vity.freerapid.plugins.services.ifile_ws;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Stan
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,13 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://bitshare.com/?f=j1m7ath9"));
-            httpFile.setNewURL(new URL("http://bitshare.com/files/gyzbvfvn/-E-D--When-They-Cry-mtHD-Dual-02.mkv.html"));
+            httpFile.setNewURL(new URL("http://ifile.ws/ghcvlvk3xtt1/Blackknight_Anifecta__Sekirei_BD_-_01.mkv.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final BitShareServiceImpl service = new BitShareServiceImpl(); //instance of service - of our plugin
+            final iFile_wsServiceImpl service = new iFile_wsServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set premium account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

@@ -20,6 +20,8 @@ class SlingFileFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception {
+        if (fileURL.contains("/dl/"))
+            fileURL = fileURL.replaceFirst("/dl/", "/file/");
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -40,6 +42,8 @@ class SlingFileFileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
+        if (fileURL.contains("/dl/"))
+            fileURL = fileURL.replaceFirst("/dl/", "/file/");
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
@@ -71,7 +75,10 @@ class SlingFileFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("The file you requested cannot be found") || content.contains("<h1>Not Found</h1>") || content.contains("The file you have requested was not found")) {
+        if (content.contains("The file you requested cannot be found") ||
+                content.contains("The file you have requested was not found") ||
+                content.contains("The file you have requested has been deleted") ||
+                content.contains("<h1>Not Found</h1>")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("Resume feature is not allowed for Free/Anonymous users"))

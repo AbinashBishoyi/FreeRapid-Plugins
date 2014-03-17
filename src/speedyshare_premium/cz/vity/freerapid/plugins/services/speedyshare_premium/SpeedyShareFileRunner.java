@@ -1,8 +1,9 @@
-package cz.vity.freerapid.plugins.services.speedyshare;
+package cz.vity.freerapid.plugins.services.speedyshare_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -19,7 +20,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author ntoskrnl
+ * @author ntoskrnl, premium by birchie
  */
 class SpeedyShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SpeedyShareFileRunner.class.getName());
@@ -52,9 +53,12 @@ class SpeedyShareFileRunner extends AbstractRunner {
         super.run();
         checkURL();
         addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "trans", "en", "/", 86400, false));
+        login();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        // attempt direct download
+        if (!tryDownloadAndSaveFile(method)) {
+            // download from link on page
             checkProblems();
             checkNameAndSize();
 
@@ -112,11 +116,34 @@ class SpeedyShareFileRunner extends AbstractRunner {
         if (content.contains("Not Found") || content.contains("Not valid anymore") || content.contains("The file has been deleted") || content.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (content.contains("This file can only be downloaded with SpeedyShare Premium")) {
-            throw new NotRecoverableDownloadException("Premium download only");
-        }
         if (content.contains("The one-hour limit")) {
             throw new YouHaveToWaitException("The one-hour limit for this download has been exceeded", 15 * 60);
+        }
+    }
+
+    private void login() throws Exception {
+        synchronized (SpeedyShareFileRunner.class) {
+            SpeedyShareServiceImpl service = (SpeedyShareServiceImpl) getPluginService();
+            PremiumAccount pa = service.getConfig();
+            if (!pa.isSet()) {
+                pa = service.showConfigDialog();
+                if (pa == null || !pa.isSet()) {
+                    throw new BadLoginException("No SpeedyShare account login information!");
+                }
+            }
+            final HttpMethod method = getMethodBuilder()
+                    .setAction("https://www.speedyshare.com/login.php")
+                    .setParameter("redir", "/upload_page.php")
+                    .setParameter("login", pa.getUsername())
+                    .setParameter("pass", pa.getPassword())
+                    .setParameter("remember", "on")
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException("Error posting login info");
+            }
+            if (getContentAsString().contains("The password you wrote is incorrect")) {
+                throw new BadLoginException("Invalid SpeedyShare account login information!");
+            }
         }
     }
 

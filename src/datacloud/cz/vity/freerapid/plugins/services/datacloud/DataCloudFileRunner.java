@@ -51,18 +51,15 @@ class DataCloudFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) { //we make the main request
             checkProblems();//check problems
             checkNameAndSize(getContentAsString());
-            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var waiting_time = ", ";"));
 
-            final Matcher captchaImageMatch = PlugUtils.matcher("<img.+?\"captcha_img\".+?src=\"(.+?)\".+?>", getContentAsString());
+            final Matcher captchaImageMatch = PlugUtils.matcher("<img.+?\"captcha_img\".+?src=\"(.+?)\"", getContentAsString());
             if (!captchaImageMatch.find())
                 throw new ErrorDuringDownloadingException("Captcha image not found");
             final Matcher nextPageMatch = PlugUtils.matcher("<a.+?\"verify_captcha\".+?d_data=\"(.+?)\">.+?</a>", getContentAsString());
             if (!nextPageMatch.find())
                 throw new ErrorDuringDownloadingException("Next page not found");
             final String nextPage = BASE_URL + nextPageMatch.group(1);
-            final Matcher captchaBuilderMatch = PlugUtils.matcher("var Data = \\{\\s+?(action)\\: '(.+?)',\\s+?(.+?)\\: (.+?),\\s+?(link)\\: '(.+?)'\\s+?\\};\\s+?.+?\\s+?url\\: '(.+?)',", getContentAsString());
-            if (!captchaBuilderMatch.find())
-                throw new ErrorDuringDownloadingException("Captcha data not found");
+            final String strLink = PlugUtils.getStringBetween(getContentAsString(), "var links = '", "';");
             do {
                 final CaptchaSupport captchaSupport = getCaptchaSupport();
                 final String captchaTxt = captchaSupport.getCaptcha(BASE_URL + captchaImageMatch.group(1));
@@ -70,10 +67,10 @@ class DataCloudFileRunner extends AbstractRunner {
                     throw new CaptchaEntryInputMismatchException("No Input");
                 MethodBuilder captchaBuilder = getMethodBuilder()
                         .setBaseURL(BASE_URL).setReferer(fileURL)
-                        .setAction(captchaBuilderMatch.group(7).trim())
-                        .setParameter(captchaBuilderMatch.group(1).trim(), captchaBuilderMatch.group(2).trim())
-                        .setParameter(captchaBuilderMatch.group(3).trim(), captchaTxt)
-                        .setParameter(captchaBuilderMatch.group(5).trim(), captchaBuilderMatch.group(6).trim());
+                        .setAction("/process")
+                        .setParameter("action", "checkCapchaDownload")
+                        .setParameter("captcha", captchaTxt)
+                        .setParameter("link", strLink);
                 if (!makeRedirectedRequest(captchaBuilder.toPostMethod())) {
                     throw new ServiceConnectionProblemException();
                 }
@@ -84,7 +81,6 @@ class DataCloudFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var waiting_time = ", ";"));
             final MethodBuilder lastPageBuilder = getMethodBuilder().setActionFromAHrefWhereATagContains("Get Link");
             if (!makeRedirectedRequest(lastPageBuilder.toGetMethod())) {
                 checkProblems();

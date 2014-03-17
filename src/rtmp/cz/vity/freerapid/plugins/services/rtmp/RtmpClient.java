@@ -55,15 +55,17 @@ class RtmpClient extends IoHandlerAdapter {
     private ProxyConnector getProxyConnector(SocketConnector socketConnector, ConnectionSettings settings) {
         ProxyConnector connector = new ProxyConnector(socketConnector);
         connector.setHandler(new ProxyIoHandler(this));
+        SocksProxyRequest proxyRequest = new SocksProxyRequest(
+                SocksProxyConstants.SOCKS_VERSION_5,
+                SocksProxyConstants.ESTABLISH_TCPIP_STREAM,
+                new InetSocketAddress(session.getHost(), session.getPort()),
+                settings.getUserName() /* null is ok */
+        );
+        proxyRequest.setPassword(settings.getPassword() /* null is ok */);
         connector.setProxyIoSession(
                 new ProxyIoSession(
                         new InetSocketAddress(settings.getProxyURL(), settings.getProxyPort()),
-                        new SocksProxyRequest(
-                                SocksProxyConstants.SOCKS_VERSION_5,
-                                SocksProxyConstants.ESTABLISH_TCPIP_STREAM,
-                                new InetSocketAddress(session.getHost(), session.getPort()),
-                                null
-                        )
+                        proxyRequest
                 )
         );
         return connector;

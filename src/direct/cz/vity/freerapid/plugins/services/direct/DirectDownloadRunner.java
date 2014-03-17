@@ -16,6 +16,7 @@ class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognize
     @Override
     public void run() throws Exception {
         super.run();
+        checkName();
         setClientParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
         final HttpMethod method = getGetMethod(fileURL);
         if (!tryDownloadAndSaveFile(method)) {
@@ -24,6 +25,27 @@ class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognize
             }
             throw new ServiceConnectionProblemException("Error starting download");
         }
+    }
+
+    private void checkName() {
+        httpFile.setFileName(findName(fileURL));
+    }
+
+    private static String findName(final String url) {
+        final String[] strings = url.split("/");
+        for (int i = strings.length - 1; i >= 0; i--) {
+            final String s = strings[i].trim();
+            if (!s.isEmpty()) {
+                return s;
+            }
+        }
+        String s = url.replaceAll(":", "_").trim();
+        if (s.startsWith("?"))
+            s = s.substring(1);
+        if (s.isEmpty()) {
+            s = "unknown";
+        }
+        return s;
     }
 
     @Override

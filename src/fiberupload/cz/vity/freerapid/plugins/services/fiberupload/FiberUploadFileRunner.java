@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URL;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -34,6 +35,14 @@ class FiberUploadFileRunner extends XFileSharingRunner {
         final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
         fileNameHandlers.add(0, new FiberUploadFileNameHandler());
         return fileNameHandlers;
+    }
+
+    @Override
+    public void runCheck() throws Exception {
+        if (fileURL.matches("http://(?:www\\.)?bulletupload\\.com/.+")) {
+            httpFile.setNewURL(new URL(fileURL.replaceFirst("bulletupload\\.com", "fiberupload.com")));
+        }
+        super.runCheck();
     }
 
     @Override
@@ -98,6 +107,7 @@ class FiberUploadFileRunner extends XFileSharingRunner {
             }
             checkDownloadProblems();
         }
+        downloadTask.sleep(5);
         setFileStreamContentTypes("text/plain");
         if (!tryDownloadAndSaveFile(method)) {
             checkDownloadProblems();

@@ -16,8 +16,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             httpFile.setNewURL(new URL("http://fiberupload.com/lnqp1xl8y6cp/LECGVIDBTS.zip"));
+            //httpFile.setNewURL(new URL("http://bulletupload.com/kjex768f3nfv"));
+            //httpFile.setNewURL(new URL("http://bulletupload.com/lnqp1xl8y6cp/LECGVIDBTS.zip"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            connectionSettings.setProxy("118.97.197.176", 80); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("118.97.197.176", 80); //eg we can use local proxy to sniff HTTP communication
             final FiberUploadServiceImpl service = new FiberUploadServiceImpl();
 
             //for testing purpose

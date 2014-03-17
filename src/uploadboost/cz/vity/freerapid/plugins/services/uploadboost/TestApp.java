@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.uploadboost.com/vy2qapwhi3df"));
+            httpFile.setNewURL(new URL("http://www.uploadboost.com/die4xjl72ok8"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final UploadBoostServiceImpl service = new UploadBoostServiceImpl();

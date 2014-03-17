@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.restfile.com/r5lusaovbws9/Arabic-eBook-Marketing-for-All.1.pdf"));
+            httpFile.setNewURL(new URL("http://www.restfile.com/hxv9zovt0dbm/Tekken_3.rar.html"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final RestFileServiceImpl service = new RestFileServiceImpl();

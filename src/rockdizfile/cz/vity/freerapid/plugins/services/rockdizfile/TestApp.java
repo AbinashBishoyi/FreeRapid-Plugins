@@ -15,8 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://rockdizfile.com/wc3mfvro005a/Victoria_Aitken_-_Weekend_Lover_(Stonebridge_Remix)_www.community-music-dj.com.mp3.html"));
-            
+            httpFile.setNewURL(new URL("http://rockdizfile.com/wavwwbvht571"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final RockDizFileServiceImpl service = new RockDizFileServiceImpl();

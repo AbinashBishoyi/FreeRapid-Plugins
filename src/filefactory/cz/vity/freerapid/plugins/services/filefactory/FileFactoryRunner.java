@@ -69,7 +69,7 @@ class FileFactoryRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("<div id=\"file_name\".*?>\\s*?<h2>(.+?)</h2>\\s*?<div id=\"file_info\">(.+?) upload", content);
+        final Matcher match = PlugUtils.matcher("<div id=\"file_name\".*?>\\s*?<h2>(.+?)</h2>\\s*?<div id=\"file_info\".*?>\\s*?(.+?)\\s*?upload", content);
         if (!match.find())
             throw new PluginImplementationException("File name/size not found");
         httpFile.setFileName(match.group(1).trim());
@@ -140,6 +140,18 @@ class FileFactoryRunner extends AbstractRunner {
                 }
             }
             throw new YouHaveToWaitException(String.format("You (%s) have exceeded the download limit for free users", userIP), waitSeconds);
+        }
+        if (contentAsString.contains("You have recently started a download")) {
+            Matcher match = getMatcherAgainstContent("Please wait (.+?) (.+?) to download more files");
+            int waitSeconds = 2 * 60;
+            if (match.find()) {
+                match = getMatcherAgainstContent("Please try again in <span>(.+?), (.+?).</span>");
+                if (match.find()) {
+                    waitSeconds = 60 * Integer.parseInt(match.group(1).split(" ")[0]);
+                    waitSeconds += Integer.parseInt(match.group(2).split(" ")[0]);
+                }
+            }
+            throw new YouHaveToWaitException(String.format("You have exceeded the download limit for free users"), waitSeconds);
         }
     }
 

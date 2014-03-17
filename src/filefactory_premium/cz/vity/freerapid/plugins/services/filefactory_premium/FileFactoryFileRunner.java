@@ -74,7 +74,7 @@ class FileFactoryFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("<div id=\"file_name\".*?>\\s*?<h2>(.+?)</h2>\\s*?<div id=\"file_info\">(.+?) upload", getContentAsString());
+        final Matcher match = PlugUtils.matcher("<div id=\"file_name\".*?>\\s*?<h2>(.+?)</h2>\\s*?<div id=\"file_info\".*?>\\s*?(.+?)\\s*?upload", getContentAsString());
         if (!match.find())
             throw new PluginImplementationException("File name/size not found");
         httpFile.setFileName(match.group(1).trim());

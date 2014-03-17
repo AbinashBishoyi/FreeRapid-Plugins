@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -30,21 +29,20 @@ class TurboBitFileRunner extends AbstractRunner {
         final HttpMethod httpMethod = getMethodBuilder().setReferer(LANG_REF).setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = Pattern.compile("File\\sname:\\s(?:</?\\w+\\s*[^>]*>)*([^<]*)").matcher(content);
-        if( !matcher.find() ) {
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("<b>(?:<br>|&nbsp;)(.+?)</b></h1>");
+        if (!matcher.find()) {
             throw new PluginImplementationException("File name not found");
         }
-        httpFile.setFileName( matcher.group(1).replaceAll("&nbsp;", "") );
-        //PlugUtils.checkName(httpFile, content, "<b>&nbsp;", "</b></h1>"); //This method not work for file: http://www.turbobit.net/7lr9sp0qzdug.html
-        PlugUtils.checkFileSize(httpFile, content, "</b> ", "</div>");
+        httpFile.setFileName(matcher.group(1));
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "</b> ", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -56,7 +54,7 @@ class TurboBitFileRunner extends AbstractRunner {
         HttpMethod httpMethod = getMethodBuilder().setReferer(LANG_REF).setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize();
 
             Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/([a-z0-9]+)\\.html", fileURL);
             if (!matcher.find()) {

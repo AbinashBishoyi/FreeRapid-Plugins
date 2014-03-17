@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Vity
+ * @author Kajda
  */
 public class TestApp extends PluginDevApplication {
     @Override

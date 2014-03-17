@@ -1,80 +1,85 @@
 package cz.vity.freerapid.plugins.services.loadto;
 
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
-import cz.vity.freerapid.plugins.webclient.*;
-import org.apache.commons.httpclient.HttpStatus;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
-class LoadToRunner {
-    private final static Logger logger = Logger.getLogger(cz.vity.freerapid.plugins.services.loadto.LoadToRunner.class.getName());
-    private HttpDownloadClient client;
+class LoadToRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(LoadToRunner.class.getName());
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        String fileURL = httpFile.getFileUrl().toString();
-        logger.info("Starting download in TASK " + fileURL);
+
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
 
         final GetMethod getMethod = client.getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-            if (client.getContentAsString().contains("Load.to")) {
-                Matcher matcher = PlugUtils.matcher("<title>([^/]*) //", client.getContentAsString());
-                if (matcher.find()) {
-                    String fn = matcher.group(1);
-                    logger.info("File name " + fn);
-                    httpFile.setFileName(fn);
-                }
-                matcher = PlugUtils.matcher("([0-9.]+ Bytes)", client.getContentAsString());
-                if (matcher.find()) {
-                    Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                    logger.info("File size " + a);
-                    httpFile.setFileSize(a);
-                }
-                downloader.sleep(5);
-                matcher = PlugUtils.matcher("<form method=\"post\" action=\"(http[^\"]*)\"", client.getContentAsString());
-                if (!matcher.find()) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
-                }
-                final PostMethod method = client.getPostMethod(matcher.group(1));
-
-                client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
-                httpFile.setState(DownloadState.GETTING);
-                try {
-                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                    if (inputStream != null) {
-                        downloader.saveToFile(inputStream);
-
-                    } else {
-                        checkProblems();
-                        logger.info(client.getContentAsString());
-                        throw new IOException("File input stream is empty.");
-                    }
-                } finally {
-                    method.abort();
-                    method.releaseConnection();
-                }
-            } else {
-                checkProblems();
-                logger.info(client.getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
-            }
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+
+    public void run(HttpFileDownloader downloader) throws Exception {
+        super.run(downloader);
+        logger.info("Starting download in TASK " + fileURL);
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        getMethod.setFollowRedirects(true);
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
+            downloader.sleep(5);
+            Matcher matcher = PlugUtils.matcher("<form method=\"post\" action=\"(http[^\"]*)\"", client.getContentAsString());
+            if (!matcher.find()) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+            }
+            final PostMethod method = client.getPostMethod(matcher.group(1));
+            if (!tryDownload(method)) {
+                checkProblems();
+                logger.info(client.getContentAsString());
+                throw new IOException("File input stream is empty.");
+            }
+
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+    private void checkNameAndSize(String content) throws Exception {
+
+        if (!content.contains("Load.to")) {
+            logger.warning(client.getContentAsString());
+            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+        }
+
+        Matcher matcher = PlugUtils.matcher("Can't find file.", content);
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>Can't find file. Please check URL.</b><br>"));
+        }
+        matcher = PlugUtils.matcher("<title>([^/]*) //", content);
+        if (matcher.find()) {
+            String fn = matcher.group(1);
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+
+        }
+        matcher = PlugUtils.matcher("([0-9.]+ Bytes)", content);
+        if (matcher.find()) {
+            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+            logger.info("File size " + a);
+            httpFile.setFileSize(a);
+        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {

@@ -113,15 +113,15 @@ class RapidShareRunner {
             final String ip = matcher.group(1);
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Your IP address %s is already downloading a file. <br>Please wait until the download is completed.", ip));
         }
-        if (contentAsString.indexOf("Currently a lot of users") >= 0) {
+        if (contentAsString.contains("Currently a lot of users")) {
             matcher = Pattern.compile("Please try again in ([0-9]*) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);
             }
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Currently a lot of users are downloading files."));
         }
-        if (contentAsString.indexOf("You have reached the") >= 0) {
-            matcher = Pattern.compile("try again in ([0-9]*) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
+        if (contentAsString.contains("You have reached the")) {
+            matcher = Pattern.compile("try again in about ([0-9]*) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("You have reached the download-limit for free-users.", Integer.parseInt(matcher.group(1)) * 60 + 10);
             }

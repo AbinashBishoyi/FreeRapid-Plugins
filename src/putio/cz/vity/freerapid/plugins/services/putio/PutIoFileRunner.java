@@ -38,6 +38,7 @@ class PutIoFileRunner extends AbstractRunner {
                     .setReferer(fileURL)
                     .setActionFromAHrefWhereATagContains("Download")
                     .toHttpMethod();
+            setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

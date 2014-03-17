@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.billionuploads;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -17,6 +18,13 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
         final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
         fileNameHandlers.add(0, new BillionUploadsFileNameHandler());
         return fileNameHandlers;
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = new LinkedList<String>();
+        downloadLinkRegexes.add("<a href\\s?=\\s?(?:\"|')(http.+?)(?:\"|') id=\"_tlink\"");
+        return downloadLinkRegexes;
     }
 
 }

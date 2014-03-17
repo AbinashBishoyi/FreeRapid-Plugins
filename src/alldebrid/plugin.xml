@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.alldebrid.AllDebridServiceImpl"
+        id="alldebrid.com" vendor="birchie" version="1.0.0">
+    <attributes>
+        <!--
+        <attribute id="urlRegex" value="http://(www\.)?alldebrid\.com/not_to_be_used_0.9.0"/>
+        -->
+        <attribute id="urlRegex"
+                   value="(https?://(www\.)?(10upload\.com|180upload\.com|2shared\.com|4fastfile\.com|4shared(\-china)?|albafile\.com|asfile\.com|badongo\.com|bayfiles\.(com|net)/file|bitshare\.com|cloudzer\.net|clz\.to|cramit.in|crocko\.com|cyberlocker\.ch|datei\.to|dengee\.net|(i-filez|depfile)\.com|exoshare\.com|multi\.la/s|extmatrix\.com|(fiberupload|bulletupload)\.com|filebox\.com|filecloud\.io|fileden\.com|filefactory\.com/file|fileflyer\.com/view|filegag\.com|filemade\.com?|filepost\.com/files|filesabc\.com|filesave\.me|filesend\.net|filesmonster\.com|freakshare\.(com|net)|furk\.net|gigapeta\.com|gigasize\.com/get|gigaup\.fr|goldfile\.(eu|org|net)|grupload\.com|hipfile\.com|hostingbulk\.com|hulkshare\.com|jumbofiles\.(com|org)|load\.to|luckyshare\.net|lumfile\.com|mediafire\.com|mixturevideo\.com|multishare\.cz/stahnout|netload\.in|novafile\.com|nowdownload\.(ch|eu)|pigsonic\.com|przeklej\.pl|purevid\.com|(putlocker|sockshare)\.com/file|rapidgator\.net/file|ryushare\.com|scribd\.com|sendspace\.com/file|sharebeast\.com|sharebees\.com|share\-online\.biz/dl|share-rapid\.com|slingfile\.com/(dl|file)|soundcloud\.com|speedload\.org|turbobit\.net|uload\.to|uploadc\.com|uploaded\.net|uploaded\.to|ul\.to|uploadhero\.com?|uploading\.com|uploadking\.com|uploadspace\.eu|uploadstation\.com/file|uptobox\.com|userporn\.com|vidbux\.com|videozer\.com|(vidxden|divxden)\.com|vip-file\.com|youtube\.com|zshare\.net)/.+|https?://(.*?\.)?(1fichier\.com|extabit\.com/(file|go)|hotfile\.com/(dl|links)|letitbit\.net/download|megashares\.com|rapidshare\.com|shareflare\.net/download|unibytes\.com|yunfile\.com|zippyshare\.com)/.+)"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="see wordrider.net/forum/10/12545"/>
+        <attribute id="www" value="http://wordrider.net/forum/10/12545"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="alldebrid.com" path="/" type="code"/>
+    </runtime>
+</plugin>

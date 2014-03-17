@@ -36,7 +36,7 @@ class Simply_DebridFileRunner extends AbstractRunner {
                     .setReferer(SD_GENERATE)
                     .toPostMethod();
             if (!makeRequest(postMethod)) {
-                throw new ServiceConnectionProblemException("Error posting login info");
+                throw new ServiceConnectionProblemException("Error posting link request");
             }
             final HttpMethod httpMethod = getGetMethod(SD_BASE_URL + PlugUtils.getStringBetween(getContentAsString(), "$.get(\"", "\","));
             httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
@@ -47,7 +47,6 @@ class Simply_DebridFileRunner extends AbstractRunner {
             checkProblems();
             final HttpMethod dlMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\">"));
             httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "\">", "</a>"));
-            logger.info("################ " + getContentAsString());
             if (!tryDownloadAndSaveFile(dlMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -87,6 +86,8 @@ class Simply_DebridFileRunner extends AbstractRunner {
                         .setActionFromFormWhereActionContains("password", true)
                         .setParameter("username", pa.getUsername())
                         .setParameter("password", pa.getPassword())
+                        .setBaseURL(SD_BASE_URL)
+                        .setReferer(SD_LOGIN)
                         .toPostMethod();
                 if (!makeRedirectedRequest(method)) {
                     throw new ServiceConnectionProblemException("Error posting login info");

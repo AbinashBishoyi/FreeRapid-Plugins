@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.simply_debrid.Simply_DebridServiceImpl"
-        id="simply-debrid.com" vendor="birchie" version="1.0.0">
+        id="simply-debrid.com" vendor="birchie" version="1.0.1">
     <attributes>
+        <!--
+        <attribute id="urlRegex" value="http://(www\.)?simply-debrid\.com/not_to_be_used_0.9.2"/>
+        -->
         <attribute id="urlRegex"
-                   value="(http://(www\.)?2shared\.com/.+)|(https?://(www\.)?crocko\.com/.+)|(http://(www\.)?filecloud\.ws/.+)|(http://(www\.)?fileflyer\.com/view/.+)|(http://(www\.)?filerio\.(?:com|in)/.+)|(http://(www\.)?filesflash\.com/.+)|(https?://.*?hotfile\.com/(dl|links)/.+)|(http://(www\.)?load\.to/.+)|(http://(www\.)?mediafire\.com/(download\.php)?\?.+)|(http://(www\.)?(putlocker|sockshare)\.com/file/.+)|(http://(www\.)?sendspace\.com/file/.+)|(http://(www\.)?(speedyshare\.com|speedy.sh)/.+)|(http://(www\.)?uploading\.com/.+)|(http://(www\.)?uptobox\.com/.+)|(http://(.*?\.)?yunfile\.com/.+)|(http://(www\.)?1st-files\.com/.+)|(http://(www\.)?albafile\.com/.+)|(http://\w+\.1fichier\.com.*)|(https?://(www\.)?bitshare\.com/.+)|(http://(www\.)?(cloudzer\.net|clz\.to)/.+)|(https?://(www\.)?(i-filez|depfile)\.com/.+)|(http://(www\.)?easybytez\.com/.+)|(http://(www\.)?filefactory\.com/file/.+)|(https?://(www\.)?filepost\.com/files/.+)|(http://(www\.)?freakshare\.(com|net)/.+)|(http://(www\.)?hipfile\.com/.+)|(http://(www\.)?lumfile\.com/.+)|(http://d\d\d\.megashares\.com/.+)|(https?://(www\.)?netload\.in/.+)|(https?://(www\.)?oteupload\.com/.+)|(http://(www\.)?rapidgator\.net/file/.*)|(http://(www\.)?ryushare\.com/.+)|(http://(www\.)?share\-online\.biz/dl/.+)|(http://(www\.)?slingfile\.com/(dl|file)/.+)|(http://(www\.)?(uploaded\.net|uploaded\.to|ul\.to)/.+)|(http://(www\.)?extmatrix\.com/files/.+)|(http://(www\.)?nakido\.com/.+)"/>
+                   value="(https?://(www\.)?(1st-files\.com|2shared\.com|albafile\.com|asfile\.com|bitshare\.com|cloudzer\.net|clz\.to|crocko\.com|datafilehost\.com|(i-filez|depfile)\.com|easybytez\.com|extmatrix\.com/files|filecloud\.io|filefactory\.com/file|fileflyer\.com/view|fileparadox\.in|filepost\.com/files|filerio\.(?:com|in)|filesflash\.com|filestay\.com|freakshare\.(com|net)hipfile\.com|junocloud\.me|load\.to|lumfile\.com|mediafire\.com|nakido\.com|netload\.in|oteupload\.com|(putlocker|sockshare)\.com/file|rapidgator\.net/file|sanshare\.com|scribd\.com|sendspace\.com/file|share\-online\.biz/dl|slingfile\.com/(dl|file)|speedyshare\.com|speedy.sh|uploaded\.net|uploaded\.to|ul\.to|uploading\.com|uptobox\.com|vip-file\.com)/.+|https?://dl\.free\.fr/.+|https?://(.*?\.)?(1fichier\.com|hotfile\.com/(dl|links)|megashares\.com|shareflare\.net/download|yunfile\.com)/.+)"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="simply-debrid.com"/>
+        <attribute id="services" value="see wordrider.net/forum/10/12390"/>
+        <attribute id="www" value="http://wordrider.net/forum/10/12390"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>

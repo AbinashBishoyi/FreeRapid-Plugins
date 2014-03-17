@@ -1,7 +1,11 @@
 package cz.vity.freerapid.plugins.services.novafile;
 
+import cz.vity.freerapid.plugins.exceptions.BadLoginException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -31,4 +35,27 @@ class NovaFileFileRunner extends XFileSharingRunner {
         return downloadLinkRegexes;
     }
 
+    @Override
+    protected void doLogin(PremiumAccount pa) throws Exception {
+        HttpMethod method = getMethodBuilder()
+                .setReferer(getBaseURL())
+                .setAction(getBaseURL() + "/login")
+                .toGetMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException();
+        }
+        method = getMethodBuilder()
+                .setReferer(getBaseURL() + "/login")
+                .setAction(getBaseURL())
+                .setActionFromFormByName("FL", true)
+                .setParameter("login", pa.getUsername())
+                .setParameter("password", pa.getPassword())
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException();
+        }
+        if (getContentAsString().contains("Incorrect Login or Password")) {
+            throw new BadLoginException("Invalid account login information");
+        }
+    }
 }

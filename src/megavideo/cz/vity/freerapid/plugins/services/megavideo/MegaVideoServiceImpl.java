@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class MegaVideoServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "megavideo.com";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }

@@ -6,7 +6,6 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -35,8 +34,11 @@ class WatFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String name = PlugUtils.getStringBetween(getContentAsString(), "<strong class=\"title\">", "</strong>");
-        httpFile.setFileName(name + ".mp4");
+        final Matcher matcher = getMatcherAgainstContent("<h1><span title=\".+?\">(.+?)</span></h1>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found");
+        }
+        httpFile.setFileName(matcher.group(1) + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

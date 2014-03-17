@@ -24,6 +24,11 @@
 
     <fileset id="jars" dir="${lib.dir}" includes="**/*"/>
 
+    <property name="dev.dir" value="../../dev"/>
+    <taskdef name="jpf-version"
+             classpath="${dev.dir}/anttasks/jpf-tools.jar;${lib.dir}/jpf.jar;${lib.dir}/commons-logging-1.1.jar"
+             classname="org.java.plugin.tools.ant.VersionUpdateTask"/>
+
     <patternset id="compiler.resources">
         <include name="**/?*.properties"/>
         <include name="**/?*.xml"/>
@@ -72,6 +77,7 @@
 
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
+        <jpf-version includes="plugin.xml" versionsfile="../../versions.properties"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
 
             <sourcepath location="../devapp"/>

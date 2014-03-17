@@ -2,7 +2,7 @@
 <project name="4Upload Plugin" default="all" basedir=".">
     <property name="application" value="4upload"/>
     <property name="packagename" value="fourupload"/>
-	<property name="version" value="0.1"/>
+    <property name="version" value="0.1"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="4upload.jar"/>
@@ -21,6 +21,11 @@
     <property name="plugins.dir" value="plugins"/>
 
     <fileset id="jars" dir="${lib.dir}" includes="**/*"/>
+
+    <property name="dev.dir" value="../../dev"/>
+    <taskdef name="jpf-version"
+             classpath="${dev.dir}/anttasks/jpf-tools.jar;${lib.dir}/jpf.jar;${lib.dir}/commons-logging-1.1.jar"
+             classname="org.java.plugin.tools.ant.VersionUpdateTask"/>
 
     <patternset id="compiler.resources">
         <include name="**/?*.properties"/>
@@ -59,7 +64,8 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${packagename}/**, **/${application}/**, resources/**" excludes="**/TestApp*"/>
+            <fileset dir="${classes.dir}" includes="**/${packagename}/**, **/${application}/**, resources/**"
+                     excludes="**/TestApp*"/>
         </copy>
 
         <copy todir="${build.dir}">
@@ -70,7 +76,9 @@
 
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
-        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6" debuglevel="lines">
+        <jpf-version includes="plugin.xml" versionsfile="../../versions.properties"/>
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6"
+               debuglevel="lines">
 
             <sourcepath location="../devapp"/>
         </javac>

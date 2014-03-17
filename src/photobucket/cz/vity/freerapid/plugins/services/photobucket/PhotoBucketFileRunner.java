@@ -45,9 +45,9 @@ class PhotoBucketFileRunner extends AbstractRunner {
             httpFile.setFileName("Album: " + PlugUtils.getStringBetween(contentAsString, "<title>", "- Photobucket"));
 
         } else {
-            final Matcher name = getMatcherAgainstContent("File Name: <span id=\"photoPathTitle\".*?>(.+?)</span><span id=\"photoPathExtension\">(.+?)</span>");
+            final Matcher name = getMatcherAgainstContent("\"name\":\"(.+?)\",");
             if (name.find()) {
-                final String filename = name.group(1) + name.group(2);
+                final String filename = name.group(1);
                 logger.info("File name " + filename);
                 httpFile.setFileName(filename);
             } else {
@@ -109,7 +109,7 @@ class PhotoBucketFileRunner extends AbstractRunner {
                 parseWebsite("<a href=\"(http://.+?)\" onclick=\"tr\\('album_thumb_click'\\);\">");
 
             } else { //image
-                final HttpMethod httpMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("fullSizedImage").toGetMethod();
+                final HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "downloadUrl\":\"", "\",").replaceAll("\\\\/", "/"));
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     throw new PluginImplementationException();

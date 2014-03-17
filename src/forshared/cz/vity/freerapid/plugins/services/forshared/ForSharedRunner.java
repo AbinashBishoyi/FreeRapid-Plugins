@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.forshared;
 
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -120,12 +117,15 @@ class ForSharedRunner extends AbstractRunner {
     }
 
 
-    private void checkProblems() throws ServiceConnectionProblemException {
+    private void checkProblems() throws ServiceConnectionProblemException, NotRecoverableDownloadException {
         if (getContentAsString().contains("already downloading")) {
             throw new ServiceConnectionProblemException("<b>4Shared Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed.");
         }
         if (getContentAsString().contains("Currently a lot of users")) {
             throw new ServiceConnectionProblemException("<b>4Shared Error:</b><br>Currently a lot of users are downloading files.");
+        }
+        if (getContentAsString().contains("You must enter a password to access this file")) {
+            throw new NotRecoverableDownloadException("Files with password are not supported");
         }
     }
 

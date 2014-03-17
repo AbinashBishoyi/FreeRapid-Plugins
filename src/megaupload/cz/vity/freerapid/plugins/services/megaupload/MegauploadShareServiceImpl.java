@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  */
 public class MegauploadShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "megaupload.com";
-    private final static Pattern pattern = Pattern.compile("http://(www\\.)?megaupload\\.com/.*", Pattern.CASE_INSENSITIVE);
+    private final static Pattern pattern = Pattern.compile("http://(www\\.)?(megaupload|megarotic|sexuploader)\\.com/.*", Pattern.CASE_INSENSITIVE);
 
     public String getName() {
         return SERVICE_NAME;

@@ -28,7 +28,7 @@ class MegauploadRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
     private HttpDownloadClient client;
     private HttpFileDownloader downloader;
-    private static final String HTTP_MEGAUPLOAD = "http://www.megaupload.com";
+    private String HTTP_SITE = "http://www.megaupload.com";
 
     public void run(HttpFileDownloader downloader) throws Exception {
         this.downloader = downloader;
@@ -36,12 +36,13 @@ class MegauploadRunner {
         client = downloader.getClient();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         final String fileURL = httpFile.getFileUrl().toString();
+        if(httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader") ) HTTP_SITE = "http://www.megarotic.com";
         logger.info("Starting download in TASK " + fileURL);
 
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-            Matcher matcher = Pattern.compile(" ([0-9.]+) MB</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = Pattern.compile(" ([0-9.]+) MB.?</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
                 logger.info("File size " + matcher.group(1));
                 Double a = new Double(matcher.group(1).replaceAll(" ", ""));
@@ -51,9 +52,9 @@ class MegauploadRunner {
                 if (client.getContentAsString().contains("trying to access is temporarily unavailable"))
                     throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
             }
-            matcher = Pattern.compile("Filename:</b> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = Pattern.compile("Filename:(</font>)?</b> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
-                final String fn = matcher.group(1);
+                final String fn = matcher.group(2);
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
             } else logger.warning("File name was not found" + client.getContentAsString());
@@ -131,8 +132,8 @@ class MegauploadRunner {
             Matcher matcher = Pattern.compile("src=\"(/capgen[^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 String s = replaceEntities(matcher.group(1));
-                logger.info(HTTP_MEGAUPLOAD + s);
-                String captcha = downloader.getCaptcha(HTTP_MEGAUPLOAD + s);
+                logger.info(HTTP_SITE + s);
+                String captcha = downloader.getCaptcha(HTTP_SITE + s);
                 // InputStreamReader inp = new InputStreamReader(System.in);
                 //  BufferedReader br = new BufferedReader(inp);
                 //  System.out.println("Enter text : ");
@@ -147,7 +148,7 @@ class MegauploadRunner {
                     String megavar = getParameter("megavar", contentAsString);
 
 
-                    final PostMethod postMethod = client.getPostMethod(HTTP_MEGAUPLOAD);
+                    final PostMethod postMethod = client.getPostMethod(HTTP_SITE);
 
 
                     postMethod.addParameter("d", d);

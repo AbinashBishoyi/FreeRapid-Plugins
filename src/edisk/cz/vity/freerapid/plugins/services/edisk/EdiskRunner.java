@@ -8,7 +8,6 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -21,53 +20,64 @@ class EdiskRunner extends AbstractRunner {
     public static final String SERVICE_WEB = "http://www.edisk.cz";
     private final static Logger logger = Logger.getLogger(EdiskRunner.class.getName());
 
-    public EdiskRunner() {
-        super();
-    }
-
+    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
-
         if (makeRedirectedRequest(httpMethod)) {
             checkNameAndSize(getContentAsString());
-        } else
-            throw new PluginImplementationException();
+            checkProblems();
+        } else {
+            throw new ServiceConnectionProblemException();
+        }
     }
 
+    @Override
     public void run() throws Exception {
         super.run();
-        final HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+        HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
-            final HttpMethod httpMethod2 = getGetMethod(fileURL.replace("/stahni/", "/stahni-pomalu/"));
-
-            if (makeRedirectedRequest(httpMethod2)) {
+            httpMethod = getGetMethod(fileURL.replace("/stahni/", "/stahni-pomalu/"));
+            if (makeRedirectedRequest(httpMethod)) {
                 checkProblems();
-                String action = PlugUtils.getStringBetween(getContentAsString(), "countDown('", "',");
-                downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "var waitSecs = ", ";", TimeUnit.SECONDS));
-                final HttpMethod httpMethod3 = getMethodBuilder().setAction("/x-download/" + action).setBaseURL(SERVICE_WEB).setParameter("action", action).toPostMethod();
-                if (makeRedirectedRequest(httpMethod3)) {
+                if (getContentAsString().contains("hnout pouze 1 soubor denn")) {
+                    throw new ServiceConnectionProblemException("Zdarma je možné stáhnout pouze 1 soubor denně");
+                }
+                String action;
+                try {
+                    action = PlugUtils.getStringBetween(getContentAsString(), "countDown('", "',");
+                } catch (PluginImplementationException e) {
+                    throw new PluginImplementationException("Cannot find action string");
+                }
+                try {
+                    downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "var waitSecs = ", ";", TimeUnit.SECONDS));
+                } catch (Exception e) {
+                    throw new PluginImplementationException("Cannot find waiting time");
+                }
+                httpMethod = getMethodBuilder().setAction("/x-download/" + action).setBaseURL(SERVICE_WEB).setParameter("action", action).toPostMethod();
+                if (makeRedirectedRequest(httpMethod)) {
                     checkProblems();
                     final HttpMethod finalMethod = getMethodBuilder().setAction(getContentAsString()).toGetMethod();
                     if (!tryDownloadAndSaveFile(finalMethod)) {
                         checkProblems();
                         logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty.");
+                        throw new ServiceConnectionProblemException("Error starting download");
                     }
                 } else {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException();
+                    throw new ServiceConnectionProblemException();
                 }
-
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException();
             }
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private String checkURL(String fileURL) {
@@ -76,7 +86,6 @@ class EdiskRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws Exception {
-
         if (!content.contains("edisk.cz")) {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
@@ -89,23 +98,20 @@ class EdiskRunner extends AbstractRunner {
 
     }
 
-
     private PostMethod stepCaptcha(String contentAsString, boolean hack) throws Exception {
         if (contentAsString.contains("text z obr")) {
             String captcha = "";
             Matcher matcher;
-
             if (hack) {
                 captcha = "5414";
                 downloadTask.sleep(5);
             } else {
-
                 CaptchaSupport captchaSupport = getCaptchaSupport();
                 String host = "http://" + httpFile.getFileUrl().getHost();
                 String captchaImgUrl = getMethodBuilder(contentAsString).setActionFromImgSrcWhereTagContains("captcha").getAction();
                 captchaImgUrl = host + captchaImgUrl;
                 Matcher m = Pattern.compile("/([0-9]+)$").matcher(captchaImgUrl);
-                String captchaNumber = "";
+                String captchaNumber;
                 logger.info("Captcha Image URL " + captchaImgUrl);
                 if (m.find()) {
                     captchaNumber = m.group(1);
@@ -161,21 +167,16 @@ class EdiskRunner extends AbstractRunner {
             logger.warning(contentAsString);
             throw new PluginImplementationException("Captcha picture was not found");
         }
-
     }
 
-
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("neexistuje z ")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Po?adovan? soubor nebyl nalezen.</b><br>"));
         }
-        if (getContentAsString().contains("stahovat pouze jeden soubor") ||
-                getContentAsString().contains("hnout pouze 1 soubor denn")) {
+        if (getContentAsString().contains("stahovat pouze jeden soubor")) {
             throw new ServiceConnectionProblemException(String.format("<b>M?ete stahovat pouze jeden soubor nar?z</b><br>"));
 
         }
-
-
     }
 
 }

@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
 class CzshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CzshareRunner.class.getName());
     private final static Map<String, PostMethod> methodsMap = new HashMap<String, PostMethod>();
+    private final static int WAIT_TIME = 30;
 
     @Override
     public void runCheck() throws Exception {
@@ -87,7 +88,7 @@ class CzshareRunner extends AbstractRunner {
 
             Matcher matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
             if (matcher.find()) {
-                throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
+                throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
             }
             client.setReferer(fileURL);
 
@@ -130,7 +131,7 @@ class CzshareRunner extends AbstractRunner {
 
     private PostMethod stepCaptcha() throws Exception {
         if ("".equals(getContentAsString())) {
-            throw new YouHaveToWaitException("Neurčité omezení", 120);
+            throw new YouHaveToWaitException("Neurčité omezení", 4 * WAIT_TIME);
         }
         Matcher matcher;
         matcher = getMatcherAgainstContent("<td class=\"kod\" colspan=\"2\"><img src=\"([^\"]*)\" /></td>");
@@ -204,7 +205,7 @@ class CzshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Bohužel je vyčerpána maximální kapacita FREE downloadů", 30);
+            throw new YouHaveToWaitException("Bohužel je vyčerpána maximální kapacita FREE downloadů", WAIT_TIME);
         }
         matcher = getMatcherAgainstContent("Nesouhlas. kontroln. kod");
         if (matcher.find()) {

@@ -25,6 +25,7 @@ class AsfileFileRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
+            checkUrlUnavailable(getMethod);
             checkProblems();
             checkNameAndSize(getContentAsString());
         } else {
@@ -46,6 +47,8 @@ class AsfileFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
         if (!makeRedirectedRequest(getMethod)) {
+            checkUrlUnavailable(getMethod);
+            checkNameAndSize(getContentAsString());
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -131,10 +134,17 @@ class AsfileFileRunner extends AbstractRunner {
         checkProblems();
     }
 
+    private void checkUrlUnavailable(final HttpMethod method) throws Exception {
+        if (method.getURI().toString().contains("/file_is_unavailable/")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+    }
+
     public void checkProblems() throws ErrorDuringDownloadingException {
         if (fileURL.contains("/file_is_unavailable/")
                 || getContentAsString().contains("Delete Reason")
-                || getContentAsString().contains("File is deleted")) {
+                || getContentAsString().contains("File is deleted")
+                || getContentAsString().contains("File is not exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (getContentAsString().contains("available only to premium")) {

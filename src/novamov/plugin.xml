@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.novamov.NovaMovServiceImpl"
-        id="novamov.com" vendor="tong2shot" version="2.0.0">
+        id="novamov.com" vendor="tong2shot" version="2.0.1">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(novamov|novaup)\.com/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="urlRegex" value="http://(www\.)?(novamov|novaup)\.com/video/.+"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="novamov.com novaup.com"/>
         <attribute id="maxDownloads" value="10"/>
-        <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-    <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.2" reverse-lookup="false"/>
-    </requires>
     <runtime>
         <library id="novamov.com" path="/" type="code"/>
     </runtime>

@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URI;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -72,6 +73,10 @@ class NowVideoEuFileRunner extends AbstractRunner {
             }
             checkProblems();
             final String downloadUrl = PlugUtils.getStringBetween(getContentAsString(), "url=", "&title=");
+            final String path = new URI(downloadUrl).getPath();
+            final String fname = path.substring(path.lastIndexOf("/") + 1);
+            final String ext = fname.contains(".") ? fname.substring(fname.lastIndexOf(".")) : ".flv";
+            httpFile.setFileName(httpFile.getFileName() + ext);
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(downloadUrl)

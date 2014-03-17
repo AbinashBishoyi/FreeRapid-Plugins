@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.novamov;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
+import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class NovaMovServiceImpl extends XFileSharingServiceImpl {
-
-    @Override
-    public String getServiceTitle() {
-        return "NovaMov";
-    }
+public class NovaMovServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
         return "novamov.com";
+    }
+
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
     }
 
     @Override

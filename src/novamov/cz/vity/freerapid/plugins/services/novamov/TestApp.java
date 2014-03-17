@@ -16,6 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             httpFile.setNewURL(new URL("http://www.novamov.com/video/1yyvbg8j5vltc"));
+            //httpFile.setNewURL(new URL("http://www.novamov.com/video/4a93863719a18"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final NovaMovServiceImpl service = new NovaMovServiceImpl();

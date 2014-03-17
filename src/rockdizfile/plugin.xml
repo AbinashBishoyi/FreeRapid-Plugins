@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.rockdizfile.RockDizFileServiceImpl"
-        id="rockdizfile.com" vendor="tong2shot" version="2.0.2">
+        id="rockdizfile.com" vendor="tong2shot" version="2.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?rockdizfile\.com/.+"/>
-        <attribute id="minver" value="0.853"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="rockdizfile.com"/>
         <attribute id="maxDownloads" value="100"/>
@@ -14,7 +14,7 @@
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.7" reverse-lookup="false"/>
+                plugin-version="1.0.10" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="rockdizfile.com" path="/" type="code"/>

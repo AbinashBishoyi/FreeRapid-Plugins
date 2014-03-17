@@ -17,9 +17,17 @@ import java.util.regex.Matcher;
 class UpnitoFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UpnitoFileRunner.class.getName());
     private String newUrl;
+
+
+    private void setEncoding() {
+        client.getHTTPClient().getParams().setParameter("pageCharset", "Windows-1250");
+        client.getHTTPClient().getParams().setHttpElementCharset("Windows-1250");
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        setEncoding();
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -33,33 +41,15 @@ class UpnitoFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        //zov: <strong>nhl.09.part06.rar<br>
-        Matcher matcher = PlugUtils.matcher("zov: <strong>(.*?)<", content);
-        if (matcher.find()) {
-            final String fileName = matcher.group(1).trim(); //method trim removes white characters from both sides of string
-            logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
-            //: <strong>204800</strong>KB<br>
-            matcher = PlugUtils.matcher(": <strong>([0-9]+)</strong>(.?B)<", content);
-            if (matcher.find()) {
-                final long size = PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2));
-                httpFile.setFileSize(size);
-            } else {
-                checkProblems();
-                logger.warning("File size was not found\n:");
-                throw new PluginImplementationException();
-            }
-        } else {
-            checkProblems();
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
-        }
+        PlugUtils.checkName(httpFile, content, "bor:</strong>", "<br>");
+        PlugUtils.checkFileSize(httpFile, content, "kos\u0165:</strong>", "<br>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
+        setEncoding();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {

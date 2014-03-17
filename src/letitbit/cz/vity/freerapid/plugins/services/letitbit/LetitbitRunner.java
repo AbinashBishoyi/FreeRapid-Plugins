@@ -135,7 +135,8 @@ class LetitbitRunner extends AbstractRunner {
                 || content.contains("\u043D\u0430\u0439\u0434\u0435\u043D")
                 || content.contains("<title>404</title>")
                 || (content.contains("Request file ") && content.contains(" Deleted"))
-                || content.contains("File not found")) {
+                || content.contains("File not found")
+                || content.contains("<body><h1>Error</h1></body>")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

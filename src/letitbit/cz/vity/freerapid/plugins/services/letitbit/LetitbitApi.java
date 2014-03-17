@@ -90,7 +90,7 @@ class LetitbitApi {
     }
 
     private static String createRandomEmailAddress() {
-        return createRandomString(32, "abcdefghijklmnopqrstuvwxyz0123456789") + "@gmail.com";
+        return createRandomString(32, "abcdefghijklmnopqrstuvwxyz0123456789") + "@mail.ru";
     }
 
     private static String createRandomString(final int length, final String characters) {

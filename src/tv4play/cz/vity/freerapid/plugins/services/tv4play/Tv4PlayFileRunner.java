@@ -54,6 +54,7 @@ public class Tv4PlayFileRunner extends AbstractRtmpRunner {
             checkProblems(getContentAsString());
             checkNameAndSize();
             method = getGetMethod("http://prima.tv4play.se/api/web/asset/" + getId() + "/play");
+            method.setRequestHeader("X-Forwarded-For", "80.76.149.158");
             // They send "Content-Encoding: utf-8", which is a violation of the HTTP spec.
             // As such, makeRedirectedRequest cannot be used here.
             final int responseCode = client.getHTTPClient().executeMethod(method);
@@ -85,7 +86,7 @@ public class Tv4PlayFileRunner extends AbstractRtmpRunner {
     }
 
     private String getId() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("videoid=(\\d+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("video_id=(\\d+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing file URL");
         }

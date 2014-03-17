@@ -9,7 +9,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 
 /**
  * @author Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
- * @version $Revision: 571 $ ($Date: 2008-09-17 19:24:33 +0530 (Wed, 17 Sep 2008) $)
+ * @version $Revision: 600 $ ($Date: 2008-09-25 18:29:25 +0530 (Thu, 25 Sep 2008) $)
  */
 class BadLoginException extends ErrorDuringDownloadingException {
 
@@ -17,5 +17,8 @@ class BadLoginException extends ErrorDuringDownloadingException {
     public BadLoginException() {
     }
 
+    public BadLoginException(String message) {
+        super(message);
+    }
 }
 

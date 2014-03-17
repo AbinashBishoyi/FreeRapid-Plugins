@@ -47,6 +47,9 @@ class RapidShareRunner {
 				logger.log(Level.WARNING, "Bad password or login!");
 			}
 		} while (i < 4);
+
+		throw new ErrorDuringDownloadingException("No RS Premium account login information!");
+
 	}
 
 	private void tryDownload(HttpFileDownloader downloader) throws Exception {
@@ -78,6 +81,7 @@ class RapidShareRunner {
 			}
 
 			Matcher matcher = Pattern.compile("form id=\"ff\" action=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+			boolean ok = false;
 			if (matcher.find()) {
 				String s = matcher.group(1);
 				//| 5277 KB</font>
@@ -96,25 +100,37 @@ class RapidShareRunner {
 					matcher = Pattern.compile("(http://.*?\\.rapidshare\\.com/files/.*?)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
 					if (matcher.find()) {
 						s = matcher.group(1);
+						ok = true;
 						finalDownload(s, downloader);
 					} else {
 						checkProblems();
 						logger.info(client.getContentAsString());
-						throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
 					}
 				}
 			}
+
+			if (!ok) failed();
+
 		} else {
-			throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+			failed();
 		}
 	}
 
-	private void chechFileNotFound() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException {
+	private void failed() throws PluginImplementationException {
+		throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+	}
+
+	private void chechFileNotFound() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException, BadLoginException {
 		String code = client.getContentAsString().toLowerCase();
 		Matcher matcher = Pattern.compile("<h1>error.*?class=\"klappbox\">(.*?)</div>", Pattern.DOTALL).matcher(code);
 		if (matcher.find()) {
 			final String error = matcher.group(1);
-			if (error.contains("illegal content") || error.contains("could not be found") || error.contains("file has been removed") || error.contains("violation of our terms of use")) {
+			if (error.contains("illegal content") || error.contains("could not be found") || error.contains("file has been removed") || error.contains("violation of our terms of use") || error.contains("uploader has removed")) {
+				throw new URLNotAvailableAnymoreException("<b>RapidShare known error:</b><br> " + error);
+			}
+			if (error.contains("your premium account has not been found")) {
+				configProvider.clear();
+				logger.log(Level.WARNING, "Account expired. Maybe.");
 				throw new URLNotAvailableAnymoreException("<b>RapidShare known error:</b><br> " + error);
 			}
 			logger.warning("RapidShare error:" + error);
@@ -126,8 +142,16 @@ class RapidShareRunner {
 		if (code.contains("could not be found")) {
 			throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> The file could not be found. Please check the download link.");
 		}
+		if (code.contains("The uploader has removed this file from the server")) {
+			throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> The uploader has removed this file from the server.");
+		}
 		if (code.contains("violation of our terms of use") || code.contains("file has been removed")) {
 			throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> Due to a violation of our terms of use, the file has been removed from the server.");
+		}
+		if (code.contains("your premium account has not been found")) {
+			configProvider.clear();
+			logger.log(Level.WARNING, "Account expired. Maybe.");
+			throw new URLNotAvailableAnymoreException("<b>RapidShare known error:</b><br> Your premium account has not been found.");
 		}
 
 		if (code.contains("error")) {
@@ -177,7 +201,7 @@ class RapidShareRunner {
 		}
 	}
 
-	private void checkLogin() {
+	private void checkLogin() throws ErrorDuringDownloadingException {
 		synchronized (RapidShareRunner.class) {
 			String cookie = configProvider.getConfig().getCookie();
 			if (cookie == null) {

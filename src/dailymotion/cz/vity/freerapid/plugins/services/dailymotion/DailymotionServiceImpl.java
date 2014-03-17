@@ -9,10 +9,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class DailymotionServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "dailymotion.com";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 8;//i checked that before
     }

@@ -28,7 +28,7 @@ class UrlCashRunner extends AbstractRunner {
         logger.info(fileURL);
         if (makeRedirectedRequest(method)) {
             String content = getContentAsString().toLowerCase();
-            Matcher matcher = PlugUtils.matcher("<title>(.+)</title>", content);
+            Matcher matcher = PlugUtils.matcher("<title>(.+?)</title>", content);
             //final Matcher matcher = getMatcherAgainstContent("<TITLE>(.+)</title>");
             if (matcher.find()) {
                 String s = matcher.group(1);

@@ -185,12 +185,12 @@ class LetitbitRunner extends AbstractRunner {
 
     private String getUrlFromApi() throws Exception {
         final HttpMethod method = getMethodBuilder()
-                .setAction("http://api.letitbit.net/internal/")
+                .setAction("http://api.letitbit.net/internal/index2.php")
                 .setParameter("action", "LINK_GET_DIRECT")
                 .setParameter("link", fileURL)
                 .setParameter("free_link", "1")
-                .setParameter("appid", "3abae470733e41cba46177c450f69616")
-                .setParameter("version", "1.63")
+                .setParameter("appid", "86f662f29a1c4223942606d1e8226731")
+                .setParameter("version", "1.71")
                 .toPostMethod();
         if (makeRedirectedRequest(method)) {
             for (final String line : getContentAsString().split("[\r\n]")) {
@@ -200,7 +200,8 @@ class LetitbitRunner extends AbstractRunner {
                 }
             }
         }
-        logger.info("API download failed");
+        logger.warning("API download failed");
+        logger.warning("Content from last request:\n" + getContentAsString());
         return null;
     }
 

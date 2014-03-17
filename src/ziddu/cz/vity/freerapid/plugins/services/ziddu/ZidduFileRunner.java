@@ -103,7 +103,7 @@ class ZidduFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private HttpMethod stepCaptcha(String redirectURL, String contentAsString) throws Exception, IOException {
+    private HttpMethod stepCaptcha(String redirectURL, String contentAsString) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         String captchaSrc = SERVICE_WEB + PlugUtils.getStringBetween(contentAsString, "\"", "\" align=\"absmiddle\" id=\"image\" name=\"image\"");
         logger.info("Captcha URL " + captchaSrc);
@@ -128,7 +128,11 @@ class ZidduFileRunner extends AbstractRunner {
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            return getMethodBuilder(contentAsString).setReferer(redirectURL).setActionFromFormByName("securefrm", true).setBaseURL(SERVICE_WEB).setParameter("securitycode", captcha).toHttpMethod();
+            return getMethodBuilder(contentAsString)
+                    .setReferer(redirectURL)
+                    .setActionFromFormByName("securefrm", true)
+                    .setBaseURL(SERVICE_WEB).setParameter("securitycode", captcha)
+                    .setParameter("accelerator", "").toHttpMethod();
         }
     }
 

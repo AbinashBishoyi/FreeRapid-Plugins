@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.ulozto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
@@ -27,6 +28,7 @@ class UlozToRunner extends AbstractRunner {
         final GetMethod getMethod = client.getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameAndSize(client.getContentAsString());
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -60,6 +62,7 @@ class UlozToRunner extends AbstractRunner {
         }
         return "file01";
     }
+
     private void checkNameAndSize(String content) throws Exception {
 
         if (!content.contains("uloz.to")) {

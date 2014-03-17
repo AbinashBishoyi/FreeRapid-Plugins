@@ -1,10 +1,7 @@
 package cz.vity.freerapid.plugins.services.egoshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -33,6 +30,7 @@ class EgoshareRunner extends AbstractRunner {
         final GetMethod getMethod = client.getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameAndSize(client.getContentAsString());
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }

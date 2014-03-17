@@ -128,7 +128,7 @@ class FileFactoryRunner extends AbstractRunner {
                     if (matcher.find()) {
                         client.setReferer(basicLinkURL);
                         s = matcher.group(1);
-                        iframeURL = replaceEntities(s);
+                        iframeURL = PlugUtils.replaceEntities(s);
                         method = client.getGetMethod(HTTP_FILEFACTORY_COM + iframeURL);
                         if (!makeRequest(method))
                             throw new PluginImplementationException("IFrame with captcha not found");
@@ -159,17 +159,12 @@ class FileFactoryRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private String replaceEntities(String s) {
-        s = s.replaceAll("\\&amp;", "&");
-        return s;
-    }
-
     private boolean stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("Please enter the following code") || contentAsString.contains(VERIFICATION_WAS_INCORRECT)) {
             //src="/securimage/securimage_show.php?f=a3f880&amp;h=eda55e0920a7371c4983ec8e19f3de88"
             Matcher matcher = PlugUtils.matcher("src=\"(/securi[^\"]*)\"", contentAsString);
             if (matcher.find()) {
-                String s = replaceEntities(matcher.group(1));
+                String s = PlugUtils.replaceEntities(matcher.group(1));
                 final String captcha = getCaptchaSupport().getCaptcha(HTTP_FILEFACTORY_COM + s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();

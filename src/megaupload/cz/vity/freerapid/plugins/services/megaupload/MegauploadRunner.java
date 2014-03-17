@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.megaupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.*;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -148,7 +147,7 @@ class MegauploadRunner extends AbstractRunner {
 
             Matcher matcher = PlugUtils.matcher("src=\"(/capgen[^\"]*)\"", contentAsString);
             if (matcher.find()) {
-                String s = replaceEntities(matcher.group(1));
+                String s = PlugUtils.replaceEntities(matcher.group(1));
                 logger.info("Captcha - image " + HTTP_SITE + s);
                 String captcha = null;
                 final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(HTTP_SITE + s);
@@ -171,9 +170,9 @@ class MegauploadRunner extends AbstractRunner {
                     throw new CaptchaEntryInputMismatchException();
 
                 //  client.setReferer(baseURL);
-                String d = getParameter("d", contentAsString);
-                String imagecode = getParameter("imagecode", contentAsString);
-                String megavar = getParameter("megavar", contentAsString);
+                String d = PlugUtils.getParameter("d", contentAsString);
+                String imagecode = PlugUtils.getParameter("imagecode", contentAsString);
+                String megavar = PlugUtils.getParameter("megavar", contentAsString);
 
                 final PostMethod postMethod = client.getPostMethod(HTTP_SITE);
 
@@ -191,24 +190,11 @@ class MegauploadRunner extends AbstractRunner {
         return false;
     }
 
-
-    private static String replaceEntities(String s) {
-        return s.replaceAll("\\&amp;", "&");
-    }
-
     private String encodeURL(String s) throws UnsupportedEncodingException {
         Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
         if (matcher.find()) {
             return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
         }
         return s;
-    }
-
-    private String getParameter(String s, String contentAsString) throws PluginImplementationException {
-        Matcher matcher = PlugUtils.matcher("name=\"" + s + "\" value=\"([^\"]*)\"", contentAsString);
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else
-            throw new PluginImplementationException("Parameter " + s + " was not found");
     }
 }

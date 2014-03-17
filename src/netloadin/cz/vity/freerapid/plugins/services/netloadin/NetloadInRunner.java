@@ -99,18 +99,13 @@ class NetloadInRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    private String replaceEntities(String s) {
-        s = s.replaceAll("\\&amp;", "&");
-        return s;
-    }
-
     private boolean stepEnterPage(String contentAsString) throws Exception {
         Matcher matcher = PlugUtils.matcher("class=\"Free_dl\"><a href=\"([^\"]*)\"", contentAsString);
         if (!matcher.find()) {
             checkProblems();
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-        String s = "/" + replaceEntities(matcher.group(1));
+        String s = "/" + PlugUtils.replaceEntities(matcher.group(1));
         client.setReferer(initURL);
 
         logger.info("Go to URL - " + s);
@@ -132,7 +127,7 @@ class NetloadInRunner extends AbstractRunner {
 
             Matcher matcher = PlugUtils.matcher("src=\"(share\\/includes\\/captcha.*?)\"", contentAsString);
             if (matcher.find()) {
-                String s = "/" + replaceEntities(matcher.group(1));
+                String s = "/" + PlugUtils.replaceEntities(matcher.group(1));
                 String captcha = getCaptchaSupport().getCaptcha(HTTP_NETLOAD + s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();

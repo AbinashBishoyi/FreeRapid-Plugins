@@ -6,10 +6,8 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek
@@ -66,11 +64,11 @@ class UploadedToRunner extends AbstractRunner {
                 httpFile.setState(DownloadState.GETTING);
                 final GetMethod method = client.getGetMethod(s);
                 //method.addParameter("mirror", "on");
-                if(!tryDownload(method)) {
-                        checkProblems();
-                        logger.warning(client.getContentAsString());
-                        throw new IOException("File input stream is empty.");
-                    }
+                if (!tryDownload(method)) {
+                    checkProblems();
+                    logger.warning(client.getContentAsString());
+                    throw new IOException("File input stream is empty.");
+                }
             } else {
                 checkProblems();
                 logger.info(client.getContentAsString());

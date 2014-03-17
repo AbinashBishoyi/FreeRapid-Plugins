@@ -77,7 +77,7 @@ class UploadBoxFileRunner extends AbstractRunner {
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("File removed from service") || contentAsString.contains("File deleted from service")) {
+        if (contentAsString.contains("File removed from service") || contentAsString.contains("File deleted from service") || contentAsString.contains("This Link Is Not Available")) {
             throw new URLNotAvailableAnymoreException("File removed from service");
         }
 
@@ -90,7 +90,7 @@ class UploadBoxFileRunner extends AbstractRunner {
         checkSeriousProblems();
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("You allready download some file")) {
+        if (contentAsString.contains("You allready download some file") || contentAsString.contains("You already download some file")) {
             throw new YouHaveToWaitException("You already download some file. Please finish download and try again", 2 * 60);
         }
 

@@ -11,7 +11,7 @@ public class FileSizeHandlerB implements FileSizeHandler {
 
     @Override
     public void checkFileSize(final HttpFile httpFile, final String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span>File size:", "</span>");
+        PlugUtils.checkFileSize(httpFile, content, "<span>File size:", "</span>");
     }
 
 }

@@ -1,13 +1,15 @@
 package cz.vity.freerapid.plugins.services.depositfiles;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,37 +17,31 @@ import java.util.regex.Pattern;
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
-class DepositFilesRunner {
-    private final static Logger logger = Logger.getLogger(cz.vity.freerapid.plugins.services.depositfiles.DepositFilesRunner.class.getName());
-    private HttpDownloadClient client;
-
-
+class DepositFilesRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(DepositFilesRunner.class.getName());
     private static final String HTTP_DEPOSITFILES = "http://www.depositfiles.com";
 
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        String fileURL = httpFile.getFileUrl().toString();
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
         fileURL = CheckURL(fileURL);
-        logger.info("Starting download in TASK " + fileURL);
-
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
 
-            Matcher matcher = PlugUtils.matcher("<b>([0-9.]+&nbsp;.B)</b>", client.getContentAsString());
-            if (matcher.find()) {
-                logger.info("File size " + matcher.group(1));
-                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
-            }
-            matcher = PlugUtils.matcher("class\\=\"info[^=]*\\=\"([^\"]*)\"", client.getContentAsString());
-            if (matcher.find()) {
-                final String fn = matcher.group(1);
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-            } else logger.warning("File name was not found" + client.getContentAsString());
+    public void run(HttpFileDownloader downloader) throws Exception {
+        super.run(downloader);
+        fileURL = CheckURL(fileURL);
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        getMethod.setFollowRedirects(true);
+        if (makeRequest(getMethod)) {
+
+            checkNameAndSize(client.getContentAsString());
+            Matcher matcher;
 
             if (!client.getContentAsString().contains("Free downloading mode")) {
 
@@ -91,19 +87,9 @@ class DepositFilesRunner {
                     throw new InterruptedException();
                 httpFile.setState(DownloadState.GETTING);
                 final GetMethod method = client.getGetMethod(t);
-
-                try {
-                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                    if (inputStream != null) {
-                        downloader.saveToFile(inputStream);
-                    } else {
-                        checkProblems();
-                        throw new IOException("File input stream is empty.");
-                    }
-
-                } finally {
-                    method.abort();
-                    method.releaseConnection();
+                if (!tryDownload(method)) {
+                    checkProblems();
+                    throw new IOException("File input stream is empty.");
                 }
             } else {
                 checkProblems();
@@ -115,9 +101,31 @@ class DepositFilesRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    private String CheckURL(String fileURL) {
-        return fileURL.replaceFirst("/../files", "/en/files");
+    private String CheckURL(String URL) {
+        return URL.replaceFirst("/../files", "/en/files");
 
+    }
+
+    private void checkNameAndSize(String content) throws Exception {
+        if (!content.contains("depositfiles")) {
+            logger.warning(client.getContentAsString());
+            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+        }
+
+        if (content.contains("file does not exist")) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
+        }
+        Matcher matcher = PlugUtils.matcher("<b>([0-9.]+&nbsp;.B)</b>", client.getContentAsString());
+        if (matcher.find()) {
+            logger.info("File size " + matcher.group(1));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
+        }
+        matcher = PlugUtils.matcher("class\\=\"info[^=]*\\=\"([^\"]*)\"", client.getContentAsString());
+        if (matcher.find()) {
+            final String fn = matcher.group(1);
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+        } else logger.warning("File name was not found" + client.getContentAsString());
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
@@ -137,7 +145,7 @@ class DepositFilesRunner {
 
         matcher = PlugUtils.matcher("slots[^<]*busy", content);
         if (matcher.find()) {
-            throw new YouHaveToWaitException(String.format("<b>All downloading slots for your country are busy</b><br>"), 60*2);
+            throw new YouHaveToWaitException(String.format("<b>All downloading slots for your country are busy</b><br>"), 60 * 2);
 
         }
         if (content.contains("file does not exist")) {

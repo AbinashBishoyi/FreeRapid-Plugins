@@ -35,7 +35,7 @@ class SvtPlayFileRunner extends AbstractRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        final String name = PlugUtils.getStringBetween(getContentAsString(), "<title>", "| SVT Play</title>");
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<title>", "|");
         httpFile.setFileName(PlugUtils.unescapeHtml(name) + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -48,7 +48,7 @@ class SvtPlayFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
-            method = getGetMethod("http://www.svtplay.se/video/" + getIdFromUrl() + "?output=json");
+            method = getMethodBuilder().setAction("/video/" + getIdFromUrl() + "?output=json").toGetMethod();
             if (makeRedirectedRequest(method)) {
                 final Matcher matcher = getMatcherAgainstContent("\"url\":\"([^\"]+)\",\"bitrate\":0,\"playerType\":\"flash\"");
                 if (!matcher.find()) {

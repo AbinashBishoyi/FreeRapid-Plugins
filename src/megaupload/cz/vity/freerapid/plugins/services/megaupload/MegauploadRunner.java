@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -235,10 +236,12 @@ class MegauploadRunner extends AbstractRunner {
 
     private String getManagerURL(String url) {
         // http://www.megaupload.com/?d=YPDRRQOP -> http://www.megaupload.com/mgr_dl.php?d=YPDRRQOP
+        String ur;
+        if (url.contains("mgr_dl.php")) ur = url;
+        else ur = url.replaceFirst("/\\?d=", "/mgr_dl.php?d=");
+            ur = ur + "&u=5e9111454eae5fdd521543116ee441534";
 
-        if (url.contains("mgr_dl.php")) return url;
-        return url.replaceFirst("/\\?d=", "/mgr_dl.php?d=");
-
+        return ur;
     }
 
     private boolean tryManagerDownload(String url) throws Exception {
@@ -247,6 +250,7 @@ class MegauploadRunner extends AbstractRunner {
 
         final HttpMethod methodCheck = getMethodBuilder().setAction(url).setReferer("").toHttpMethod();
         methodCheck.setFollowRedirects(false);
+        addCookie(new Cookie(".megaupload.com", "user", "5e9111454eae5fdd521543116ee441534", "/", null, false));
         if (client.makeRequest(methodCheck, false) == 302) {
             String downloadURL = methodCheck.getResponseHeader("location").getValue();
             logger.info("Found redirect location " + downloadURL);
@@ -269,8 +273,12 @@ class MegauploadRunner extends AbstractRunner {
             }
 
         } else {
-            makeRedirectedRequest(methodCheck);
-            return false;
+          final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+                getMethod.setFollowRedirects(true);
+                if (!makeRequest(getMethod)) {
+                    throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+                }
+                return false;
         }
 
     }

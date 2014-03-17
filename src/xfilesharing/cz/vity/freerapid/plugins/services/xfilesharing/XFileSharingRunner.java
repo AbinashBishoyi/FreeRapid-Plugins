@@ -69,6 +69,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
         checkFileProblems();
         checkNameAndSize();
+        checkDownloadProblems();
         for (int loopCounter = 0; ; loopCounter++) {
             if (loopCounter >= 8) {
                 //avoid infinite loops
@@ -77,9 +78,10 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             final MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("method_free", true)
-                    .setAction(fileURL)
-                    .removeParameter("method_premium");
-            checkDownloadProblems();
+                    .setAction(fileURL);
+            if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
+                methodBuilder.removeParameter("method_premium");
+            }
             int waitTime = stepGetWaitTime();
             long startTime = new Date().getTime();
             stepPassword(methodBuilder);

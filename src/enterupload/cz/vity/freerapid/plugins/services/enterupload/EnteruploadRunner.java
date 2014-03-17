@@ -34,9 +34,7 @@ class EnteruploadRunner extends AbstractRunner {
 
     private void checkNameandSize(String contentAsString) throws Exception {
 //<META NAME="description" CONTENT="Download Website.Layout.Maker.Ultra.Edition.v2.4.rar">
-        if (contentAsString.contains("File not found") || getContentAsString().contains("No such file")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-        }
+        checkProblems();
 
         if (!contentAsString.contains("Download File")) {
             logger.warning(getContentAsString());
@@ -60,65 +58,21 @@ class EnteruploadRunner extends AbstractRunner {
             String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
             stepEnterPage();
-
-            while (true) {           //(http://www\.enterupload\.com/captchas/[^\"]+)
-                if (!getContentAsString().contains("captchas")) {
+            downloadTask.sleep(40);
+            final HttpMethod httpMethod = getMethodBuilder().setActionFromFormByIndex(1,true).setAction(fileURL).toPostMethod();
+            if (makeRedirectedRequest(httpMethod)) {
+                final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("download.png").toHttpMethod();
+                if (!tryDownloadAndSaveFile(finalMethod)) {
                     checkProblems();
-                    throw new PluginImplementationException("Captcha not found");
+                    logger.warning(getContentAsString());
+                    throw new IOException("File input stream is empty.");
+
                 }
-
-                HttpMethod getlinkMethod = stepCaptcha(getContentAsString());
-                if (makeRequest(getlinkMethod)) {
-                    final String value = PlugUtils.getStringBetween(getContentAsString(), "7px;\">", "</a>");
-                    final HttpMethod finalMethod = getMethodBuilder(value + "</a>").setActionFromAHrefWhereATagContains("enterupload").toHttpMethod();
-                    //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "countdown\">", "</span"));
-                    if (!tryDownloadAndSaveFile(finalMethod)) {
-                        checkProblems();
-                        if (getContentAsString().contains("Wrong captcha")) continue;
-                        logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty.");
-
-                    } else break;
-                } else
-                    throw new ServiceConnectionProblemException();
-            }
+            } else throw new ServiceConnectionProblemException();
+            //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "countdown\">", "</span"));
 
 
         } else throw new ServiceConnectionProblemException();
-    }
-
-    private HttpMethod stepCaptcha(String contentAsString) throws Exception {
-
-
-        String s = getMethodBuilder(contentAsString).
-                setActionFromImgSrcWhereTagContains("captchas").getAction();
-        client.setReferer(fileURL);
-        final String captcha;
-        if (captchaCounter < 4) {
-            ++captchaCounter;
-            final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
-            captcha = new CaptchaRecognizer().recognize(captchaImage);
-        } else {
-            captcha = getCaptchaSupport().getCaptcha(s);
-        }
-
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
-
-        }
-
-        downloadTask.sleep(60);//extract sleep time from the website :-)
-
-        final HttpMethod method = getMethodBuilder(contentAsString).
-                setActionFromFormByName("F1", true).
-                setParameter("code", captcha).setReferer(fileURL).
-                setAction(fileURL).toPostMethod();
-        setClientParameter("noContentTypeInHeader", true);
-
-        return method;
-
-        //} else throw new InvalidURLOrServiceProblemException("Cant find action - " + contentAsString);
-
     }
 
     private void stepEnterPage() throws Exception {
@@ -128,11 +82,10 @@ class EnteruploadRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
         }
-
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, YouHaveToWaitException, PluginImplementationException {
-        if (getContentAsString().contains("File not found") || getContentAsString().contains("File Not Found") || getContentAsString().contains("No such file")) {
+        if (getContentAsString().contains("not be found") || getContentAsString().contains("File Not Found") || getContentAsString().contains("No such file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
 
         }

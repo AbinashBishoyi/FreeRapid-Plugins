@@ -5,11 +5,13 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 
 import java.net.URL;
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
@@ -189,7 +191,7 @@ class LetitbitRunner extends AbstractRunner {
                 .setParameter("action", "LINK_GET_DIRECT")
                 .setParameter("link", fileURL)
                 .setParameter("free_link", "1")
-                .setParameter("appid", "86f662f29a1c4223942606d1e8226731")
+                .setParameter("appid", getRandomAppId())
                 .setParameter("version", "1.71")
                 .toPostMethod();
         if (makeRedirectedRequest(method)) {
@@ -203,6 +205,12 @@ class LetitbitRunner extends AbstractRunner {
         logger.warning("API download failed");
         logger.warning("Content from last request:\n" + getContentAsString());
         return null;
+    }
+
+    private String getRandomAppId() {
+        final byte[] bytes = new byte[32];
+        new Random().nextBytes(bytes);
+        return Hex.encodeHexString(bytes);
     }
 
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="yourfiles.biz" version="1.0" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.yourfiles.YourFilesServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?yourfiles\.biz/.+"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="yourfiles.biz"/>
+        <attribute id="faviconImage" value="resources/favicon.gif"/>
+    </attributes>
+
+    <runtime>
+        <library id="yourfiles.biz" path="/" type="code"/>
+    </runtime>
+</plugin>

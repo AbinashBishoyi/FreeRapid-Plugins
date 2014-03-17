@@ -26,5 +26,4 @@ public class UltraShareServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new UltraShareFileRunner();
     }
-
 }

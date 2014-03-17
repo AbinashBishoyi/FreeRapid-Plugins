@@ -26,6 +26,4 @@ public class SuboryServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new SuboryRunner();
     }
-
-
 }

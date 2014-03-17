@@ -26,5 +26,4 @@ public class WiiUploadServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new WiiUploadFileRunner();
     }
-
 }

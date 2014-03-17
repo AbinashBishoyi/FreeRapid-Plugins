@@ -26,5 +26,4 @@ public class UppITServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new UppITFileRunner();
     }
-
 }

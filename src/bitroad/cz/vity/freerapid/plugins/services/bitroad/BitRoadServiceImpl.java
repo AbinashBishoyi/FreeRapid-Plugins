@@ -26,5 +26,4 @@ public class BitRoadServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new BitRoadFileRunner();
     }
-
 }

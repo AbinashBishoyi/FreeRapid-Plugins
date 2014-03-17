@@ -26,5 +26,4 @@ public class NahrajServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new NahrajFileRunner();
     }
-
 }

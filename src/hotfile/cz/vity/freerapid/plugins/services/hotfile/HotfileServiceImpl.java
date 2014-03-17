@@ -26,5 +26,4 @@ public class HotfileServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new HotfileFileRunner();
     }
-
 }

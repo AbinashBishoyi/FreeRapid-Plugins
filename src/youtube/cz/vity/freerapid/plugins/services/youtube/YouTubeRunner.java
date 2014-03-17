@@ -8,7 +8,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -17,6 +16,7 @@ import java.util.regex.Matcher;
 
 /**
  * @author Kajda
+ * @since 0.82
  */
 class YouTubeFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
@@ -94,7 +94,7 @@ class YouTubeFileRunner extends AbstractRunner {
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim() + fileExtension;
             logger.info("File name " + fileName);
-            httpFile.setFileName(replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fileName), "_"));
+            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fileName), "_"));
         } else {
             logger.warning("File name was not found");
             throw new PluginImplementationException();
@@ -132,17 +132,4 @@ class YouTubeFileRunner extends AbstractRunner {
                 break;
         }
     }
-     private  static String replaceInvalidCharsForFileSystem(final String fileName, final String replaceString) {
-        if (Utils.isWindows()) {
-            String result = fileName.replaceAll("(\\\\|\\||:|\\*|\\?|<|>|\\uFFFD|/|\")", replaceString);
-            if (result.startsWith("."))
-                result = result.substring(1);
-            return result;
-        } else {
-            return fileName.replaceAll("/", replaceString);
-        }
-    }
-
-
-
 }

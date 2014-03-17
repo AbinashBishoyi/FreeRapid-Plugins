@@ -26,5 +26,4 @@ public class FileFlyerServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new FileFlyerFileRunner();
     }
-
 }

@@ -1,16 +1,16 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="youtube.com" version="0.6.2" vendor="Kajda"
-        class="cz.vity.freerapid.plugins.services.youtube.YouTubeServiceImpl">
+<plugin id="ulozisko.sk" version="0.5" vendor="Kajda"
+        class="cz.vity.freerapid.plugins.services.ulozisko.UloziskoServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?youtube\.com/watch.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?ulozisko\.sk/.+"/>
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="youtube.com"/>
+        <attribute id="services" value="ulozisko.sk"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="youtube.com" path="/" type="code"/>
+        <library id="ulozisko.sk" path="/" type="code"/>
     </runtime>
 </plugin>

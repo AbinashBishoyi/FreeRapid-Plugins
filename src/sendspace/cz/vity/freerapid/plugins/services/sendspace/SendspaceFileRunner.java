@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.sendspace;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -8,7 +11,6 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * @author Kajda
@@ -41,23 +43,16 @@ class SendspaceFileRunner extends AbstractRunner {
             checkNameAndSize();
             final String contentAsString = getContentAsString();
             final String encodedLink = PlugUtils.getStringBetween(contentAsString, "base64ToText('", "')));");
+            final int intParameter = PlugUtils.getNumberBetween(contentAsString, "=", ";for(");
+            final String stringParameter = PlugUtils.getStringBetween(contentAsString, "='", "';for(");
+            final String decodedLink = utf8Decode(enc(base64ToText(encodedLink), intParameter, stringParameter));
+            final String finalURL = PlugUtils.getStringBetween(decodedLink, "href=\"", "\"");
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(finalURL).toHttpMethod();
 
-            Matcher matcher = getMatcherAgainstContent("Array\\(\\);\\w+=(\\d+)");
-
-            if (matcher.find()) {
-                final int intParameter = Integer.parseInt(matcher.group(1));
-                final String stringParameter = PlugUtils.getStringBetween(contentAsString, "='", "';for(");
-                final String decodedLink = utf8Decode(enc(base64ToText(encodedLink), intParameter, stringParameter));
-                final String finalURL = PlugUtils.getStringBetween(decodedLink, "href=\"", "\"");
-                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(finalURL).toHttpMethod();
-
-                if (!tryDownloadAndSaveFile(httpMethod)) {
-                    checkAllProblems();
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty");
-                }
-            } else {
-                throw new PluginImplementationException();
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkAllProblems();
+                logger.warning(getContentAsString());
+                throw new IOException("File input stream is empty");
             }
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");

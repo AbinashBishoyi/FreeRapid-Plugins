@@ -26,5 +26,4 @@ public class DataUpServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new DataUpFileRunner();
     }
-
 }

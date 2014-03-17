@@ -12,7 +12,6 @@ import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 public class RapidShareDeServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "rapidshare.de";
 
-
     public RapidShareDeServiceImpl() {
         super();
         try {
@@ -25,7 +24,6 @@ public class RapidShareDeServiceImpl extends AbstractFileShareService {
     public String getName() {
         return SERVICE_NAME;
     }
-
 
     public int getMaxDownloadsFromOneIP() {
         return 1;
@@ -40,7 +38,7 @@ public class RapidShareDeServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new RapidShareDeFileRunner();
     }
-    
+
     private static void trustAllCerts() throws Exception {
         ProtocolSocketFactory sf = new EasySSLProtocolSocketFactory();
         Protocol p = new Protocol("https", sf, 443);

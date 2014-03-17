@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.ifile;
+package cz.vity.freerapid.plugins.services.ulozisko;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -6,8 +6,8 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 /**
  * @author Kajda
  */
-public class IFileServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "ifile.it";
+public class UloziskoServiceImpl extends AbstractFileShareService {
+    private static final String SERVICE_NAME = "ulozisko.sk";
 
     public String getName() {
         return SERVICE_NAME;
@@ -24,6 +24,6 @@ public class IFileServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new IFileFileRunner();
+        return new UloziskoFileRunner();
     }
 }

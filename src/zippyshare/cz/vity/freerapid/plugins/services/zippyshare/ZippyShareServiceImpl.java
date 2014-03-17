@@ -26,5 +26,4 @@ public class ZippyShareServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new ZippyShareFileRunner();
     }
-
 }

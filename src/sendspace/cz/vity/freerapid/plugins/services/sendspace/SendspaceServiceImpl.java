@@ -26,5 +26,4 @@ public class SendspaceServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new SendspaceFileRunner();
     }
-
 }

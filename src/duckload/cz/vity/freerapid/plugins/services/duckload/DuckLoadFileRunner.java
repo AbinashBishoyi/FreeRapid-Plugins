@@ -20,9 +20,9 @@ import java.util.regex.Matcher;
 class DuckLoadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DuckLoadFileRunner.class.getName());
     private final static String SERVICE_WEB = "http://www.duckload.com";
+    private static CaptchaRecognizer captchaRecognizer;
     private final static int CAPTCHA_MAX = 10;
     private int captchaCounter = 1;
-    private CaptchaRecognizer captchaRecognizer;
 
     @Override
     public void runCheck() throws Exception {

@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.duckload.captcha;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,12 +14,12 @@ import java.util.List;
  */
 public class CaptchaRecognizer {
     private final static char[] LETTERS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-    private final Collection<Template> trainedSet = new ArrayList<Template>(LETTERS.length);
+    private final static Collection<Template> trainedSet = new ArrayList<Template>(LETTERS.length);
     public final static int LETTERS_IN_CAPTCHA = 6;
 
     public CaptchaRecognizer() throws IOException {
-        final BufferedImage image = ImageIO.read(new File("E:\\projects\\captchatest\\letters.png"));
-        //final BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream("/resources/letters.png"));
+        //final BufferedImage image = ImageIO.read(new File("E:\\projects\\captchatest\\letters.png"));
+        final BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream("/resources/letters.png"));
         final List<BufferedImage> subimages = ImageFunctions.split(image, 1);
 
         if (subimages.size() != LETTERS.length)
@@ -112,14 +111,11 @@ public class CaptchaRecognizer {
 
         final BufferedImage input = ImageFunctions.crop(image);
 
-        final int cropW = input.getWidth();
-        final int cropH = input.getHeight();
-
         final BufferedImage output = new BufferedImage(fullW, fullH, BufferedImage.TYPE_BYTE_BINARY);
         final Graphics g = output.getGraphics();
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, fullW, fullH);
-        g.drawImage(input, fullW / 2 - cropW / 2, fullH / 2 - cropH / 2, Color.WHITE, null);//put it in the center
+        g.drawImage(input, 0, 0, Color.WHITE, null);
 
         return output;
     }

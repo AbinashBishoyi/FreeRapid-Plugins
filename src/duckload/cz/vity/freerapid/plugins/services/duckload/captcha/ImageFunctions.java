@@ -219,10 +219,10 @@ public class ImageFunctions {
                 }
                 final Block block = getBlock(image, x, y);
                 if (block != null) {
-                    if (block.block.size() > minSize) {
+                    if (block.getSize() > minSize) {
                         ret.add(block);
                     }
-                    found.addAll(block.block);
+                    found.addAll(block.data);
                 }
             }
         }

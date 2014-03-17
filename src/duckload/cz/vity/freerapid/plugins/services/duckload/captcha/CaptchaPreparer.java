@@ -1,5 +1,7 @@
 package cz.vity.freerapid.plugins.services.duckload.captcha;
 
+import cz.vity.freerapid.plugins.services.duckload.util.SortedList;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
@@ -28,7 +30,9 @@ public class CaptchaPreparer {
         final int h = image.getHeight();
 
         final List<Block> allBlocks = ImageFunctions.getAllBlocks(image, 20);
-        final Set<Block> set = new TreeSet<Block>();
+        //keep the blocks sorted without the need to use Collections.sort()
+        final List<Block> list = new SortedList<Block>();
+        //this pseudo-multimap will keep the blocks grouped by color
         final Map<Integer, ArrayList<Block>> blocksByColor = new HashMap<Integer, ArrayList<Block>>();
 
         for (final Block block : allBlocks) {//group the blocks by color
@@ -40,31 +44,31 @@ public class CaptchaPreparer {
         }
 
         for (final List<Block> l : blocksByColor.values()) {//merge blocks with same color
-            set.add(Block.merge(l.toArray(new Block[l.size()])));
+            final Block[] a = l.toArray(new Block[l.size()]);
+            list.add(Block.merge(a));
         }
 
-        if (set.size() < LETTERS_IN_CAPTCHA) {
-            logger.warning("Problem separating characters from image (only " + set.size() + " letters obtained)");
-        } else if (set.size() > LETTERS_IN_CAPTCHA) {
+        if (list.size() < LETTERS_IN_CAPTCHA) {
+            logger.warning("Problem separating characters from image (only " + list.size() + " letters obtained)");
+        } else if (list.size() > LETTERS_IN_CAPTCHA) {
             logger.info("Too many blocks separated, clearing up...");
 
-            final ArrayList<Block> l = new ArrayList<Block>();
-            l.addAll(set);
+            final ArrayList<Block> l = new ArrayList<Block>(list);
             Collections.sort(l, new Comparator<Block>() {//sort in order smallest -> largest
 
                 public int compare(final Block a, final Block b) {
-                    return new Integer(a.block.size()).compareTo(b.block.size());
+                    return new Integer(a.getSize()).compareTo(b.getSize());
                 }
             });
             while (l.size() > LETTERS_IN_CAPTCHA) {//remove the smallest ones
                 l.remove(0);
             }
-            set.clear();
-            set.addAll(l);
+            list.clear();
+            list.addAll(l);
         }
 
         final List<BufferedImage> ret = new ArrayList<BufferedImage>();
-        for (final Block b : set) {//convert to images
+        for (final Block b : list) {//convert to images
             ret.add(blockToImage(b, w, h));
         }
 
@@ -77,7 +81,7 @@ public class CaptchaPreparer {
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, w, h);
 
-        for (final Point p : block.block) {
+        for (final Point p : block.data) {
             image.setRGB(p.x, p.y, Color.BLACK.getRGB());
         }
 

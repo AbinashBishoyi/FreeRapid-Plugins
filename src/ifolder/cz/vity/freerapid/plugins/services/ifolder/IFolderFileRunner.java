@@ -17,8 +17,8 @@ import java.util.regex.Matcher;
  * @author JPEXS
  */
 class IFolderFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(IFolderFileRunner.class.getName());
 
+    private final static Logger logger = Logger.getLogger(IFolderFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -27,10 +27,10 @@ class IFolderFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
+        } else {
             throw new PluginImplementationException();
+        }
     }
-
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435: <b>", "</b>");
@@ -79,26 +79,29 @@ class IFolderFileRunner extends AbstractRunner {
                         }
                         downloadTask.sleep(delay);
                         if (makeRedirectedRequest(method4)) {
-                            CaptchaSupport captchaSupport = getCaptchaSupport();
-                            String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
-                            s = "http://ints.ifolder.ru" + s;
-                            logger.info("Captcha URL " + s);
-                            String interstitials_session = PlugUtils.getStringBetween(getContentAsString(), "if(tag){tag.value = \"", "\"");
-                            String captchaR = captchaSupport.getCaptcha(s);
-                            if (captchaR == null) {
-                                throw new CaptchaEntryInputMismatchException();
-                            }
-                            final HttpMethod method5 = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true).setParameter("confirmed_number", captchaR).setParameter("interstitials_session", interstitials_session).setBaseURL("http://ints.ifolder.ru/ints/frame/").toHttpMethod();
-                            downloadTask.sleep(10); //Needed for full speed
-                            if (makeRedirectedRequest(method5)) {
-                                final HttpMethod method6 = getMethodBuilder().setReferer("").setActionFromAHrefWhereATagContains("download").toHttpMethod();
-                                if (!tryDownloadAndSaveFile(method6)) {
-                                    logger.warning(getContentAsString());//log the info
-                                    throw new PluginImplementationException();//some unknown problem
+                            do {
+                                CaptchaSupport captchaSupport = getCaptchaSupport();
+                                String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
+                                s = "http://ints.ifolder.ru" + s;
+                                logger.info("Captcha URL " + s);
+                                String interstitials_session = PlugUtils.getStringBetween(getContentAsString(), "if(tag){tag.value = \"", "\"");
+                                String captchaR = captchaSupport.getCaptcha(s);
+                                if (captchaR == null) {
+                                    throw new CaptchaEntryInputMismatchException();
                                 }
-                            } else {
-                                throw new ServiceConnectionProblemException();
+                                final HttpMethod method5 = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true).setParameter("confirmed_number", captchaR).setParameter("interstitials_session", interstitials_session).setBaseURL("http://ints.ifolder.ru/ints/frame/").toHttpMethod();
+                                if (!makeRedirectedRequest(method5)) {
+                                    throw new ServiceConnectionProblemException();
+                                }
+                            } while (getContentAsString().contains("name=\"confirmed_number\""));
+                            downloadTask.sleep(5); //Needed for full speed
+
+                            final HttpMethod method6 = getMethodBuilder().setReferer("").setActionFromAHrefWhereATagContains("download").toHttpMethod();
+                            if (!tryDownloadAndSaveFile(method6)) {
+                                logger.warning(getContentAsString());//log the info
+                                throw new PluginImplementationException();//some unknown problem
                             }
+
                         } else {
                             throw new ServiceConnectionProblemException();
                         }
@@ -124,5 +127,4 @@ class IFolderFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }
-
 }

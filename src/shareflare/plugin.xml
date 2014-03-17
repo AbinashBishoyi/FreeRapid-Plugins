@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.shareflare.ShareflareServiceImpl" id="shareflare.net"
-        vendor="RickCL+ntoskrnl+tonyk" version="1.0.8">
+        vendor="RickCL+ntoskrnl+tonyk" version="1.1.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?shareflare\.net/.+"/>
-        <attribute id="minver" value="0.851"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="shareflare.net"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="letitbit.net"
+                plugin-version="1.4.9" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="shareflare.net" path="/" type="code"/>
     </runtime>

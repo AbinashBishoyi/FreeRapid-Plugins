@@ -17,9 +17,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-
             httpFile.setNewURL(new URL("http://shareflare.net/download/90756.909741e4d128441be0b7b5e6fb09/3dmaxemaya.part01.rar.html"));
-
             // httpFile.setNewURL(new URL("http://shareflare.net/download/76849.76d21d2528f62b25c3de425c088ca4688/logovq.zip.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
@@ -42,22 +40,5 @@ public class TestApp extends PluginDevApplication {
      */
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         Application.launch(TestApp.class, args);//starts the application - calls startup() internally
-//        InputStream in = TestApp.class.getResourceAsStream("/resources/shareflare-captcha.bin");
-//        //InputStream in = new ByteArrayInputStream(letters);
-//        GZIPInputStream gzis = new GZIPInputStream(in);
-//        ObjectInputStream ois = new ObjectInputStream(gzis);
-//        final TreeMap<String, Matrix> map = (TreeMap<String, Matrix>) ois.readObject();
-//        final TreeMap out = new TreeMap<String, cz.vity.freerapid.plugins.services.letitbit.captcha.Matrix>();
-//        for (Map.Entry<String, Matrix> entry : map.entrySet()) {
-//            final cz.vity.freerapid.plugins.services.letitbit.captcha.Matrix m = new cz.vity.freerapid.plugins.services.letitbit.captcha.Matrix();
-//            m.width = entry.getValue().width;
-//            m.height = entry.getValue().height;
-//            m.value = entry.getValue().value;
-//            out.put(entry.getKey(), m);
-//        }
-//        final ObjectOutputStream out2 = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream(new File("c:\\out.bin"))));
-//        out2.writeObject(out);
-//        out2.close();
-//        System.out.println("map = " + map);
     }
 }

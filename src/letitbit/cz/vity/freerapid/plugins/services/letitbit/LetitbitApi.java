@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 /**
  * @author ntoskrnl
  */
-class LetitbitApi {
+public class LetitbitApi {
 
     private static final Logger logger = Logger.getLogger(LetitbitApi.class.getName());
 

@@ -1,17 +1,17 @@
 package cz.vity.freerapid.plugins.services.shareflare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.letitbit.LetitbitApi;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
 
-import java.util.concurrent.TimeUnit;
+import java.net.URL;
+import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
 
@@ -46,46 +46,89 @@ class ShareflareRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".shareflare.net", "lang", "en", "/", 86400, false));
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
+        setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
+
+        HttpMethod httpMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(httpMethod)) {
+            checkProblems();
+            checkNameAndSize();
+            final String content = getContentAsString();
+            String pageUrl = fileURL;
+
+            String url = new LetitbitApi(client).getDownloadUrl(fileURL);
+
+            if (url == null) {
+                httpMethod = getMethodBuilder(content)
+                        .setReferer(pageUrl)
+                        .setActionFromFormByName("fast_download_form", true)
+                        .setAction(fileURL)
+                        .toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                pageUrl = httpMethod.getURI().toString();
+
+                httpMethod = getMethodBuilder()
+                        .setReferer(pageUrl)
+                        .setActionFromFormByName("dvifree", true)
+                        .toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                pageUrl = httpMethod.getURI().toString();
+
+                httpMethod = getMethodBuilder()
+                        .setReferer(pageUrl)
+                        .setActionFromFormByName("d3_form", true)
+                        .toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                pageUrl = httpMethod.getURI().toString();
+
+                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
+
+                url = handleCaptcha(pageUrl);
+
+                logger.info("Ajax response : " + url);
+
+                if (url.contains("[\"")) {
+                    url = PlugUtils.getStringBetween(url, "[", "]").replaceAll("\\\\", "");
+                    final StringTokenizer st = new StringTokenizer(url, ",");
+                    while (st.hasMoreTokens()) {
+                        String testUrl = st.nextToken().replaceAll("\"", "");
+                        logger.info("Url match : " + testUrl);
+                        httpMethod = getGetMethod(testUrl + "&check=1");
+                        logger.info("Url to be checked : " + httpMethod.getURI().toString());
+                        httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                        if (!makeRequest(httpMethod)) {
+                            checkProblems();
+                            throw new PluginImplementationException();
+                        }
+                        if (httpMethod.getStatusCode() == HttpStatus.SC_OK) {
+                            url = testUrl;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            logger.info("Final URL : " + url);
+
+            httpMethod = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setAction(url)
+                    .toGetMethod();
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
+            }
+        } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
-        }
-        checkNameAndSize();
-        checkProblems();
-        final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dvifree", true).toPostMethod();
-        if (!makeRedirectedRequest(httpMethod2)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-
-        final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dvifree", true);
-
-        if (!makeRedirectedRequest(methodBuilder.toHttpMethod())) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-
-        final HttpMethod httpMethod3 = getMethodBuilder().setReferer(methodBuilder.getEscapedURI()).setActionFromIFrameSrcWhereTagContains("name=\"topFrame\"").toGetMethod();
-        if (!makeRedirectedRequest(httpMethod3)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-
-        final HttpMethod httpMethod31 = getMethodBuilder().setReferer(methodBuilder.getEscapedURI()).setActionFromTextBetween("window.location.href=\"", "\";").toGetMethod();
-        int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "y = ", ";", TimeUnit.SECONDS);
-        downloadTask.sleep(waitTime+1);
-        if (!makeRedirectedRequest(httpMethod31)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-
-        String action = PlugUtils.getStringBetween(getContentAsString(), "direct_links = {", "\" :");
-        action = action.substring( action.indexOf("http") );
-        final HttpMethod httpMethod4 = getMethodBuilder().setAction(action).toGetMethod();
-        if (!tryDownloadAndSaveFile(httpMethod4)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
@@ -106,9 +149,40 @@ class ShareflareRunner extends AbstractRunner {
         }
     }
 
-    @Override
-    protected String getBaseURL() {
-        return "http://shareflare.net";
+    private String handleCaptcha(final String pageUrl) throws Exception {
+        final String baseUrl = "http://" + new URL(pageUrl).getHost();
+        while (true) {
+            final String captchaUrl = "/captcha_new.php?rand=" + (int) Math.floor(100000 * Math.random());
+            HttpMethod method = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setBaseURL(baseUrl)
+                    .setAction(captchaUrl)
+                    .toGetMethod();
+            final String captcha = getCaptcha(method);
+            method = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setBaseURL(baseUrl)
+                    .setAction("/ajax/check_captcha.php")
+                    .setParameter("code", captcha)
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final String content = getContentAsString().trim();
+            if (content.contains("error_free_download_blocked")) {
+                throw new ErrorDuringDownloadingException("You have reached the daily download limit");
+            } else if (!content.contains("error_wrong_captcha")) {
+                return content;
+            }
+        }
+    }
+
+    private String getCaptcha(final HttpMethod method) throws Exception {
+        final String captcha = getCaptchaSupport().askForCaptcha(getCaptchaSupport().loadCaptcha(client.makeRequestForFile(method)));
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        }
+        return captcha;
     }
 
 }

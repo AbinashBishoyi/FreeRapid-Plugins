@@ -47,17 +47,13 @@ class UlozToRunner extends AbstractRunner {
                 boolean saved = false;
                 captchaCount = 0;
                 while (getContentAsString().contains("id=\"captcha\"")) {
-                    checkProblems();
                     setClientParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha(getContentAsString());
 
                     if (saved = tryDownloadAndSaveFile(method)) break;
-                    if (method.getURI().toString().contains("full=y"))
-                        throw new ServiceConnectionProblemException("Docasne omezene FREE stahovani, zkuste to pozdeji");
-
+                    checkProblems();
                 }
                 if (!saved) {
-                    checkProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");
                 }
@@ -94,7 +90,7 @@ class UlozToRunner extends AbstractRunner {
             MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
             String captcha = "";
             if (captchaCount++ < 3) {
-                logger.warning("captcha url:" + captchaMethod.getAction());
+                logger.info("captcha url:" + captchaMethod.getAction());
                 Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
                 if (m.find()) {
                     String number = m.group(1);
@@ -121,7 +117,7 @@ class UlozToRunner extends AbstractRunner {
         }
     }
 
-    //"Pøekroèen poèet FREE slotù, použijte VIP download
+    //"Pï¿½ekroï¿½en poï¿½et FREE slotï¿½, pouï¿½ijte VIP download
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
         if (content.contains("soubor nebyl nalezen")) {
@@ -131,10 +127,9 @@ class UlozToRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Muzete stahovat pouze jeden soubor naraz");
 
         }
-//        if (content.contains("et FREE slot") && content.contains("ijte VIP download")) {
-//            throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
-//
-//        }
+        if (content.contains("et FREE slot") && content.contains("ijte VIP download")) {
+            throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
+        }
 
 
     }

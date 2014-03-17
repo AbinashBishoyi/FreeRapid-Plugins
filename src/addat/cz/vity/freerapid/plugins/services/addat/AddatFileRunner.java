@@ -59,6 +59,7 @@ class AddatFileRunner extends AbstractRunner {
 
             final HttpMethod httpMethod = getGetMethod(downloadURL.replaceFirst("/freedownload", ""));
 
+            client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain; charset=us-ascii");
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed

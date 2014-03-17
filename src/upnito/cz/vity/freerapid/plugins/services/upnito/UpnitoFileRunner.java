@@ -80,7 +80,7 @@ class UpnitoFileRunner extends AbstractRunner {
             postMethod.addParameter("validated", "yes");
             postMethod.addParameter("tahaj", "Stiahnuù");
 
-
+            //downloadTask.sleep(650);
             if (!tryDownloadAndSaveFile(postMethod)) {
                 checkProblems();
                 logger.warning(getContentAsString());
@@ -108,7 +108,6 @@ class UpnitoFileRunner extends AbstractRunner {
         if (contentAsString.contains("bol zmazan") || contentAsString.contains("bor sa na serveri nenach") || contentAsString.contains("bor nebol n")) {
             throw new URLNotAvailableAnymoreException("S˙bor bol zmazan˝");
         }
-
         if (contentAsString.contains("za sebou stahovat ten")) {
             throw new ServiceConnectionProblemException("Nemozete tolkokrat za sebou stahovat ten isty subor!");
         }
@@ -120,6 +119,11 @@ class UpnitoFileRunner extends AbstractRunner {
         if (contentAsString.contains("Neplatny download")) {
             throw new YouHaveToWaitException("Neplatny download", 2);
         }
+
+        if (contentAsString.contains("Nepodarilo sa nacitat")) {
+            throw new ServiceConnectionProblemException("Nepodarilo sa nacitat nieco ohladne suboru!");
+        }
+
     }
 
 }

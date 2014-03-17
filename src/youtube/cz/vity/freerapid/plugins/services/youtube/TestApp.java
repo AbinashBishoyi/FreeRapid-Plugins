@@ -52,11 +52,11 @@ public class TestApp extends PluginDevApplication {
             final YouTubeServiceImpl service = new YouTubeServiceImpl(); //instance of service - of our plugin
 
             YouTubeSettingsConfig config = new YouTubeSettingsConfig();
-            config.setQualitySetting(2);
+            config.setQualitySetting(4);
             config.setContainer(1);
             config.setReversePlaylistOrder(false);
             config.setDownloadSubtitles(false);
-            config.setConvertToAudio(true);
+            config.setConvertToAudio(false);
             config.setAudioQuality(AudioQuality._96);
             service.setConfig(config);
 

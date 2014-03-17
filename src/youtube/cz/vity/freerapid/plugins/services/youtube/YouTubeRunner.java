@@ -214,7 +214,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
         logger.info(fmt_map);
         //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
         final String[] formats = fmt_map.split(",");
-        final SortedMap<Integer, YouTubeMedia> ytMediaMap = new TreeMap<Integer, YouTubeMedia>();
+        final Map<Integer, YouTubeMedia> ytMediaMap = new LinkedHashMap<Integer, YouTubeMedia>();
         for (String format : formats) {
             //Example: 37/1920x1080/9/0/115
             String formatParts[] = format.split("/");
@@ -274,10 +274,12 @@ class YouTubeRunner extends AbstractRtmpRunner {
             int configVideoResolution = config.getVideoResolution();
             if (configVideoResolution == YouTubeSettingsConfig.MAX_WIDTH) {
                 logger.info("Selecting maximum quality");
-                selectedItagCode = ytMediaMap.lastKey();
+                selectedItagCode = ytMediaMap.keySet().iterator().next(); //first key
             } else if (configVideoResolution == YouTubeSettingsConfig.MIN_WIDTH) {
                 logger.info("Selecting minimum quality");
-                selectedItagCode = ytMediaMap.firstKey();
+                for (Integer integer : ytMediaMap.keySet()) {
+                    selectedItagCode = integer; //last key
+                }
             } else {
                 int nearestGreater = Integer.MAX_VALUE;
                 int nearestGreaterItagCode = -1;

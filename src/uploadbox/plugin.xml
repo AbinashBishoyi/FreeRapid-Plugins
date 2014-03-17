@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uploadbox.com" version="0.9.0" vendor="Vity"
+<plugin id="uploadbox.com" version="0.9.1" vendor="Vity"
         class="cz.vity.freerapid.plugins.services.uploadbox.UploadBoxServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?uploadbox\.com/files/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?uploadbox\.com/.+"/>
         <attribute id="minver" value="0.81"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="uploadbox.com"/>

@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="oron.com_premium" version="1.0.0" vendor="ntoskrnl"
+        class="cz.vity.freerapid.plugins.services.oron_premium.OronServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?oron\.com/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="oron.com"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="oron.com_premium" path="/" type="code"/>
+    </runtime>
+</plugin>

@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.movreel;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -10,6 +11,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -66,8 +68,11 @@ class MovreelFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException("Error loading page-2");
             }
 
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains(httpFile.getFileName()).toHttpMethod();
-            //here is the download link extraction
+            final Matcher match = PlugUtils.matcher("product_download_url='\\+(.+?)\">", getContentAsString());
+            if (!match.find())
+                throw new PluginImplementationException("Download URl not found");
+            httpMethod = getGetMethod(match.group(1));
+
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

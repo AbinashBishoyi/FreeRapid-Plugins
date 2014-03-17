@@ -34,7 +34,8 @@ class LumFileFileRunner extends XFileSharingRunner {
     @Override
     protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("file owner has limited free downloads of this file")) {
+        if (content.contains("file owner has limited free downloads of this file") ||
+                content.contains("This file is available for Premium Users only")) {
             throw new NotRecoverableDownloadException("File is only for premium users");
         }
         super.checkDownloadProblems();

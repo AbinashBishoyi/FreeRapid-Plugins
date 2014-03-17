@@ -69,7 +69,7 @@ class QueenShareFileRunner extends XFileSharingRunner {
     @Override
     protected void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("<h2>File Not Found")) {
+        if (contentAsString.contains("<h2>File Not Found") || contentAsString.contains("The file was removed")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

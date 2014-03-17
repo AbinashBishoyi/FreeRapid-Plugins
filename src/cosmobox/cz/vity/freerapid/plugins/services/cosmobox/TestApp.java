@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://cosmobox.org/sbcmlj7449g6/rvds-moony_tracks.mp3"));
+            httpFile.setNewURL(new URL("http://www.cosmobox.org/2clo97ovdz2d"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final CosmoBoxServiceImpl service = new CosmoBoxServiceImpl();

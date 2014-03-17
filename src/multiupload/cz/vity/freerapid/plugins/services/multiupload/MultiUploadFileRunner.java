@@ -8,7 +8,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
@@ -73,11 +72,12 @@ class MultiUploadFileRunner extends AbstractRunner {
         try {//process redirection link to get final url
             final GetMethod method = getGetMethod(Redirection_Link);
             if (makeRedirectedRequest(method)) {
-                listing.add(new URI(method.getURI().getURI()));
+                listing.add(new URI(method.getURI().getEscapedURI()));
             }
         } catch (final Exception e) {
-            LogUtils.processException(logger, e);
-            throw new ServiceConnectionProblemException("Error retrieving link");
+            // Ignore it - site may no longer exist
+            //LogUtils.processException(logger, e);
+            //throw new ServiceConnectionProblemException("Error retrieving link");
         }
     }
 

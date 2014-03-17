@@ -1,5 +1,7 @@
 package cz.vity.freerapid.plugins.services.direct;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -10,10 +12,12 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLDecoder;
 
 /**
  * @author ntoskrnl
+ * @author tong2shot
  */
 class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognizer {
 
@@ -27,25 +31,21 @@ class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognize
         }
     }
 
-    private void checkName() {
-        httpFile.setFileName(findName(fileURL));
+    private void checkName() throws ErrorDuringDownloadingException {
+        String filename = findName(fileURL);
+        logger.info("File name : " + filename);
+        httpFile.setFileName(filename);
     }
 
-    private static String findName(final String url) {
-        final String[] strings = url.split("/");
-        for (int i = strings.length - 1; i >= 0; i--) {
-            final String s = strings[i].trim();
-            if (!s.isEmpty()) {
-                return s;
-            }
+    private static String findName(final String url) throws PluginImplementationException {
+        String filename;
+        try {
+            String path = new URL(url).getPath();
+            filename = URLDecoder.decode(path.substring(path.lastIndexOf("/") + 1), "UTF-8");
+        } catch (Exception e) {
+            throw new PluginImplementationException("Error getting file name");
         }
-        String s = url.replaceAll(":", "_").trim();
-        if (s.startsWith("?"))
-            s = s.substring(1);
-        if (s.isEmpty()) {
-            s = "unknown";
-        }
-        return s;
+        return filename;
     }
 
     @Override
@@ -70,7 +70,7 @@ class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognize
             method2.abort();
             method2.releaseConnection();
         } while (locationHeader != null);
-        httpFile.setFileName(URLDecoder.decode(findName(action), "UTF-8"));
+        httpFile.setFileName(findName(action));
         setClientParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
         method = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
         return super.tryDownloadAndSaveFile(method);

@@ -15,9 +15,8 @@ public class TestApp extends PluginDevApplication {
 
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.stream.cz/video/265710-agata-a-v-i-p-ky-pipky-bozsky-leos-mares"));
-
-         //   httpFile.setNewURL(new URL("http://www.stream.cz/video/270014-nekecej-67-dil-ptak-lasky/0"));
+            //httpFile.setNewURL(new URL("http://www.stream.cz/video/265710-agata-a-v-i-p-ky-pipky-bozsky-leos-mares"));
+            httpFile.setNewURL(new URL("http://www.stream.cz/menudomu/769916-entrecote-kuskus"));
             testRun(new StreamCzServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

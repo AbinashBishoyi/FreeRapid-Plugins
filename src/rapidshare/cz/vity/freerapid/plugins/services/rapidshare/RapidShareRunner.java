@@ -17,9 +17,12 @@ import java.util.regex.Matcher;
 class RapidShareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
     private final static String SERVICE_WEB = "http://rapidshare.com/";
+    private final static int INTERVAL = 10000;
+
     private PluginContext context;
     private String fileID;
     private String fileName;
+    private long lastRunCheck;
 
     @Override
     public void runCheck() throws Exception {
@@ -41,13 +44,17 @@ class RapidShareRunner extends AbstractRunner {
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
+        lastRunCheck = System.currentTimeMillis();
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         context = getPluginService().getPluginContext();
-        runCheck();
+        if (System.currentTimeMillis() >= lastRunCheck + INTERVAL) {
+            logger.info("Doing runCheck...");
+            runCheck();
+        }
         checkProblems();
         final Matcher matcher = getMatcherAgainstContent("DL:(.+?),(.+?),(\\d+)");
         if (!matcher.find()) {
@@ -56,7 +63,9 @@ class RapidShareRunner extends AbstractRunner {
         final int wait = Integer.parseInt(matcher.group(3)) + 1;
         String host = matcher.group(1);
         final String prefer = getPreferredMirror();
-        if (prefer != null && !prefer.isEmpty()) host = prefer;
+        if (prefer != null && !prefer.isEmpty()) {
+            host = prefer;
+        }
         host = translateToIP(host);
         final HttpMethod method = getMethodBuilder()
                 .setReferer(SERVICE_WEB)
@@ -87,32 +96,71 @@ class RapidShareRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         checkFileProblems();
-        if (getContentAsString().contains("You need RapidPro to download more files from your IP address")) {
-            throw new ServiceConnectionProblemException("You need RapidPro to download more files from your IP address");
+        final String content = getContentAsString();
+        if (content.contains("You need RapidPro to download more files from your IP address")
+                || content.contains("All free download slots are full")) {
+            throw new ServiceConnectionProblemException("All free download slots are full");
         }
         Matcher matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds[^\"']*");
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)) + 10);
         }
-        if (getContentAsString().contains("All free download slots are full")) {
-            throw new ServiceConnectionProblemException("All free download slots are full");
-        }
-        if (getContentAsString().contains("Please stop flooding our download servers")) {
+        if (content.contains("Please stop flooding our download servers")) {
             throw new YouHaveToWaitException("RapidShare server says: Please stop flooding our download servers", 360);
+        }
+        if (content.contains("IP address modified")
+                || content.contains("Download auth invalid")
+                || content.contains("Download session expired")
+                || content.contains("Download session invalid")
+                || content.contains("Download session modified")
+                || content.contains("Download ticket not ready")
+                || content.contains("download: session invalid")) {
+            throw new ServiceConnectionProblemException("Temporary server problem");
+        }
+        if (content.contains("Secure download link modified")
+                || content.contains("Secured link expired")
+                || content.contains("Secured link modified")) {
+            throw new ServiceConnectionProblemException("The file was requested using an invalid secure link");
         }
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("File not found")) {
+        final String content = getContentAsString();
+        Matcher matcher = getMatcherAgainstContent("File deleted R(\\d+)");
+        if (matcher.find()) {
+            final int r = Integer.parseInt(matcher.group(1));
+            if (r == 1 || r == 2) {
+                throw new URLNotAvailableAnymoreException("The file was deleted by the owner");
+            }
+            if (r == 3 || r == 5) {
+                throw new URLNotAvailableAnymoreException("The file was deleted due to no downloads in a longer period");
+            }
+            if (r == 4 || r == 8) {
+                throw new URLNotAvailableAnymoreException("The file is suspected to be contrary to our terms and conditions and has been locked up for clarification");
+            }
+            if (r >= 10 && r <= 15) {
+                throw new URLNotAvailableAnymoreException("This file is marked as illegal");
+            }
+        }
+        if (content.contains("File deleted")
+                || content.contains("File not found")
+                || content.contains("File physically not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (getContentAsString().contains("File deleted")) {
-            throw new URLNotAvailableAnymoreException("File has been deleted");
-        }
-        if (getContentAsString().contains("This file is too big to download it for free")) {
+        if (content.contains("This file is too big to download it for free")) {
             throw new NotRecoverableDownloadException("This file is too big to download it for free");
         }
-        Matcher matcher = getMatcherAgainstContent("ERROR:([^\"']+)");
+        if (content.contains("This file is marked as illegal")) {
+            throw new URLNotAvailableAnymoreException("This file is marked as illegal");
+        }
+        if (content.contains("File incomplete")
+                || content.contains("raid error on server")) {
+            throw new URLNotAvailableAnymoreException("File corrupted or incomplete");
+        }
+        if (content.contains("SSL downloads are only available for RapidPro customers")) {
+            throw new NotRecoverableDownloadException("SSL downloads are only available for RapidPro customers");
+        }
+        matcher = getMatcherAgainstContent("ERROR:([^\"']+)");
         if (matcher.find()) {
             throw new NotRecoverableDownloadException("RapidShare error: " + matcher.group(1));
         }

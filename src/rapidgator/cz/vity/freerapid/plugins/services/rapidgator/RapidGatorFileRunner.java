@@ -37,7 +37,7 @@ class RapidGatorFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final String filenameRegexRule = "Downloading:\\s*</strong>\\s*(\\S+)\\s*</p>";
+        final String filenameRegexRule = "Downloading:\\s*</strong>\\s*<a.+?>\\s*(\\S+)\\s*</a>\\s*</p>";
         final String filesizeRegexRule = "File size:\\s*<strong>(.+?)</strong>";
 
         final Matcher filenameMatcher = PlugUtils.matcher(filenameRegexRule, content);
@@ -88,7 +88,7 @@ class RapidGatorFileRunner extends AbstractRunner {
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://rapidgator.net/download/AjaxGetDownloadLink")
-                    .setParameter("sid",sid)
+                    .setParameter("sid", sid)
                     .toGetMethod();
             httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (!makeRedirectedRequest(httpMethod)) {
@@ -96,7 +96,7 @@ class RapidGatorFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
-            
+
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://rapidgator.net/download/captcha")
@@ -142,7 +142,7 @@ class RapidGatorFileRunner extends AbstractRunner {
         MethodBuilder methodBuilder = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction("http://rapidgator.net/download/captcha")
-                .setParameter("DownloadCaptchaForm[captcha]","");
+                .setParameter("DownloadCaptchaForm[captcha]", "");
 
         return r.modifyResponseMethod(methodBuilder).toPostMethod();
     }
@@ -153,14 +153,18 @@ class RapidGatorFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("Delay between downloads must be not less than")) {
-            final String waitTime = PlugUtils.getStringBetween(contentAsString,"must be not less than","min");
-            throw new YouHaveToWaitException("Delay between downloads must be not less than "+ waitTime +" minutes",200);
+            final String waitTime = PlugUtils.getStringBetween(contentAsString, "must be not less than", "min");
+            throw new YouHaveToWaitException("Delay between downloads must be not less than " + waitTime + " minutes", 200);
         }
         if (contentAsString.contains("You have reached your daily downloads limit")) {
             throw new PluginImplementationException("You have reached your daily downloads limit");
         }
-        if (contentAsString.contains("You can download files up to 1 GB in free mode")) {
-            throw new PluginImplementationException("You can download files up to 1 GB in free mode");
+        final Matcher uptoMatcher = getMatcherAgainstContent("You can download files up to (.+?) in free mode");
+        if (uptoMatcher.find()) {
+            throw new PluginImplementationException("You can download files up to " + uptoMatcher.group(1) + " in free mode");
+        }
+        if (contentAsString.contains("You can`t download not more than")) {
+            throw new PluginImplementationException("You can`t download not more than 1 file at a time in free mode");
         }
     }
 

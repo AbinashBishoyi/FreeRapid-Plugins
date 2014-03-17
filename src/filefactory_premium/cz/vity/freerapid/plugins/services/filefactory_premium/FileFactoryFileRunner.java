@@ -52,12 +52,12 @@ class FileFactoryFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            if (!getContentAsString().contains("Download with FileFactory Premium"))
+            if (getContentAsString().contains("Download with FileFactory Basic"))
                 throw new BadLoginException("Problem logging in, account not premium?");
 
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromAHrefWhereATagContains("Download with FileFactory Premium")
+                    .setActionFromAHrefWhereATagContains("Download with FileFactory")
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();

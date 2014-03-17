@@ -42,6 +42,14 @@ class FileFactoryFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize(getContentAsString());
 
+            if (getContentAsString().contains("Download with FileFactory TrafficShare")) {
+                HttpMethod finalMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download with FileFactory TrafficShare").toGetMethod();
+                if (tryDownloadAndSaveFile(finalMethod)) {
+                    return;
+                }
+                makeRedirectedRequest(getMethod);
+            }
+
             final MethodBuilder methodBuilder = getMethodBuilder();
             final HttpMethod httpMethod = methodBuilder.setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").setBaseURL(SERVICE_WEB).toGetMethod();
             final String redirectURL = SERVICE_WEB + methodBuilder.getAction();
@@ -79,7 +87,6 @@ class FileFactoryFileRunner extends AbstractRunner {
                 */
 
                 checkAllProblems();
-                client.setReferer(redirectURL);
                 HttpMethod finalMethod = getMethodBuilder().setReferer(redirectURL).setActionFromAHrefWhereATagContains("Download with FileFactory Basic").toGetMethod();
                 downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS));
                 if (!tryDownloadAndSaveFile(finalMethod)) {

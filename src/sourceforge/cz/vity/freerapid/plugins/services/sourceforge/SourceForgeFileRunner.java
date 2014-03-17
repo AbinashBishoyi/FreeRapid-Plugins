@@ -1,15 +1,13 @@
 package cz.vity.freerapid.plugins.services.sourceforge;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URI;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -25,19 +23,23 @@ class SourceForgeFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize();//ok let's extract file name and size from the page
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("filename=(.+?)/(.+?)/(.+?)\"");
-        if (!matcher.find()) {
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final URI downloadLinkUri;
+        final String filename;
+        try {
+            downloadLinkUri = new URI(getDownloadLinkMethodBuilder().getEscapedURI());
+            filename = downloadLinkUri.getPath().substring(downloadLinkUri.getPath().lastIndexOf("/") + 1);
+        } catch (Exception e) {
             throw new PluginImplementationException("File name not found");
         }
-        httpFile.setFileName(matcher.group(3));
+        httpFile.setFileName(filename);
     }
 
     @Override
@@ -46,10 +48,9 @@ class SourceForgeFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("url=", "\">").toHttpMethod();
+            checkNameAndSize();//extract file name and size from the page
+            final HttpMethod httpMethod = getDownloadLinkMethodBuilder().toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -60,6 +61,10 @@ class SourceForgeFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private MethodBuilder getDownloadLinkMethodBuilder() throws BuildMethodException {
+        return getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("url=", "\">");
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

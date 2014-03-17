@@ -5,13 +5,11 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 
 import java.net.URL;
-import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
@@ -55,7 +53,7 @@ class LetitbitRunner extends AbstractRunner {
             final String content = getContentAsString();
             String pageUrl = fileURL;
 
-            String url = getUrlFromApi();
+            String url = new LetitbitApi(client).getDownloadUrl(fileURL);
 
             if (url == null) {
                 httpMethod = getMethodBuilder(content)
@@ -173,34 +171,6 @@ class LetitbitRunner extends AbstractRunner {
             throw new CaptchaEntryInputMismatchException();
         }
         return captcha;
-    }
-
-    private String getUrlFromApi() throws Exception {
-        final HttpMethod method = getMethodBuilder()
-                .setAction("http://api.letitbit.net/internal/index2.php")
-                .setParameter("action", "LINK_GET_DIRECT")
-                .setParameter("link", fileURL)
-                .setParameter("free_link", "1")
-                .setParameter("appid", getRandomAppId())
-                .setParameter("version", "1.71")
-                .toPostMethod();
-        if (makeRedirectedRequest(method)) {
-            for (final String line : getContentAsString().split("[\r\n]")) {
-                if (line.startsWith("http")) {
-                    logger.info("API download success");
-                    return line;
-                }
-            }
-        }
-        logger.warning("API download failed");
-        logger.warning("Content from last request:\n" + getContentAsString());
-        return null;
-    }
-
-    private String getRandomAppId() {
-        final byte[] bytes = new byte[16];
-        new Random().nextBytes(bytes);
-        return Hex.encodeHexString(bytes);
     }
 
 }

@@ -110,7 +110,7 @@ class MegauploadRunner {
             if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
                 matcher = PlugUtils.matcher("Please wait ([0-9]+)", client.getContentAsString());
                 if (matcher.find()) {
-                    throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60*Integer.parseInt(matcher.group(1)));
+                    throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60 * Integer.parseInt(matcher.group(1)));
                 }
             }
             throw new ServiceConnectionProblemException(String.format("Download limit exceeded."));
@@ -137,9 +137,9 @@ class MegauploadRunner {
                 logger.info("Captcha - image " + HTTP_SITE + s);
                 String captcha = null;
                 final BufferedImage captchaImage = downloader.getCaptchaImage(HTTP_SITE + s);
-                if (captchaCount++ < 2) {
+                if (captchaCount++ < 3) {
                     EditImage ei = new EditImage(captchaImage);
-                    captcha = PlugUtils.recognize(ei.separate(), "");
+                    captcha = PlugUtils.recognize(ei.separate(), "-C A-z");
                     if (captcha != null) {
                         logger.info("Captcha - OCR recognized " + captcha + " attempts " + captchaCount);
                         matcher = PlugUtils.matcher("[A-Z-a-z-0-9]{3}", captcha);

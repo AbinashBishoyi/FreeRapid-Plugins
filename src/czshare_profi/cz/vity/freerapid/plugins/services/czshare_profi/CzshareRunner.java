@@ -23,12 +23,11 @@ class CzshareRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRequest(getGetMethod(fileURL))) {
             checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
-            makeRedirectedRequest(getMethod);
+            makeRedirectedRequest(getGetMethod(fileURL));
             checkProblems();
             throw new PluginImplementationException();
         }
@@ -50,7 +49,7 @@ class CzshareRunner extends AbstractRunner {
             if (!matcher.find()) {
                 throw new PluginImplementationException();
             }
-            String postURL = matcher.group(1)!=null?matcher.group(1):matcher.group(2);
+            String postURL = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
 
             final PostMethod postmethod = getPostMethod(postURL);
 
@@ -59,29 +58,28 @@ class CzshareRunner extends AbstractRunner {
 
             if (makeRedirectedRequest(postmethod)) {
                 matcher = getMatcherAgainstContent("<span class=\"nadpis\">P.ihl..en.</span>");
-                if(matcher.find())
+                if (matcher.find())
                     Login(getContentAsString());
 
                 content = getContentAsString();
                 matcher = PlugUtils.matcher("<a href=\"(.*czshare.com/" + id + "/[^\"]*)\" title=\"" + httpFile.getFileName() + "\">" + httpFile.getFileName() + "</a>", content);
-                if(matcher.find())
-                {
+                if (matcher.find()) {
                     String downURL = matcher.group(1);
 
                     GetMethod method = getGetMethod(downURL);
                     httpFile.setState(DownloadState.GETTING);
                     if (!tryDownloadAndSaveFile(method)) {
-                        if(getContentAsString().equals(""))
+                        if (getContentAsString().equals(""))
                             throw new NotRecoverableDownloadException("No credit for download this file!");
                         checkProblems();
                         logger.info(getContentAsString());
                         throw new PluginImplementationException();
                     } else {
                         matcher = PlugUtils.matcher("<form action=\'([^\']+)\' method=\'POST\'>", content);
-                        if(matcher.find()) {
+                        if (matcher.find()) {
                             String delURL = "http://czshare.com/profi/" + matcher.group(1);
                             matcher = PlugUtils.matcher("<a href=\"" + downURL + "\" title=\"" + httpFile.getFileName() + "\">" + httpFile.getFileName() + "</a></td><td><input type=\'checkbox\' name=\'[^\']+\' value=\'([^\']+)\'></td>", content);
-                            if(matcher.find()) {
+                            if (matcher.find()) {
                                 String delFile = matcher.group(1);
                                 PostMethod postMethod = getPostMethod(delURL);
                                 postMethod.addParameter("smaz[0]", delFile);
@@ -151,8 +149,8 @@ class CzshareRunner extends AbstractRunner {
 
             if (makeRedirectedRequest(postmethod)) {
                 matcher = getMatcherAgainstContent("<span class=\"nadpis\">P.ihl..en.</span>");
-                if(matcher.find()) {
-                    badConfig=true;
+                if (matcher.find()) {
+                    badConfig = true;
                     throw new NotRecoverableDownloadException("Bad CZshare profi account login information!");
                 }
             }
@@ -177,7 +175,7 @@ class CzshareRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException("Bohužel je vyčerpána maximální kapacita FREE downloadů", WAIT_TIME);
         }
-        if(badConfig || getContentAsString().equals("")) {
+        if (badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad CZshare profi account login information!");
         }
     }

@@ -24,13 +24,12 @@ class CzshareRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRequest(getGetMethod(fileURL))) {
             checkNameAndSize(getContentAsString());
             checkCaptcha();
         } else {
             checkProblems();
-            makeRedirectedRequest(getMethod);
+            makeRedirectedRequest(getGetMethod(fileURL));
             checkProblems();
             throw new PluginImplementationException();
         }

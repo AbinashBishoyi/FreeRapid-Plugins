@@ -15,7 +15,7 @@ public class DivshareServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 1;
+        return 4;
     }
 
     @Override

@@ -2,10 +2,12 @@ package cz.vity.freerapid.plugins.services.zippyshare;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
@@ -44,23 +46,10 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize();
             final String contentAsString = getContentAsString();
-            String var = PlugUtils.getStringBetween(contentAsString, "var wannaplayagameofpong = '", "';");
-            final String unescape = PlugUtils.getStringBetween(contentAsString, "= unescape(", ");");
+            String var = PlugUtils.getStringBetween(contentAsString, "var pong = '", "';");
+            final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
             logger.info("unescape =" + unescape);
-            final Matcher matcher = PlugUtils.matcher(".replace\\((/.+?/g?), \"(.+?)\"", unescape);
-            int start = 0;
-            while (matcher.find(start)) {
-                final String g1 = matcher.group(1);
-                final String g2 = matcher.group(2);
-                if (g1.endsWith("g")) {
-                    final String find = g1.substring(1, g1.length() - 2);
-                    var = var.replaceAll(Pattern.quote(find), g2);
-                } else {
-                    final String find = g1.substring(1, g1.length() - 1);
-                    var = var.replaceFirst(Pattern.quote(find), g2);
-                }
-                start = matcher.end();
-            }
+            var = applyReplace(var, unescape);
 
             final int number = PlugUtils.getNumberBetween(contentAsString, "substring(", ");");
             final String decodedURL = URLDecoder.decode(var, "UTF-8");
@@ -75,6 +64,24 @@ class ZippyShareFileRunner extends AbstractRunner {
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
+    }
+
+    private String applyReplace(String var, String content) {
+        final Matcher matcher = PlugUtils.matcher(".replace\\((/.+?/g?), \"(.+?)\"", content);
+        int start = 0;
+        while (matcher.find(start)) {
+            final String g1 = matcher.group(1);
+            final String g2 = matcher.group(2);
+            if (g1.endsWith("g")) {
+                final String find = g1.substring(1, g1.length() - 2);
+                var = var.replaceAll(Pattern.quote(find), g2);
+            } else {
+                final String find = g1.substring(1, g1.length() - 1);
+                var = var.replaceFirst(Pattern.quote(find), g2);
+            }
+            start = matcher.end();
+        }
+        return var;
     }
 
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
@@ -94,5 +101,39 @@ class ZippyShareFileRunner extends AbstractRunner {
         PlugUtils.checkName(httpFile, contentAsString, "<strong>Name: </strong>", "<");
         PlugUtils.checkFileSize(httpFile, contentAsString, "Size: </strong>", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+
+    /**
+     * Returns string between 2 other strings.
+     *
+     * @param content      searched content
+     * @param stringBefore string before searched string  - without white space characters on the RIGHT side
+     * @param stringAfter  string after searched string  - without white space characters on the LEFT side
+     * @param count        what item in row is the right result
+     * @return found string - result is trimmed
+     * @throws cz.vity.freerapid.plugins.exceptions.PluginImplementationException
+     *          No string between stringBefore and stringAfter
+     * @since 0.84
+     */
+    private static String getStringBetween(final String content, final String stringBefore, final String stringAfter, int count) throws PluginImplementationException {
+        if (count < 1) {
+            throw new IllegalArgumentException("Finding count is less than 1");
+        }
+        final String before = Pattern.quote(Utils.rtrim(stringBefore));
+        final String after = Pattern.quote(Utils.ltrim(stringAfter));
+        final Matcher matcher = PlugUtils.matcher(before + "\\s*(.+?)\\s*" + after, content);
+        int start = 0;
+        for (int i = 1; i <= count; ++i) {
+            if (matcher.find(start)) {
+                if (i == count) {
+                    return matcher.group(1);
+                } else
+                    start = matcher.end();
+            } else {
+                throw new PluginImplementationException(String.format("No string between '%s' and '%s' was found - attempt %s", stringBefore, stringAfter, count));
+            }
+        }
+        throw new PluginImplementationException();
     }
 }

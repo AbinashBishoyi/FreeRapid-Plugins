@@ -34,8 +34,13 @@ class DivshareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        if (!content.contains("Download Original"))
-            PlugUtils.checkName(httpFile, content, ".gif\" valign=\"absmiddle\">", "</div>");
+        if (!content.contains("Download Original")) {
+            if (content.contains("<div class=\"file_name\">")) {
+                PlugUtils.checkName(httpFile, content, "<div class=\"file_name\">", "</div>");
+            } else if (content.contains(".gif\" valign=\"absmiddle\">")) {
+                PlugUtils.checkName(httpFile, content, ".gif\" valign=\"absmiddle\">", "</div>");
+            }
+        }
         final Matcher matcher = getMatcherAgainstContent("<b>File Size:</b>(.+?)<span class=\"tiny\">(.+?)</span><br />");
         if (matcher.find()) {
             final long size = PlugUtils.getFileSizeFromString(matcher.group(1) + " " + matcher.group(2));
@@ -54,14 +59,14 @@ class DivshareFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             final HttpMethod httpMethod;
-            if (!contentAsString.contains("Download Original"))
-                httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download This File").toHttpMethod();
-            else
-                httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Original").toHttpMethod();
+//            if (!contentAsString.contains("Download Original"))
+//                httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download This File").toHttpMethod();
+//            else
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 HttpMethod hmethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Skip Ad >").toHttpMethod();
-                downloadTask.sleep(15);
+                //downloadTask.sleep(15);
                 if (makeRedirectedRequest(hmethod)) {
                     checkProblems();
                     hmethod = getMethodBuilder().setActionFromAHrefWhereATagContains("click here").toHttpMethod();
@@ -84,6 +89,12 @@ class DivshareFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Sorry, we couldn't find this file")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("is not available to free users in China")) {
+            throw new URLNotAvailableAnymoreException("This file is not available to free users in China and Southeast Asia."); //let to know user in FRD
+        }
+        if (contentAsString.contains("download limit")) {
+            throw new ServiceConnectionProblemException("Download limit");
         }
     }
 

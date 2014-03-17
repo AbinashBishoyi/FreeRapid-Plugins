@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.epicshare;
+package cz.vity.freerapid.plugins.services.filewinds;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,18 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://epicshare.net/fmgl7usbt0ni"));
+            httpFile.setNewURL(new URL("http://filewinds.com/9bmbznaaoddb/AD_DB_DVD_10.rar.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final EpicShareServiceImpl service = new EpicShareServiceImpl(); //instance of service - of our plugin
-
+            final FileWindsServiceImpl service = new FileWindsServiceImpl(); //instance of service - of our plugin
+            /*
             //we set premium account details
-            //final PremiumAccount config = new PremiumAccount();
-            //config.setUsername("****");
-            //config.setPassword("****");
-            //service.setConfig(config);
-
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

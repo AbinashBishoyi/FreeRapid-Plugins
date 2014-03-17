@@ -117,6 +117,11 @@ class Keep2ShareFileRunner extends AbstractRunner {
         if (content.contains("File size to large")) {
             throw new NotRecoverableDownloadException("This file is only for Premium members");
         }
+        final Matcher waitMatch = PlugUtils.matcher("Please wait (\\d+?):(\\d+?):(\\d+?) to download this file", content);
+        if (waitMatch.find()) {
+            final int waitTime = Integer.parseInt(waitMatch.group(3)) + 60 * (Integer.parseInt(waitMatch.group(2)) + 60 * Integer.parseInt(waitMatch.group(1)));
+            throw new YouHaveToWaitException("Please wait for download", waitTime);
+        }
     }
 
     private MethodBuilder doCaptcha(final MethodBuilder builder) throws Exception {

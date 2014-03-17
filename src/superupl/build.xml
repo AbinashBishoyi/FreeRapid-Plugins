@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="EpicShare.net" default="all" basedir=".">
-    <property name="application" value="epicshare"/>
+<project name="SuperUpl.com" default="all" basedir=".">
+    <property name="application" value="superupl"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="epicshare.jar"/>
+    <property name="mainjar.file" value="superupl.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -65,6 +65,7 @@
         <copy todir="${build.dir}">
             <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/TestApp*"/>
         </copy>
+
         <copy todir="${build.dir}">
             <fileset dir="${src.dir}" includes="plugin.xml"/>
         </copy>

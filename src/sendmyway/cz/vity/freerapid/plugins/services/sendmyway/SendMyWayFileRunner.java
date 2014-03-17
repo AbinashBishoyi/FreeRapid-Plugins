@@ -3,7 +3,9 @@ package cz.vity.freerapid.plugins.services.sendmyway;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -19,4 +21,10 @@ class SendMyWayFileRunner extends XFileSharingRunner {
         return fileNameHandlers;
     }
 
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = new LinkedList<String>();
+        downloadLinkRegexes.add("<div.+?id=\"direct_download\".+?>\\s*?<a href\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
+        return downloadLinkRegexes;
+    }
 }

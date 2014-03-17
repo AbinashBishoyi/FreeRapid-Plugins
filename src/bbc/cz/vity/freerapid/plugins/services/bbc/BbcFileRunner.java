@@ -184,19 +184,23 @@ class BbcFileRunner extends AbstractRtmpRunner {
         //sorted by key, ascending
         final TreeMap<Integer, Stream> streamMap = new TreeMap<Integer, Stream>();
         try {
-            final NodeList nodeList = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(content.getBytes("UTF-8"))
+            final NodeList mediaElements = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(content.getBytes("UTF-8"))
             ).getElementsByTagName("media");
-            for (int i = 0, n = nodeList.getLength(); i < n; i++) {
+            for (int i = 0, n = mediaElements.getLength(); i < n; i++) {
                 try {
-                    final Element element = (Element) nodeList.item(i);
-                    if (config.isDownloadSubtitles() && element.getAttribute("kind").equals("captions")) {
-                        queueSubtitle(element);
+                    final Element mediaElement = (Element) mediaElements.item(i);
+                    if (config.isDownloadSubtitles() && mediaElement.getAttribute("kind").equals("captions")) {
+                        queueSubtitle(mediaElement);
                     } else {
-                        final Stream stream = Stream.build(element);
-                        if (stream != null) {
-                            list.add(stream);
-                            if (!video && element.getAttribute("kind").equals("video")) {
-                                video = true;
+                        NodeList connectionElements = mediaElement.getElementsByTagName("connection");
+                        for (int j = 0, connectionElementsLength = connectionElements.getLength(); j < connectionElementsLength; j++) {
+                            Element connectionElement = (Element) connectionElements.item(j);
+                            final Stream stream = Stream.build(mediaElement, connectionElement);
+                            if (stream != null) {
+                                list.add(stream);
+                                if (!video && mediaElement.getAttribute("kind").equals("video")) {
+                                    video = true;
+                                }
                             }
                         }
                     }
@@ -215,6 +219,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
             if (video) {
                 int quality = stream.quality;
                 if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate >= stream.bitrate)) { //put the highest bitrate on same quality
+                    continue;
+                }
+                if (streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight") || stream.supplier.equals("akamai"))) { //akamai is not downloadable, prefer limelight
                     continue;
                 }
                 streamMap.put(quality, stream); //For TV : key=quality, value=stream
@@ -294,9 +301,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
             for (int i = 0, pElementsLength = pElements.getLength(); i < pElementsLength; i++) {
                 Element pElement = (Element) pElements.item(i);
                 subtitleSb.append(i + 1).append("\n");
-                subtitleSb.append(pElement.getAttribute("begin").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d{1})$", ",00$1")); //pad out, 3 digits
+                subtitleSb.append(pElement.getAttribute("begin").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d)$", ",00$1")); //pad out, 3 digits
                 subtitleSb.append(" --> ");
-                subtitleSb.append(pElement.getAttribute("end").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d{1})$", ",00$1"));
+                subtitleSb.append(pElement.getAttribute("end").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d)$", ",00$1"));
                 subtitleSb.append("\n");
                 addSubtitleElement(subtitleSb, pElement.getChildNodes(), pElement.getChildNodes().getLength(), 0);
                 subtitleSb.append("\n");
@@ -325,8 +332,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
             } else if (childNode.getNodeName().equals("span")) {
                 addSubtitleElement(sb, childNode.getChildNodes(), childNode.getChildNodes().getLength(), 0);
             }
-            int i = childNodeCounter + 1;
-            addSubtitleElement(sb, childNodes, childNodeLength, i);
+            addSubtitleElement(sb, childNodes, childNodeLength, childNodeCounter + 1);
         }
     }
 
@@ -337,9 +343,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
         private final boolean encrypted;
         private final int bitrate;
         private final int quality;
+        private final String supplier;
 
-        public static Stream build(final Element media) {
-            final Element connection = (Element) media.getElementsByTagName("connection").item(0);
+        public static Stream build(final Element media, final Element connection) {
             String protocol = connection.getAttribute("protocol");
             if (protocol == null || protocol.isEmpty()) {
                 protocol = connection.getAttribute("href");
@@ -356,19 +362,20 @@ class BbcFileRunner extends AbstractRtmpRunner {
             final int bitrate = Integer.parseInt(media.getAttribute("bitrate"));
             final boolean video = media.getAttribute("kind").equals("video");
             final int quality = video ? Integer.parseInt(media.getAttribute("height")) : -1; //height as quality;
-            return new Stream(server, app, play, encrypted, bitrate, quality);
+            final String supplier = connection.getAttribute("supplier");
+            return new Stream(server, app, play, encrypted, bitrate, quality, supplier);
         }
 
-        private Stream(String server, String app, String play, boolean encrypted, int bitrate, int quality) {
+        private Stream(String server, String app, String play, boolean encrypted, int bitrate, int quality, String supplier) {
             this.server = server;
             this.app = app;
             this.play = play;
             this.encrypted = encrypted;
             this.bitrate = bitrate;
             this.quality = quality;
+            this.supplier = supplier;
             logger.info("Found stream : " + this);
         }
-
 
         @Override
         public String toString() {
@@ -379,6 +386,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                     ", encrypted=" + encrypted +
                     ", bitrate=" + bitrate +
                     ", quality=" + quality +
+                    ", supplier='" + supplier + '\'' +
                     '}';
         }
     }

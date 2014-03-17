@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
  */
 class ZippyShareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ZippyShareRunner.class.getName());
+    public String mLink;
 
     @Override
     public void runCheck() throws Exception {
@@ -26,8 +27,9 @@ class ZippyShareRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
-        } else
+        } else {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        }
     }
 
     @Override
@@ -40,38 +42,22 @@ class ZippyShareRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethoda)) {
             final String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
-
-            //            //<div class="download"><a href="/download/1918981?PHPSESSID=79692e667cdfa171fcf6c90e7d69315c"></a></div>
-            Matcher matcher = PlugUtils.matcher("<div class=\"download\"><a href=\"([^\"<]*)", contentAsString);
-            if (matcher.find()) {
-                String MyPHP = "http://www.savefile.com" + matcher.group(1);
-                final GetMethod getPHP = getGetMethod(MyPHP);
-                //getPHP.setFollowRedirects(true);
-
-                //go on the next webpage (no redirection is being used)
-                if (makeRequest(getPHP)) {
-                    final String PHPString = getContentAsString();//read its content
-                    //If it does not, try	<a href="http://dl4u.savefile.com/a75b81f7d82cd659974e50fa7527acdf/sfdrvrem.zip">Download file now</a>
-                    matcher = PlugUtils.matcher("href=\"([^\"]*)\">Download file now", PHPString); //parses it
-                    //matcher = PlugUtils.matcher("(Download file now)", PHPString);
-                    if (matcher.find()) {
-                        String s = matcher.group(1);
-                        logger.info("Found File URL - " + s);
-                        final GetMethod getMethod = getGetMethod(s);
-                        if (!tryDownloadAndSaveFile(getMethod)) {
-                            checkProblems();
-                            logger.warning(getContentAsString());//something was really wrong, we will explore it from the logs :-)
-                            throw new IOException("File input stream is empty.");
-                        }
-                    } else throw new PluginImplementationException();//something is wrong with plugin
-                } else throw new InvalidURLOrServiceProblemException("Cant find download link - " + getPHP);
-            } else throw new InvalidURLOrServiceProblemException("Cant find php download link");
-        } else throw new InvalidURLOrServiceProblemException("Cant get main URL");
+            client.setReferer(mLink);
+            
+            final GetMethod getMethod = getGetMethod(mLink);
+            if (!tryDownloadAndSaveFile(getMethod)) {
+                checkProblems();
+                logger.warning(getContentAsString());//something was really wrong, we will explore it from the logs :-)
+                throw new IOException("File input stream is empty.");
+            }
+        } else {
+            throw new PluginImplementationException();//something is wrong with plugin
+        }
     }
 
     private void checkNameandSize(String content) throws Exception {
 
-        if (!content.contains("savefile.com")) {
+        if (!content.contains("zippyshare.com")) {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
@@ -81,13 +67,15 @@ class ZippyShareRunner extends AbstractRunner {
 //<strong>Name: </strong>Jordi Villalta - Amnesia Terrace (Original mix)...</font><br>
 //             <font style="line-height: 16px; font-size: 11px; color: rgb(0, 0, 0); text-decoration: none;"><strong>Size: </strong>22.02 MB</font><br>
 
-        Matcher xmatcher = PlugUtils.matcher("Filesize: ([0-9.]*[K|M]B)", content);
+        Matcher xmatcher = PlugUtils.matcher("<strong>Size: </strong>((.+?)+)</", content);
         if (xmatcher.find()) {
             final String fileSize = xmatcher.group(1);
             logger.info("File size " + fileSize);
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
 
-        } else logger.warning("File size was not found" + content);
+        } else {
+            logger.warning("File size was not found" + content);
+        }
 
         xmatcher = PlugUtils.matcher("Name: </strong>((.+?)+)</", content);
         if (xmatcher.find()) {
@@ -95,33 +83,28 @@ class ZippyShareRunner extends AbstractRunner {
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
-        } else logger.warning("File name was not found" + content);
+        } else {
+            logger.warning("File name was not found" + content);
+        }
 
+        xmatcher = PlugUtils.matcher("unescape\\('((.+?)+)'", content);
+        if (xmatcher.find()) {
+            mLink = URLDecoder.decode(xmatcher.group(1), "UTF-8");
+            logger.info("Download Link: " + mLink);
+        } else {
+            throw new PluginImplementationException("Can't find download link");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 
-    }
-
-    private String getName(String content) throws Exception {
-
-
-    }
-
-    private String getLink(String content) throws Exception {
-        Matcher matcher = PlugUtils.matcher("unescape\\('((.+?)+)'", content);
-        if (matcher.find()) {
-            String mLink = URLDecoder.decode(matcher.group(1), "UTF-8");
-            return mLink;
-
-        } else throw new PluginImplementationException("Can't find download link");
     }
 
 
     private void checkProblems() throws ServiceConnectionProblemException {
         if (getContentAsString().contains("already downloading")) {
-            throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
+            throw new ServiceConnectionProblemException(String.format("<b>ZippyShare Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
         }
         if (getContentAsString().contains("Currently a lot of users")) {
-            throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Currently a lot of users are downloading files."));
+            throw new ServiceConnectionProblemException(String.format("<b>ZippyShare Error:</b><br>Currently a lot of users are downloading files."));
         }
     }
 

@@ -21,7 +21,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://www.zippyshare.com/v/28024213/file.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final ZippyShareServiceImpl service = new ZippyShareServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

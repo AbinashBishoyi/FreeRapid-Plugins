@@ -169,6 +169,8 @@ class PreFilesFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("You have to wait", getWaitTime(contentAsString));
         } else if (contentAsString.contains("Wrong captcha")) {
             throw new CaptchaEntryInputMismatchException();
+        } else if (contentAsString.contains("This file is available for PREMIUM Users only")) {
+            throw new NotSupportedDownloadByServiceException("PREMIUM file");
         }
     }
 }

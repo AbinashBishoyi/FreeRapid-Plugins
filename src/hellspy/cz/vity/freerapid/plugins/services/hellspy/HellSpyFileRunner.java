@@ -9,6 +9,8 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -20,7 +22,7 @@ import java.util.regex.Matcher;
 class HellSpyFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HellSpyFileRunner.class.getName());
     private final static String SERVICE_WEB = "http://www.hellspy.com/";
-    private static Cookie cookie;
+    private static List<Cookie> cookies;
 
     @Override
     public void runCheck() throws Exception {
@@ -54,7 +56,7 @@ class HellSpyFileRunner extends AbstractRunner {
                 throw new BadLoginException("Failed to log in");
             }
 
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" target=\"downloadIframe\"")).toGetMethod();
             if (makeRedirectedRequest(httpMethod)) {
 
                 if (!getContentAsString().contains("<a ")) {
@@ -108,15 +110,15 @@ class HellSpyFileRunner extends AbstractRunner {
     }
 
     private void login() throws Exception {
-        HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
-        if (!makeRedirectedRequest(httpMethod))
-            throw new ServiceConnectionProblemException();
-
-        setLanguage();
-
         synchronized (HellSpyFileRunner.class) {
-            if (cookie == null) {
+
+            if (cookies == null) {
                 logger.info("Logging in");
+                HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
+                if (!makeRedirectedRequest(httpMethod))
+                    throw new ServiceConnectionProblemException();
+
+                setLanguage();
 
                 HellSpyServiceImpl service = (HellSpyServiceImpl) getPluginService();
                 PremiumAccount pa = service.getConfig();
@@ -136,28 +138,27 @@ class HellSpyFileRunner extends AbstractRunner {
                         .setReferer(SERVICE_WEB)
                         .setActionFromFormWhereTagContains("Login", true)
                         .setParameter(lg.group(1), pa.getUsername())
-                        .setParameter(psw.group(1), pa.getPassword())
+                        .setParameter(psw.group(1),pa.getPassword())
                         .toPostMethod();
                 if (!makeRedirectedRequest(httpMethod))
                     throw new ServiceConnectionProblemException("Error posting login info");
 
                 if (getContentAsString().contains("Wrong user or password"))
                     throw new BadLoginException("Invalid HellSpy login information!");
-
-                cookie = getCookie("PHPSESSID");
+                for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
+                    logger.warning("Cookie: "+cookie.getName()+"="+cookie.getValue()+" domain:"+cookie.getDomain()+" path:"+cookie.getPath());
+                }
+                cookies=new ArrayList<Cookie>();
+                //There are 3 PHPSESSID cookies, save each of them...
+                for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
+                    cookies.add(cookie);
+                }
             } else {
-                addCookie(cookie);
+                for(Cookie c:cookies)
+                    addCookie(c);
             }
         }
     }
 
-    private Cookie getCookie(final String name) {
-        for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
-            if (cookie.getName().equalsIgnoreCase(name)) {
-                return cookie;
-            }
-        }
-        return null;
-    }
 
 }

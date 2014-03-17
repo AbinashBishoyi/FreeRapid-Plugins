@@ -51,15 +51,21 @@ class StreamCzRunner extends AbstractRunner {
     }
 
     private String getId() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("/(\\d+)", fileURL);
+        Matcher matcher = getMatcherAgainstContent("cdnHD=(\\d+)");
         if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing file URL");
+            matcher = getMatcherAgainstContent("cdnHQ=(\\d+)");
+            if (!matcher.find()) {
+                matcher = getMatcherAgainstContent("cdnLQ=(\\d+)");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Video ID not found");
+                }
+            }
         }
         return matcher.group(1);
     }
 
     private void checkName() throws Exception {
-        final String name = PlugUtils.getStringBetween(getContentAsString(), "<h1 class=\"fn\">", "</h1>");
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<meta name=\"title\" content=\"", "- Video na Stream.cz\"");
         httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

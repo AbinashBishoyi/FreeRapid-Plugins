@@ -1,9 +1,7 @@
 package cz.vity.freerapid.plugins.services.zippyshare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.services.zippyshare.js.JsDocument;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -66,6 +64,15 @@ class ZippyShareFileRunner extends AbstractRunner {
                 } finally {
                     Context.exit();
                 }
+            } else if (getContentAsString().contains("Recaptcha.create(")) {
+                url = PlugUtils.getStringBetween(getContentAsString(), "document.location = '", "';");
+                final String rcKey = PlugUtils.getStringBetween(getContentAsString(), "Recaptcha.create(\"", "\"");
+                final String shortencode = PlugUtils.getStringBetween(getContentAsString(), "shortencode: '", "'");
+                do {
+                    if (!makeRedirectedRequest(stepCaptcha(rcKey, shortencode))) {
+                        throw new ServiceConnectionProblemException();
+                    }
+                } while (!getContentAsString().contains("true"));
             } else {
                 matcher = getMatcherAgainstContent("url\\s*:\\s*'(.+?)'");
                 if (!matcher.find()) {
@@ -117,6 +124,23 @@ class ZippyShareFileRunner extends AbstractRunner {
             logger.info("File size not found");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private HttpMethod stepCaptcha(final String rcKey, final String shortencode) throws Exception {
+        final ReCaptcha r = new ReCaptcha(rcKey, client);
+        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        }
+        r.setRecognized(captcha);
+        return getMethodBuilder()
+                .setReferer(fileURL)
+                .setAjax()
+                .setAction("/rest/captcha/test")
+                .setParameter("challenge", r.getChallenge())
+                .setParameter("response", r.getRecognized())
+                .setParameter("shortencode", shortencode)
+                .toPostMethod();
     }
 
     private int getRequestValue(final int seed) throws Exception {

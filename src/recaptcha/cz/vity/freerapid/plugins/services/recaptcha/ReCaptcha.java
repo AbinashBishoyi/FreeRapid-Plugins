@@ -136,4 +136,12 @@ public class ReCaptcha {
         }
     }
 
+    public String getChallenge() {
+        return challenge;
+    }
+
+    public String getRecognized() {
+        return recognized;
+    }
+
 }

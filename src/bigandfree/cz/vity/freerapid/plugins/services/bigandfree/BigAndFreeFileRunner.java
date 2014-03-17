@@ -47,22 +47,16 @@ class BigAndFreeFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             if (makeRedirectedRequest(method)) { //we make the main request
                 checkProblems();//check problems
-                HttpMethod httpMethod;
-//                httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("chosen", true).setAction(fileURL).toPostMethod();
-//                if (makeRedirectedRequest(httpMethod)) { //we make the main request
-//                    checkProblems();//check problems
-                //here is the download link extraction
                 final String formContent = PlugUtils.getStringBetween(getContentAsString(), "document.getElementById(\"download\").innerHTML = '", "'");
-                httpMethod = getMethodBuilder("<form method=\"POST\" name=\"download_now\">" + formContent + "</form>  ").setActionFromFormByIndex(1, true).setAction(fileURL).removeParameter("direct_now").toPostMethod();
-                final int sleep = PlugUtils.getNumberBetween(getContentAsString(), "var x = ", "; //Wait Time By Dafault");
-                downloadTask.sleep(sleep);
+                final HttpMethod httpMethod = getMethodBuilder("<form method=\"POST\" name=\"download_now\">" + formContent + "</form>  ").setActionFromFormByIndex(1, true).setAction(fileURL).removeParameter("direct_now").toPostMethod();
+                //waiting isn't necessary
+                //final int sleep = PlugUtils.getNumberBetween(getContentAsString(), "var x = ", ";");
+                //downloadTask.sleep(sleep);
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();//if downloading failed
                     logger.warning(getContentAsString());//log the info
                     throw new PluginImplementationException();//some unknown problem
                 }
-
-                //             } else throw new PluginImplementationException();
             } else throw new PluginImplementationException();
         } else {
             checkProblems();

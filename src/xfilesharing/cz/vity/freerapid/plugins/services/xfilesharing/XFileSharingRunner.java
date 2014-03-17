@@ -34,6 +34,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     private final List<FileNameHandler> fileNameHandlers = getFileNameHandlers();
     private final List<FileSizeHandler> fileSizeHandlers = getFileSizeHandlers();
     private final List<CaptchaType> captchaTypes = getCaptchaTypes();
+    private final List<String> downloadPageMarkers = getDownloadPageMarkers();
 
     protected List<FileNameHandler> getFileNameHandlers() {
         final List<FileNameHandler> fileNameHandlers = new LinkedList<FileNameHandler>();
@@ -57,6 +58,19 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         captchaTypes.add(new FourTokensCaptchaType());
         captchaTypes.add(new CaptchasCaptchaType());
         return captchaTypes;
+    }
+
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = new LinkedList<String>();
+        downloadPageMarkers.add("File Download Link Generated");
+        downloadPageMarkers.add("This direct link will be ");
+        return downloadPageMarkers;
+    }
+
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = new LinkedList<String>();
+        downloadLinkRegexes.add("<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
+        return downloadLinkRegexes;
     }
 
     @Override
@@ -118,16 +132,12 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                         .setAction(locationHeader.getValue())
                         .toGetMethod();
                 break;
-            } else if (getContentAsString().contains("File Download Link Generated")
-                    || getContentAsString().contains("This direct link will be ")) {
+            } else if (checkDownloadPageMarker()) {
                 //page containing download link
-                final Matcher matcher = getMatcherAgainstContent("<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Download link not found");
-                }
+                final String downloadLink = getDownloadLinkFromRegexes();
                 method = getMethodBuilder()
                         .setReferer(fileURL)
-                        .setAction(matcher.group(1))
+                        .setAction(downloadLink)
                         .toGetMethod();
                 break;
             }
@@ -222,6 +232,25 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             }
         }
         return false;
+    }
+
+    protected boolean checkDownloadPageMarker() {
+        for (final String downloadPageMarker : downloadPageMarkers) {
+            if (getContentAsString().contains(downloadPageMarker)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
+        for (final String downloadLinkRegex : getDownloadLinkRegexes()) {
+            final Matcher matcher = getMatcherAgainstContent(downloadLinkRegex);
+            if (matcher.find()) {
+                return matcher.group(1);
+            }
+        }
+        throw new PluginImplementationException("Download link not found");
     }
 
     protected void checkFileProblems() throws ErrorDuringDownloadingException {

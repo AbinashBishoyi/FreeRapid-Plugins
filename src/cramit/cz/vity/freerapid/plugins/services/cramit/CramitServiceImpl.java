@@ -1,27 +1,26 @@
 package cz.vity.freerapid.plugins.services.cramit;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author RickCL
  */
-public class CramitServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "cramit.in";
+public class CramitServiceImpl extends XFileSharingServiceImpl {
 
-	@Override
-	protected PluginRunner getPluginRunnerInstance() {
-		return new CramitRunner();
-	}	
+    @Override
+    public String getServiceTitle() {
+        return "Cramit";
+    }
 
-	@Override
-	public String getName() {
-		return SERVICE_NAME;
-	}
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new CramitRunner();
+    }
 
-	@Override
-    public boolean supportsRunCheck() {
-        return true;
+    @Override
+    public String getName() {
+        return "cramit.in";
     }
 
 }

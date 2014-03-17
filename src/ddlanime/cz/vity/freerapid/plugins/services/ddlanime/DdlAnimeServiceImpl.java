@@ -15,7 +15,7 @@ public class DdlAnimeServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "ddlanime.com";
+        return "ddlani.me";
     }
 
     @Override

@@ -24,12 +24,12 @@ class DdlAnimeFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DdlAnimeFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkFileProblems();
             checkDownloadProblems();
@@ -38,7 +38,7 @@ class DdlAnimeFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h2>Download File ", "</h2>");
+        PlugUtils.checkName(httpFile, content, "<h2>Download File", "</h2>");
         PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -50,33 +50,28 @@ class DdlAnimeFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         login();
 
-        GetMethod method = getGetMethod(fileURL); //create GET request
-        if (!makeRedirectedRequest(method)) { //we make the main request
-            logger.warning(getContentAsString());
+        GetMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
             checkFileProblems();
             checkDownloadProblems();
             throw new ServiceConnectionProblemException();
         }
         checkFileProblems();
         checkNameAndSize(getContentAsString());
+        fileURL = method.getURI().toString();
 
         HttpMethod httpMethod = getMethodBuilder()
-                .setBaseURL(fileURL)
                 .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("Free Download", true)
                 .setAction(fileURL)
                 .removeParameter("method_premium")
                 .toPostMethod();
         if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException();
         }
-
-        //final String contentAsString = getContentAsString();
         checkDownloadProblems();
 
-        //process wait time
         String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
         Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
         if (waitTimematcher.find()) {
@@ -84,7 +79,8 @@ class DdlAnimeFileRunner extends AbstractRunner {
         }
 
         MethodBuilder methodBuilder = getMethodBuilder()
-                .setActionFromFormByName("F1", true)
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("Free Download", true)
                 .setAction(fileURL)
                 .removeParameter("method_premium");
 
@@ -96,16 +92,15 @@ class DdlAnimeFileRunner extends AbstractRunner {
             methodBuilder.setParameter("password", password);
         }
 
-        if (getContentAsString().contains("captcha_code")) { //if contains captcha
+        if (getContentAsString().contains("captcha_code")) {
             methodBuilder = stepCaptcha(methodBuilder);
         }
 
         httpMethod = methodBuilder.toPostMethod();
 
         if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException();
         }
         checkDownloadProblems();
 
@@ -116,18 +111,16 @@ class DdlAnimeFileRunner extends AbstractRunner {
 
         logger.info("Final URL : " + httpMethod.getURI());
 
-        //here is the download link extraction
         if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (PlugUtils.matcher("No such file|File not found|File Not Found", contentAsString).find()) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
 
     }
@@ -137,15 +130,11 @@ class DdlAnimeFileRunner extends AbstractRunner {
         if (contentAsString.contains("This file reached max downloads limit")) {
             throw new PluginImplementationException("This file reached max downloads limit");
         }
-        if (contentAsString.contains("Wrong captcha")) {
-            throw new YouHaveToWaitException("Wrong captcha", 1); //let to know user in FRD
-        }
     }
 
     private boolean login() throws Exception {
         synchronized (DdlAnimeFileRunner.class) {
             DdlAnimeServiceImpl service = (DdlAnimeServiceImpl) getPluginService();
-            String contentAsString;
             PremiumAccount pa = service.getConfig();
 
             //for testing purpose
@@ -170,9 +159,8 @@ class DdlAnimeFileRunner extends AbstractRunner {
 
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
-            contentAsString = getContentAsString();
 
-            if (contentAsString.contains("Incorrect Login or Password"))
+            if (getContentAsString().contains("Incorrect Login or Password"))
                 throw new BadLoginException("Invalid DDLAnime registered account login information!");
 
             return true;
@@ -180,17 +168,15 @@ class DdlAnimeFileRunner extends AbstractRunner {
     }
 
     private boolean isPassworded() {
-        boolean passworded = getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
-        return passworded;
+        return getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
     }
 
     private MethodBuilder stepCaptcha(MethodBuilder methodBuilder) throws Exception {
-        //process captcha
         logger.info("Processing captcha");
         final String contentAsString = getContentAsString();
-        String captchaRule = "<span style=\\'position:absolute;padding\\-left:(\\d+)px;padding\\-top:\\d+px;\\'>(\\d+)</span>";
+        String captchaRule = "<span style='position:absolute;padding\\-left:(\\d+)px;padding\\-top:\\d+px;'>(\\d+)</span>";
         Matcher captchaMatcher = PlugUtils.matcher(captchaRule, PlugUtils.unescapeHtml(contentAsString));
-        StringBuffer strbuffCaptcha = new StringBuffer(4);
+        StringBuilder strbuffCaptcha = new StringBuilder(4);
         SortedMap<Integer, String> captchaMap = new TreeMap<Integer, String>();
 
         while (captchaMatcher.find()) {

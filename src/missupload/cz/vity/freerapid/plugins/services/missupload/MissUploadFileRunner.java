@@ -1,18 +1,14 @@
 package cz.vity.freerapid.plugins.services.missupload;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -23,10 +19,15 @@ import java.util.regex.Matcher;
  */
 class MissUploadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MissUploadFileRunner.class.getName());
+    private final int captchaMax = 0;
+    private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+
+        addCookie(new Cookie(".missupload.com", "lang", "english", "/", 86400, false));
+
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -48,6 +49,9 @@ class MissUploadFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+
+        addCookie(new Cookie(".missupload.com", "lang", "english", "/", 86400, false));
+
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -62,23 +66,21 @@ class MissUploadFileRunner extends AbstractRunner {
 
             if (!makeRedirectedRequest(httpMethod)) throw new ServiceConnectionProblemException();
 
-            httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setBaseURL(fileURL)
-                    .setActionFromFormByName("F1", true)
-                    .removeParameter("method_premium")
-                    .removeParameter("code")
-                    .setParameter("code", stepCaptcha())
-                    .toPostMethod();
+            if (getContentAsString().contains("Enter code below")) {
+                while (getContentAsString().contains("Enter code below")) {
+                    //they have this fugly waiting time between captcha tries which severely limits our possibilities of brute-forcing through it
+                    httpMethod = stepCaptcha();
+                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "<span id=\"countdown\">", "</span>") + 1);
 
-            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "<span id=\"countdown\">", "</span>") + 1);
-
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
-                if (getContentAsString().contains("Wrong captcha"))
-                    throw new PluginImplementationException("Problem with captcha");
-                throw new ServiceConnectionProblemException("Error starting download");
-            }
+                    if (!tryDownloadAndSaveFile(httpMethod)) {
+                        checkProblems();
+                        if (getContentAsString().contains("Enter code below")) continue;
+                        logger.warning(getContentAsString());
+                        throw new ServiceConnectionProblemException("Error starting download");
+                    }
+                }
+            } else
+                throw new PluginImplementationException("Captcha not found");
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -92,40 +94,33 @@ class MissUploadFileRunner extends AbstractRunner {
         }
     }
 
-    private String stepCaptcha() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("padding-left:(\\d+?)px;.+?&#(\\d\\d);");
+    private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
 
-        int start = 0;
-        final List<CaptchaEntry> list = new ArrayList<CaptchaEntry>(4);
-        while (matcher.find(start)) {
-            list.add(new CaptchaEntry(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)) - 48));
-            start = matcher.end();
-        }
-        Collections.sort(list);
+        final Matcher matcher = getMatcherAgainstContent("\"(http://www\\.missupload\\.com/captchas/[^\"]+?)\"");
+        if (!matcher.find()) throw new PluginImplementationException("Captcha picture not found");
+        final String captchaSrc = matcher.group(1);
+        logger.info("Captcha URL " + captchaSrc);
 
-        final StringBuilder builder = new StringBuilder();
-        for (CaptchaEntry entry : list) {
-            builder.append(entry.value);
-        }
-        final String captcha = builder.toString();
-
-        logger.info("Processed captcha '" + captcha + "'");
-        if (captcha.length() != 4) logger.warning("Possible captcha issue");
-        return captcha;
-    }
-
-    private static class CaptchaEntry implements Comparable<CaptchaEntry> {
-        private Integer position;
-        private Integer value;
-
-        CaptchaEntry(int position, int value) {
-            this.position = position;
-            this.value = value;
+        String captcha;
+        if (captchaCounter <= captchaMax) {
+            captcha = PlugUtils.recognize(captchaSupport.getCaptchaImage(captchaSrc), "-d -1 -C 0-9");
+            logger.info("OCR attempt " + captchaCounter + " of " + captchaMax + ", recognized " + captcha);
+            captchaCounter++;
+        } else {
+            captcha = captchaSupport.getCaptcha(captchaSrc);
+            if (captcha == null) throw new CaptchaEntryInputMismatchException();
+            logger.info("Manual captcha " + captcha);
         }
 
-        public int compareTo(CaptchaEntry o) {
-            return position.compareTo(o.position);
-        }
+        return getMethodBuilder()
+                .setReferer(fileURL)
+                .setBaseURL(fileURL)
+                .setActionFromFormByName("F1", true)
+                .removeParameter("method_premium")
+                .removeParameter("code")
+                .setParameter("code", captcha)
+                .toPostMethod();
     }
 
 }

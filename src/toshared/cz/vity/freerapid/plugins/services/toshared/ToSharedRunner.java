@@ -41,15 +41,7 @@ class ToSharedRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            String url = PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',");
-            String l2surl = url.substring(url.length() - 32);
-            int viw = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ENGLISH).get(Calendar.DAY_OF_WEEK);
-            if (l2surl.charAt(0) % 2 == 1) {
-                l2surl = l2surl.substring(0, viw) + l2surl.substring(16 + viw);
-            } else {
-                l2surl = l2surl.substring(0, 16 - viw) + l2surl.substring(l2surl.length() - viw, viw);
-            }
-            url = url.substring(0, url.indexOf("id=") + 3) + l2surl;
+            final String url = getUrl(PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',"));
             method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setAction(url).toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (makeRedirectedRequest(method)) {
@@ -74,7 +66,7 @@ class ToSharedRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         PlugUtils.checkName(httpFile, getContentAsString(), "download", "</title>");
-        final String fileSize = PlugUtils.getStringBetween(getContentAsString(), "File size:</span>\n", "&nbsp;");
+        final String fileSize = PlugUtils.getStringBetween(getContentAsString(), "File size:</span>", "&nbsp;");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize.replace(",", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -88,4 +80,20 @@ class ToSharedRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Your IP address is already downloading a file or your session limit is reached! Try again in a few minutes.");
         }
     }
+
+    private static String getUrl(String url) throws ErrorDuringDownloadingException {
+        try {
+            String l2surl = url.substring(Math.max(0, url.length() - 32));
+            int viw = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ENGLISH).get(Calendar.DAY_OF_WEEK);
+            if (l2surl.charAt(0) % 2 == 1) {
+                l2surl = l2surl.substring(0, Math.min(l2surl.length(), viw)) + l2surl.substring(Math.min(l2surl.length(), 16 + viw));
+            } else {
+                l2surl = l2surl.substring(0, Math.min(l2surl.length(), 16 - viw)) + l2surl.substring(l2surl.length() - viw);
+            }
+            return url.substring(0, url.indexOf("id=") + 3) + l2surl;
+        } catch (Exception e) {
+            throw new PluginImplementationException("Error parsing download URL: " + e.getLocalizedMessage());
+        }
+    }
+
 }

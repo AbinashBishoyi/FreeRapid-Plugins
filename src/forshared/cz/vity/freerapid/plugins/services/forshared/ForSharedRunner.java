@@ -97,7 +97,7 @@ class ForSharedRunner extends AbstractRunner {
         if (nMatcher.find()) {
             final String fileName = nMatcher.group(1).trim();
             logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
+            httpFile.setFileName(fileName.trim());
 
 
         } else logger.warning("File name was not found" + content);

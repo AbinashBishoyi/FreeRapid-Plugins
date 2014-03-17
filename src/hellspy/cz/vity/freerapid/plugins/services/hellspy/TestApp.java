@@ -8,15 +8,18 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author ntoskrnl
+ * @author JPEXS
  */
 public class TestApp extends PluginDevApplication {
     @Override
-    protected void startup() {
+    protected void startup() {                   
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.hellspy.com/trollexploitable2-png/1046403"));
+            httpFile.setNewURL(new URL("http://www.hellspy.com/harry-potter-and-the-deathly-hallows-part-ii-crack-rar/2458563"));
+            //httpFile.setNewURL(new URL("http://www.hellspy.com/avatar-avi/686341"));
+            
+            
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

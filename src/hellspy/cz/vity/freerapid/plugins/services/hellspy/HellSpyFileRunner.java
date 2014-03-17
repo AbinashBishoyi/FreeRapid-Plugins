@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -19,7 +18,7 @@ import java.util.regex.Pattern;
 /**
  * Class which contains main code
  *
- * @author ntoskrnl
+ * @author JPEXS
  */
 class HellSpyFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HellSpyFileRunner.class.getName());
@@ -30,9 +29,12 @@ class HellSpyFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         checkURL();
+        makeRedirectedRequest(getGetMethod(SERVICE_WEB));
+        setLanguage();
+        
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            setLanguage();
+        
+        if (makeRedirectedRequest(getMethod)) {                      
             checkProblems();
             checkNameAndSize();
         } else {
@@ -46,7 +48,7 @@ class HellSpyFileRunner extends AbstractRunner {
         super.run();
         checkURL();
         logger.info("Starting download in TASK " + fileURL);
-
+        
         login();
 
         final GetMethod method = getGetMethod(fileURL);
@@ -54,29 +56,15 @@ class HellSpyFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            if (getContentAsString().contains("You must be signed-in to download files")) {
+            if (getContentAsString().contains(">Login</a>")) {
                 throw new BadLoginException("Failed to log in");
-            }
-            String nextURL=PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" target=\"downloadIframe\"");
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setBaseURL(SERVICE_WEB).setAction(nextURL).toGetMethod();
-            if(nextURL.endsWith("?freedownload=1")){ //Sometimes you can download for free.
-                if(!makeRedirectedRequest(httpMethod)){
-                    throw new ServiceConnectionProblemException("Error connecting to Free download");
+            }            
+            HttpMethod httpMethod=getMethodBuilder().setAction(fileURL+"?download=1").toGetMethod();                        
+            if (makeRedirectedRequest(httpMethod)) {           
+                if(getContentAsString().contains("dostatek kreditu")){
+                   throw new NotRecoverableDownloadException("No credit for download this file!");
                 }
-                httpMethod = getMethodBuilder().setReferer(nextURL).setActionFromAHrefWhereATagContains("Download file").toGetMethod();
-                if (!tryDownloadAndSaveFile(httpMethod)) {
-                    checkProblems();
-                    logger.warning(getContentAsString());
-                    throw new ServiceConnectionProblemException("Error starting Free download");
-                }
-                return;
-            }
-            if (makeRedirectedRequest(httpMethod)) {
-                if (!getContentAsString().contains("<a ")) {
-                    throw new NotRecoverableDownloadException("Either your account does not have enough credit, or the plugin is broken");
-                }
-
-                httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromTextBetween("launchFullDownload('", "',").toGetMethod();//setActionFromAHrefWhereATagContains("zde").toGetMethod();
+                httpMethod=getMethodBuilder().setActionFromTextBetween("launchFullDownload('", "'").toGetMethod();
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
@@ -99,32 +87,37 @@ class HellSpyFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<span class=\"text\" title=\"\">", "</span></span></h1>");
-        final String size = PlugUtils.getStringBetween(content, "Size: </span>", "</span>").replace("&nbsp;", " ");
+        String content = getContentAsString();
+        int p1=content.indexOf("<span class=\"filesize");
+        if(p1==-1){
+           throw new PluginImplementationException();
+        }
+        content=content.substring(p1);
+        int p2=content.indexOf("</h1>");
+        if(p2==-1){
+           throw new PluginImplementationException();
+        }
+        content=content.substring(0,p2+5);        
+        PlugUtils.checkName(httpFile, content, "<h1>", "</h1>");
+        final String size = PlugUtils.getStringBetween(content, "right\">", "</span></span>").replace("<span>", "");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Page not found")) {
+        if (content.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
     private void setLanguage() throws Exception {
-        String phpsess="";
-        for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
-                    if(cookie.getName().equals("PHPSESSID")){
-                        phpsess=cookie.getValue();
-                    }
-        }
+        String phpsess=getCookieByName("PHPSESSID").getValue();
         Matcher m=Pattern.compile("http://([a-z]+?\\.)?hellspy\\.([a-z]{2,3})/(.+)").matcher(fileURL);
         if(m.find()){
             final HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(SERVICE_WEB)
-                .setAction("http://"+m.group(1)+"hellspy.com/--"+phpsess+"-/"+m.group(3))
+                .setAction("http://"+m.group(1)+"hellspy.com/--"+phpsess+"-/")
                 //.setActionFromAHrefWhereATagContains("English")
                 .toGetMethod();
             if (!makeRedirectedRequest(httpMethod))
@@ -164,17 +157,21 @@ class HellSpyFileRunner extends AbstractRunner {
                         throw new BadLoginException("No HellSpy login information!");
                     }
                 }
-
+              
                 httpMethod = getMethodBuilder()
                         .setReferer(SERVICE_WEB)
-                        .setActionFromFormWhereTagContains("Login", true)
+                        .setAction("http://www.hell-share.com/user/login/?do=apiLoginForm-submit&api_hash=hellspy_iq&user_hash="+getCookieByName("PHPSESSID").getValue())
                         .setParameter("username", pa.getUsername())
                         .setParameter("password",pa.getPassword())
+                        .setParameter("permanent_login", "on")
+                        .setParameter("submit_login", "Login")
+                        .setParameter("login", "1")
+                        .setParameter("redir_url", "http://www.hellspy.com/?do=loginBox-login")
                         .toPostMethod();
                 if (!makeRedirectedRequest(httpMethod))
                     throw new ServiceConnectionProblemException("Error posting login info");
 
-                if (getContentAsString().contains("Wrong user or password"))
+                if (getContentAsString().contains("Error while logging in"))
                     throw new BadLoginException("Invalid HellSpy login information!");
                 cookies=new ArrayList<Cookie>();
                 //There are 3 PHPSESSID cookies, save each of them...

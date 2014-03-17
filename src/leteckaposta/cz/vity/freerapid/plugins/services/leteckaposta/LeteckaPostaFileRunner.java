@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek
+ * @author Vity
  */
 class LeteckaPostaFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LeteckaPostaFileRunner.class.getName());

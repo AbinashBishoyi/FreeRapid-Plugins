@@ -2,9 +2,11 @@ package cz.vity.freerapid.plugins.services.mediafire;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
+import cz.vity.freerapid.plugins.services.solvemediacaptcha.SolveMediaCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -236,22 +238,32 @@ class MediafireRunner extends AbstractRunner {
 
     private void stepCaptcha() throws Exception {
         while (isCaptcha()) {
-            final Matcher matcher = getMatcherAgainstContent("challenge\\?k=([^\"]+)");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("ReCaptcha key not found");
-            }
             final String content = getContentAsString();
-            final ReCaptcha r = new ReCaptcha(matcher.group(1), client);
-            final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-            if (captcha == null) {
-                throw new CaptchaEntryInputMismatchException();
-            }
-            r.setRecognized(captcha);
-            final HttpMethod method = r.modifyResponseMethod(getMethodBuilder(content)
+            MethodBuilder builder = getMethodBuilder(content)
                     .setReferer(fileURL)
-                    .setActionFromFormByName("form_captcha", true))
-                    .toPostMethod();
-            if (!makeRedirectedRequest(method)) {
+                    .setActionFromFormByName("form_captcha", true);
+            if (content.contains("solvemedia")) {
+                final Matcher matcher = getMatcherAgainstContent("challenge.noscript\\?k=([^\"]+)");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Captcha key not found");
+                }
+                final String captchaKey = matcher.group(1);
+                final SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport());
+                builder = solveMediaCaptcha.modifyResponseMethod(builder);
+            } else {  // ReCaptcha
+                final Matcher matcher = getMatcherAgainstContent("challenge\\?k=([^\"]+)");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("ReCaptcha key not found");
+                }
+                final ReCaptcha r = new ReCaptcha(matcher.group(1), client);
+                final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+                if (captcha == null) {
+                    throw new CaptchaEntryInputMismatchException();
+                }
+                r.setRecognized(captcha);
+                builder = r.modifyResponseMethod(builder);
+            }
+            if (!makeRedirectedRequest(builder.toPostMethod())) {
                 throw new ServiceConnectionProblemException();
             }
         }

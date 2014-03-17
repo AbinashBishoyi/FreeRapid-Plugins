@@ -71,15 +71,20 @@ class FileFactoryFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span");
-        PlugUtils.checkFileSize(httpFile, content, "<h2>", "file uploaded");
+        final Matcher match = PlugUtils.matcher("<div id=\"file_name\".*?>\\s*?<h2>(.+?)</h2>\\s*?<div id=\"file_info\">(.+?) upload", getContentAsString());
+        if (!match.find())
+            throw new PluginImplementationException("File name/size not found");
+        httpFile.setFileName(match.group(1).trim());
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(2).trim()));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("this file is no longer available") || content.contains("id=\"uploader\"")) {
+        if (content.contains("Sorry, this file is no longer available") ||
+                content.contains("the file you are requesting is no longer available") ||
+                content.contains("This file has been deleted") ||
+                content.contains("Invalid Download Link")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("You have presently exceeded your Download allowance")) {

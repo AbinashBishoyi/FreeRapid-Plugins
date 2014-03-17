@@ -42,7 +42,7 @@ class YouPornFileRunner extends AbstractRunner {
         if (!matchN.find())
             throw new PluginImplementationException("File name not found");
         httpFile.setFileName(matchN.group(1).trim() + service.getVideoFormat());
-        final Matcher matchS = PlugUtils.matcher(service.getVideoDescription() + "</a> \\((.+?)\\)</li>", content);
+        final Matcher matchS = PlugUtils.matcher(service.getVideoDescription() + "\\s*?</a>\\s*?\\((.+?)\\)\\s*?</li>", content);
         if (!matchS.find())
             throw new PluginImplementationException("File size not found");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(matchS.group(1)));

@@ -78,7 +78,7 @@
         <ant dir="${src.dir}/savefile/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/upnito/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/flyshare/" antfile="build.xml" inheritall="false"/>
-        <ant dir="${src.dir}/ziddu/" antfile="build.xml" inheritall="false"/>
+        <!--<ant dir="${src.dir}/ziddu/" antfile="build.xml" inheritall="false"/>-->
         <ant dir="${src.dir}/usercash/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/kewlshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/cobrashare/" antfile="build.xml" inheritall="false"/>
@@ -160,6 +160,7 @@
         <ant dir="${src.dir}/anonym/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/serienjunkies/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filer/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/hamstershare/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

@@ -3,8 +3,10 @@ package cz.vity.freerapid.plugins.dev;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
+import cz.vity.freerapid.utilities.LogUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,6 +74,7 @@ class PluginDevHttpFile implements HttpFile {
      * Field serviceID - plugin ID
      */
     private String serviceID;
+    private boolean resumeSupported;
 
     /**
      * {@inheritDoc}
@@ -304,5 +307,33 @@ class PluginDevHttpFile implements HttpFile {
     @Override
     public Map<String, Object> getProperties() {
         return map;
+    }
+
+    public long getRealDownload() {
+        return downloaded;
+    }
+
+    public File getStoreFile() {
+        final File tempFile;
+        try {
+            tempFile = File.createTempFile("temp", "temp");
+            tempFile.deleteOnExit();
+        } catch (IOException e) {
+            LogUtils.processException(logger, e);
+            return null;
+        }
+        return tempFile;
+    }
+
+    public boolean isResumeSupported() {
+        return resumeSupported;
+    }
+
+    public void setResumeSupported(boolean resumeSupported) {
+        this.resumeSupported = resumeSupported;
+    }
+
+    public void setStoreFile(File storeFile) {
+        logger.info("Store file emulation:" + storeFile);
     }
 }

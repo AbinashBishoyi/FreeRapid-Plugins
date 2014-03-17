@@ -11,9 +11,11 @@ import org.apache.commons.httpclient.HttpMethod;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * @author Kajda
+ * @author Vity
  * @since 0.82
  */
 class ZippyShareFileRunner extends AbstractRunner {
@@ -42,8 +44,28 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize();
             final String contentAsString = getContentAsString();
-            final String var = PlugUtils.getStringBetween(contentAsString, "unescape(", ")");
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(URLDecoder.decode(PlugUtils.getStringBetween(contentAsString, "var " + var + " = '", "';"), "UTF-8").substring(PlugUtils.getNumberBetween(contentAsString, "substring(", ");"))).toHttpMethod();
+            String var = PlugUtils.getStringBetween(contentAsString, "var wannaplayagameofpong = '", "';");
+            final String unescape = PlugUtils.getStringBetween(contentAsString, "= unescape(", ");");
+            logger.info("unescape =" + unescape);
+            final Matcher matcher = PlugUtils.matcher(".replace\\((/.+?/g?), \"(.+?)\"", unescape);
+            int start = 0;
+            while (matcher.find(start)) {
+                final String g1 = matcher.group(1);
+                final String g2 = matcher.group(2);
+                if (g1.endsWith("g")) {
+                    final String find = g1.substring(1, g1.length() - 2);
+                    var = var.replaceAll(Pattern.quote(find), g2);
+                } else {
+                    final String find = g1.substring(1, g1.length() - 1);
+                    var = var.replaceFirst(Pattern.quote(find), g2);
+                }
+                start = matcher.end();
+            }
+
+            final int number = PlugUtils.getNumberBetween(contentAsString, "substring(", ");");
+            final String decodedURL = URLDecoder.decode(var, "UTF-8");
+            logger.info("Decoded URL:" + decodedURL);
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(decodedURL.substring(number)).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();
@@ -69,7 +91,7 @@ class ZippyShareFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "Name: </strong>", "<");
+        PlugUtils.checkName(httpFile, contentAsString, "<strong>Name: </strong>", "<");
         PlugUtils.checkFileSize(httpFile, contentAsString, "Size: </strong>", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

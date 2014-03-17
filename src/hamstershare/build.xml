@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="ZippyShare.com" default="all" basedir=".">
-    <property name="application" value="zippyshare"/>
+<project name="HamsterShare Plugin" default="all" basedir=".">
+    <property name="application" value="hamstershare"/>
 
-    <property name="version" value="0.5.3"/>
+    <property name="version" value="1.00"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="zippyshare.frp"/>
+    <property name="mainjar.file" value="hamstershare.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -72,7 +72,8 @@
 
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
-        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" debug="off" target="1.6">
+        <javac srcdir="${src.dir}" encoding="UTF-8" destdir="${classes.dir}" classpathref="cp" optimize="on"
+               target="1.6">
 
             <sourcepath location="../devapp"/>
         </javac>

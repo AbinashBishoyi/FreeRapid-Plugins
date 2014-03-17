@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="hamstershare.com" version="1.0" vendor="Vookimedlo"
+        class="cz.vity.freerapid.plugins.services.hamstershare.HamsterShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?hamstershare\.com/.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="hamstershare.com"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="hamstershare.com" path="/" type="code"/>
+    </runtime>
+</plugin>

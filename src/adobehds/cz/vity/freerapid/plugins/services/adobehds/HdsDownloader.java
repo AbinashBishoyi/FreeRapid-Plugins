@@ -24,6 +24,7 @@ public class HdsDownloader {
      * https://github.com/K-S-V/Scripts/blob/master/AdobeHDS.php
      * http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
      * http://sourceforge.net/apps/mediawiki/osmf.adobe/index.php?title=Flash_Media_Manifest_(F4M)_File_Format_obsolete
+     * http://code.google.com/p/mp-onlinevideos2/source/browse/trunk/
      */
 
     private static final Logger logger = Logger.getLogger(HdsDownloader.class.getName());

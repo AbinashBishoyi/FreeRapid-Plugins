@@ -23,7 +23,7 @@ class HdsInputStream extends InputStream {
     private static final int FLV_PACKET_HEADER_SIZE = 11;
 
     private final FragmentRequester requester;
-    private final ByteBuffer currentPacket = ByteBuffer.allocate(128 * 1024);
+    private final ByteBuffer currentPacket = ByteBuffer.allocate(1024 * 1024);
     private DataInputStream currentStream;
     private boolean finished;
 
@@ -149,6 +149,9 @@ class HdsInputStream extends InputStream {
                 }
             }
             final int size = dataSize - (currentPacket.position() - FLV_PACKET_HEADER_SIZE);
+            if (size > currentPacket.capacity() - currentPacket.position()) {
+                throw new IOException("Packet buffer size too small");
+            }
             currentStream.readFully(currentPacket.array(), currentPacket.position(), size);
             currentPacket.position(currentPacket.position() + size);
             skipBytes(4);

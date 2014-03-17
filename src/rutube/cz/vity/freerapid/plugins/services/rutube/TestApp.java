@@ -19,6 +19,7 @@ public class TestApp extends PluginDevApplication {
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
             //httpFile.setNewURL(new URL("http://rutube.ru/video/b8dfb3ce7cb2f608a2dabefceaa710db/"));
+            //httpFile.setNewURL(new URL("http://rutube.ru/video/f4c224291c2a1e83947d042ba34b2504/"));
             httpFile.setNewURL(new URL("http://rutube.ru/video/6a3a3c7cf020f5af8113398ff266118a/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

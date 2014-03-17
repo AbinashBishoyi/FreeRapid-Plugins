@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -34,7 +35,7 @@ public class MediafireRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        if (!isList()) {
+        if (!isFolder()) {
             final String content = getContentAsString();
             PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
             if (!isPassworded()) {
@@ -59,8 +60,8 @@ public class MediafireRunner extends AbstractRunner {
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            if (isList()) {
-                runList();
+            if (isFolder()) {
+                parseFolder();
                 return;
             }
             checkNameAndSize();
@@ -84,35 +85,68 @@ public class MediafireRunner extends AbstractRunner {
         }
     }
 
-    private void runList() throws Exception {
-        final Matcher matcher = getMatcherAgainstContent("src=\"(/js/myfiles.php[^\"]+?)\"");
-        if (!matcher.find()) throw new PluginImplementationException("URL to list not found");
-        final HttpMethod listMethod = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
-
-        if (makeRedirectedRequest(listMethod)) {
-            parseList();
-        } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
+    private boolean isFolder() {
+        return getContentAsString().contains("<body class=\"myfiles\">");
     }
 
-    private void parseList() {
-        final Matcher matcher = getMatcherAgainstContent("oe\\[[0-9]+\\]=Array\\('([^']+?)'");
+    private void parseFolder() throws Exception {
+        final String id = fileURL.substring(fileURL.indexOf('?') + 1);
+        final List<FolderItem> list = new LinkedList<FolderItem>();
+        if (id.contains(",")) {
+            for (final String s : id.split(",")) {
+                list.add(new FolderItem(s, null));
+            }
+        } else {
+            final HttpMethod method = getMethodBuilder()
+                    .setAction("http://www.mediafire.com/api/folder/get_info.php")
+                    .setParameter("recursive", "yes")
+                    .setParameter("content_filter", "files")
+                    .setParameter("folder_key", id)
+                    .setParameter("response_format", "json")
+                    .setParameter("version", "1")
+                    .toGetMethod();
+            setFileStreamContentTypes(new String[0], new String[]{"application/json"});
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final Matcher matcher = getMatcherAgainstContent("\"quickkey\":\"(.+?)\",\"filename\":\"(.+?)\"");
+            while (matcher.find()) {
+                list.add(new FolderItem(matcher.group(1), matcher.group(2)));
+            }
+            Collections.sort(list);
+        }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
         final List<URI> uriList = new LinkedList<URI>();
-        while (matcher.find()) {
-            final String link = "http://www.mediafire.com/download.php?" + matcher.group(1);
+        for (final FolderItem item : list) {
             try {
-                uriList.add(new URI(link));
-            } catch (URISyntaxException e) {
+                uriList.add(new URI(item.getFileUrl()));
+            } catch (final URISyntaxException e) {
                 LogUtils.processException(logger, e);
             }
         }
+        httpFile.getProperties().put("removeCompleted", true);
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
 
-    private boolean isList() {
-        return (fileURL.contains("?sharekey="));
+    private static class FolderItem implements Comparable<FolderItem> {
+        private final String fileId;
+        private final String fileName;
+
+        public FolderItem(final String fileId, final String fileName) {
+            this.fileId = fileId;
+            this.fileName = fileName;
+        }
+
+        public String getFileUrl() {
+            return "http://www.mediafire.com/?" + fileId;
+        }
+
+        @Override
+        public int compareTo(final FolderItem that) {
+            return this.fileName.compareTo(that.fileName);
+        }
     }
 
     private boolean isPassworded() {

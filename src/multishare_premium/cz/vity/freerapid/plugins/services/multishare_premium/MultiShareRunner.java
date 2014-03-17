@@ -50,9 +50,8 @@ class MultiShareRunner extends AbstractRunner {
         Matcher matcher;
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
-            matcher = getMatcherAgainstContent("<h2>P.ihl..en.</h2>");
-            if (matcher.find()) {
+            checkNameAndSize(getContentAsString());            
+            if (getContentAsString().contains("<form id=\"form_prihlaseni\"")) {
                 login();
                 makeRedirectedRequest(method);
             }

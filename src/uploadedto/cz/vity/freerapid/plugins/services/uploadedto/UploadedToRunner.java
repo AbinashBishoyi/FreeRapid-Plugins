@@ -20,7 +20,7 @@ class UploadedToRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
@@ -31,8 +31,7 @@ class UploadedToRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             final String contentAsString = getContentAsString();
             checkSize(contentAsString);
 

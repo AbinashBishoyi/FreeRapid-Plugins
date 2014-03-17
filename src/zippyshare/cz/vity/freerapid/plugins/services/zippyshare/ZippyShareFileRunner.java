@@ -42,11 +42,11 @@ class ZippyShareFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
-            final Matcher matcher = getMatcherAgainstContent("document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*(.+?);");
+            final Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?)document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*([^<>]+?)</script>");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Download link not found");
             }
-            final String script = matcher.group(1);
+            final String script = matcher.group(1) + matcher.group(2);
             logger.info(script);
             final String url = ScriptUtils.evaluateJavaScriptToString(script);
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();

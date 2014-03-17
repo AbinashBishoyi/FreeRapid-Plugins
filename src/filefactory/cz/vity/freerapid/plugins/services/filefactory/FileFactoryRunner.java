@@ -121,7 +121,7 @@ class FileFactoryRunner {
             }
             String s = matcher.group(1);
             int factor = 1024;
-            if (matcher.group(2).contains("M")) factor=1024*1024;
+            if (matcher.group(2).contains("M")) factor = 1024 * 1024;
             httpFile.setFileSize((long) Float.parseFloat(s) * factor);
             //href="/dlf/f/a3f880/b/2/h/dd8f6f6df8ec3d79aef99536de9aab06/j/0/n/KOW_-_Monica_divx_002" id="basicLink"
             matcher = Pattern.compile("href=\"(.*?)\" id=\"basicLink\"", Pattern.MULTILINE).matcher(client.getContentAsString());
@@ -198,10 +198,10 @@ class FileFactoryRunner {
                 downloader.saveToFile(inputStream);
                 step = Step.FINISHED;
             } else {
-                if (checkRestart(client.getContentAsString())) return;
                 if (checkLimit(client.getContentAsString())) {
                     return;
                 }
+                if (checkRestart(client.getContentAsString())) return;
                 logger.warning(client.getContentAsString());
                 throw new IOException("File input stream is empty.");
             }

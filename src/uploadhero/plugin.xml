@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.uploadhero.UploadHeroServiceImpl"
-        id="uploadhero.com" vendor="birchie" version="1.0.0">
+        id="uploadhero.com" vendor="birchie" version="1.0.1">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?uploadhero\.com/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="urlRegex" value="http://(www\.)?uploadhero\.com?/.+"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="uploadhero.com"/>
+        <attribute id="services" value="uploadhero.co uploadhero.com"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

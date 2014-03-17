@@ -10,11 +10,12 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
- * @author tong2shot
+ * @author tong2shot, birchie
  */
 class FastShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FastShareFileRunner.class.getName());
@@ -35,8 +36,8 @@ class FastShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span style=color:black;>", "</b>");
-        PlugUtils.checkFileSize(httpFile, content, "Velikost: </td><td style=font-weight:bold>", "</td>");
+        PlugUtils.checkName(httpFile, content, "<h1 class=\"dwp\">", "</h1>");
+        PlugUtils.checkFileSize(httpFile, content, "Velikost:", ", ");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -50,14 +51,13 @@ class FastShareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-            final String formAction = PlugUtils.getStringBetween(getContentAsString(), "action=", "><b>Stáhnout FREE");
+            final Matcher match = PlugUtils.matcher("<form method=post action=(/free[^>]+?)>", getContentAsString());
+            if (!match.find())
+                throw new PluginImplementationException("Download form not found");
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                            //.setActionFromFormByIndex(2, true)
-                            //.setActionFromFormWhereTagContains("Stáhnout FREE", true)
-                    .setAction(formAction)
+                    .setAction(match.group(1))
                     .setParameter("code", stepCaptcha())
-                    .setParameter("submit", "stáhnout")
                     .toPostMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -75,9 +75,12 @@ class FastShareFileRunner extends AbstractRunner {
 
     private String stepCaptcha() throws Exception {
         CaptchaSupport captchaSupport = getCaptchaSupport();
-        String captchaURL = "http://www.fastshare.cz" + PlugUtils.getStringBetween(getContentAsString(), "Opište kód:<br><img src=\"", "\"><br>");
+        final Matcher match = PlugUtils.matcher("<img src=\"(/securimage.+?)\">", getContentAsString());
+        if (!match.find())
+            throw new PluginImplementationException("Captcha image not found");
+        final String captchaURL = "http://www.fastshare.cz" + match.group(1);
         logger.info("Captcha URL " + captchaURL);
-        String captcha = captchaSupport.getCaptcha(captchaURL);
+        final String captcha = captchaSupport.getCaptcha(captchaURL);
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         }
@@ -91,6 +94,9 @@ class FastShareFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Tento soubor byl smazán")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("muzete stahovat jen jeden soubor najednou")) {
+            throw new ErrorDuringDownloadingException("You can download only one file at a time");
         }
         if (contentAsString.contains("FREE slotů je plných")) {
             throw new YouHaveToWaitException("FREE slots are full", 60);

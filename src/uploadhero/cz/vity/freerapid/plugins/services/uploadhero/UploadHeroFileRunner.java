@@ -51,7 +51,8 @@ class UploadHeroFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
-            checkErrors();//check problems
+            checkErrors();
+            checkProblems();
             checkNameAndSize(getContentAsString());//extract file name and size from the page
 
             if (!getContentAsString().contains("id=\"downloadforfreenow\"")) {
@@ -125,7 +126,7 @@ class UploadHeroFileRunner extends AbstractRunner {
 
     private void stepCaptcha(MethodBuilder method) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaImg = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
+        final String captchaImg = getMethodBuilder().setBaseURL("http://uploadhero.co").setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
         final String captchaTxt = captchaSupport.getCaptcha(captchaImg);
         if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
 

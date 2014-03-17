@@ -129,7 +129,7 @@ class FileFactoryRunner extends AbstractRunner {
         }
         if (contentAsString.contains("this file can only be downloaded by FileFactory Premium")
                 || contentAsString.contains("This file is only available to Premium Members")) {
-            throw new ServiceConnectionProblemException("This file is only for Premium members");
+            throw new NotRecoverableDownloadException("This file is only for Premium members");
         }
     }
 

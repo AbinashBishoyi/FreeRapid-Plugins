@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.uploading_premium;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
@@ -12,6 +9,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -39,8 +37,11 @@ class UploadingFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download", "for free on");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"file_size\">", "</span>");
+        final Matcher match = PlugUtils.matcher("Filemanager</a></li>\\s*?<li>(.+?)</li>", getContentAsString());
+        if (!match.find())
+            throw new PluginImplementationException("File name not found");
+        httpFile.setFileName(match.group(1).trim());
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<li class=\"size tip_container\">", "<div");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

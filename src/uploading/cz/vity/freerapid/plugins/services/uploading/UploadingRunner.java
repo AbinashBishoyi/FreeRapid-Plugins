@@ -112,7 +112,10 @@ class UploadingRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download", "for free on");
+        final Matcher match = PlugUtils.matcher("Filemanager</a></li>\\s*?<li>(.+?)</li>", getContentAsString());
+        if (!match.find())
+            throw new PluginImplementationException("File name not found");
+        httpFile.setFileName(match.group(1).trim());
         PlugUtils.checkFileSize(httpFile, getContentAsString(), "<li class=\"size tip_container\">", "<div");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

@@ -15,7 +15,9 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://ryushare.com/5amx6a3b787o/1449329780.rar"));
+            //httpFile.setNewURL(new URL("http://ryushare.com/5amx6a3b787o/1449329780.rar"));
+            //httpFile.setNewURL(new URL("http://ryushare.com/3b35466010ca/CS101.rar"));
+            httpFile.setNewURL(new URL("http://ryushare.com/1fec5b0863b7/Immersion3.part02.rar"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final RyuShareServiceImpl service = new RyuShareServiceImpl();

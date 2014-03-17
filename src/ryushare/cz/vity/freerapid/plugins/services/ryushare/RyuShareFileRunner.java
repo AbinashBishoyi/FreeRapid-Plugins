@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -22,7 +23,8 @@ class RyuShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RyuShareFileRunner.class.getName());
     private static final String SERVICE_TITLE = "RyuShare";
     private static final String SERVICE_COOKIE_DOMAIN = ".ryushare.com";
-    private static final String SERVICE_LOGIN_ADDRESS = "http://www.ryushare.com/login.python";
+    private final static String SERVICE_LOGIN_REFERER = "http://www.ryushare.com/login.python";
+    private final static String SERVICE_LOGIN_ACTION = "http://www.ryushare.com";
 
     @Override
     public void runCheck() throws Exception {
@@ -59,7 +61,8 @@ class RyuShareFileRunner extends AbstractRunner {
             }
 
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction(SERVICE_LOGIN_ADDRESS)
+                    .setReferer(SERVICE_LOGIN_REFERER)
+                    .setAction(SERVICE_LOGIN_ACTION)
                     .setParameter("op", "login")
                     .setParameter("redirect", "")
                     .setParameter("login", pa.getUsername())
@@ -71,7 +74,7 @@ class RyuShareFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
             if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new BadLoginException("Invalid " + SERVICE_TITLE + "registered account login information!");
+                throw new BadLoginException("Invalid " + SERVICE_TITLE + " registered account login information!");
 
             return true;
         }
@@ -90,7 +93,6 @@ class RyuShareFileRunner extends AbstractRunner {
         addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "english", "/", 86400, false));
         GetMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
-            logger.warning(getContentAsString());
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -99,22 +101,22 @@ class RyuShareFileRunner extends AbstractRunner {
 
         HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
-                .setBaseURL(fileURL)
                 .setActionFromFormWhereTagContains("method_free", true)
+                .setAction(fileURL)
                 .removeParameter("method_premium")
                 .toPostMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             checkDownloadProblems();
-            logger.warning(getContentAsString());
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
         }
         checkDownloadProblems();
 
         final MethodBuilder methodBuilder = getMethodBuilder()
+                .setReferer(fileURL)
                 .setActionFromFormByName("F1", true)
                 .setAction(fileURL)
                 .removeParameter("method_premium");
-        
+
         String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
         Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
         if (waitTimematcher.find()) {
@@ -129,17 +131,26 @@ class RyuShareFileRunner extends AbstractRunner {
         }
 
         httpMethod = methodBuilder.toPostMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();
-            logger.warning(getContentAsString());
-            throw new PluginImplementationException();
+        final int httpStatus = client.makeRequest(httpMethod, false);
+        if (httpStatus / 100 == 3) { //redirect to download file
+            final Header locationHeader = httpMethod.getResponseHeader("Location");
+            if (locationHeader == null)
+                throw new ServiceConnectionProblemException("Could not find download file location");
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(locationHeader.getValue())
+                    .toGetMethod();
+        } else if (getContentAsString().contains("File Download Link Generated") || getContentAsString().contains("This direct link will be available for your IP")) { //link generated
+            final Matcher downloadLinkMatcher = getMatcherAgainstContent("<a href=\"(http.+?" + httpFile.getFileName() + ")\">");
+            if (!downloadLinkMatcher.find()) {
+                throw new PluginImplementationException("Could not find generated download link");
+            }
+            final String downloadLink = downloadLinkMatcher.group(1);
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(downloadLink)
+                    .toGetMethod();
         }
-        checkDownloadProblems();
-
-        httpMethod = getMethodBuilder()
-                .setReferer(fileURL)
-                .setActionFromAHrefWhereATagContains("Click here to download")
-                .toGetMethod();
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkDownloadProblems();
@@ -151,6 +162,9 @@ class RyuShareFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("server is in maintenance mode")) {
+            throw new YouHaveToWaitException("This server is in maintenance mode", 10 * 60);
         }
     }
 
@@ -172,6 +186,24 @@ class RyuShareFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Server problem");
+        }
+        if (contentAsString.contains("file reached max downloads limit")) {
+            throw new PluginImplementationException("This file reached max downloads limit");
+        }
+        if (contentAsString.contains("You can download files up to")) {
+            throw new PluginImplementationException(PlugUtils.getStringBetween(contentAsString, "<div class=\"err\">", ".<br>"));
+        }
+        if (contentAsString.contains("have reached the download-limit")) {
+            throw new YouHaveToWaitException("You have reached the download-limit", 10 * 60);
+        }
+        if (contentAsString.contains("Error happened when generating Download Link")) {
+            throw new YouHaveToWaitException("Error happened when generating Download Link", 60);
+        }
+        if (contentAsString.contains("file is available to premium users only")) {
+            throw new PluginImplementationException("This file is available to premium users only");
+        }
+        if (contentAsString.contains("this file requires premium to download")) {
+            throw new PluginImplementationException("This file is available to premium users only");
         }
     }
 

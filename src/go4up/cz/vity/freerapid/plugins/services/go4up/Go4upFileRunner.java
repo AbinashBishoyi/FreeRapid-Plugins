@@ -80,7 +80,7 @@ class Go4upFileRunner extends AbstractRunner {
                 final GetMethod submethod = getGetMethod(Go4Up_rd_Link);
                 int httpStatus = client.makeRequest(submethod, false);
                 if (httpStatus / 100 == 3) {
-                    listing.add(new URI(submethod.getURI().getURI()));
+                    listing.add(new URI(submethod.getResponseHeader("Location").getValue()));
                 } else if (httpStatus == 200) {
                     String subContent = getContentAsString().replace("\n", "").replace("\r", "");
                     if (subContent.contains("content=\"0;url=")) {

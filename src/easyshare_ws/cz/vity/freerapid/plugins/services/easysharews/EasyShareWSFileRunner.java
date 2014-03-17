@@ -58,7 +58,7 @@ class EasyShareWSFileRunner extends AbstractRunner {
         final HttpMethod httpMethod2 = getMethodBuilder()
         	.setActionFromFormByName("F1", true)
         	.setAction(fileURL)
-        	.setParameter("captcha_code", getCaptchaCode())
+//        	.setParameter("captcha_code", getCaptchaCode())
         	.toPostMethod();
         
         if (!tryDownloadAndSaveFile(httpMethod2)) { //we make the main request
@@ -75,6 +75,8 @@ class EasyShareWSFileRunner extends AbstractRunner {
     		}
     		if(getContentAsString().contains("No such file with this filename"))
     			throw new URLNotAvailableAnymoreException();
+    		if(getContentAsString().contains("Skipped countdown"))
+    			throw new YouHaveToWaitException("Skipped countdown", 10);
     		unimplemented();
     	}
     	if(getContentAsString().contains("<b>File Not Found</b>"))
@@ -102,7 +104,14 @@ class EasyShareWSFileRunner extends AbstractRunner {
     	throw new PluginImplementationException();//some unknown problem
     }
     
-    private final void waitForTime() {
-    	// TODO this is wrong too
+    private final void waitForTime() throws ErrorDuringDownloadingException, InterruptedException {
+    	Matcher timeMatcher=PlugUtils.matcher("<span id=\"countdown\">(\\d+)</span>", getContentAsString());
+    	if(!timeMatcher.find())
+    		unimplemented();
+    	try {
+    		downloadTask.sleep(Integer.valueOf(timeMatcher.group(1)));
+    	} catch(NumberFormatException e) {
+    		unimplemented();
+    	}
     }
 }

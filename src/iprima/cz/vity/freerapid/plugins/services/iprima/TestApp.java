@@ -16,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://play.iprima.cz/zazraky-vedy-techniky/atom-3-5"));//regular
+            //httpFile.setNewURL(new URL("http://play.iprima.cz/zazraky-vedy-techniky/atom-3-5"));//georestricted
+            httpFile.setNewURL(new URL("http://play.iprima.cz/cesko-na-taliri/cesko-na-taliri-24-0"));//non-georestricted
             //httpFile.setNewURL(new URL("http://play.iprima.cz/all/55946/all"));//stream.cz
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

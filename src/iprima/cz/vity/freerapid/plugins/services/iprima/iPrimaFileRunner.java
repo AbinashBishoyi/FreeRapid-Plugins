@@ -65,6 +65,7 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
                 }
             } else {
                 final String playName = getPlayName();
+                final String geoZone = PlugUtils.getStringBetween(getContentAsString(), "\"zoneGEO\":", ",");
                 final Random rnd = new Random();
                 method = getMethodBuilder()
                         .setReferer(fileURL)
@@ -75,8 +76,13 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                String app = "iprima_token";
+                if (!"0".equals(geoZone)) {
+                    app += "_" + geoZone;
+                }
                 final String auth = PlugUtils.getStringBetween(getContentAsString(), "'?auth='+\"\"+'", "';", 2);
-                final RtmpSession rtmpSession = new RtmpSession("bcastmw.livebox.cz", 80, "iprima_token?auth=" + auth, playName);
+                app += "?auth=" + auth;
+                final RtmpSession rtmpSession = new RtmpSession("bcastmw.livebox.cz", 80, app, playName);
                 rtmpSession.getConnectParams().put("pageUrl", fileURL);
                 rtmpSession.getConnectParams().put("swfUrl", "http://embed.livebox.cz/iprimaplay/flash/LiveboxPlayer.swf?nocache=" + System.currentTimeMillis());
                 rtmpSession.disablePauseWorkaround();
@@ -92,8 +98,13 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
         String playName;
         switch (config.getVideoQuality()) {
             case HD:
-                playName = PlugUtils.getStringBetween(getContentAsString(), "\"hd_id\":\"", "\"");
-                break;
+                try {
+                    playName = PlugUtils.getStringBetween(getContentAsString(), "\"hd_id\":\"", "\"");
+                    break;
+                } catch (final PluginImplementationException e) {
+                    logger.info("HD quality not found, using High");
+                }
+                //fallthrough
             case High:
                 playName = PlugUtils.getStringBetween(getContentAsString(), "\"hq_id\":\"", "\"");
                 break;

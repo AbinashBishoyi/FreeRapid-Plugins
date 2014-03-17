@@ -9,7 +9,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Frishrash
  */
 public class ServUpCoIlServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "servupcoil";
+    private static final String SERVICE_NAME = "servup.co.il";
 
     @Override
     public String getName() {

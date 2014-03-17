@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="servup.co.il" version="1.0.0" vendor="Frishrash"
+<plugin id="servup.co.il" version="1.0.1" vendor="Frishrash"
         class="cz.vity.freerapid.plugins.services.servupcoil.ServUpCoIlServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?servup\.co\.il/newsite/.+\.html"/>
+        <attribute id="urlRegex" value="http://(www\.)?servup\.co\.il/newsite/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="servup.co.il"/>

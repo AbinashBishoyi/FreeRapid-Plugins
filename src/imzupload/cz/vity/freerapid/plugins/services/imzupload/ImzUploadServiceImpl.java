@@ -14,11 +14,6 @@ public class ImzUploadServiceImpl extends AbstractFileShareService {
         return "imzupload.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 3;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

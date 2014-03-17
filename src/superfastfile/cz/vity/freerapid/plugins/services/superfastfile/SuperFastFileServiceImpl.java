@@ -14,10 +14,6 @@ public class SuperFastFileServiceImpl extends AbstractFileShareService {
         return "superfastfile.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //don't forget to update this value,don't forget to update this value  in plugin.xml too
-        return 3;
-    }
 
     @Override
     public boolean supportsRunCheck() {

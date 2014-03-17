@@ -12,12 +12,7 @@ public class CramitServiceImpl extends AbstractFileShareService {
 	@Override
 	protected PluginRunner getPluginRunnerInstance() {
 		return new CramitRunner();
-	}
-
-	@Override
-	public int getMaxDownloadsFromOneIP() {
-		return 1;
-	}
+	}	
 
 	@Override
 	public String getName() {

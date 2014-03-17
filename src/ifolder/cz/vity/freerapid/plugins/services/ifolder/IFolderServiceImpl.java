@@ -14,12 +14,6 @@ public class IFolderServiceImpl extends AbstractFileShareService {
         return "ifolder plugin";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //I don't know how exactly Ifolder limits downloads...
-        //But multiple simultaneous downloads are allowed
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

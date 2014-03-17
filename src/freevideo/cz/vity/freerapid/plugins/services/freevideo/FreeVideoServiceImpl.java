@@ -13,10 +13,6 @@ public class FreeVideoServiceImpl extends AbstractFileShareService {
         return "freevideo.cz";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 9;
-    }
 
     @Override
     public boolean supportsRunCheck() {

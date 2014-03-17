@@ -9,22 +9,18 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class ProtectLinksServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "protectlinks.com";
 
-	@Override
-	protected PluginRunner getPluginRunnerInstance() {
-		return new ProtectLinksRunner();
-	}
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new ProtectLinksRunner();
+    }
 
-	@Override
-	public int getMaxDownloadsFromOneIP() {
-		return 1;
-	}
 
-	@Override
-	public String getName() {
-		return SERVICE_NAME;
-	}
+    @Override
+    public String getName() {
+        return SERVICE_NAME;
+    }
 
-	@Override
+    @Override
     public boolean supportsRunCheck() {
         return false;
     }

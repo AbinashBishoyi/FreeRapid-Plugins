@@ -13,11 +13,6 @@ public class UploadJocketRedirectServiceImpl extends AbstractFileShareService {
         return "uploadjocketredirect.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//ok

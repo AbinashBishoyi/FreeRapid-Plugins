@@ -14,10 +14,6 @@ public class Mega1280ServiceImpl extends AbstractFileShareService {
         return "mega1280.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 1;
-    }
 
     @Override
     public boolean supportsRunCheck() {

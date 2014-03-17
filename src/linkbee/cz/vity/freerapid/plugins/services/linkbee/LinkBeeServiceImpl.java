@@ -13,10 +13,6 @@ public class LinkBeeServiceImpl extends AbstractFileShareService {
         return "linkbee.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 10;
-    }
 
     @Override
     public boolean supportsRunCheck() {

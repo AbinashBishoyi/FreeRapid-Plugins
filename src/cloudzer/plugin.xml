@@ -1,21 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.uploadedto.UploadedToShareServiceImpl"
-        id="uploaded.to" vendor="Vity+ntoskrnl+Abinash Bishoyi" version="2.0.14">
+<plugin class="cz.vity.freerapid.plugins.services.cloudzer.CloudZerServiceImpl"
+        id="cloudzer.net" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(uploaded\.net|uploaded\.to|ul\.to)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?cloudzer\.net/.+"/>
         <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="uploaded.net"/>
+        <attribute id="services" value="cloudzer.net"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
-        <attribute id="resumeSupported" value="false"/>
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
                 plugin-version="1.0" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="uploaded.to" path="/" type="code"/>
+        <library id="cloudzer.net" path="/" type="code"/>
     </runtime>
 </plugin>

@@ -58,10 +58,10 @@ class UploadedToRunner extends AbstractRunner {
                 } while (getMatcherAgainstContent("err\"?:\"?captcha").find());
 
                 if (getContentAsString().contains("You have reached") || getContentAsString().contains("limit-dl")) {
-                    throw new ServiceConnectionProblemException("Free download limit reached");
+                    throw new YouHaveToWaitException("Free download limit reached", 15 * 60);
                 }
                 if (getContentAsString().contains("available download slots")) {
-                    throw new ServiceConnectionProblemException("All download slots are busy currently, please try again within a few minutes.");
+                    throw new YouHaveToWaitException("All download slots are busy currently, please try again within a few minutes.", 120);
                 }
                 if (getContentAsString().contains("You are already")) {
                     throw new ServiceConnectionProblemException("You are already downloading a file");

@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Thumb
+ * @author Arthur Gunawan
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,10 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.turbobit.net/n8xbl0aw06mp.html"));
+            httpFile.setNewURL(new URL("http://turbobit.net/mcuabgnj9pmc.html"));
+
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final TurboBitServiceImpl service = new TurboBitServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

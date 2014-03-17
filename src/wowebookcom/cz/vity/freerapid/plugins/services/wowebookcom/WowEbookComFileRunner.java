@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.adf;
+package cz.vity.freerapid.plugins.services.wowebookcom;
 
 import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
 import java.net.URL;
@@ -19,35 +20,48 @@ import java.util.logging.Logger;
 /**
  * Class which contains main code
  *
- * @author ntoskrnl
+ * @author CrazyCoder
  */
-class AdfFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(AdfFileRunner.class.getName());
+class WowEbookComFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(WowEbookComFileRunner.class.getName());
+
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+    }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
-            checkProblems();
-            final String url = PlugUtils.getStringBetween(getContentAsString(), "var url = '", "';");
+        final GetMethod method = getGetMethod(fileURL);
 
-            final URL root = new URL(fileURL);
-            final String prefix = root.getProtocol() + "://" + root.getHost();
-            final String goLink = prefix + url;
-            logger.info("Go link: " + goLink);
-
-            downloadTask.sleep(5);
-
-            final String location = getRedirectedLink(goLink);
-
-            httpFile.setNewURL(new URL(location));
+        // handle direct download links (like redirected from adf.ly
+        if (fileURL.contains("/download/")) {
+            httpFile.setNewURL(new URL(getRedirectedLink(fileURL)));
             httpFile.setPluginID("");
             httpFile.setState(DownloadState.QUEUED);
-        } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
+        } else { // normal link, extract direct link from page
+            if (makeRedirectedRequest(method)) {
+                checkProblems();
+
+                final String code = PlugUtils.getStringBetween(getContentAsString(), "download/", "/");
+                final String directURL = "http://www.wowebook.be/download/" + code + "/";
+
+                httpFile.setNewURL(new URL(getRedirectedLink(directURL)));
+                httpFile.setPluginID("");
+                httpFile.setState(DownloadState.QUEUED);
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
         }
     }
 
@@ -74,7 +88,8 @@ class AdfFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("the page you are looking for does not exist")) {
+        final String contentAsString = getContentAsString();
+        if (contentAsString.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

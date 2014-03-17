@@ -22,7 +22,7 @@ public class WowEbookComServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new WowWbookComFileRunner();
+        return new WowEbookComFileRunner();
     }
 
 }

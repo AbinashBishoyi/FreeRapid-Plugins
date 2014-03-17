@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uppit.com" version="0.6.1" vendor="Kajda"
-        class="cz.vity.freerapid.plugins.services.uppit.UppITServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.uppit.UppITServiceImpl" id="uppit.com" vendor="Kajda" version="0.6.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?uppit\.com/.+"/>
         <attribute id="minver" value="0.85"/>

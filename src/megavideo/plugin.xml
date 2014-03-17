@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="megavideo.com" version="1.0.2" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.megavideo.MegaVideoServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.megavideo.MegaVideoServiceImpl" id="megavideo.com" vendor="ntoskrnl" version="1.0.5">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(megavideo\.com|megaporn\.com/video)/.+"/>
         <attribute id="minver" value="0.85"/>

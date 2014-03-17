@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="createfile.com" version="1.0.0" vendor="Thumb"
-        class="cz.vity.freerapid.plugins.services.createfile.CreateFileServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.createfile.CreateFileServiceImpl" id="createfile.com" vendor="Thumb" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?creafile\.com/.+"/>
         <attribute id="minver" value="0.85"/>

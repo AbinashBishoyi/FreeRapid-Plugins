@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="vip-file.com" version="1.0" vendor="Thumb"
-        class="cz.vity.freerapid.plugins.services.vip_file.VipFileServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.vip_file.VipFileServiceImpl" id="vip-file.com" vendor="Thumb" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?vip-file\.com/.+"/>
         <attribute id="minver" value="0.85"/>

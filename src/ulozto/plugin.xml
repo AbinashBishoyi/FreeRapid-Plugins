@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uloz.to" version="1.0.13" vendor="Lukiz+JPEXS"
-        class="cz.vity.freerapid.plugins.services.ulozto.UlozToServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.ulozto.UlozToServiceImpl" id="uloz.to" vendor="Lukiz+JPEXS" version="1.0.15">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(uloz\.to|ulozto\.net|ulozto\.cz|ulozto\.sk)/.+"/>
         <attribute id="minver" value="0.85"/>

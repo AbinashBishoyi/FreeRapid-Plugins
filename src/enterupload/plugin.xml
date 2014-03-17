@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="enterupload.com" version="1.5.0" vendor="Alex+Vity+ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.enterupload.EnteruploadServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.enterupload.EnteruploadServiceImpl" id="enterupload.com" vendor="Alex+Vity+ntoskrnl" version="1.5.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)enterupload\.com/.+"/>
         <attribute id="minver" value="0.85"/>

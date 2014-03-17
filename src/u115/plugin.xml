@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="u.115.com" version="1.0.1" vendor="Meow"
-        class="cz.vity.freerapid.plugins.services.u115.u115ServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.u115.u115ServiceImpl" id="u.115.com" vendor="Meow" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://u\.115\.com/file/.+"/>
         <attribute id="minver" value="0.85"/>

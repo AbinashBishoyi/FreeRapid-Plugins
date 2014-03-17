@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="filestore.to" version="0.1.0" vendor="RickCL"
-        class="cz.vity.freerapid.plugins.services.filestore.FilestoreFilesShareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.filestore.FilestoreFilesShareServiceImpl" id="filestore.to" vendor="RickCL" version="0.1.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filestore\.to/.+"/>
         <attribute id="minver" value="0.85"/>

@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="bebasupload.com" version="1.2" vendor="Arthur Gunawan"
-        class="cz.vity.freerapid.plugins.services.bebasupload.BebasUploadServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.bebasupload.BebasUploadServiceImpl" id="bebasupload.com" vendor="Arthur Gunawan" version="1.2.4">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bebasupload\.com/.+"/>
         <attribute id="minver" value="0.85"/>

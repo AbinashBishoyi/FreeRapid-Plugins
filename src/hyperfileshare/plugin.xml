@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hyperfileshare.com" version="1.0.2" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.hyperfileshare.HyperFileShareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.hyperfileshare.HyperFileShareServiceImpl" id="hyperfileshare.com" vendor="Vity" version="1.0.5">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.|download\.)?hyperfileshare\.com/.+"/>
         <attribute id="minver" value="0.85"/>

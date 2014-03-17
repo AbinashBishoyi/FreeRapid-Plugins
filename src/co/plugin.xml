@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="co.cc" version="1.0" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.co.CoServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.co.CoServiceImpl" id="co.cc" vendor="Vity" version="1.0.4">
     <attributes>
         <attribute id="urlRegex" value="http://(.*?)co\.cc/.+"/>
         <attribute id="minver" value="0.85"/>

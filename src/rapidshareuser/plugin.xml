@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="rapidshareuser" version="1.2" vendor="Alex+Vity"
-        class="cz.vity.freerapid.plugins.services.rapidshareuser.RapidshareUserServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.rapidshareuser.RapidshareUserServiceImpl" id="rapidshareuser" vendor="Alex+Vity" version="1.2.2">
     <attributes>
         <attribute id="urlRegex" value="http://([0-9a-z\-]+\.)?rapidshare\.com/users/.+"/>
         <attribute id="minver" value="0.85"/>

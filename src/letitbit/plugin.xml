@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="letitbit.net" version="1.3.0" vendor="Lukiz+ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.letitbit.LetitbitShareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.letitbit.LetitbitShareServiceImpl" id="letitbit.net" vendor="Lukiz+ntoskrnl" version="1.3.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?letitbit\.net/.+"/>
         <attribute id="minver" value="0.85"/>

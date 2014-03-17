@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="fileflyer.com" version="0.6" vendor="Kajda"
-        class="cz.vity.freerapid.plugins.services.fileflyer.FileFlyerServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.fileflyer.FileFlyerServiceImpl" id="fileflyer.com" vendor="Kajda" version="0.6.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?fileflyer\.com/view/.+"/>
         <attribute id="minver" value="0.85"/>

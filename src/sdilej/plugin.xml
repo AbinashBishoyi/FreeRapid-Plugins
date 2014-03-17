@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="sdilej.to" version="0.5" vendor="Kajda"
-        class="cz.vity.freerapid.plugins.services.sdilej.SdilejServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.sdilej.SdilejServiceImpl" id="sdilej.to" vendor="Kajda" version="0.5.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?sdilej\.to/download.php\?id=.+"/>
         <attribute id="minver" value="0.85"/>

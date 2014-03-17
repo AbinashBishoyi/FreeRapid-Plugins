@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="usershare.net" version="1.0.1" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.usershare.UserShareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.usershare.UserShareServiceImpl" id="usershare.net" vendor="Vity" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?usershare\.net/.+"/>
         <attribute id="minver" value="0.85"/>

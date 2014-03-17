@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="webshots.com" version="1.1.0" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.webshots.WebshotsServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.webshots.WebshotsServiceImpl" id="webshots.com" vendor="ntoskrnl" version="1.1.2">
     <attributes>
         <attribute id="urlRegex" value="http://.*?webshots\.com/.+"/>
         <attribute id="minver" value="0.85"/>

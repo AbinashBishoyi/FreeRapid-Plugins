@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="protect-my-links.com" version="1.0.3" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.protectmylinks.ProtectMyLinksServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.protectmylinks.ProtectMyLinksServiceImpl" id="protect-my-links.com" vendor="ntoskrnl" version="1.0.5">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?protect-my-links\.com/.+"/>
         <attribute id="minver" value="0.85"/>

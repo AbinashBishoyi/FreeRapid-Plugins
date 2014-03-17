@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="czshare.com_profi" version="1.0.8" vendor="Smisek"
-        class="cz.vity.freerapid.plugins.services.czshare_profi.CzshareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.czshare_profi.CzshareServiceImpl" id="czshare.com_profi" vendor="Smisek" version="1.0.11">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?czshare\.com/.+"/>
         <attribute id="minver" value="0.85"/>

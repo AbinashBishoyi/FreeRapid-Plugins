@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="megashare.vn" version="1.0.0" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.megasharevn.MegaShareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.megasharevn.MegaShareServiceImpl" id="megashare.vn" vendor="Vity" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?megashare\.vn/.+"/>
         <attribute id="minver" value="0.85"/>

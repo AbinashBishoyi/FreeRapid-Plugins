@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="bbc.co.uk" version="1.0.2" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.bbc.BbcServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.bbc.BbcServiceImpl" id="bbc.co.uk" vendor="ntoskrnl" version="1.0.6">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bbc\.co\.uk/(iplayer|i)/.+"/>
         <attribute id="minver" value="0.85"/>
@@ -11,7 +10,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import plugin-id="rtmp" plugin-version="1.0.8" match="greater-or-equal"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.8" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="bbc.co.uk" path="/" type="code"/>

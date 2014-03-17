@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="x7.to" version="1.0.0" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.x7.X7ServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.x7.X7ServiceImpl" id="x7.to" vendor="ntoskrnl" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="http://x7\.to/.+"/>
         <attribute id="minver" value="0.85"/>

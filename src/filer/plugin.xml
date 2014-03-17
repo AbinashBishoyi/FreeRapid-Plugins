@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="filer.net" version="0.8" vendor="benpicco"
-        class="cz.vity.freerapid.plugins.services.filer.FilerServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.filer.FilerServiceImpl" id="filer.net" vendor="benpicco" version="0.8.3">
     <attributes>
         <attribute id="urlRegex" value="http://www\.filer\.net/(folder|get)/.+"/>
         <attribute id="minver" value="0.85"/>

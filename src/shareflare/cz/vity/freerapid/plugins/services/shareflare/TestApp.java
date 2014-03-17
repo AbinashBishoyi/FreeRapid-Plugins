@@ -38,7 +38,7 @@ public class TestApp extends PluginDevApplication {
      * @param args arguments for application
      */
     public static void main(String[] args) throws IOException, ClassNotFoundException {
-        Application.launch(TestApp.class, args);//starts the application - calls startup() internally
+        Application.launch(TestApp.class, args);//starts the application - calls startup() internally     
 //        InputStream in = TestApp.class.getResourceAsStream("/resources/shareflare-captcha.bin");
 //        //InputStream in = new ByteArrayInputStream(letters);
 //        GZIPInputStream gzis = new GZIPInputStream(in);

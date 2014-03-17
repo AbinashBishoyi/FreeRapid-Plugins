@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="filesonic.com" version="1.0.8" vendor="JPEXS+ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.filesonic.FileSonicServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.filesonic.FileSonicServiceImpl" id="filesonic.com" vendor="JPEXS+ntoskrnl" version="1.0.11">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filesonic\.com/([^/]+/)?file/.+"/>
         <attribute id="minver" value="0.85"/>
@@ -11,7 +10,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import plugin-id="recaptcha.com" plugin-version="1.0" match="greater-or-equal"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com" plugin-version="1.0" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="filesonic.com" path="/" type="code"/>

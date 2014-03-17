@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="file-bit.net" version="0.1" vendor="RickCL"
-        class="cz.vity.freerapid.plugins.services.filebitnet.FilebitNetFilesShareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.filebitnet.FilebitNetFilesShareServiceImpl" id="file-bit.net" vendor="RickCL" version="0.1.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?file-bit\.net/.+"/>
         <attribute id="minver" value="0.85"/>

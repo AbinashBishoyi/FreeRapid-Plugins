@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="file2box.com" version="1.0.5" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.file2box.File2BoxServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.file2box.File2BoxServiceImpl" id="file2box.com" vendor="Vity" version="1.0.8">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?file2box\.com/.+"/>
         <attribute id="minver" value="0.85"/>

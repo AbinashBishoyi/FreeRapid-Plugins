@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uloz.cz" version="1.01" vendor="thonda"
-        class="cz.vity.freerapid.plugins.services.ulozcz.UlozCzServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.ulozcz.UlozCzServiceImpl" id="uloz.cz" vendor="thonda" version="1.1.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?uloz\.cz/show/file/.+"/>
         <attribute id="minver" value="0.85"/>

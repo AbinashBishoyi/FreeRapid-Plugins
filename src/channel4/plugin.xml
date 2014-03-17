@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="channel4.com" version="1.0.2" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.channel4.Channel4ServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.channel4.Channel4ServiceImpl" id="channel4.com" vendor="ntoskrnl" version="1.0.6">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?channel4\.com/programmes/[^/]+?/4od(#|/player/)\d+"/>
         <attribute id="minver" value="0.85"/>
@@ -11,7 +10,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import plugin-id="rtmp" plugin-version="2.0.0" match="greater-or-equal"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.0.0" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="channel4.com" path="/" type="code"/>

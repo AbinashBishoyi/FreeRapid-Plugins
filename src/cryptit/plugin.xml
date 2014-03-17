@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="cryptit.com" version="1.0" vendor="RickCL"
-        class="cz.vity.freerapid.plugins.services.cryptit.CryptItServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.cryptit.CryptItServiceImpl" id="cryptit.com" vendor="RickCL" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="(?:http|ccf)://[.]*crypt-it.com/[s|e|d|c|a]/([a-zA-Z0-9]+)"/>
         <attribute id="minver" value="0.85"/>

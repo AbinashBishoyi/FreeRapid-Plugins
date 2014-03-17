@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="fileupload.eu" version="0.5.1" vendor="Kajda"
-        class="cz.vity.freerapid.plugins.services.fileupload.FileUploadServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.fileupload.FileUploadServiceImpl" id="fileupload.eu" vendor="Kajda" version="0.5.4">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?file-upload\.(eu|net)/download.+"/>
         <attribute id="minver" value="0.85"/>

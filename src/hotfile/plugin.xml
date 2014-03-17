@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hotfile.com" version="0.6.19" vendor="Kajda+Arthur+JPEXS"
-        class="cz.vity.freerapid.plugins.services.hotfile.HotfileServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.hotfile.HotfileServiceImpl" id="hotfile.com" vendor="Kajda+Arthur+JPEXS" version="0.6.22">
     <attributes>
         <attribute id="urlRegex" value="https?://.*?hotfile\.com/(dl|links)/.+"/>
         <attribute id="minver" value="0.85"/>
@@ -11,7 +10,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import plugin-id="recaptcha.com" plugin-version="1.0" match="greater-or-equal"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com" plugin-version="1.0" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="hotfile.com" path="/" type="code"/>

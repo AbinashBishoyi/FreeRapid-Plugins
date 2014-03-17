@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uploadline.com" version="1.0.2" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.uploadline.UploadLineServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.uploadline.UploadLineServiceImpl" id="uploadline.com" vendor="Vity" version="1.0.4">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?uploadline\.com/.+"/>
         <attribute id="minver" value="0.85"/>

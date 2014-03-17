@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="usercash.com" version="1.0" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.usercash.UserCashServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.usercash.UserCashServiceImpl" id="usercash.com" vendor="Vity" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="http://[0-9a-z]+\.usercash\.com/?"/>
         <attribute id="minver" value="0.85"/>

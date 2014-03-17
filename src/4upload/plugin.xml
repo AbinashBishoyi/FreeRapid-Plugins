@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="4upload.ru" version="0.1.2" vendor="RickCL"
-        class="cz.vity.freerapid.plugins.services.fourupload.FourUploadFilesShareServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.fourupload.FourUploadFilesShareServiceImpl" id="4upload.ru" vendor="RickCL" version="0.1.6">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?4upload\.ru/.+"/>
         <attribute id="minver" value="0.85"/>

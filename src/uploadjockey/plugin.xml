@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uploadjockey.com" version="1.0.0" vendor="Alex+Arthur Gunawan"
-        class="cz.vity.freerapid.plugins.services.uploadjockey.UploadJockeyServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.uploadjockey.UploadJockeyServiceImpl" id="uploadjockey.com" vendor="Alex+Arthur Gunawan" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?uploadjockey\.com/download/.+"/>
         <attribute id="minver" value="0.85"/>

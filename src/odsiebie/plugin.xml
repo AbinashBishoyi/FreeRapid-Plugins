@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="odsiebie.com" version="1.0" vendor="Eterad+Vity"
-        class="cz.vity.freerapid.plugins.services.odsiebie.OdSiebieServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.odsiebie.OdSiebieServiceImpl" id="odsiebie.com" vendor="Eterad+Vity" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?odsiebie\.com/pokaz/.+"/>
         <attribute id="minver" value="0.85"/>

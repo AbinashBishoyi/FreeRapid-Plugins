@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="filesonic.com" version="1.0.2" vendor="JPEXS"
+<plugin id="filesonic.com" version="1.0.3" vendor="JPEXS"
         class="cz.vity.freerapid.plugins.services.filesonic.FileSonicServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filesonic\.com/([^/]+/)?file/.+"/>
@@ -11,7 +11,9 @@
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import plugin-id="recaptcha.com" plugin-version="1.0" match="greater-or-equal"/>
+    </requires>
     <runtime>
         <library id="filesonic.com" path="/" type="code"/>
     </runtime>

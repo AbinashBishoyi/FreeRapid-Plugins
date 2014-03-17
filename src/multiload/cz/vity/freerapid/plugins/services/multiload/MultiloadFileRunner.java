@@ -1,15 +1,20 @@
 package cz.vity.freerapid.plugins.services.multiload;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotSupportedDownloadByServiceException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -19,6 +24,7 @@ import org.apache.commons.httpclient.HttpMethod;
  * @author Vity+JPEXS
  */
 class MultiloadFileRunner extends AbstractRunner {
+
     private final static Logger logger = Logger.getLogger(MultiloadFileRunner.class.getName());
     private MultiloadSettingsConfig config;
 
@@ -36,25 +42,36 @@ class MultiloadFileRunner extends AbstractRunner {
         }
     }
 
-
     private void parseWebsite() throws Exception {
         setConfig();
-        String server=MultiloadSettingsPanel.serverNames[config.getServerSetting()];
-        if(!getContentAsString().contains(server)) server=MultiloadSettingsPanel.serverNames[3]; //rapidshare is default
-        HttpMethod method=getMethodBuilder().setActionFromAHrefWhereATagContains(server).setReferer(fileURL).setBaseURL("http://www.multiload.cz/").toGetMethod();
-        method.setFollowRedirects(false);
-        client.getHTTPClient().executeMethod(method);
-        Header h=method.getResponseHeader("location");
-        String targetLink="";
-        if(h!=null) targetLink=h.getValue();
-        if("".equals(targetLink))
-            throw new ServiceConnectionProblemException("Cannot find link");
-        method.releaseConnection();
+        String server = MultiloadSettingsPanel.serverNames[config.getServerSetting()];
+        String linksGroup = PlugUtils.getStringBetween(getContentAsString(), "<p class=\"manager-server\"><strong>" + server + "</strong></p><p class=\"manager-linky\">", "</p>");
         final List<URI> uriList = new LinkedList<URI>();
-        uriList.add(new URI(targetLink));
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+        boolean found = false;
+        if (linksGroup.contains("<br>")) {
+            String links[] = linksGroup.split("<br>");
+            for (String link : links) {
+                if (link.matches("http[^ ]+")) {
+                    uriList.add(new URI(link));
+                    found = true;
+                }
+            }
+        } else {
+            if (linksGroup.matches("http[^ ]+")) {
+                uriList.add(new URI(linksGroup));
+                found = true;
+            }
+        }
+        if (found) {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+        } else {
+            if (linksGroup.contains("(chyba serveru)")) {
+                throw new NotSupportedDownloadByServiceException("Chyba serveru " + server);
+            }else {
+                throw new PluginImplementationException("Cannot parse links");
+            }
+        }
     }
-
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();

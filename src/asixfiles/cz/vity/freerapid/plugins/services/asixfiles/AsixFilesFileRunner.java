@@ -26,9 +26,9 @@ class AsixFilesFileRunner extends RegisteredUserRunner {
     }
 
     @Override
-    protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+    protected void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String nameAndSizeRule = "You have requested.*?http://(?:www\\.)?" + "asixfiles.com" + "/[a-z0-9]{12}/(.*)</font> \\((.*?)\\)</font>$";
-        final Matcher matcher = PlugUtils.matcher(nameAndSizeRule, content);
+        final Matcher matcher = getMatcherAgainstContent(nameAndSizeRule);
         if (!matcher.find()) {
             throw new PluginImplementationException("File name and size not found");
         }

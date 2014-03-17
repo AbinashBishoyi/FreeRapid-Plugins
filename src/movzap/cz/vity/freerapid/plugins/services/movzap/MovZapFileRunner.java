@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.movzap;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.services.xfilesharing.CustomRun;
 import cz.vity.freerapid.plugins.services.xfilesharing.RegisteredUserRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -22,7 +21,7 @@ import java.util.regex.Matcher;
  *
  * @author tong2shot
  */
-class MovZapFileRunner extends RegisteredUserRunner implements CustomRun {
+class MovZapFileRunner extends RegisteredUserRunner {
     private final static Logger logger = Logger.getLogger(MovZapFileRunner.class.getName());
     private final static String SERVICE_TITLE = "MovZap";
     private final static String SERVICE_COOKIE_DOMAIN = ".movzap.com";
@@ -32,11 +31,10 @@ class MovZapFileRunner extends RegisteredUserRunner implements CustomRun {
 
     public MovZapFileRunner() {
         super(SERVICE_COOKIE_DOMAIN, SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, MovZapFileRunner.class, MovZapServiceImpl.class);
-        customRun = this;
     }
 
     @Override
-    public void customRun() throws Exception {
+    public void run() throws Exception {
         logger.info("Starting download in TASK " + fileURL);
         GetMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
@@ -44,7 +42,7 @@ class MovZapFileRunner extends RegisteredUserRunner implements CustomRun {
             throw new ServiceConnectionProblemException();
         }
         checkFileProblems();
-        checkNameAndSize(getContentAsString());
+        checkNameAndSize();
 
         final String downloadFormContent = getContentAsString();
         final String id = PlugUtils.getStringBetween(getContentAsString(), "\"id\" value=\"", "\"");
@@ -104,7 +102,7 @@ class MovZapFileRunner extends RegisteredUserRunner implements CustomRun {
     }
 
     @Override
-    protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+    protected void checkNameAndSize() throws ErrorDuringDownloadingException {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

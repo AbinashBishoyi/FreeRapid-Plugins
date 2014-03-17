@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.xfilesharing;
+package cz.vity.freerapid.plugins.services.xfilesharing.captcha;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -9,7 +9,7 @@ import java.util.Collections;
 /**
  * @author Vity
  */
-final class CaptchaRecognizer {
+public class CaptchaRecognizer {
 
     private Collection<Template> trainedSet = new ArrayList<Template>(10);
 

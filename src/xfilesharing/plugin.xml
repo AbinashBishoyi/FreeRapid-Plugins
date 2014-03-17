@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl"
-        id="xfilesharing" vendor="tong2shot" version="1.0.0">
+<plugin class="cz.vity.freerapid.plugins.LibraryPlugin"
+        id="xfilesharing" vendor="tong2shot+ntoskrnl" version="1.0.0">
     <attributes>
         <attribute id="libraryPlugin" value="true"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="xfilesharing"/>
-
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"

@@ -24,9 +24,9 @@ class RyuShareFileRunner extends RegisteredUserRunner {
     }
 
     @Override
-    protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Download File", "</h2>");
-        PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
+    protected void checkNameAndSize() throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, getContentAsString(), "Download File", "</h2>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

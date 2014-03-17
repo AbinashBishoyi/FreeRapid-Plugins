@@ -6,7 +6,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 /**
  * @author tong2shot
  */
-public class AccountServiceImpl extends XFileSharingServiceImpl implements AccountService {
+public abstract class AccountServiceImpl extends XFileSharingServiceImpl implements AccountService {
     private volatile PremiumAccount config;
 
     //filename where plugin config file (user account) will be stored

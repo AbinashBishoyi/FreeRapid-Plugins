@@ -8,18 +8,21 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.lang.reflect.Method;
+import java.util.logging.Logger;
 
 /**
  * @author tong2shot
  */
-public class RegisteredUserRunner extends XFileSharingRunner implements RegisteredUser {
+public abstract class RegisteredUserRunner extends XFileSharingRunner implements RegisteredUser {
+    private final static Logger logger = Logger.getLogger(RegisteredUserRunner.class.getName());
+
     protected final String loginURL; //ex : "http://www.ryushare.com/login.python" or "http://www.ddlstorage.com/login.html"
     protected final String loginAction; // ex : "http://www.ryushare.com"
     protected final Class runnerClass; //ex : RyuShareFileRunner.class
     protected final Class implClass; // ex : RyuShareServiceImpl.class
 
     public RegisteredUserRunner(String cookieDomain, String serviceTitle, String loginURL, String loginAction, Class runnerClass, Class implClass) {
-        super(cookieDomain, serviceTitle);
+        super(serviceTitle);
         this.loginURL = loginURL;
         this.loginAction = loginAction;
         this.runnerClass = runnerClass;
@@ -59,8 +62,8 @@ public class RegisteredUserRunner extends XFileSharingRunner implements Register
                     .setParameter("password", pa.getPassword())
                     .setParameter("submit", "")
                     .toPostMethod();
-            addCookie(new Cookie(cookieDomain, "login", pa.getUsername(), "/", null, false));
-            addCookie(new Cookie(cookieDomain, "xfss", "", "/", null, false));
+            addCookie(new Cookie("TODO", "login", pa.getUsername(), "/", null, false));
+            addCookie(new Cookie("TODO", "xfss", "", "/", null, false));
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
             if (getContentAsString().contains(getIncorrectLoginContains()))

@@ -1,11 +1,11 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="RapidShare.com_premium" version="0.99" vendor="Atomsoft"
+<plugin id="RapidShare.com (premium)" version="1.00" vendor="ATomSoft"
         class="cz.vity.freerapid.plugins.services.rapidshare_premium.RapidShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?rapidshare\.com/files/[0-9]+/.*"/>
-        <attribute id="minver" value="0.7"/>
-        <attribute id="maxver" value="0.799"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.9"/>
         <attribute id="services" value="rapidshare.com"/>
         <!-- ID pluginu, pro ktere je to premium -->
         <attribute id="premium" value="true"/>

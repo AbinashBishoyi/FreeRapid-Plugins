@@ -1,10 +1,36 @@
+/*
+ * $Id: RapidShareRunner.java 966 2008-12-05 20:25:59Z ATom $
+ *
+ * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.BadLoginException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
@@ -22,20 +48,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
+ * @author Ladislav Vitásek & Tomáš Procházka <tom.p@atomsoft.cz>
  */
 class RapidShareRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
     private RapidShareConfigProvider configProvider;
-    private HttpDownloadClient client;
 
     @Override
     public void run() throws Exception {
-
+		super.run();
         configProvider = RapidShareConfigProvider.getInstance();
-        logger.info("Starting download in TASK " + downloadTask.getDownloadFile().getFileUrl());
-        client = downloadTask.getClient();
 
         int i = 0;
         do {
@@ -53,14 +76,22 @@ class RapidShareRunner extends AbstractRunner {
         } while (true);
     }
 
-    private void tryDownloadAndSaveFile(HttpFileDownloadTask downloadTask) throws Exception {
-        HttpFile httpFile = downloadTask.getDownloadFile();
-        final String fileURL = httpFile.getFileUrl().toString();
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+	@Override
+    public void runCheck() throws Exception {
+        super.runCheck();
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            chechFile();
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
 
+    private void tryDownloadAndSaveFile(HttpFileDownloadTask downloadTask) throws Exception {
+        final GetMethod getMethod = getGetMethod(fileURL);
         checkLogin();
 
-        client.makeFinalRequestForFile(getMethod, httpFile, false);
+		client.makeRequest(getMethod, false);
+		
         // Redirect directly to download file.
         if (getMethod.getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
             logger.info("Direct download mode");
@@ -75,18 +106,18 @@ class RapidShareRunner extends AbstractRunner {
             }
         } else if (getMethod.getStatusCode() == HttpStatus.SC_OK) {
 
-            chechFileNotFound();
+            chechFile();
 
             if (client.getContentAsString().contains("Your Cookie has not been recognized")) {
-                throw new BadLoginException();
+                throw new BadLoginException("<b>RapidShare known error:</b><br> Bad login or password");
             }
 
-            Matcher matcher = Pattern.compile("form id=\"ff\" action=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = getMatcherAgainstContent("form id=\"ff\" action=\"([^\"]*)\"");
             boolean ok = false;
             if (matcher.find()) {
                 String s = matcher.group(1);
                 //| 5277 KB</font>
-                matcher = Pattern.compile("\\| (.*?) KB</font>", Pattern.MULTILINE).matcher(client.getContentAsString());
+                matcher = getMatcherAgainstContent("\\| (.*?) KB</font>");
                 if (matcher.find()) {
                     httpFile.setFileSize(new Integer(matcher.group(1).replaceAll(" ", "")) * 1024);
                 }
@@ -96,9 +127,9 @@ class RapidShareRunner extends AbstractRunner {
                 postMethod.addParameter("dl.start", "PREMIUM");
                 if (makeRequest(postMethod)) {
                     if (client.getContentAsString().contains("Your Cookie has not been recognized")) {
-                        throw new BadLoginException();
+                        throw new BadLoginException("<b>RapidShare known error:</b><br> Bad login or password");
                     }
-                    matcher = Pattern.compile("(http://.*?\\.rapidshare\\.com/files/.*?)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+                    matcher = getMatcherAgainstContent("(http://.*?\\.rapidshare\\.com/files/.*?)\"");
                     if (matcher.find()) {
                         s = matcher.group(1);
                         ok = true;
@@ -121,7 +152,7 @@ class RapidShareRunner extends AbstractRunner {
         throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    private void chechFileNotFound() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException, BadLoginException {
+    private void chechFile() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException, BadLoginException {
         String code = client.getContentAsString().toLowerCase();
         Matcher matcher = Pattern.compile("<h1>error.*?class=\"klappbox\">(.*?)</div>", Pattern.DOTALL).matcher(code);
         if (matcher.find()) {
@@ -132,7 +163,7 @@ class RapidShareRunner extends AbstractRunner {
             if (error.contains("your premium account has not been found")) {
                 configProvider.clear();
                 logger.log(Level.WARNING, "Account expired. Maybe.");
-                throw new URLNotAvailableAnymoreException("<b>RapidShare known error:</b><br> " + error);
+                throw new BadLoginException("<b>RapidShare known error:</b><br> " + error);
             }
             logger.warning("RapidShare error:" + error);
             throw new InvalidURLOrServiceProblemException("<b>RapidShare unknown error:</b><br> " + error);
@@ -152,12 +183,21 @@ class RapidShareRunner extends AbstractRunner {
         if (code.contains("your premium account has not been found")) {
             configProvider.clear();
             logger.log(Level.WARNING, "Account expired. Maybe.");
-            throw new URLNotAvailableAnymoreException("<b>RapidShare known error:</b><br> Your premium account has not been found.");
+            throw new BadLoginException("<b>RapidShare known error:</b><br> Your premium account has not been found.");
         }
 
         if (code.contains("error")) {
             logger.warning(client.getContentAsString());
             throw new InvalidURLOrServiceProblemException("Unknown RapidShare error");
+        }
+
+		//| 5277 KB</font>
+        matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
+        if (matcher.find()) {
+            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+            logger.info("File size " + a);
+            httpFile.setFileSize(a);
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         }
     }
 
@@ -184,12 +224,11 @@ class RapidShareRunner extends AbstractRunner {
         if (downloadTask.isTerminated()) {
             throw new InterruptedException();
         }
-        HttpFile httpFile = downloadTask.getDownloadFile();
         httpFile.setState(DownloadState.GETTING);
         final PostMethod method = client.getPostMethod(url);
         method.addParameter("mirror", "on");
         try {
-            final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, true);//TODO redirect on?
+            final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, true);
             if (inputStream != null) {
                 downloadTask.saveToFile(inputStream);
             } else {

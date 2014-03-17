@@ -15,10 +15,11 @@ public class TestApp extends PluginDevApplication {
 
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://rapidshare.com/files/145378634/DSCF5628.JPG.html"));
-            httpFile.setNewURL(new URL("http://rapidshare.com/files/141950563/pb.04.02.720.part01.rar"));
+            httpFile.setNewURL(new URL("http://rapidshare.com/files/145378634/DSCF5628.JPG.html"));
+            //httpFile.setNewURL(new URL("http://rapidshare.com/files/141950563/pb.04.02.720.part01.rar"));
 
             testRun(new RapidShareServiceImpl(), httpFile, new ConnectionSettings());
+
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -1,25 +1,60 @@
+/*
+ * $Id: RapidShareServiceImpl.java 966 2008-12-05 20:25:59Z ATom $
+ *
+ * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
-
 /**
- * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
+ * @author Ladislav Vitásek & Tomáš Procházka <tom.p@atomsoft.cz>
  */
 public class RapidShareServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "RapidShare.com";
 
-    public String getName() {
-        return SERVICE_NAME;
-    }
+	private static final String SERVICE_NAME = "RapidShare.com";
+	private static final String PLUGIN_CONFIG_FILE = "plugin_RapidSharePremium.xml";
 
-    public int getMaxDownloadsFromOneIP() {
-        return Integer.MAX_VALUE;
-    }
+	@Override
+	public String getName() {
+		return SERVICE_NAME;
+	}
 
-    protected PluginRunner getPluginRunnerInstance() {
-        return new RapidShareRunner();
-    }
+	@Override
+	public int getMaxDownloadsFromOneIP() {
+		return Integer.MAX_VALUE;
+	}
 
+	@Override
+	public boolean supportsRunCheck() {
+		return true;
+	}
+
+	@Override
+	protected PluginRunner getPluginRunnerInstance() {
+		return new RapidShareRunner();
+	}
+
+	@Override
+	public void showOptions() throws Exception {
+		//PremiumAccount pa = getPluginContext().getConfigurationStorageSupport().loadConfigFromFile(PLUGIN_CONFIG_FILE,PremiumAccount.class);
+		//pa = getPluginContext().getDialogSupport().showAccountDialog(pa, "RapidShare Premium login");
+		//getPluginContext().getConfigurationStorageSupport().storeConfigToFile(pa, PLUGIN_CONFIG_FILE);
+	}
 }

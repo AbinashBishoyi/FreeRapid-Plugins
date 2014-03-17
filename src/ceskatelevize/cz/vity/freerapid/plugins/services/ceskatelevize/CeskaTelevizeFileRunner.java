@@ -71,7 +71,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             if (!matcher.find()) {
                 throw new PluginImplementationException("Error getting programme title (1)");
             }
-            filename = matcher.group(1).trim();
+            filename = matcher.group(1).replace("<span id=\"dil\">", "").replace("</span>", "").trim();
             if (content.contains("<h2 id=\"nazevcasti\">")) {
                 matcher = getMatcherAgainstContent("<h2 id=\"nazevcasti\">(?:<a[^<>]+>)?(.+?)(?:</a>)?</h2>");
                 if (!matcher.find()) {
@@ -138,7 +138,37 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             HttpMethod httpMethod;
             String referer = fileURL;
             if (!getContentAsString().contains("getPlaylistUrl(")) {
-                httpMethod = getMethodBuilder().setReferer(referer).setActionFromIFrameSrcWhereTagContains("iFramePlayer").toGetMethod();
+                Matcher matcher = Pattern.compile("(<i?frame(?:.*?)src\\s?=\\s?(?:\"|')(.+?)(?:\"|')(?:.*?)>)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE).matcher(getContentAsString());
+                List<String> iframeList = new ArrayList<String>();
+                int start = 0;
+                final String lower = "iFramePlayer".toLowerCase();
+                while (matcher.find(start)) {
+                    final String content = matcher.group(1);
+                    if (content.toLowerCase().contains(lower)) {
+                        iframeList.add(PlugUtils.replaceEntities(matcher.group(2)));
+                    }
+                    start = matcher.end();
+                }
+                if (iframeList.isEmpty()) {
+                    throw new PluginImplementationException("Error getting playlist URL (1)");
+                }
+
+                String action = null;
+                if (iframeList.size() == 1) {
+                    action = iframeList.get(0);
+                } else { //if there are more than one playlists, find one that isn't bonus
+                    for (String iFrameUrl : iframeList) {
+                        if (!iFrameUrl.contains("bonus=")) {
+                            action = iFrameUrl;
+                            break;
+                        }
+                    }
+                }
+                if (action == null) {
+                    throw new PluginImplementationException("Error getting playlist URL (2)");
+
+                }
+                httpMethod = getMethodBuilder().setReferer(referer).setAction(action).toGetMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
@@ -221,6 +251,9 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         if (contentAsString.contains("content is not available at")
                 || contentAsString.contains("\"url\":\"error_region\"")) {
             throw new PluginImplementationException("This content is not available at your territory due to limited copyright");
+        }
+        if (contentAsString.contains("došlo k chybě při práci s databází")) {
+            throw new ServiceConnectionProblemException("An error occurred while working with databases");
         }
     }
 

@@ -5,12 +5,17 @@ import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -40,9 +45,16 @@ class FileSonicFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download ", " for free on Filesonic.com</title>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"size\">", "</span>");
+        if (!isFolder()) {
+            final String content = getContentAsString();
+            PlugUtils.checkName(httpFile, content, "<title>Download", "for free on Filesonic.com</title>");
+            PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\">", "</span>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private boolean isFolder() {
+        return fileURL.contains("/folder/");
     }
 
     @Override
@@ -54,6 +66,10 @@ class FileSonicFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            if (isFolder()) {
+                handleFolder();
+                return;
+            }
             fileURL = method.getURI().toString();
             final String startUrl = fileURL + "?start=1";
             method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
@@ -107,12 +123,29 @@ class FileSonicFileRunner extends AbstractRunner {
         if (content.contains("for parallel downloads")) {
             throw new YouHaveToWaitException("Already processing a download", 30);
         }
-        if (content.contains("File not found") || content.contains("This file was deleted")) {
+        if (content.contains("File not found") || content.contains("This file was deleted") || content.contains("The requested folder do not exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("The file that you're trying to download is larger than")) {
             throw new NotRecoverableDownloadException("Only premium users can download large files");
         }
+    }
+
+    private void handleFolder() throws ErrorDuringDownloadingException {
+        final List<URI> list = new LinkedList<URI>();
+        final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://(?:www\\.)?filesonic\\.[a-z]{2,3}/file/.+?)\">");
+        while (matcher.find()) {
+            try {
+                list.add(new URI(matcher.group(1)));
+            } catch (final URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+        }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        httpFile.getProperties().put("removeCompleted", true);
     }
 
 }

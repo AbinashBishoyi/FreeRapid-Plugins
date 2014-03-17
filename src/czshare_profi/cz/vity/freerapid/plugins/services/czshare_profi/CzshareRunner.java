@@ -173,7 +173,7 @@ class CzshareRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException("Bohužel je vyčerpána maximální kapacita FREE downloadů", WAIT_TIME);
         }
-        if(badConfig) {
+        if(badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad CZshare profi account login information!");
         }
     }

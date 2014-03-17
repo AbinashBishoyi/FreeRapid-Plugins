@@ -51,6 +51,7 @@
     </pathconvert>
 
     <target name="build" description="building">
+        <ant dir="${src.dir}/ulozcz/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshare_premium/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/depositfiles/" antfile="build.xml" inheritall="false"/>

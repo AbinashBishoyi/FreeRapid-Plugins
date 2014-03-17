@@ -39,12 +39,11 @@ class ForSharedRunner extends AbstractRunner {
             String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
 
-
             //<a href="http://www.4shared.com/get/62042633/e92a8a5b/RATU_-_Aku_Pasti_Kembali_-_IndoTopSitecom.html" class="dbtn" tabindex="1"><span><span><font>Download Now</font>No virus detected</span></span></a>
             Matcher lMatcher = getMatcherAgainstContent("(http://www.4shared.com/get[^\"]+)");
             if (lMatcher.find()) {
                 //System.out.println("TEST1 " + lMatcher.group(1));
-                
+
                 getMethod = getGetMethod(lMatcher.group(1));
                 if (makeRedirectedRequest(getMethod)) {
                     //<a href='http://dc110.4shared.com/download/62042633/e92a8a5b/RATU_-_Aku_Pasti_Kembali_-_IndoTopSitecom.mp3?tsid=20081219-010049-377c6e2c'>Click here to download this file</a>
@@ -57,7 +56,7 @@ class ForSharedRunner extends AbstractRunner {
                         //DelayTimeSec'>10</b>
                         Matcher sMatcher = getMatcherAgainstContent("DelayTimeSec'>([0-9]+)<");
                         if (sMatcher.find()) {
-                           String t = sMatcher.group(1);
+                            String t = sMatcher.group(1);
                             int seconds = new Integer(t);
                             logger.info("wait - " + t);
                             downloadTask.sleep(seconds + 1);
@@ -69,7 +68,7 @@ class ForSharedRunner extends AbstractRunner {
                             } //else throw new InvalidURLOrServiceProblemException("Can't find Page 3 Action");
 
                         }
-                        
+
                     } else throw new InvalidURLOrServiceProblemException("Can't find download link");
 
 
@@ -80,10 +79,8 @@ class ForSharedRunner extends AbstractRunner {
             //getMatcherAgainstContent
 
 
-
-
         } else throw new InvalidURLOrServiceProblemException("Can't load download page");
- 
+
     }
 
     private void checkNameandSize(String content) throws Exception {
@@ -104,16 +101,15 @@ class ForSharedRunner extends AbstractRunner {
 
 
         } else logger.warning("File name was not found" + content);
-        nMatcher = PlugUtils.matcher("(([0-9,.]* .B))<", content);
+        nMatcher = PlugUtils.matcher("(([0-9,.]+ .B))<", content);
         if (nMatcher.find()) {
             String fileSize = nMatcher.group(1);
             fileSize = fileSize.replaceAll(",", "");
-            
+
             logger.info("File size " + fileSize);
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
             //long x = PlugUtils.getFileSizeFromString(fileSize);
             //System.out.println(x);
-            
 
 
         } else logger.warning("File size was not found" + content);

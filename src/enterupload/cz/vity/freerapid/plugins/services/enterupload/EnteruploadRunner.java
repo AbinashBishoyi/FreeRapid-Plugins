@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -16,6 +17,7 @@ import java.util.regex.Matcher;
 
 class EnteruploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(EnteruploadRunner.class.getName());
+    private int captchaCounter;
 
     @Override
     public void runCheck() throws Exception {
@@ -67,7 +69,8 @@ class EnteruploadRunner extends AbstractRunner {
 
                 HttpMethod getlinkMethod = stepCaptcha(getContentAsString());
                 if (makeRequest(getlinkMethod)) {
-                    final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("download-button").toHttpMethod();
+                    final String value = PlugUtils.getStringBetween(getContentAsString(), "7px;\">", "</a>");
+                    final HttpMethod finalMethod = getMethodBuilder(value + "</a>").setActionFromAHrefWhereATagContains("enterupload").toHttpMethod();
                     if (!tryDownloadAndSaveFile(finalMethod)) {
                         checkProblems();
                         if (getContentAsString().contains("Wrong captcha")) continue;
@@ -89,9 +92,16 @@ class EnteruploadRunner extends AbstractRunner {
         String s = getMethodBuilder(contentAsString).
                 setActionFromImgSrcWhereTagContains("captchas").getAction();
         client.setReferer(fileURL);
-        String code = getCaptchaSupport().getCaptcha(s); //returns "" when user pressed OK with no input
+        final String captcha;
+        if (captchaCounter < 4) {
+            ++captchaCounter;
+            final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
+            captcha = new CaptchaRecognizer().recognize(captchaImage);
+        } else {
+            captcha = getCaptchaSupport().getCaptcha(s);
+        }
 
-        if (code == null) {
+        if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
 
         }
@@ -100,7 +110,7 @@ class EnteruploadRunner extends AbstractRunner {
 
         final HttpMethod method = getMethodBuilder(contentAsString).
                 setActionFromFormByName("F1", true).
-                setParameter("code", code).setReferer(fileURL).
+                setParameter("code", captcha).setReferer(fileURL).
                 setAction(fileURL).toPostMethod();
         setClientParameter("noContentTypeInHeader", true);
 

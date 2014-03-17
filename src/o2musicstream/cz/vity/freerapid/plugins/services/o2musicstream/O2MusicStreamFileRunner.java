@@ -2,17 +2,14 @@ package cz.vity.freerapid.plugins.services.o2musicstream;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * @author Kajda
@@ -69,16 +66,18 @@ class O2MusicStreamFileRunner extends AbstractRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<h1 class=\"main_title\">(.+)</h1>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<h1 class=\"main_title\" title=\"", "\"");
 
-        if (matcher.find()) {
-            final String fileName = matcher.group(1).trim() + ".mp4";
-            logger.info("File name " + fileName);
-            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fileName), "_"));
-        } else {
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
-        }
+//        final Matcher matcher = getMatcherAgainstContent("<h1 class=\"main_title\">(.+)</h1>");
+//
+//        if (matcher.find()) {
+//            final String fileName = matcher.group(1).trim() + ".mp4";
+//            logger.info("File name " + fileName);
+//            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fileName), "_"));
+//        } else {
+//            logger.warning("File name was not found");
+//            throw new PluginImplementationException();
+//        }
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

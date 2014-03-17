@@ -51,11 +51,13 @@ class SaveFileRunner extends AbstractRunner {
                 if (makeRequest(getPHP)) {
                     final String PHPString = getContentAsString();//read its content
                     //If it does not, try	<a href="http://dl4u.savefile.com/a75b81f7d82cd659974e50fa7527acdf/sfdrvrem.zip">Download file now</a>
-                    matcher = PlugUtils.matcher("href=\"([^\"]*)\">Download file now", PHPString); //parses it
+                    matcher = PlugUtils.matcher("href=\"(.+?)\">Download file now", PHPString); //parses it
                     //matcher = PlugUtils.matcher("(Download file now)", PHPString);
                     if (matcher.find()) {
                         String s = matcher.group(1);
                         logger.info("Found File URL - " + s);
+                        client.setReferer(s);
+                        client.getHTTPClient().getParams().setBooleanParameter("noContentTypeInHeader", true);
                         final GetMethod getMethod = getGetMethod(s);
                         if (!tryDownloadAndSaveFile(getMethod)) {
                             checkProblems();

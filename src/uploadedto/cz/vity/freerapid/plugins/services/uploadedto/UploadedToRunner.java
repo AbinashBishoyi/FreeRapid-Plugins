@@ -63,7 +63,7 @@ class UploadedToRunner extends AbstractRunner {
                         }
                         //By Abinash Bishoyi
                         if (getContentAsString().contains("max. number of possible free downloads for this hour")) {
-                            throw new ServiceConnectionProblemException("Fourly free download limit reached");
+                            throw new ServiceConnectionProblemException("Hourly free download limit reached");
                         }
                         if (getContentAsString().contains("limit-parallel")) {
                             throw new ServiceConnectionProblemException("You are already downloading a file");

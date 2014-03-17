@@ -7,6 +7,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -16,8 +17,6 @@ import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
- *        
- *
  */
 
 class MegauploadRunner {
@@ -130,37 +129,41 @@ class MegauploadRunner {
             if (matcher.find()) {
                 String s = replaceEntities(matcher.group(1));
                 logger.info("Captcha - image " + HTTP_SITE + s);
-                String captcha;
-                if (captchaCount < 2) {
-                    EditImage ei = new EditImage(downloader.getCaptchaImage(HTTP_SITE + s));
+                String captcha = null;
+                final BufferedImage captchaImage = downloader.getCaptchaImage(HTTP_SITE + s);
+                if (captchaCount++ < 2) {
+                    EditImage ei = new EditImage(captchaImage);
                     captcha = PlugUtils.recognize(ei.separate(), "");
-                    captchaCount++;
-                    logger.info("Captcha - OCR recognized " + captcha + " attempts " + captchaCount);
-                    matcher = PlugUtils.matcher("[A-Za-z0-9]{3}", captcha);
-                    if (!matcher.find()) {
-                        captcha = downloader.getCaptcha(HTTP_SITE + s);
+                    if (captcha != null) {
+                        logger.info("Captcha - OCR recognized " + captcha + " attempts " + captchaCount);
+                        matcher = PlugUtils.matcher("[A-Z-a-z-0-9]{3}", captcha);
+                        if (!matcher.find()) {
+                            captcha = null;
+                        }
                     }
-                } else captcha = downloader.getCaptcha(HTTP_SITE + s);
+                }
 
                 if (captcha == null) {
+                    captcha = downloader.askForCaptcha(captchaImage);
+                }
+                if (captcha == null)
                     throw new CaptchaEntryInputMismatchException();
-                } else {
-                    //  client.setReferer(baseURL);
-                    String d = getParameter("d", contentAsString);
-                    String imagecode = getParameter("imagecode", contentAsString);
-                    String megavar = getParameter("megavar", contentAsString);
 
-                    final PostMethod postMethod = client.getPostMethod(HTTP_SITE);
+                //  client.setReferer(baseURL);
+                String d = getParameter("d", contentAsString);
+                String imagecode = getParameter("imagecode", contentAsString);
+                String megavar = getParameter("megavar", contentAsString);
 
-                    postMethod.addParameter("d", d);
-                    postMethod.addParameter("imagecode", imagecode);
-                    postMethod.addParameter("megavar", megavar);
-                    postMethod.addParameter("imagestring", captcha);
+                final PostMethod postMethod = client.getPostMethod(HTTP_SITE);
 
-                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                postMethod.addParameter("d", d);
+                postMethod.addParameter("imagecode", imagecode);
+                postMethod.addParameter("megavar", megavar);
+                postMethod.addParameter("imagestring", captcha);
 
-                        return true;
-                    }
+                if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+
+                    return true;
                 }
             } else throw new PluginImplementationException("Captcha picture was not found");
         }

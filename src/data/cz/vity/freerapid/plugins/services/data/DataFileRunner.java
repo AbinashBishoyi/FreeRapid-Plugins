@@ -20,19 +20,21 @@ class DataFileRunner extends AbstractRunner {
 
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getGetMethod(fileURL);//make first request
+        final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
-            throw new PluginImplementationException();
+            checkNameAndSize(getContentAsString());
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<div class=\"download_filename\">", "</div>");
-        PlugUtils.checkFileSize(httpFile, content.replace("1,000.0 MB", "1 GB"), "fájlméret:", "<div");
+        PlugUtils.checkName(httpFile, content, "Fájl letöltés: <div class=\"download_filename\">", "</div>");
+        PlugUtils.checkFileSize(httpFile, content.replace("1,000.0 MB", "1 GB"), "fájlméret: <div class=\"download_filename\">", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -40,11 +42,11 @@ class DataFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            final String contentAsString = getContentAsString();
+            checkProblems();
+            checkNameAndSize(contentAsString);
             final Matcher matcher = getMatcherAgainstContent("download_box_button\"><a href=\"(.*?)\"");
             if (matcher.find()) {
                 final String downURL = matcher.group(1);
@@ -52,13 +54,13 @@ class DataFileRunner extends AbstractRunner {
                 final GetMethod getmethod = getGetMethod(downURL);
                 if (!tryDownloadAndSaveFile(getmethod)) {
                     checkProblems();
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
+                    logger.warning(getContentAsString());
+                    throw new ServiceConnectionProblemException();
                 }
             } else {
                 checkProblems();
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
+                logger.warning(getContentAsString());
+                throw new PluginImplementationException("Download link not found");
             }
         } else {
             checkProblems();
@@ -69,10 +71,10 @@ class DataFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("nem létezik")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("200 MB-nál nagyobb")) {
-            throw new NotRecoverableDownloadException("Premium account needed for files >200MB");  //let to know user in FRD
+            throw new NotRecoverableDownloadException("Premium account needed for files >200MB");
         }
 
     }

@@ -14,7 +14,7 @@ public class TestApp extends PluginApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setFileUrl(new URL("http://rapidshare.com/files/137292919/Alice_-_Sexy_Teenie.wmv.002"));
+            httpFile.setNewURL(new URL("http://rapidshare.com/files/137292919/Alice_-_Sexy_Teenie.wmv.002"));
             run(new RapidShareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

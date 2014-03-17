@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.asixfiles;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -80,11 +81,21 @@ class AsixFilesFileRunner extends AbstractRunner {
 
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (PlugUtils.matcher("No such file|File not found|File Not Found", getContentAsString()).find()) {
+        final String contentAsString = getContentAsString();
+        if (PlugUtils.matcher("No such file|File not found|File Not Found", contentAsString).find()) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
-        } else if (PlugUtils.matcher("This file reached max downloads limit", getContentAsString()).find()) {
-            throw new ErrorDuringDownloadingException("This file reached max downloads limit");
         }
+        if (contentAsString.contains("This file reached max downloads limit")) {
+            throw new PluginImplementationException("This file reached max downloads limit");
+        }
+        if (contentAsString.contains("You have reached the download-limit")) {
+            throw new PluginImplementationException("You have reached the download-limit");
+        }
+    }
+
+    private boolean isPassworded() {
+        boolean passworded = getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
+        return passworded;
     }
 
     @Override
@@ -128,8 +139,21 @@ class AsixFilesFileRunner extends AbstractRunner {
                     downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)));
                 }
 
-                final HttpMethod freeMethod2 = getMethodBuilder().setActionFromFormByName("F1", true).setAction(fileURL).
-                        setParameter("code", strCaptcha).removeParameter("method_premium").toPostMethod();
+                 final MethodBuilder methodBuilder = getMethodBuilder()
+                         .setActionFromFormByName("F1", true)
+                         .setAction(fileURL)
+                         .setParameter("code", strCaptcha)
+                         .removeParameter("method_premium");
+
+                if (isPassworded()) {
+                    final String password = getDialogSupport().askForPassword("AsixFiles");
+                    if (password == null) {
+                        throw new NotRecoverableDownloadException("This file is secured with a password");
+                    }
+                    methodBuilder.setParameter("password", password);
+                }
+
+                final HttpMethod freeMethod2 = methodBuilder.toPostMethod();
 
                 if (!tryDownloadAndSaveFile(freeMethod2)) {
                     checkProblems();//if downloading failed
@@ -138,6 +162,9 @@ class AsixFilesFileRunner extends AbstractRunner {
                 }
 
 
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
 
 

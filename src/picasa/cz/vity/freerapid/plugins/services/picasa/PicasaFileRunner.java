@@ -45,7 +45,8 @@ class PicasaFileRunner extends AbstractRunner {
     }
 
     private void parseWebsite() {
-        final Matcher matcher = getMatcherAgainstContent("\"media\":\\{\"content\":\\[\\{\"url\":\"(http://.+?)\"");
+        System.out.println(getContentAsString());
+        final Matcher matcher = getMatcherAgainstContent("\"media\":\\{\"content\":\\[\\{\"url\":\"(https?://.+?)\"");
         int start = 0;
         final List<URI> uriList = new LinkedList<URI>();
         while (matcher.find(start)) {

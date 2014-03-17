@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.xfilesharingcommon;
+package cz.vity.freerapid.plugins.services.xfilesharing;
 
 import cz.vity.freerapid.plugins.exceptions.BadLoginException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
@@ -12,7 +12,7 @@ import java.lang.reflect.Method;
 /**
  * @author tong2shot
  */
-public class RegisteredUserRunner extends XFileSharingCommonFileRunner implements RegisteredUser {
+public class RegisteredUserRunner extends XFileSharingRunner implements RegisteredUser {
     protected final String loginURL; //ex : "http://www.ryushare.com/login.python" or "http://www.ddlstorage.com/login.html"
     protected final String loginAction; // ex : "http://www.ryushare.com"
     protected final Class runnerClass; //ex : RyuShareFileRunner.class

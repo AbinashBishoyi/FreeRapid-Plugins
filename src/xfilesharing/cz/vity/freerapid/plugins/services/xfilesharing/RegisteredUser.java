@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.xfilesharingcommon;
+package cz.vity.freerapid.plugins.services.xfilesharing;
 
 /**
  * @author tong2shot

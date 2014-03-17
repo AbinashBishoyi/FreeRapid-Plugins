@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.cosmobox;
 
-import cz.vity.freerapid.plugins.services.xfilesharingcommon.AccountServiceImpl;
+import cz.vity.freerapid.plugins.services.xfilesharing.AccountServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**

@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.xfilesharingcommon;
+package cz.vity.freerapid.plugins.services.xfilesharing;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -8,14 +8,14 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class XFileSharingCommonServiceImpl extends AbstractFileShareService {
-    public XFileSharingCommonServiceImpl() {
+public class XFileSharingServiceImpl extends AbstractFileShareService {
+    public XFileSharingServiceImpl() {
         super();
     }
 
     @Override
     public String getName() {
-        return "xfilesharingcommon.com";
+        return "xfilesharing.com";
     }
 
     @Override
@@ -25,7 +25,7 @@ public class XFileSharingCommonServiceImpl extends AbstractFileShareService {
 
     @Override
     public PluginRunner getPluginRunnerInstance() {
-        return new XFileSharingCommonFileRunner();
+        return new XFileSharingRunner();
     }
 
 }

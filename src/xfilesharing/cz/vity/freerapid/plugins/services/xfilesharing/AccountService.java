@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.xfilesharingcommon;
+package cz.vity.freerapid.plugins.services.xfilesharing;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;

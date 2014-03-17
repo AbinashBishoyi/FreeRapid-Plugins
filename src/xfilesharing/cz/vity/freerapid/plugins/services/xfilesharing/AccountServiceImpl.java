@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.xfilesharingcommon;
+package cz.vity.freerapid.plugins.services.xfilesharing;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
@@ -6,7 +6,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 /**
  * @author tong2shot
  */
-public class AccountServiceImpl extends XFileSharingCommonServiceImpl implements AccountService {
+public class AccountServiceImpl extends XFileSharingServiceImpl implements AccountService {
     private volatile PremiumAccount config;
 
     //filename where plugin config file (user account) will be stored

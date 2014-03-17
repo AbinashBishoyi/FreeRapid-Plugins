@@ -2,7 +2,7 @@ package cz.vity.freerapid.plugins.services.jalurcepat;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonFileRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
@@ -13,7 +13,7 @@ import java.util.logging.Logger;
  *
  * @author tong2shot
  */
-class JalurCepatFileRunner extends XFileSharingCommonFileRunner {
+class JalurCepatFileRunner extends XFileSharingRunner {
     private final static Logger logger = Logger.getLogger(JalurCepatFileRunner.class.getName());
     private static final String SERVICE_TITLE = "JalurCepat";
     private static final String SERVICE_COOKIE_DOMAIN = ".jalurcepat.com";

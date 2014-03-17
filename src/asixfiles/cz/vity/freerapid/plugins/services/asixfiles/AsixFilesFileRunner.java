@@ -2,7 +2,7 @@ package cz.vity.freerapid.plugins.services.asixfiles;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.services.xfilesharingcommon.RegisteredUserRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.RegisteredUserRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 

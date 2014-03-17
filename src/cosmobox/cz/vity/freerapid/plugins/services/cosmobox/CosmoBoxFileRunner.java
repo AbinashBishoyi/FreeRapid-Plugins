@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.cosmobox;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.services.xfilesharingcommon.RegisteredUserRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.RegisteredUserRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 

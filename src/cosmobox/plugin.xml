@@ -8,14 +8,14 @@
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="cosmobox.org"/>
         <attribute id="maxDownloads" value="1"/>
-		<attribute id="premium" value="false"/>
+        <attribute id="premium" value="false"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
                 plugin-version="1.0" reverse-lookup="false"/>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharingcommon.com"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
                 plugin-version="1.0" reverse-lookup="false"/>
     </requires>
     <runtime>

@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.xfilesharingcommon;
+package cz.vity.freerapid.plugins.services.xfilesharing;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
@@ -23,8 +23,8 @@ import java.util.regex.Pattern;
  *
  * @author tong2shot
  */
-public class XFileSharingCommonFileRunner extends AbstractRunner {
-    protected final static Logger logger = Logger.getLogger(XFileSharingCommonFileRunner.class.getName());
+public class XFileSharingRunner extends AbstractRunner {
+    protected final static Logger logger = Logger.getLogger(XFileSharingRunner.class.getName());
     private final int captchaMax = 8; //used in stepCaptchas()
     private int captchaCounter = 0; //used in stepCaptchas()
     protected String cookieDomain; //ex : ".ryushare.com"
@@ -34,11 +34,11 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
     protected CustomCaptcha customCaptcha;
     protected CustomRun customRun;
 
-    public XFileSharingCommonFileRunner() {
+    public XFileSharingRunner() {
         super();
     }
 
-    public XFileSharingCommonFileRunner(String cookieDomain, String serviceTitle) {
+    public XFileSharingRunner(String cookieDomain, String serviceTitle) {
         super();
         this.cookieDomain = cookieDomain;
         this.serviceTitle = serviceTitle;

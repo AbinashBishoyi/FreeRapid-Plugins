@@ -13,7 +13,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharingcommon.com"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
                 plugin-version="1.0" reverse-lookup="false"/>
     </requires>
     <runtime>

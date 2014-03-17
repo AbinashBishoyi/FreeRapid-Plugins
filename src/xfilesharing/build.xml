@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="XFileSharingCommon.com" default="all" basedir=".">
-    <property name="application" value="xfilesharingcommon"/>
+<project name="XFileSharing" default="all" basedir=".">
+    <property name="application" value="xfilesharing"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="xfilesharingcommon.jar"/>
+    <property name="mainjar.file" value="xfilesharing.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 

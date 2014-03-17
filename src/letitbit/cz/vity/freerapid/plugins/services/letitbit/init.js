@@ -1,5 +1,6 @@
 var __outParams = {};
 var __dummyElement = {};
+var window = {};
 var document = {
     createElement: function () {
         return __dummyElement;
@@ -8,8 +9,9 @@ var document = {
 function $(data) {
     if (data === document) {
         return {
-            ready: function (func) {
-                return func();
+            ready: function () {
+            },
+            on: function () {
             }
         }
     }
@@ -32,6 +34,8 @@ function $(data) {
                                 remove: function () {
                                 }
                             }
+                        },
+                        attr: function () {
                         }
                     }
                 }

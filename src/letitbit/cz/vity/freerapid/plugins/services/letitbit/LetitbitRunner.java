@@ -15,8 +15,10 @@ import sun.org.mozilla.javascript.internal.NativeObject;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import java.awt.image.BufferedImage;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.List;
@@ -198,36 +200,31 @@ public class LetitbitRunner extends AbstractRunner {
 
     private HttpMethod handleJavascriptMess(final String formContent) throws Exception {
         final Object params = findParameters(formContent);
-        final Matcher matcher = PlugUtils.matcher("<script\\b[^<>]*?>(.+?)</script>", formContent);
+        final Matcher matcher = PlugUtils.matcher("(?s)<script\\b[^<>]*?>(.+?)</script>", formContent);
         if (!matcher.find()) {
             throw new PluginImplementationException("Script not found on page");
         }
         final String js = matcher.group(1);
-        final ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
-        if (engine == null) {
-            throw new PluginImplementationException("JavaScript engine not found");
-        }
-        engine.put("__params", params);
-        engine.put("__cookies", cookiesToParam());
-        Reader reader = null;
-        try {
-            reader = new InputStreamReader(LetitbitRunner.class.getResourceAsStream("init.js"), "UTF-8");
-            engine.eval(reader);
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (final Exception e) {
-                    LogUtils.processException(logger, e);
-                }
-            }
-        }
-        try {
-            engine.eval(js);
-        } catch (final Exception e) {
+        final String[] scripts = js.split("[\r\n]+");
+        if (scripts.length < 3) {
             logger.warning(js);
-            throw new PluginImplementationException("Script execution failed", e);
+            throw new PluginImplementationException("Error parsing script (1)");
         }
+        final ScriptEngine engine = prepareEngine(params);
+        for (int i = 0; i < scripts.length - 2; i++) {
+            evalScript(engine, scripts[i], js, "(1)(" + i + ")");
+        }
+        final String extra1 = parseExtra(engine, scripts[scripts.length - 2], js);
+        final String extra2 = parseExtra(engine, scripts[scripts.length - 1], js);
+        evalScript(engine, extra1, js, "(3)");
+        evalScript(engine, extra2.replaceFirst("\\$\\('#jsprotect_.+?'\\)\\.closest\\('form'\\)\\.attr\\('id'\\)", "'ifree_form'"), js, "(3)");
+        final String imageData = getImageData(getImageAddress(extra1, js));
+        final String func = "(function (data) {\n" +
+                "    for (var i = 0; i < window.__jsp_list.length; ++i) {\n" +
+                "        window.__jsp_list[i](data);\n" +
+                "    }\n" +
+                "})('" + imageData + "');";
+        evalScript(engine, func, js, "(4)");
         @SuppressWarnings("unchecked")
         final Map<String, String> formParams = (Map<String, String>) engine.get("__outParams");
         final MethodBuilder mb = getMethodBuilder(formContent).setReferer(fileURL).setActionFromFormByIndex(1, false);
@@ -259,12 +256,77 @@ public class LetitbitRunner extends AbstractRunner {
         return params;
     }
 
+    private ScriptEngine prepareEngine(final Object params) throws Exception {
+        final ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
+        if (engine == null) {
+            throw new PluginImplementationException("JavaScript engine not found");
+        }
+        engine.put("__params", params);
+        engine.put("__cookies", cookiesToParam());
+        Reader reader = null;
+        try {
+            reader = new InputStreamReader(LetitbitRunner.class.getResourceAsStream("init.js"), "UTF-8");
+            engine.eval(reader);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (final Exception e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+        }
+        return engine;
+    }
+
     private Object cookiesToParam() throws Exception {
         final NativeObject cookies = new NativeObject();
         for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
             cookies.defineProperty(cookie.getName(), URLDecoder.decode(cookie.getValue(), "UTF-8"), NativeObject.READONLY);
         }
         return cookies;
+    }
+
+    private Object evalScript(final ScriptEngine engine, final String script, final String js, final String step) throws Exception {
+        try {
+            return engine.eval(script);
+        } catch (final Exception e) {
+            logger.warning(js);
+            logger.warning(script);
+            throw new PluginImplementationException("Script execution failed " + step, e);
+        }
+    }
+
+    private String parseExtra(final ScriptEngine engine, final String extra, final String js) throws Exception {
+        if (!extra.startsWith("eval")) {
+            logger.warning(js);
+            throw new PluginImplementationException("Error parsing script (2)");
+        }
+        return String.valueOf(evalScript(engine, extra.substring(4), js, "(2)"));
+    }
+
+    private String getImageAddress(final String extra, final String js) throws Exception {
+        final Matcher matcher = PlugUtils.matcher("\"(/jspimggen\\.php\\?n=)\"\\+encodeURIComponent\\(\"(.+?)\"", extra);
+        if (!matcher.find()) {
+            logger.warning(js);
+            throw new PluginImplementationException("Error parsing script (4)");
+        }
+        return matcher.group(1) + matcher.group(2) + "&r=" + Math.random();
+    }
+
+    private String getImageData(final String address) throws Exception {
+        final MethodBuilder mb = getMethodBuilder();
+        final String url = mb.setBaseURL("http://" + new URI(mb.getReferer()).getHost()).setAction(address).getEscapedURI();
+        final BufferedImage image = getCaptchaSupport().getCaptchaImage(url);
+        if (image == null) {
+            throw new PluginImplementationException("Failed to load image");
+        }
+        final StringBuilder sb = new StringBuilder();
+        for (int x = 0; x < image.getWidth(); x++) {
+            final int red = (image.getRGB(x, 0) >>> 16) & 0xff;
+            sb.append((char) red);
+        }
+        return sb.toString();
     }
 
 }

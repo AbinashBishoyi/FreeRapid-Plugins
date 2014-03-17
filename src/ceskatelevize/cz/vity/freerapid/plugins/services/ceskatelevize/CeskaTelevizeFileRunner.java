@@ -43,8 +43,8 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         String videoSrc;
         String base;
         if (makeRedirectedRequest(method)) {
-            if (fileURL.contains("ceskatelevize.cz/loh/")) {
-                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromIFrameSrcWhereTagContains("=loh").toGetMethod();
+            if (!getContentAsString().contains("callSOAP(")) {
+                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromIFrameSrcWhereTagContains("iFramePlayer").toGetMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
@@ -188,6 +188,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         }
 
         RtmpSession rtmpSession = new RtmpSession(base, videoSrc);
+        rtmpSession.disablePauseWorkaround();
         if (!tryDownloadAndSaveFile(rtmpSession)) {
             checkProblems();//if downloading failed
             logger.warning(getContentAsString());//log the info

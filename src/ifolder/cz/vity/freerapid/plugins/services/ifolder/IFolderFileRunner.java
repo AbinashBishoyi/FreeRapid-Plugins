@@ -56,9 +56,12 @@ class IFolderFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            Matcher matcher = getMatcherAgainstContent("\"location.href\\s=\\s'(.+)';\"");
+            Matcher matcher = getMatcherAgainstContent("\"location.href\\s*=\\s*'(.+)';\"");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Cannot find link on first page");
+                matcher = getMatcherAgainstContent("<a\\s*href\\s*=\\s*\"(.+/ints/.+)\"");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Cannot find link on first page");
+                }
             }
 
             method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();

@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -39,7 +40,7 @@ class RadikalruRunner extends AbstractRunner {
             imgUrl = matcher.group(1);
             if (imgUrl.isEmpty()) throw new URLNotAvailableAnymoreException("Image not found");
         }
-        final String filename = imgUrl.substring(imgUrl.lastIndexOf("/") + 1);
+        final String filename = URLDecoder.decode(imgUrl.substring(imgUrl.lastIndexOf("/") + 1), "UTF-8");
         httpFile.setFileName(filename);
         getMethod = getGetMethod(imgUrl);
         if (!tryDownloadAndSaveFile(getMethod)) {

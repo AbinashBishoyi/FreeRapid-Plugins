@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.pimpandhost;
+package cz.vity.freerapid.plugins.services.uaimage;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -15,12 +15,12 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://pimpandhost.com/image/show/id/6523825"));
-            //httpFile.setNewURL(new URL("http://pimpandhost.com/image/6524112-medium.html"));
-            httpFile.setNewURL(new URL("http://pimpandhost.com/image/18316400-original.html"));
+            //httpFile.setNewURL(new URL("http://uaimage.com/image/5d75cc25"));
+            //httpFile.setNewURL(new URL("http://uaimage.com/i/b1b7959"));
+            httpFile.setNewURL(new URL("http://uaimage.com/?page=i&u=127af748"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final PimpAndHostServiceImpl service = new PimpAndHostServiceImpl();
+            final UaImageServiceImpl service = new UaImageServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

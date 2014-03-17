@@ -1,15 +1,15 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="pimpandhost.com" version="1.0.0" vendor="tong2shot"
+<plugin id="pimpandhost.com" version="1.0.1" vendor="tong2shot"
         class="cz.vity.freerapid.plugins.services.pimpandhost.PimpAndHostServiceImpl">
     <attributes>
         <attribute id="urlRegex"
                    value="http://(?:image\.|www\.)?pimpandhost\.com/(?:(?:image|guest)/.+\.html|image/show/id/\d+)$"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="pimpandhost.com"/>
         <attribute id="maxDownloads" value="10"/>
-        <attribute id="faviconImage" value="resources/favicon.gif"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>

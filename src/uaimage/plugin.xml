@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.imagebam.ImagebamServiceImpl" id="imagebam.com" vendor="Arthur+ntoskrnl" version="1.0.5">
+<plugin class="cz.vity.freerapid.plugins.services.uaimage.UaImageServiceImpl"
+        id="uaimage.com" vendor="tong2shot" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?imagebam\.com/image/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?uaimage\.com/((image|i)/|\?page).+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="imagebam.com"/>
+        <attribute id="services" value="uaimage.com"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="imagebam.com" path="/" type="code"/>
+        <library id="uaimage.com" path="/" type="code"/>
     </runtime>
 </plugin>

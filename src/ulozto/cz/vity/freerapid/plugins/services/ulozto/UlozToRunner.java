@@ -68,7 +68,7 @@ class UlozToRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (getContentAsString().contains("soubor nebyl nalezen")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
+            throw new URLNotAvailableAnymoreException("<b>Požadovaný soubor nebyl nalezen.</b><br>");
         }
 
         Matcher matcher = PlugUtils.matcher("\\|\\s*([^|]+) \\| </title>", content);
@@ -109,7 +109,7 @@ class UlozToRunner extends AbstractRunner {
                     matcher = PlugUtils.matcher("form name=\"dwn\" action=\"([^\"]*)\"", contentAsString);
                     if (!matcher.find()) {
                         logger.info(getContentAsString());
-                        throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                        throw new PluginImplementationException();
                     }
                     String postTargetURL;
                     postTargetURL = matcher.group(1);
@@ -134,11 +134,11 @@ class UlozToRunner extends AbstractRunner {
         Matcher matcher;
         matcher = getMatcherAgainstContent("soubor nebyl nalezen");
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
+            throw new URLNotAvailableAnymoreException("<b>Požadovaný soubor nebyl nalezen.</b><br>");
         }
         matcher = getMatcherAgainstContent("stahovat pouze jeden soubor");
         if (matcher.find()) {
-            throw new ServiceConnectionProblemException(String.format("<b>Mùžete stahovat pouze jeden soubor naráz</b><br>"));
+            throw new ServiceConnectionProblemException("<b>Mùžete stahovat pouze jeden soubor naráz</b><br>");
 
         }
 

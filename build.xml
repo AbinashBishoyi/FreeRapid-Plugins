@@ -203,6 +203,7 @@
         <ant dir="${src.dir}/uploadcomua/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/forusto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/multishare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/x7/" antfile="build.xml" inheritall="false"/>
 
     </target>
 

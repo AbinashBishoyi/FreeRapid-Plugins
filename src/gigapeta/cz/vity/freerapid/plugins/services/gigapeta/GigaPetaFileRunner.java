@@ -1,3 +1,19 @@
+/*
+ * PLEASE, READ THIS
+ *
+ * This file is in UTF-8 encoding
+ *
+ * If you want to edit it, you can edit it as ASCII provided
+ * you don't touch the UTF-8 characters and don't change the encoding
+ *
+ * If you want to compile it, set the encoding in your IDE or
+ * use the -encoding option to javac
+ *
+ * If you want to build this plugin, use build.xml which already
+ * deals with this
+ *
+ * Otherwise, don't touch the strings if you can't check their meaning
+ */
 package cz.vity.freerapid.plugins.services.gigapeta;
 
 import cz.vity.freerapid.plugins.exceptions.*;
@@ -32,19 +48,17 @@ class GigaPetaFileRunner extends AbstractRunner {
 	}
 
 	private void checkNameAndSize() throws ErrorDuringDownloadingException {
-		//final Matcher name_match=PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>", getContentAsString());
-		final Matcher namefile_match=PlugUtils.matcher("<table id=\"download\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>(?:\\s|<[^>]*>)*(?:[^<>]+)\\s*(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
-		if(!namefile_match.find())
+		final Matcher name_match=PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>", getContentAsString());
+		if(!name_match.find())
 			unimplemented();
 
-		httpFile.setFileName(namefile_match.group(1));
+		httpFile.setFileName(name_match.group(1));
 
-		/* This code is not necessary - new regex cat file size
 		final Matcher size_match=PlugUtils.matcher("Размер(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
 		if(!size_match.find())
 			unimplemented();
-		/**/
-		httpFile.setFileSize(PlugUtils.getFileSizeFromString(namefile_match.group(2)));
+
+		httpFile.setFileSize(PlugUtils.getFileSizeFromString(size_match.group(1)));
 		httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 	}
 
@@ -71,7 +85,7 @@ class GigaPetaFileRunner extends AbstractRunner {
 		final HttpMethod httpMethod = getMethodBuilder()
 			.setParameter("captcha_key", captcha_id)
 			.setParameter("captcha", getCaptcha(captcha_id))
-			.setParameter("download", "\u00D0\u00A1\u00D0\u00BA\u00D0\u00B0\u00D1\u2021\u00D0\u00B0\u00D1\u201A\u00D1\u0152")
+			.setParameter("download", "Скачать")
 			.setAction(fileURL)
 			.toPostMethod();
 
@@ -85,11 +99,11 @@ class GigaPetaFileRunner extends AbstractRunner {
 	private void checkDownloadProblems() throws ErrorDuringDownloadingException {
 		final String contentAsString = getContentAsString();
 		if (contentAsString.contains("<div id=\"page_error\">")) {
-			if(contentAsString.contains("\u00D0\u00A6\u00D0\u00B8\u00D1\u201E\u00D1\u20AC\u00D1\u2039 \u00D1\uFFFD \u00D0\u00BA\u00D0\u00B0\u00D1\u20AC\u00D1\u201A\u00D0\u00B8\u00D0\u00BD\u00D0\u00BA\u00D0\u00B8 \u00D0\u00B2\u00D0\u00B2\u00D0\u00B5\u00D0\u00B4\u00D0\u00B5\u00D0\u00BD\u00D1\u2039 \u00D0\u00BD\u00D0\u00B5\u00D0\u00B2\u00D0\u00B5\u00D1\u20AC\u00D0\u00BD\u00D0\u00BE"))
+			if(contentAsString.contains("Цифры с картинки введены неверно"))
 				throw new CaptchaEntryInputMismatchException();
-			if(PlugUtils.matcher("\u00D0\u2019\u00D1\uFFFD\u00D0\u00B5 \u00D0\u00BF\u00D0\u00BE\u00D1\u201A\u00D0\u00BE\u00D0\u00BA\u00D0\u00B8 \u00D0\u00B4\u00D0\u00BB\u00D1\uFFFD IP [0-9.]* \u00D0\u00B7\u00D0\u00B0\u00D0\u00BD\u00D1\uFFFD\u00D1\u201A\u00D1\u2039", contentAsString).find())
+			if(PlugUtils.matcher("Все потоки для IP [0-9.]* заняты", contentAsString).find())
 				throw new YouHaveToWaitException("Download streams for your IP exhausted", 1800);
-			if(contentAsString.contains("\u00D0\u2019\u00D0\u00BD\u00D0\u00B8\u00D0\u00BC\u00D0\u00B0\u00D0\u00BD\u00D0\u00B8\u00D0\u00B5! \u00D0\u201D\u00D0\u00B0\u00D0\u00BD\u00D0\u00BD\u00D1\u2039\u00D0\u00B9 \u00D1\u201E\u00D0\u00B0\u00D0\u00B9\u00D0\u00BB \u00D0\u00B1\u00D1\u2039\u00D0\u00BB \u00D1\u0192\u00D0\u00B4\u00D0\u00B0\u00D0\u00BB\u00D0\u00B5\u00D0\u00BD"))
+			if(contentAsString.contains("Внимание! Данный файл был удален"))
 				throw new URLNotAvailableAnymoreException("File was deleted");
 			unimplemented();
 		}

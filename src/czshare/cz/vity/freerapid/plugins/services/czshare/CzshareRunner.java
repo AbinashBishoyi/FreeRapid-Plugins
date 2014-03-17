@@ -37,13 +37,13 @@ class CzshareRunner extends AbstractRunner {
     private void checkNameAndSize() throws Exception {
         final Matcher filenameMatcher = getMatcherAgainstContent("Celý název:.+?>(.+?)<");
         if (!filenameMatcher.find()) {
-            throw new PluginImplementationException("Filename not found");
+            throw new PluginImplementationException("File name not found");
         }
         httpFile.setFileName(filenameMatcher.group(1));
 
-        final Matcher filesizeMatcher = getMatcherAgainstContent("<div class=\"tab\" id=\"category\">\\s*Velikost:\\s*(.+?)\\s*</div>");
+        final Matcher filesizeMatcher = getMatcherAgainstContent("Velikost:\\s*(.+?)\\s*</div>");
         if (!filesizeMatcher.find()) {
-            throw new PluginImplementationException("Filesize not found");
+            throw new PluginImplementationException("File size not found");
         }
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1).replace("i", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -134,7 +134,7 @@ class CzshareRunner extends AbstractRunner {
         if (contentAsString.contains("Soubor expiroval")) {
             throw new URLNotAvailableAnymoreException("<b>Soubor expiroval</b><br>");
         }
-        if (contentAsString.contains("Soubor byl smaz.n jeho odesilatelem</strong>")||contentAsString.contains("Soubor byl smazán jeho odesilatelem")) {
+        if (contentAsString.contains("Soubor byl smaz.n jeho odesilatelem</strong>") || contentAsString.contains("Soubor byl smazán jeho odesilatelem")) {
             throw new URLNotAvailableAnymoreException("<b>Soubor byl smazán jeho odesilatelem</b><br>");
         }
         if (contentAsString.contains("Tento soubor byl na upozorn.n. identifikov.n jako warez.</strong>")) {

@@ -45,7 +45,7 @@ class HellshareRunner extends AbstractRunner {
             Matcher matcher = getMatcherAgainstContent("([0-9.]+)%");
             if (matcher.find()) {
                 if (matcher.group(1).equals("100"))
-                    throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
+                    throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
             }
             client.setReferer(fileURL);
 
@@ -181,7 +181,7 @@ class HellshareRunner extends AbstractRunner {
             if (matcher.find())
                 stepCaptcha();
 
-            throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
         }
 
         return true;
@@ -189,7 +189,7 @@ class HellshareRunner extends AbstractRunner {
 
     private PostMethod stepCaptcha() throws Exception {
         if ("".equals(getContentAsString())) {
-            throw new YouHaveToWaitException("Neurï¿½itï¿½ omezenï¿½", 4 * WAIT_TIME);
+            throw new YouHaveToWaitException("Neurèité omezení", 4 * WAIT_TIME);
         }
         Matcher matcher;
         matcher = getMatcherAgainstContent("<img src=\"([^\"]*)\" border=\"0\" align=\"antispam\" align=\"middle\" id=\"captcha-img\" ");
@@ -235,7 +235,7 @@ class HellshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
         }
     }
 }

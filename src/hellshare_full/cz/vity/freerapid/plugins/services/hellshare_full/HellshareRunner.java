@@ -148,7 +148,7 @@ class HellshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Na serveru jsou vyu≈æity v≈°echny free download sloty", 30);
+            throw new YouHaveToWaitException("Na serveru jsou vyuûity vöechny free download sloty", 30);
         }
         if (badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad HellShare full account login information!");

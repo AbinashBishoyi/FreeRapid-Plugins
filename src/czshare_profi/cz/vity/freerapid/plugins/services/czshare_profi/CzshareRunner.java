@@ -169,11 +169,11 @@ class CzshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Soubor byl smaz.n jeho odesilatelem</strong>");
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("<b>Soubor byl smaz√°n jeho odesilatelem</b><br>");
+            throw new URLNotAvailableAnymoreException("<b>Soubor byl smaz·n jeho odesilatelem</b><br>");
         }
         matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Bohu≈æel je vyƒçerp√°na maxim√°ln√≠ kapacita FREE download≈Ø", WAIT_TIME);
+            throw new YouHaveToWaitException("Bohuûel je vyËerp·na maxim·lnÌ kapacita FREE download˘", WAIT_TIME);
         }
         if (badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad CZshare profi account login information!");

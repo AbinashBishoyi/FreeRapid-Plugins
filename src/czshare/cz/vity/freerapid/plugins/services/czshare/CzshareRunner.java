@@ -91,7 +91,7 @@ class CzshareRunner extends AbstractRunner {
 
             Matcher matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
             if (matcher.find()) {
-                throw new YouHaveToWaitException("Na serveru jsou vyu≈æity v≈°echny free download sloty", WAIT_TIME);
+                throw new YouHaveToWaitException("Na serveru jsou vyuûity vöechny free download sloty", WAIT_TIME);
             }
             client.setReferer(fileURL);
 
@@ -134,7 +134,7 @@ class CzshareRunner extends AbstractRunner {
 
     private PostMethod stepCaptcha() throws Exception {
         if ("".equals(getContentAsString())) {
-            throw new YouHaveToWaitException("Neurƒçit√© omezen√≠", 4 * WAIT_TIME);
+            throw new YouHaveToWaitException("NeurËitÈ omezenÌ", 4 * WAIT_TIME);
         }
         Matcher matcher;
         matcher = getMatcherAgainstContent("<td class=\"kod\" colspan=\"2\"><img src=\"([^\"]*)\" /></td>");
@@ -212,15 +212,15 @@ class CzshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Soubor byl smaz.n jeho odesilatelem</strong>");
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("<b>Soubor byl smaz√°n jeho odesilatelem</b><br>");
+            throw new URLNotAvailableAnymoreException("<b>Soubor byl smaz·n jeho odesilatelem</b><br>");
         }
         matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Bohu≈æel je vyƒçerp√°na maxim√°ln√≠ kapacita FREE download≈Ø", WAIT_TIME);
+            throw new YouHaveToWaitException("Bohuûel je vyËerp·na maxim·lnÌ kapacita FREE download˘", WAIT_TIME);
         }
         matcher = getMatcherAgainstContent("Nesouhlas. kontroln. kod");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("≈†patn√Ω k√≥d", 3);
+            throw new YouHaveToWaitException("äpatn˝ kÛd", 3);
         }
     }
 }

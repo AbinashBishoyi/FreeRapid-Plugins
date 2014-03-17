@@ -4,10 +4,10 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
-import org.apache.commons.httpclient.HttpMethod;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -31,7 +31,7 @@ class MegauploadRunner extends AbstractRunner {
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
-         if (makeRedirectedRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException();
@@ -50,7 +50,7 @@ class MegauploadRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            if(tryManagerDownload(fileURL)) return;
+            if (tryManagerDownload(fileURL)) return;
             Matcher matcher;
             //       captchaCount = 0;
             if (getContentAsString().contains("download is password protected")) {
@@ -94,7 +94,7 @@ class MegauploadRunner extends AbstractRunner {
         if (content.contains("link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
 
-        }      
+        }
         Matcher matcher = PlugUtils.matcher("font-size:13px;\">([0-9.]+ .B).?</font>", content);
         if (matcher.find()) {
             logger.info("File size " + matcher.group(1));
@@ -217,23 +217,38 @@ class MegauploadRunner extends AbstractRunner {
         return URL.replaceFirst("com/[^?]+\\?", "com/?");    // http://www.megaupload.com/it/?d=VUPXY6B4 -> http://www.megaupload.com/?d=VUPXY6B4
     }
 
-    private String getManagerURL(String url)  {
-           // http://www.megaupload.com/?d=YPDRRQOP -> http://www.megaupload.com/mgr_dl.php?d=YPDRRQOP
+    private String getManagerURL(String url) {
+        // http://www.megaupload.com/?d=YPDRRQOP -> http://www.megaupload.com/mgr_dl.php?d=YPDRRQOP
 
         if (url.contains("mgr_dl.php")) return url;
-       return url.replaceFirst("/\\?d=", "/mgr_dl.php?d=");
+        return url.replaceFirst("/\\?d=", "/mgr_dl.php?d=");
 
     }
 
-   private boolean tryManagerDownload(String url) throws Exception {
-       url = getManagerURL(url);
-       logger.info("Trying manager download " + url);
-       final HttpMethod method = getMethodBuilder().setAction(url).setReferer("").toHttpMethod();
-       return tryDownloadAndSaveFile(method);
-   }
+    private boolean tryManagerDownload(String url) throws Exception {
+        url = getManagerURL(url);
+        logger.info("Trying manager download " + url);
 
+        final HttpMethod methodCheck = getMethodBuilder().setAction(url).setReferer("").toHttpMethod();
+        methodCheck.setFollowRedirects(false);
+        if (client.makeRequest(methodCheck, false) == 302) {
+            String downloadURL = methodCheck.getResponseHeader("location").getValue();
+            logger.info("Found redirect location " + downloadURL);
+            if (downloadURL.contains("files")) {
+                final int i = downloadURL.lastIndexOf('/');
+                if (i > 0) {
+                    final String toEncode = downloadURL.substring(i + 1);
+                    httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
+                }
+            }
+            final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer("").toHttpMethod();
+            return tryDownloadAndSaveFile(method);
+        } else {
+            makeRedirectedRequest(methodCheck);
+            return false;
+        }
 
-   
+    }
 
 
 }

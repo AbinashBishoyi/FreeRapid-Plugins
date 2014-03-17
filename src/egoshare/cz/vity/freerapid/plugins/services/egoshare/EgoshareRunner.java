@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.egoshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -20,7 +21,6 @@ class EgoshareRunner {
     private final static Logger logger = Logger.getLogger(EgoshareRunner.class.getName());
     private HttpDownloadClient client;
     private HttpFileDownloader downloader;
-    private static final String HTTP_EGOSHARE = "http://www.egoshare.com";
 
     private String initURL;
     private String enterURL;
@@ -67,7 +67,6 @@ class EgoshareRunner {
                     throw new InterruptedException();
                 httpFile.setState(DownloadState.GETTING);
                 final GetMethod method = client.getGetMethod(s);
-                client.getHTTPClient().getParams().setHttpElementCharset("ISO-8859-1");
                 try {
                     final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
                     if (inputStream != null) {
@@ -88,11 +87,6 @@ class EgoshareRunner {
 
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
-    }
-
-    private String replaceEntities(String s) {
-        s = s.replaceAll("\\&amp;", "&");
-        return s;
     }
 
     private String decode(String input) {
@@ -165,7 +159,7 @@ class EgoshareRunner {
 
                     postMethod.addParameter("captchacode", captcha);
                     postMethod.addParameter("2ndpage", ndpage);
-                    client.getHTTPClient().getParams().setParameter("http.protocol.single-cookie-header", true);
+                    client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
                      if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
                           return true;
                     }
@@ -191,8 +185,12 @@ class EgoshareRunner {
         Matcher matcher;
         matcher = Pattern.compile("You have got max allowed download sessions from the same IP", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {
-
             throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP!", 5 * 60);
+        }
+        matcher = Pattern.compile("this download is too big for your", Pattern.MULTILINE).matcher(client.getContentAsString());
+        if (matcher.find()) {
+
+            throw new YouHaveToWaitException("Sorry, this download is too big for your remaining download volume per hour!!", 10 * 60);
         }
         matcher = Pattern.compile("Your requested file could not be found", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {

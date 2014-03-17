@@ -34,7 +34,7 @@ class GetZillaFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<h1>Скачать файл&nbsp;<span>&laquo;", "&raquo;</span>");
-        final Matcher fileSizeMatcher = getMatcherAgainstContent("<div class=\"filesize.*?\">(.+?)<div");
+        final Matcher fileSizeMatcher = getMatcherAgainstContent("<div class=\"filesize.*?\">\\s*(.+?(?:Гб|Мб|Кб|байт)).*?\\s*<div");
         if (!fileSizeMatcher.find()) {
             throw new PluginImplementationException("File size not found");
         }

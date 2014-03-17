@@ -51,8 +51,9 @@ class IskladkaRunner {
                 if (!trydownload(method)) {
                     boolean finish = false;
                     int steps = 0;
-                    while (!finish && steps < 2 && client.getContentAsString().contains("ekejte!")) {
-                        logger.info("Request wasnt final");
+                    while (!finish && steps < 20 && client.getContentAsString().contains("ekejte!")) {
+                        matcher = PlugUtils.matcher("DL je ([0-9]+)", client.getContentAsString());
+                        if (matcher.find()) logger.info("Request wasnt final, length of queue is " + matcher.group(1));
                         GetMethod method2 = parseMethod(client.getContentAsString());
                         downloader.sleep(10 * getTimeToWait(client.getContentAsString()));
                         if (downloader.isTerminated())
@@ -100,7 +101,7 @@ class IskladkaRunner {
                 logger.info("Found ticket: " + ticket);
             }
         }
-        String target = "";
+        String target;
         matcher = PlugUtils.matcher("document.location.replace\\(\"([^?]*)\\?", content);
         if (matcher.find()) {
             target = matcher.group(1);

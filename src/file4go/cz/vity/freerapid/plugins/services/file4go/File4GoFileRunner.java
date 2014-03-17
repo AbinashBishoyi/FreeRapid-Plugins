@@ -2,6 +2,8 @@ package cz.vity.freerapid.plugins.services.file4go;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -51,6 +53,10 @@ class File4GoFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
+            Matcher matcher = Pattern.compile("var time = (\\d+)").matcher(contentAsString);
+            if( matcher.find() ) {
+                throw new YouHaveToWaitException("Wait " + matcher.group(1), Integer.parseInt(matcher.group(1)) );
+            }
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             final HttpMethod httpMethod = handleCaptcha();//getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "window.location.href='", "'\">Download"));
@@ -77,7 +83,7 @@ class File4GoFileRunner extends AbstractRunner {
             rc.setRecognized(captcha);
             final HttpMethod method = rc.modifyResponseMethod(getMethodBuilder()
                     .setAjax()
-                    .setAction("http://www.file4go.com/download"))
+                    .setAction("http://www.file4go.com/getdownload.php"))
                     //.setParameter("recaptcha_control_field", rcControl)
                     .setParameter("id", id)
                     .toPostMethod();
@@ -90,6 +96,7 @@ class File4GoFileRunner extends AbstractRunner {
                 return getMethodBuilder().setActionFromTextBetween("<span id=\"boton_download\" ><a href=\"", "\" class=\"ddda\"").toGetMethod();
             } catch(BuildMethodException bme) {
                 //var time = 1180 -- then wait
+                System.out.println( content );
                 throw new YouHaveToWaitException("Wait", 180 );
             }
             /*

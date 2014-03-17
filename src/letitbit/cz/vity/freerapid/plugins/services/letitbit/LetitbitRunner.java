@@ -87,7 +87,12 @@ class LetitbitRunner extends AbstractRunner {
 
             downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
 
-            final String url = handleCaptcha(pageUrl);
+            String url = handleCaptcha(pageUrl);
+            if (url.contains("[\"")) {
+                url = PlugUtils.getStringBetween(url,"\",\"","\"]").replaceAll("\\\\","");
+            }
+
+            //logger.info("Final URL : " + url);
 
             httpMethod = getMethodBuilder()
                     .setReferer(pageUrl)

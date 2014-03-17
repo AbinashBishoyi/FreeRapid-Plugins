@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.bayfiles.BayFilesServiceImpl"
-        id="bayfiles.com" vendor="tong2shot" version="1.0.4">
+        id="bayfiles.com" vendor="tong2shot" version="1.0.5">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?bayfiles\.com/file/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="urlRegex" value="http://(www\.)?bayfiles\.(com|net)/file/.+"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="bayfiles.com"/>
+        <attribute id="services" value="bayfiles.net bayfiles.com"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

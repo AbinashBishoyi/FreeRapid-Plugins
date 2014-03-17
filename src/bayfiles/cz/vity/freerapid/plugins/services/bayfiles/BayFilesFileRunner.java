@@ -24,6 +24,7 @@ class BayFilesFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception { //this method validates file
+        checkUrl();
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
@@ -35,6 +36,11 @@ class BayFilesFileRunner extends AbstractRunner {
         }
     }
 
+    private void checkUrl() {
+        if (fileURL.contains("bayfiles.com"))
+            fileURL = fileURL.replaceFirst("bayfiles.com", "bayfiles.net");
+    }
+
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<p title=\"", "\">");
         PlugUtils.checkFileSize(httpFile, content, "<strong>", "</strong></p>");
@@ -43,6 +49,7 @@ class BayFilesFileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
+        checkUrl();
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
@@ -58,7 +65,7 @@ class BayFilesFileRunner extends AbstractRunner {
             logger.info("vfid = " + vfid);
 
             MethodBuilder ajaxMethodBuilder = getMethodBuilder()
-                    .setAction("http://bayfiles.com/ajax_download")
+                    .setAction("http://bayfiles.net/ajax_download")
                     .setParameter("action", "startTimer")
                     .setParameter("vfid", vfid);
             HttpMethod ajaxMethod = ajaxMethodBuilder.toGetMethod();
@@ -70,7 +77,7 @@ class BayFilesFileRunner extends AbstractRunner {
                 downloadTask.sleep(waitTime);
 
                 ajaxMethodBuilder = getMethodBuilder()
-                        .setAction("http://bayfiles.com/ajax_download")
+                        .setAction("http://bayfiles.net/ajax_download")
                         .setParameter("action", "getLink")
                         .setParameter("vfid", vfid)
                         .setParameter("token", token);

@@ -62,8 +62,8 @@ class DuckLoadFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            downloadTask.sleep(21);
             method = getMethodBuilder().setReferer(fileURL).setBaseURL(fileURL).setActionFromFormByName("form", true).toPostMethod();
+            downloadTask.sleep(21);
             if (makeRedirectedRequest(method)) {
                 Matcher matcher = getMatcherAgainstContent("\\(<i>(.+?)</i> <strong>(.+?)</strong>\\)");
                 if (matcher.find()) {
@@ -74,10 +74,18 @@ class DuckLoadFileRunner extends AbstractRunner {
                 if (matcher.find()) {
                     url = matcher.group(1);
                 } else {
-                    final int wait = PlugUtils.getNumberBetween(getContentAsString(), "timetowait=", "&");
-                    final String ident = PlugUtils.getStringBetween(getContentAsString(), "ident=", "&");
-                    final String token = PlugUtils.getStringBetween(getContentAsString(), "token=", "&");
-                    final String filename = PlugUtils.getStringBetween(getContentAsString(), "filename=", "&");
+                    matcher = getMatcherAgainstContent("timetowait=([^&'\"]+)");
+                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
+                    final int wait = Integer.parseInt(matcher.group(1));
+                    matcher = getMatcherAgainstContent("ident=([^&'\"]+)");
+                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
+                    final String ident = matcher.group(1);
+                    matcher = getMatcherAgainstContent("token=([^&'\"]+)");
+                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
+                    final String token = matcher.group(1);
+                    matcher = getMatcherAgainstContent("filename=([^&'\"]+)");
+                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
+                    final String filename = matcher.group(1);
                     url = "/api/as2/link/" + ident + "/" + token + "/" + filename;
                     downloadTask.sleep(wait + 1);
                 }

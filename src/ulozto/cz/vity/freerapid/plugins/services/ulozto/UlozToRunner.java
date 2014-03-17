@@ -29,6 +29,7 @@ class UlozToRunner extends AbstractRunner {
         super();
     }
 
+    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
@@ -38,6 +39,7 @@ class UlozToRunner extends AbstractRunner {
             throw new PluginImplementationException();
     }
 
+    @Override
     public void run() throws Exception {
         super.run();
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
@@ -49,8 +51,8 @@ class UlozToRunner extends AbstractRunner {
                 boolean saved = false;
                 captchaCount = 0;
                 while (getContentAsString().contains("captcha_user")) {
-                    setClientParameter(HttpClientParams.MAX_REDIRECTS, 8);
-                    HttpMethod method = stepCaptcha(getContentAsString());
+                    client.getHTTPClient().getParams().setIntParameter(HttpClientParams.MAX_REDIRECTS, 8);
+                    HttpMethod method = stepCaptcha();
                     method.setFollowRedirects(false);
                     httpFile.setState(DownloadState.GETTING);
                     final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, false);
@@ -108,7 +110,7 @@ class UlozToRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private HttpMethod stepCaptcha(String contentAsString) throws Exception {
+    private HttpMethod stepCaptcha() throws Exception {
         CaptchaSupport captchaSupport = getCaptchaSupport();
         MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
         String captcha = "";
@@ -137,6 +139,7 @@ class UlozToRunner extends AbstractRunner {
     }
 
     //"P�ekro�en po�et FREE slot�, pou�ijte VIP download
+
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
         if (content.contains("Soubor byl sma")) {

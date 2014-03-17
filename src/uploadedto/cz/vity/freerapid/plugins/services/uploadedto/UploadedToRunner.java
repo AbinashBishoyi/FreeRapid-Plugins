@@ -1,18 +1,21 @@
 package cz.vity.freerapid.plugins.services.uploadedto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Ladislav Vitasek
+ * @author Ladislav Vitasek, ntoskrnl
  */
 class UploadedToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadedToRunner.class.getName());
@@ -20,22 +23,31 @@ class UploadedToRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkSizeAndName(getContentAsString());
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             final String contentAsString = getContentAsString();
             checkSizeAndName(contentAsString);
+
+            //they usually redirect
+            fileURL = getMethod.getURI().toString();
 
             Matcher matcher = PlugUtils.matcher("var secs = ([0-9]+);", contentAsString);
             if (!matcher.find()) {
@@ -53,36 +65,19 @@ class UploadedToRunner extends AbstractRunner {
                 }
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
             }
-            String s = matcher.group(1);
-            int seconds = new Integer(s);
-            downloadTask.sleep(seconds + 1);
+            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
 
-            matcher = PlugUtils.matcher("name=\"download_form\" method=\"post\" action=\"([^\"]*)\"", getContentAsString());
-            if (matcher.find()) {
-                s = matcher.group(1);
-                logger.info("Found File URL - " + s);
-
-                final GetMethod method = getGetMethod(s);
-                //method.addParameter("mirror", "on");
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty.");
-                }
-            } else {
+            while (!tryDownloadAndSaveFile(stepCaptcha())) {
                 checkProblems();
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
             }
-
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkSizeAndName(String content) throws Exception {
-
         if (!content.contains("uploaded.to")) {
-            logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (content.contains("File doesn")) {
@@ -94,7 +89,6 @@ class UploadedToRunner extends AbstractRunner {
             final String fileSize = matcher.group(1);
             logger.info("File size " + fileSize);
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-
         }
 
         matcher = Pattern.compile("Filename: &nbsp;</td><td><b>(.*?)</b></td></tr>", Pattern.DOTALL).matcher(content);
@@ -126,6 +120,24 @@ class UploadedToRunner extends AbstractRunner {
         if (getContentAsString().contains("can only be queried by premium users")) {
             throw new ServiceConnectionProblemException(String.format("The file status can only be queried by premium users"));
         }
+    }
+
+    private HttpMethod stepCaptcha() throws Exception {
+        MethodBuilder request = getMethodBuilder()
+                .setReferer(fileURL)
+                .setBaseURL(fileURL)
+                .setActionFromFormByName("download_form", true);
+
+        Matcher m = getMatcherAgainstContent("/noscript\\?k=([^\"]+)\"");
+        if (!m.find()) throw new PluginImplementationException("ReCaptcha key not found");
+
+        ReCaptcha r = new ReCaptcha(m.group(1), client);
+        String imageURL = r.getImageURL();
+        String captcha = getCaptchaSupport().getCaptcha(imageURL);
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
+        r.setRecognized(captcha);
+
+        return r.modifyResponseMethod(request).toPostMethod();
     }
 
 }

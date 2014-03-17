@@ -18,6 +18,8 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             httpFile.setNewURL(new URL("https://mega.co.nz/#!oswTzRzC!Yk7R2QwDTJrAe7T0c4d3OigsRZk2V7ip-57KcD0Mx7U"));
             httpFile.setNewURL(new URL("https://mega.co.nz/#!LV4ViKjB!Mwu00HxjtltJKnzifq7gbkcFBbQj-q4cPb29JQd6MSY"));
+            //httpFile.setNewURL(new URL("https://mega.co.nz/#N!dIhiDbiJ!e1xjNjyua5nlOJiEbxBBM3sDkr12kWVhi04aFGTl7f0"));
+            //httpFile.setNewURL(new URL("https://mega.co.nz/#F!scRgGChR!PzcvIBCITggtpI8mA37x3g"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

@@ -81,7 +81,7 @@ class MegaApi {
         return cipher;
     }
 
-    private void checkProblems(final String content) throws Exception {
+    public static void checkProblems(final String content) throws Exception {
         if (content.contains("\"e\":")) {
             final int e = PlugUtils.getNumberBetween(content, "\"e\":", "}");
             switch (e) {

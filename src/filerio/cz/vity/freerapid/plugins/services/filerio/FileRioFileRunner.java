@@ -5,9 +5,10 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
@@ -32,23 +33,21 @@ class FileRioFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add("eval\\(unescape\\('%(.+?)'\\)\\)");
+        downloadLinkRegexes.add("eval\\(unescape\\('(.+?)'\\)\\)");
         return downloadLinkRegexes;
     }
-
-    private final static Logger logger = Logger.getLogger(FileRioFileRunner.class.getName());
 
     @Override
     protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
         for (final String downloadLinkRegex : getDownloadLinkRegexes()) {
             final Matcher matcher = getMatcherAgainstContent(downloadLinkRegex);
             if (matcher.find()) {
-                final String[] escArr = matcher.group(1).split("%");
-                String unEscStr = "";
-                for (String chr : escArr) {
-                    unEscStr += new String(Character.toChars(Integer.parseInt(chr, 16)));
+                try {
+                    final String unEscStr = URLDecoder.decode(matcher.group(1), "UTF-8");
+                    return PlugUtils.getStringBetween(unEscStr, "location.href=\"", "\";");
+                } catch (UnsupportedEncodingException e) {
+                    throw new PluginImplementationException("Error reading download URL");
                 }
-                return PlugUtils.getStringBetween(unEscStr, "location.href=\"", "\";");
             }
         }
         throw new PluginImplementationException("Download link not found");

@@ -76,7 +76,7 @@ class HotfileFileRunner extends AbstractRunner {
             final int waitTime = Integer.parseInt(matcher.group(1)) / 1000;
 
             if (waitTime > 0) {
-                throw new YouHaveToWaitException("You reached your hourly traffic limit", waitTime);
+                throw new YouHaveToWaitException("You reached your hourly traffic limit", Math.min(waitTime, 60*16)); // during download we get too long 7200 seconds to wait 
             }
         }
     }

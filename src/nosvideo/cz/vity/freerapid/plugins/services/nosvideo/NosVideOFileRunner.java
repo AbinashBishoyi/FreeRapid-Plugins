@@ -35,13 +35,14 @@ class NosVideOFileRunner extends XFileSharingRunner {
     protected List<String> getDownloadPageMarkers() {
         final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
         downloadPageMarkers.add("<input type=button onClick=\"location.href");
+        downloadPageMarkers.add(">Download</a>");
         return downloadPageMarkers;
     }
 
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add("location.href='(http.+?" + Pattern.quote(httpFile.getFileName()) + "(?:\\..{3})?)'");  //sometimes there is no file ext in filename, but added in download link later.
+        downloadLinkRegexes.add("href=(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + "(?:\\..{3})?)(?:\"|')");  //sometimes there is no file ext in filename, but added in download link later.
         return downloadLinkRegexes;
     }
 

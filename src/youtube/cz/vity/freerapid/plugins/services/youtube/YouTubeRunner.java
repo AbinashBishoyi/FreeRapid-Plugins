@@ -294,7 +294,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private String getIdFromUrl() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("[\\?&]v=([^\\?&#]+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("(?:[\\?&]v=|\\.be/)([^\\?&#]+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing file URL");
         }
@@ -302,25 +302,26 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private boolean checkSubtitles() throws Exception {
-        if (fileURL.contains("#subtitles:")) {
-            fileExtension = ".srt";
+        Matcher matcher = PlugUtils.matcher("#subtitles:(.*?):(.+)", fileURL);
+        if (matcher.find()) {
+            final String lang = matcher.group(1);
+            if (!lang.isEmpty()) {
+                fileExtension = "." + lang + ".srt";
+            } else {
+                fileExtension = ".srt";
+            }
             runCheck();
-            final String url = "http://www.youtube.com/api/timedtext?type=track"
-                    + fileURL.substring(fileURL.indexOf("#subtitles:") + 11);
+            final String url = "http://www.youtube.com/api/timedtext?type=track" + matcher.group(2);
             final HttpMethod method = getGetMethod(url);
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
-         //   FileOutputStream stream = null;
             try {
                 final String converted = Transcription2SrtUtil.convert(getContentAsString());
-                //TODO some language code into file name - videoname.lngcode.srt
-                downloadTask.saveToFile(new ByteArrayInputStream(converted.getBytes("UTF-8"))); //should be UTF-8? shouldn't be optionable?
-                //stream = new FileOutputStream(new File(httpFile.getSaveToDirectory(), httpFile.getFileName()));
-                //stream.write(); //should be UTF-8? shouldn't be optionable?
-            } catch (Exception e) {
+                downloadTask.saveToFile(new ByteArrayInputStream(converted.getBytes("UTF-8")));
+            } catch (final Exception e) {
                 LogUtils.processException(logger, e);
-                throw new PluginImplementationException("Converting and saving Srt failed", e);
+                throw new PluginImplementationException("Error converting and saving subtitles", e);
             }
             return true;
         } else if (config.isDownloadSubtitles()) {
@@ -328,9 +329,11 @@ class YouTubeRunner extends AbstractRtmpRunner {
             final HttpMethod method = getGetMethod("http://www.youtube.com/api/timedtext?type=list&v=" + id);
             if (makeRedirectedRequest(method)) {
                 final List<URI> list = new LinkedList<URI>();
-                final Matcher matcher = getMatcherAgainstContent("<track id=\"\\d*\" name=\"(.*?)\" lang_code=\"(.*?)\"");
+                matcher = getMatcherAgainstContent("<track id=\"\\d*\" name=\"(.*?)\" lang_code=\"(.*?)\"");
                 while (matcher.find()) {
-                    final String url = fileURL + "#subtitles:&v=" + id + "&name=" + matcher.group(1) + "&lang=" + matcher.group(2);
+                    final String name = matcher.group(1);
+                    final String lang = matcher.group(2);
+                    final String url = fileURL + "#subtitles:" + lang + ":&v=" + id + "&name=" + name + "&lang=" + lang;
                     try {
                         list.add(new URI(url));
                     } catch (final URISyntaxException e) {

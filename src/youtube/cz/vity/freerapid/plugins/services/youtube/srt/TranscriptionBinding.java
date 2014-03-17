@@ -11,6 +11,7 @@ import java.util.List;
 /**
  * @author Vity
  */
+@SuppressWarnings("unused")
 @Binding("transcript")
 public class TranscriptionBinding {
 
@@ -35,7 +36,7 @@ public class TranscriptionBinding {
             throw new IllegalArgumentException("'dur' attribute cannot be null");
         }
 
-        SrtItem item = new SrtItem(list.size() +1, start, dur);
+        SrtItem item = new SrtItem(list.size() + 1, start, dur);
         lastItem = item;
         list.add(item);
     }
@@ -45,7 +46,6 @@ public class TranscriptionBinding {
         lastItem.setText(text);
         lastItem = null;
     }
-
 
 }
 

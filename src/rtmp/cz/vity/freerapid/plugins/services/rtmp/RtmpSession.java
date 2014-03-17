@@ -116,7 +116,7 @@ public class RtmpSession {
         connectParams = new HashMap<String, Object>();
         connectParams.put("objectEncoding", 0);
         connectParams.put("app", app);
-        connectParams.put("flashVer", "WIN 9,0,124,2");
+        connectParams.put("flashVer", "WIN 10,1,53,64");
         connectParams.put("fpad", false);
         connectParams.put("tcUrl", tcUrl);
         connectParams.put("audioCodecs", 1639);

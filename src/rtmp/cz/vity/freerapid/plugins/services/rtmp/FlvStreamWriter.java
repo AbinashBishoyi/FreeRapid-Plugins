@@ -34,6 +34,7 @@ public class FlvStreamWriter implements OutputWriter {
     private final PipedInputStream in;
     private final PipedOutputStream out;
     private final ByteBuffer buffer;
+    private boolean headerWritten = false;
 
     public FlvStreamWriter(int seekTime) {
         status = new WriterStatus(seekTime);
@@ -46,7 +47,6 @@ public class FlvStreamWriter implements OutputWriter {
         }
         buffer = ByteBuffer.allocate(1024);
         buffer.setAutoExpand(true);
-        writeHeader();
     }
 
     public InputStream getStream() {
@@ -118,6 +118,11 @@ public class FlvStreamWriter implements OutputWriter {
     }
 
     private void write(ByteBuffer buffer) {
+        if (!headerWritten) {
+            headerWritten = true;
+            logger.fine("First data packet received, writing FLV header");
+            writeHeader();
+        }
         try {
             channel.write(buffer.buf());
         } catch (Exception e) {

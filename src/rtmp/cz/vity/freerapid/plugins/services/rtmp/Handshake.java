@@ -162,7 +162,7 @@ public class Handshake {
     public static Handshake generateClientRequest1(RtmpSession session) {
         ByteBuffer buf = ByteBuffer.allocate(HANDSHAKE_SIZE);
         Utils.writeInt32Reverse(buf, (int) System.currentTimeMillis() & 0x7FFFFFFF);
-        buf.put(new byte[]{0x09, 0x00, 0x7c, 0x02}); // flash player version 9.0.124.2
+        buf.put(new byte[]{0x0a, 0x01, 0x35, 0x40}); // flash player version 10,1,53,64
         byte[] randomBytes = new byte[HANDSHAKE_SIZE - 8]; // 4 + 4 bytes [time, version] done already
         Random random = new Random();
         random.nextBytes(randomBytes);

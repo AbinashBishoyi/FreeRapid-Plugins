@@ -122,10 +122,14 @@ public class RtmpDecoder extends CumulativeProtocolDecoder {
                     String code = (String) temp.getProperty("code").getValue();
                     logger.fine("onStatus code: " + code);
                     if (code.equals("NetStream.Failed")
-                            || code.equals("NetStream.Play.Failed") || code.equals("NetStream.Play.Stop")) {
+                            || code.equals("NetStream.Play.Failed")
+                            || code.equals("NetStream.Play.Stop")) {
                         logger.fine("disconnecting");
                         session.getDecoderOutput().disconnect();
                     }
+                } else if (methodName.equals("close")) {
+                    logger.fine("disconnecting");
+                    session.getDecoderOutput().disconnect();
                 } else {
                     logger.fine("unhandled server invoke: " + serverInvoke);
                 }

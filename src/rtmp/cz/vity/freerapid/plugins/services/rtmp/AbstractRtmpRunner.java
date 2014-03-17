@@ -10,6 +10,7 @@ import cz.vity.freerapid.utilities.LogUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.util.logging.Logger;
 
 /**
@@ -57,9 +58,13 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
                 logger.info("Saving file failed");
                 return false;
             }
+        } catch (InterruptedException e) {
+            //ignore
+        } catch (InterruptedIOException e) {
+            //ignore
         } catch (Throwable e) {
             LogUtils.processException(logger, e);
-            throw new PluginImplementationException("RTMP error (" + e.toString() + ")", e);
+            throw new PluginImplementationException("RTMP error - " + e.toString(), e);
         } finally {
             if (rtmpClient != null) {
                 try {
@@ -70,6 +75,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
                 }
             }
         }
+        return true;
     }
 
 }

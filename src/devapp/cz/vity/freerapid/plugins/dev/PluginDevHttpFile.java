@@ -6,6 +6,8 @@ import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 
 import java.io.File;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -15,6 +17,7 @@ import java.util.logging.Logger;
  */
 class PluginDevHttpFile implements HttpFile {
     private final static Logger logger = Logger.getLogger(PluginDevHttpFile.class.getName());
+    private Map<String, Object> map = new HashMap<String, Object>(0);
 
     /**
      * Field fileSize
@@ -296,5 +299,10 @@ class PluginDevHttpFile implements HttpFile {
      */
     public String getPluginID() {
         return serviceID;
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return map;
     }
 }

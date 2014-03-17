@@ -59,9 +59,9 @@ class LetitbitRunner extends AbstractRunner {
             checkNameAndSize();
 
             final MethodBuilder methodBuilder2 = getMethodBuilder().setReferer(fileURL);
-            if (getContentAsString().contains("\u0421\u043F\u0430\u0441\u0438\u0431\u043E")) {
-                //Russian IPs see a different page here
-                methodBuilder2.setActionFromFormWhereTagContains("\u0421\u043F\u0430\u0441\u0438\u0431\u043E", true);
+            if (getContentAsString().contains("???????")) {
+                //Russian IPs may see a different page here
+                methodBuilder2.setActionFromFormWhereTagContains("???????", true);
             } else {
                 methodBuilder2.setActionFromFormByName("dvifree", true);
             }

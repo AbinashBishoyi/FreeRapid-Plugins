@@ -25,14 +25,14 @@ class EasyShareRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
-            checkName(getContentAsString());
+            checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    private void checkName(String contentAsString) throws Exception {
+    private void checkNameAndSize(String contentAsString) throws Exception {
 
-        if (!contentAsString.contains("easy-share")) {
+        if (!contentAsString.contains("Share")) {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
@@ -47,6 +47,13 @@ class EasyShareRunner extends AbstractRunner {
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
         } else logger.warning("File name was not found" + getContentAsString());
+
+        matcher = getMatcherAgainstContent("\\(([0-9.]+ .B)\\)");
+        if (matcher.find()) {
+            logger.info("File size " + matcher.group(1));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+        }
+
     }
 
     @Override
@@ -59,52 +66,58 @@ class EasyShareRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
-            checkName(getContentAsString());
-            if (!(getContentAsString().contains("Please enter") || getContentAsString().contains("w="))) {
+            checkNameAndSize(getContentAsString());
+            if (!(getContentAsString().contains("Type characters") || getContentAsString().contains("Free Download"))) {
                 checkProblems();
                 logger.warning(getContentAsString());
                 throw new PluginImplementationException("Plugin implementation problem");
 
             }
+            if (getContentAsString().contains("Free Download")) {
 
-            while (getContentAsString().contains("Please enter") || getContentAsString().contains("w=")) {
-                Matcher matcher;
-
-                if (getContentAsString().contains("w=")) {
-                    matcher = getMatcherAgainstContent("w='([0-9]+?)';");
+                if (getContentAsString().contains(" w=")) {
+                    Matcher matcher = getMatcherAgainstContent("w='([0-9]+?)';");
                     if (matcher.find()) {
                         downloadTask.sleep(Integer.parseInt(matcher.group(1)));
                     } else {
                         logger.warning(getContentAsString());
                         throw new PluginImplementationException("Plugin implementation problem");
                     }
+                }
 
-                    matcher = getMatcherAgainstContent("u='(/.*?)';");
-                    if (matcher.find()) {
-                        final String link = matcher.group(1);
-                        getMethod = getGetMethod(httpSite + link);
-                        if (!makeRequest(getMethod)) {
-                            logger.warning(getContentAsString());
-                            throw new ServiceConnectionProblemException("Unknown error");
-                        }
-                    }
+                getMethod = getGetMethod(skipEnterPageUrl());
+                if (!makeRequest(getMethod)) {
+                    logger.warning(getContentAsString());
+                    throw new ServiceConnectionProblemException("Unknown error");
+                }
+            }
 
-                } else if (!getContentAsString().contains("Please enter")) {
+            while (getContentAsString().contains("Type characters")) {
+
+                if (!getContentAsString().contains("Type characters")) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new PluginImplementationException("Plugin implementation problem");
                 }
-                matcher = getMatcherAgainstContent("File size: ([0-9.]+( )?.B).?</div>");
-                if (matcher.find()) {
-                    logger.info("File size " + matcher.group(1));
-                    httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
-                }
+
                 if (stepCaptcha(getContentAsString())) break;
             }
 
 
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+    private String skipEnterPageUrl() throws PluginImplementationException {
+        Matcher matcher = PlugUtils.matcher("com/([0-9]+)", fileURL);
+        if (matcher.find()) {
+            return "http://www.easy-share.com/c/" + matcher.group(1);
+        } else {
+            logger.warning(getContentAsString());
+            throw new PluginImplementationException("Plugin implementation problem");
+        }
+
+
     }
 
 
@@ -117,7 +130,7 @@ class EasyShareRunner extends AbstractRunner {
     }
 
     private boolean stepCaptcha(final String contentAsString) throws Exception {
-        if (contentAsString.contains("Please enter")) {
+        if (contentAsString.contains("Type characters")) {
 
             final Matcher m = PlugUtils.matcher("type=\"hidden\" name=\"id\" value=\"(.*?)\"", contentAsString);
             String id;
@@ -147,7 +160,7 @@ class EasyShareRunner extends AbstractRunner {
                         if (tryDownloadAndSaveFile(method)) return true;
                         else {
                             checkProblems();
-                            if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))
+                            if (getContentAsString().contains("Type characters") || getContentAsString().contains("w="))
                                 return false;
                             logger.warning(getContentAsString());
                             throw new IOException("File input stream is empty.");

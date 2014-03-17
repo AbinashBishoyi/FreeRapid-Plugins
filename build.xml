@@ -51,6 +51,7 @@
     </pathconvert>
 
     <target name="build" description="building">
+        <ant dir="${src.dir}/filesend/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshare_premium/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/depositfiles/" antfile="build.xml" inheritall="false"/>
@@ -91,6 +92,7 @@
         <ant dir="${src.dir}/zshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/leteckaposta/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/bagruj/" antfile="build.xml" inheritall="false"/>
+
     </target>
 
 

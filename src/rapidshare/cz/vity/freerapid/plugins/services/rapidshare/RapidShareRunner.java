@@ -106,7 +106,7 @@ class RapidShareRunner extends AbstractRunner {
         return chooser.getPreferredURL(getContentAsString());
     }
 
-    private void enterCheck() throws NotRecoverableDownloadException, InvalidURLOrServiceProblemException {
+    private void enterCheck() throws NotRecoverableDownloadException, InvalidURLOrServiceProblemException, ServiceConnectionProblemException {
         Matcher matcher;
         if (!getContentAsString().contains("form id=\"ff\" action=")) {
 
@@ -132,6 +132,9 @@ class RapidShareRunner extends AbstractRunner {
                 throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>To download this file, the uploader either needs to transfer this file into his/her Collector's Account, or upload the file again. The file can later be moved to a Collector's Account. The uploader just needs to click the delete link of the file to get further information.");
             if (getContentAsString().contains("This file is larger than")) {
                 throw new NotRecoverableDownloadException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
+            }
+            if (getContentAsString().contains("no more download slots")) {
+                throw new ServiceConnectionProblemException("There are no more download slots available for free users right now");
             }
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
@@ -183,6 +186,9 @@ class RapidShareRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("This file is larger than")) {
             throw new NotRecoverableDownloadException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
+        }
+        if (getContentAsString().contains("There are no more download slots available for free users right now")) {
+            throw new ServiceConnectionProblemException("There are no more download slots available for free users right now");
         }
     }
 

@@ -153,6 +153,7 @@ class FilePostFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File not found")) {
+            logger.warning(getContentAsString());
             throw new URLNotAvailableAnymoreException("File not found");
         } else if (contentAsString.contains("already downloading a file")) {
             throw new YouHaveToWaitException("Your IP address is already downloading a file at the moment", 60);

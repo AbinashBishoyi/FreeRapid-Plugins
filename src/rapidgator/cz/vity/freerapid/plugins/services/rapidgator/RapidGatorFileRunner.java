@@ -194,16 +194,16 @@ class RapidGatorFileRunner extends AbstractRunner {
                 final String fwv = PlugUtils.getStringBetween(getContentAsString(), "caps=caps+',", "'+'.'+String.fromCharCode");
                 final StringBuilder fw = new StringBuilder(7);
                 */
-                final StringBuilder fwv = new StringBuilder(17);
+                final StringBuilder fwv = new StringBuilder(18);
                 fwv.append("fwv/");
-                for (int i = 0; i < 4; i++) {
+                for (int i = 0; i < 6; i++) {
                     fwv.append(Character.toChars(Math.random() > 0.2 ? new Random().nextInt(26) + 65 : new Random().nextInt(26) + 97));
                 }
                 fwv.append(".");
                 for (int i = 0; i < 4; i++) {
                     fwv.append(Character.toChars(new Random().nextInt(26) + 97));
                 }
-                fwv.append(new Random().nextInt(100));
+                fwv.append(new Random().nextInt(99));
                 final String captchaAction = "http://api.solvemedia.com/papi/_challenge.js" + "?k=" + captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/opera,ua/opera11,os/nt,os/nt6.1," +
                         fwv + ",jslib/jquery;ts=" + Long.toString(System.currentTimeMillis()).substring(0, 10) + ";th=white;r=" + Math.random();
                 httpMethod = getMethodBuilder()
@@ -246,8 +246,22 @@ class RapidGatorFileRunner extends AbstractRunner {
                 }
                 logger.info(getContentAsString());
                 captchaStartTime = System.currentTimeMillis();
-                captchaTxt = getCaptchaSupport().askForCaptcha(drawHTMLCaptcha(getContentAsString(), 300, 150, Color.blue));
-                if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
+                if (getContentAsString().contains("var slog =")) { // cryptic HTML captcha + recognizer
+                    final String slog = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "var slog = '", "';"));
+                    final String secr = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "var secr = '", "';"));
+                    int cn = 0;
+                    char[] captchaResponse = new char[slog.length()];
+                    for (int i = 0; i < slog.length(); i++) {
+                        char x = (char) ((secr.charAt(i) ^ (cn | 1) ^ (((cn++ & 1) != 0) ? i : 0) ^ 0x55) ^ (slog.charAt(i) ^ (cn | 1)
+                                ^ (((cn++ & 1) != 0) ? i : 0) ^ 0x55));
+                        captchaResponse[i] = x;
+                    }
+                    captchaTxt = new String(captchaResponse);
+                } else { // canvas HTML captcha 
+                    captchaTxt = getCaptchaSupport().askForCaptcha(drawHTMLCaptcha(getContentAsString(), 300, 150, Color.blue));
+                    if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
+                }
+
             } else {
                 throw new ServiceConnectionProblemException("Captcha media type 'img' or 'html' not found");
             }

@@ -141,13 +141,19 @@ class DdlStorageFileRunner extends AbstractRunner {
                         .setAction(locationHeader.getValue())
                         .toGetMethod();
                 break;
+            } else if (getContentAsString().contains("File Download Link Generated")){ //link generated
+                httpMethod = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setActionFromAHrefWhereATagContains(httpFile.getFileName())
+                        .toGetMethod();
+                break;
             } else {
                 if (!getContentAsString().contains("recaptcha/api/challenge")) {
                     checkDownloadProblems();
                     throw new PluginImplementationException("Recaptcha not found");
                 }
             }
-        }
+        }                                    
         setFileStreamContentTypes("text/plain");
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkDownloadProblems();

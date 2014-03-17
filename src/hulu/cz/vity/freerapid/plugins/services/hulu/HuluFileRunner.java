@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.hulu;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
+import cz.vity.freerapid.plugins.services.tor.TorProxyClient;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
@@ -78,13 +78,13 @@ class HuluFileRunner extends AbstractRtmpRunner {
         if (!matcher.find()) {
             throw new PluginImplementationException("File name content not found");
         }
-        final String data = matcher.group(1).replace("\\\"", "\"").replace("\\\\", "\\");
+        final String data = matcher.group(1);
         try {
             final ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
             if (engine == null) {
                 throw new RuntimeException("JavaScript engine not found");
             }
-            engine.eval("var data = " + data);
+            engine.eval("var data = JSON.parse(\"" + data + "\")");
 
             final String show = engine.eval("data[\"show\"][\"name\"]").toString();
             final String title = engine.eval("data[\"title\"]").toString();
@@ -151,10 +151,8 @@ class HuluFileRunner extends AbstractRtmpRunner {
         logger.info("contentSelectUrl = " + contentSelectUrl);
 
         method = getGetMethod(contentSelectUrl);
-        if (!client.getSettings().isProxySet() && config.isTunlrEnabled()) {
-            Tunlr.setupMethod(method);
-        }
-        if (makeRedirectedRequest(method)) {
+        final TorProxyClient torClient = TorProxyClient.forCountry("us", client, getPluginService().getPluginContext().getConfigurationStorageSupport());
+        if (torClient.makeRequest(method)) {
             final String content = decryptContentSelect(getContentAsString());
             logger.info("Content select:\n" + content);
             try {
@@ -193,7 +191,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private SortedMap<Integer, Stream> getStreamMap(String content) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? height=\"(\\d+?)\".*? file-type=\"\\d+_(.+?)\".*? cdn=\"(.+?)\"", content);
+        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? height=\"(\\d+?)\".*? file-type=\"\\d+_(.+?)\".*? cdn=\"(?:darwin\\-)?(.+?)\"", content);
         final SortedMap<Integer, Stream> streamMap = new TreeMap<Integer, Stream>(); //k=video quality, v=stream, sorted by video quality ascending
         logger.info("Available streams : ");
         while (matcher.find()) {

@@ -40,6 +40,7 @@ public class TestApp extends PluginDevApplication {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        this.exit();
     }
 
     /**

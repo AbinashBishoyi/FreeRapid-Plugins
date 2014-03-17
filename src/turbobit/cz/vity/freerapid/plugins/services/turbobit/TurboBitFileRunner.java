@@ -113,11 +113,11 @@ class TurboBitFileRunner extends AbstractRunner {
                 waitTime = waitTime / waitTimeDivider;
             }
 
-            matcher = getMatcherAgainstContent("var\\s*url\\s*=\\s*(.+?);");
+            matcher = getMatcherAgainstContent("(?s)(var\\s*url.+?)\\}");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Download link not found");
             }
-            final String script = matcher.group(1);
+            final String script = matcher.group(1).replaceAll("\\$\\('[^']+?'\\)\\.load", "");
             logger.info(script);
             final String url = ScriptUtils.evaluateJavaScriptToString(script);
             logger.info(url);

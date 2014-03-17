@@ -20,11 +20,11 @@ public class TestApp extends PluginDevApplication {
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
             httpFile.setNewURL(new URL("http://www.hulu.com/watch/163679/if-i-can-dream-menage-a-trois"));//international
-            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/307686/eureka-do-you-see-what-i-see"));//US-only
+            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/372844"));//US-only
             //httpFile.setNewURL(new URL("http://www.hulu.com/profiles/user/public_queue"));//user queue
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 9050, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final HuluServiceImpl service = new HuluServiceImpl(); //instance of service - of our plugin
             /*

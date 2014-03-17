@@ -141,13 +141,14 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private RtmpSession getStream(final String content) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"[^<>]+?cdn=\"(.+?)\"", content);
+        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? cdn=\"(.+?)\"", content);
         final List<Stream> list = new LinkedList<Stream>();
         while (matcher.find()) {
-            if ("level3".equals(matcher.group(5))) {
+            final String cdn = matcher.group(5);
+            if ("level3".equals(cdn)) {
                 logger.info("Ignoring stream served by Level3");
             } else {
-                list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
+                list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4)), cdn));
             }
         }
         if (list.isEmpty()) {
@@ -161,8 +162,9 @@ class HuluFileRunner extends AbstractRtmpRunner {
         private final String play;
         private final String app;
         private final int bitrate;
+        private final String cdn;
 
-        public Stream(String server, String stream, String token, int bitrate) throws ErrorDuringDownloadingException {
+        public Stream(String server, String stream, String token, int bitrate, String cdn) throws ErrorDuringDownloadingException {
             Matcher matcher = PlugUtils.matcher("://(.+?)/(.+)", server);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Error parsing stream server");
@@ -173,6 +175,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             this.play = stream;
             this.app = token;
             this.bitrate = bitrate;
+            this.cdn = cdn;
             logger.info("Found stream: " + this);
         }
 
@@ -183,7 +186,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
         @Override
         public int compareTo(Stream that) {
-            return Integer.valueOf(this.bitrate).compareTo(that.bitrate);
+            final int i = Integer.valueOf(this.bitrate).compareTo(that.bitrate);
+            //Prefer akamai streams as they are often faster and allow non-US IPs
+            if (i == 0 && "akamai".equals(this.cdn) && !"akamai".equals(that.cdn)) {
+                return 1;
+            }
+            return i;
         }
 
         @Override
@@ -193,6 +201,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                     ", play='" + play + '\'' +
                     ", app='" + app + '\'' +
                     ", bitrate=" + bitrate +
+                    ", cdn='" + cdn + '\'' +
                     '}';
         }
     }

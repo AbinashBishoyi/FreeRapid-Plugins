@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="barrandov.tv" version="1.0.0" vendor="JPEXS"
+        class="cz.vity.freerapid.plugins.services.barrandov.BarrandovServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?barrandov\.tv/[0-9]+\-.*"/>
+        <attribute id="minver" value="0.849"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="barrandov.tv"/>
+        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
+        <attribute id="maxDownloads" value="9"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <requires>
+        <import plugin-id="rtmp" plugin-version="1.0.0" match="greater-or-equal"/>
+    </requires>
+    <runtime>
+        <library id="barrandov.tv" path="/" type="code"/>
+    </runtime>
+</plugin>

@@ -10,6 +10,8 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -64,9 +66,22 @@ class RapidShareRunner extends AbstractRunner {
                     logger.info("Download URL: " + s);
                     String myUrl = getPrefferedMirror();
                     if (!"".equals(myUrl)) s = myUrl;
+                    //implemented http://wordrider.net/forum/read.php?11,3017,3028#msg-3028
+                    int i1 = s.toLowerCase().indexOf("http://");
+                    if (i1 == 0) {
+                        i1 += "http://".length();
+                        final int i2 = s.indexOf('/', i1);
+                        if (i2 > 0) {
+                            final String subs = s.substring(i1, i2);
+                            String ip = translateToIP(subs);
+                            logger.info("Changing " + subs + " to " + ip);
+                            s = new StringBuilder(s).replace(i1, i2, ip).toString();
+                        }
+                    }
                     downloadTask.sleep(seconds + 1);
                     final PostMethod method = getPostMethod(s);
                     method.addParameter("mirror", "on");
+
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         logger.warning(getContentAsString());
@@ -170,6 +185,44 @@ class RapidShareRunner extends AbstractRunner {
             throw new NotRecoverableDownloadException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
         }
     }
+
+    private static String translateToIP(final String value) {
+        try {
+            InetAddress addr = InetAddress.getByName(value);
+            byte[] ipAddr = addr.getAddress();
+
+            // Convert to dot representation
+            StringBuilder ipAddrStr = new StringBuilder(20);
+            final int length = ipAddr.length;
+            for (int i = 0; i < length; i++) {
+                if (i > 0) {
+                    ipAddrStr.append('.');
+                }
+                ipAddrStr.append(ipAddr[i] & 0xFF);
+            }
+            return ipAddrStr.toString();
+        } catch (UnknownHostException e) {
+            return value;
+        }
+    }
+
+//
+//    public static void main(String[] args) {
+//        String s = "http://rs617l32.rapidshare.com/files/xxxxxxxxx/xxxxxxx/myfiles.part11.rar";
+//        int i1 = s.toLowerCase().indexOf("http://");
+//        if (i1 == 0) {
+//            i1 += "http://".length();
+//            final int i2 = s.indexOf('/', i1);
+//            if (i2 > 0) {
+//                final String subs = s.substring(i1, i2);
+//                String ip = translateToIP(subs);
+//                logger.info("Changing " + subs + " to " + ip);
+//                s = new StringBuilder(s).replace(i1, i2, ip).toString();
+//            }
+//        }
+//
+//        System.out.println("s = " + s);
+//    }
 
 }
 

@@ -28,7 +28,14 @@ public class CramitRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("method_free", true).setAction(fileURL).toPostMethod();
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromFormWhereTagContains("method_free", true)
+                            //this parameter may contains spaces, the above method doesn't work in such cases
+                    .setParameter("fname", PlugUtils.getStringBetween(getContentAsString(), "name=\"fname\" value=\"", "\""))
+                    .setAction(fileURL)
+                    .setEncodePathAndQuery(true)
+                    .toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();

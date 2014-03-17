@@ -8,7 +8,6 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -25,9 +24,6 @@ import java.util.regex.Matcher;
  */
 class MegaUploadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegaUploadFileRunner.class.getName());
-    private String HTTP_SITE = "http://www.megaupload.com";
-    private String LINK_TYPE = "single";
-    private boolean badConfig = false;
 
     @Override
     public void runCheck() throws Exception {
@@ -35,10 +31,10 @@ class MegaUploadFileRunner extends AbstractRunner {
         checkURL();
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
         addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            if (LINK_TYPE.equals("single")) checkNameAndSize();
+            if (!isFolder()) checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -53,48 +49,43 @@ class MegaUploadFileRunner extends AbstractRunner {
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
         addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
 
-        if (LINK_TYPE.equals("folder")) {
-            stepFolder();
-            return;
-        }
-
         login();
 
-        final GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize();
 
-            while (getContentAsString().contains("Please enter the password")) {
-                final HttpMethod passwordMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("filepassword", getPassword()).toPostMethod();
-                if (!makeRedirectedRequest(passwordMethod)) {
-                    throw new ServiceConnectionProblemException("Error posting password");
-                }
+            if (isFolder()) {
+                stepFolder();
+                return;
             }
 
-            if (getContentAsString().contains("Enter this")) {
-                if (makeRedirectedRequest(getGetMethod(HTTP_SITE + "/?c=account"))) {
+            checkNameAndSize();
+
+            if (getContentAsString().contains("download is password protected")) {
+                stepPasswordPage();
+            }
+
+            final Matcher matcher = getMatcherAgainstContent("\"(http://www\\d+?\\.mega(?:upload|porn)\\.com/files/[^\"]+?)\"");
+            if (!matcher.find()) {
+                if (makeRedirectedRequest(getGetMethod("/?c=account"))) {
                     if (getContentAsString().contains("<b>Regular</b>")) {
                         throw new NotRecoverableDownloadException("Account is not premium!");
                     }
                 }
-                throw new NotRecoverableDownloadException("Problem logging in, account not premium?");
+                throw new PluginImplementationException("Download link not found");
             }
-
-            final Matcher matcher = getMatcherAgainstContent("\"(http://www\\d+?\\.mega(?:upload|porn)\\.com/files/[^\"]+?)\"");
-            if (!matcher.find()) throw new PluginImplementationException("Download link not found");
             final String url = matcher.group(1);
 
             final int index = url.lastIndexOf('/');
             if (index > 0) {
                 final String name = url.substring(index + 1);
-                httpFile.setFileName(URLDecoder.decode(name, "UTF-8"));
+                httpFile.setFileName(PlugUtils.unescapeHtml(URLDecoder.decode(name, "UTF-8")));
             }
 
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
-                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
@@ -104,14 +95,8 @@ class MegaUploadFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher name = getMatcherAgainstContent("Filename:</font> <font .+?>(.+?)</font><br>");
-        if (!name.find()) throw new PluginImplementationException("File name not found");
-        httpFile.setFileName(name.group(1));
-
-        final Matcher size = getMatcherAgainstContent("font-size:13px;\">([0-9.]+ .B).?</font>");
-        if (!size.find()) throw new PluginImplementationException("File size not found");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
-
+        PlugUtils.checkName(httpFile, getContentAsString(), "<span class=\"down_txt2\">", "</span>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "ize:</strong>", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -130,18 +115,17 @@ class MegaUploadFileRunner extends AbstractRunner {
 
     private void login() throws Exception {
         synchronized (MegaUploadFileRunner.class) {
-            MegaUploadServiceImpl service = (MegaUploadServiceImpl) getPluginService();
+            final MegaUploadServiceImpl service = (MegaUploadServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
-            if (!pa.isSet() || badConfig) {
+            if (!pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
-                    throw new NotRecoverableDownloadException("No MegaUpload Premium account login information!");
+                    throw new BadLoginException("No MegaUpload Premium account login information!");
                 }
-                badConfig = false;
             }
 
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction(HTTP_SITE + "/?c=login")
+                    .setAction("/?c=login")
                     .setParameter("login", "1")
                     .setParameter("username", pa.getUsername())
                     .setParameter("password", pa.getPassword())
@@ -150,56 +134,60 @@ class MegaUploadFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException("Error posting login info");
 
             if (getContentAsString().contains("Username and password do not match"))
-                throw new NotRecoverableDownloadException("Invalid MegaUpload Premium account login information!");
+                throw new BadLoginException("Invalid MegaUpload Premium account login information!");
         }
     }
 
     private void checkURL() {
         final String host = httpFile.getFileUrl().getHost();
         if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
-            HTTP_SITE = "http://www.megaporn.com";
             fileURL = fileURL.replace("megarotic.com", "megaporn.com").replace("sexuploader.com", "megaporn.com");
-        }
-
-        if (fileURL.contains("?f=")) {
-            logger.info("Link type: folder");
-            LINK_TYPE = "folder";
         }
     }
 
+    private void stepPasswordPage() throws Exception {
+        while (getContentAsString().contains("Please enter the password")) {
+            final String password = getDialogSupport().askForPassword("MegaUpload");
+            if (password == null) {
+                throw new NotRecoverableDownloadException("This file is secured with a password");
+            }
+            final HttpMethod method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(fileURL)
+                    .setParameter("filepassword", password)
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+        }
+    }
+
+    private boolean isFolder() {
+        return getContentAsString().contains("folderid = \"");
+    }
+
     private void stepFolder() throws Exception {
-        if (!makeRedirectedRequest(getGetMethod(fileURL)))
-            throw new ServiceConnectionProblemException();
-
-        final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid\",\"", "\");");
-        final String xmlURL = HTTP_SITE + "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
+        final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid = \"", "\";");
+        final String xmlURL = "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
         final HttpMethod folderHttpMethod = getMethodBuilder().setReferer(fileURL).setAction(xmlURL).toGetMethod();
-
-        if (makeRequest(folderHttpMethod)) {
+        if (makeRedirectedRequest(folderHttpMethod)) {
             if (getContentAsString().contains("<FILES></FILES>"))
                 throw new URLNotAvailableAnymoreException("No files in folder. Invalid link?");
 
             final Matcher matcher = getMatcherAgainstContent("url=\"(.+?)\"");
-            int start = 0;
             final List<URI> uriList = new LinkedList<URI>();
-            while (matcher.find(start)) {
-                String link = matcher.group(1);
+            while (matcher.find()) {
                 try {
-                    uriList.add(new URI(link));
+                    uriList.add(new URI(matcher.group(1)));
                 } catch (URISyntaxException e) {
                     LogUtils.processException(logger, e);
                 }
-                start = matcher.end();
             }
             getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+            httpFile.getProperties().put("removeCompleted", true);
+        } else {
+            throw new ServiceConnectionProblemException();
         }
-    }
-
-    private String getPassword() throws Exception {
-        MegauploadPasswordUI ps = new MegauploadPasswordUI();
-        if (getDialogSupport().showOKCancelDialog(ps, "Secured file on MegaUpload")) {
-            return (ps.getPassword());
-        } else throw new NotRecoverableDownloadException("This file is secured with a password");
     }
 
 }

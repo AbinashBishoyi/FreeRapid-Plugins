@@ -13,13 +13,14 @@ public class MegaUploadServiceImpl extends AbstractFileShareService {
     private static final String PLUGIN_CONFIG_FILE = "plugin_MegaUploadPremium.xml";
     private volatile PremiumAccount config;
 
+    @Override
     public String getName() {
         return "megaupload.com_premium";
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return true;
     }
 
     @Override
@@ -43,8 +44,11 @@ public class MegaUploadServiceImpl extends AbstractFileShareService {
                 config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
             }
         }
-
         return config;
+    }
+
+    void setConfig(final PremiumAccount config) {
+        this.config = config;
     }
 
 }

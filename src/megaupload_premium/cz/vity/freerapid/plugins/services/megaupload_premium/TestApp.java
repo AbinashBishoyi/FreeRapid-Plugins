@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.megaupload_premium;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -17,10 +18,13 @@ public class TestApp extends PluginDevApplication {
         try {
             httpFile.setNewURL(new URL("http://www.megaupload.com/?d=XDRWHKBQ"));//regular
             //httpFile.setNewURL(new URL("http://www.megaupload.com/?f=054OTS7Y"));//folder
-            //httpFile.setNewURL(new URL("http://www.megaupload.com/?d=LHLYOSXJ"));//password is "freerapid"
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081);
             final MegaUploadServiceImpl service = new MegaUploadServiceImpl();
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("***");
+            config.setPassword("***");
+            service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

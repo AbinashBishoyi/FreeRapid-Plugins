@@ -9,13 +9,11 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.awt.image.BufferedImage;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -33,17 +31,12 @@ class MegauploadRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final String host = httpFile.getFileUrl().getHost();
-        if (host.contains("megarotic") || host.contains("sexuploader")) {
-            fileURL = fileURL.replace("megarotic", "megaporn").replace("sexuploader", "megaporn");
-        }
-
+        checkURL();
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
         addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
-
         final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
-            if (!getContentAsString().contains("folderid\",\"")) {
+            if (!isFolder()) {
                 checkNameAndSize();
             }
         } else {
@@ -55,23 +48,18 @@ class MegauploadRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        setClientParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
-        final String host = httpFile.getFileUrl().getHost();
-        if (host.contains("megarotic") || host.contains("sexuploader")) {
-            fileURL = fileURL.replace("megarotic", "megaporn").replace("sexuploader", "megaporn");
-        }
+        checkURL();
         logger.info("Starting download in TASK " + fileURL);
-
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
         addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
 
         final boolean loggedIn = login();
 
-        final HttpMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
 
-            if (getContentAsString().contains("folderid\",\"")) {
+            if (isFolder()) {
                 stepFolder();
                 return;
             }
@@ -101,15 +89,15 @@ class MegauploadRunner extends AbstractRunner {
                 }
                 throw new PluginImplementationException("Download link not found");
             }
-            String downloadURL = matcher.group(1);
-            final int i = downloadURL.lastIndexOf('/');
-            if (i > 0) {
-                final String toEncode = downloadURL.substring(i + 1);
-                httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
-            }
-            downloadURL = encodeURL(downloadURL);
+            final String url = matcher.group(1);
 
-            final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer(fileURL).toGetMethod();
+            final int index = url.lastIndexOf('/');
+            if (index > 0) {
+                final String name = url.substring(index + 1);
+                httpFile.setFileName(PlugUtils.unescapeHtml(URLDecoder.decode(name, "UTF-8")));
+            }
+
+            method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
             downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "count=", ";") + 1);
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
@@ -125,16 +113,8 @@ class MegauploadRunner extends AbstractRunner {
         if (getContentAsString().contains("link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("The file is not available");
         }
-        Matcher matcher = getMatcherAgainstContent("font-size:13px;\">([0-9.]+ .B).?</font>");
-        if (matcher.find()) {
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
-        }
-        matcher = getMatcherAgainstContent("Filename:</font> <font .+?>(.+?)</font><br>");
-        if (matcher.find()) {
-            httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
-        } else {
-            logger.warning("File name was not found" + getContentAsString());
-        }
+        PlugUtils.checkName(httpFile, getContentAsString(), "<span class=\"down_txt2\">", "</span>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "ize:</strong>", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -169,6 +149,13 @@ class MegauploadRunner extends AbstractRunner {
         }
     }
 
+    private void checkURL() {
+        final String host = httpFile.getFileUrl().getHost();
+        if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
+            fileURL = fileURL.replace("megarotic.com", "megaporn.com").replace("sexuploader.com", "megaporn.com");
+        }
+    }
+
     private void stepCaptcha() throws Exception {
         final String captchaUrl = getMethodBuilder().setActionFromImgSrcWhereTagContains("gencap.php").getEscapedURI();
         logger.info("Captcha URL: " + captchaUrl);
@@ -200,14 +187,6 @@ class MegauploadRunner extends AbstractRunner {
         }
     }
 
-    private String encodeURL(String s) throws UnsupportedEncodingException {
-        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
-        if (matcher.find()) {
-            return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
-        }
-        return s;
-    }
-
     private void stepPasswordPage() throws Exception {
         while (getContentAsString().contains("Please enter the password")) {
             final String password = getDialogSupport().askForPassword("MegaUpload");
@@ -225,8 +204,12 @@ class MegauploadRunner extends AbstractRunner {
         }
     }
 
+    private boolean isFolder() {
+        return getContentAsString().contains("folderid = \"");
+    }
+
     private void stepFolder() throws Exception {
-        final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid\",\"", "\");");
+        final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid = \"", "\";");
         final String xmlURL = "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
         final HttpMethod folderHttpMethod = getMethodBuilder().setReferer(fileURL).setAction(xmlURL).toGetMethod();
         if (makeRedirectedRequest(folderHttpMethod)) {
@@ -253,7 +236,7 @@ class MegauploadRunner extends AbstractRunner {
         synchronized (MegauploadRunner.class) {
             final MegauploadShareServiceImpl service = (MegauploadShareServiceImpl) getPluginService();
             final PremiumAccount pa = service.getConfig();
-            if (!pa.isSet()) {
+            if (pa == null || !pa.isSet()) {
                 logger.info("No account data set, skipping login");
                 return false;
             }
@@ -306,7 +289,11 @@ class MegauploadRunner extends AbstractRunner {
                     httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
                 }
                 method = getMethodBuilder().setAction(downloadURL).setReferer(null).toGetMethod();
-                return tryDownloadAndSaveFile(method);
+                try {
+                    return tryDownloadAndSaveFile(method);
+                } catch (Exception e) {
+                    return false;
+                }
             } else {
                 if (!makeRedirectedRequest(getGetMethod(fileURL))) {
                     throw new ServiceConnectionProblemException();

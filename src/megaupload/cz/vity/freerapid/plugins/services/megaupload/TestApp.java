@@ -22,9 +22,9 @@ public class TestApp extends PluginDevApplication {
             //connectionSettings.setProxy("localhost", 8081);
             final MegauploadShareServiceImpl serviceImpl = new MegauploadShareServiceImpl();
             final PremiumAccount config = new PremiumAccount();
-            //config.setUsername("***");
-            //config.setPassword("***");
-            serviceImpl.setConfig(config);
+            config.setUsername("***");
+            config.setPassword("***");
+            //serviceImpl.setConfig(config);
             testRun(serviceImpl, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

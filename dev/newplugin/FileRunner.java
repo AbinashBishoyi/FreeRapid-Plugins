@@ -53,7 +53,7 @@ class #fullWithoutDot#FileRunner extends AbstractRunner {
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
-                throw new throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else {
             checkProblems();

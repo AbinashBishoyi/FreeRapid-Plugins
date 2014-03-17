@@ -20,7 +20,7 @@ public class FaceBookServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;
+        return false;
     }
 
     @Override

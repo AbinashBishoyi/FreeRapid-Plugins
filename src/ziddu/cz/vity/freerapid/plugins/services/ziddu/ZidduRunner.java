@@ -60,17 +60,17 @@ class ZidduRunner extends AbstractRunner {
 //        }
 //}
     private void checkNameandSize(String contentAsString) throws Exception {
-//
-//        if (!contentAsString.contains("Thank You For Downloading")) {
-//            logger.warning(getContentAsString());
-//            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-//        }
-//
-//        if (contentAsString.contains("File not found")) {
-//            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-//        }
-//
-//        if (contentAsString.contains("fname")) {
+
+        if (!contentAsString.contains("downloadfilelinkicon")) {
+            logger.warning(getContentAsString());
+            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+        }
+
+        if (contentAsString.contains("File not found")) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
+        }
+
+        //if (contentAsString.contains("fname")) {
 //
 //            String fn = PlugUtils.getParameter("fname", contentAsString);
 //            fn = fn.replace(".html", "");//why did you removed it? it's OK with it
@@ -79,16 +79,18 @@ class ZidduRunner extends AbstractRunner {
 //
 //            logger.info("File name " + fn);
 //            httpFile.setFileName(fn);
-//
-//            Matcher matcher = PlugUtils.matcher("(([0-9.]* .B))", contentAsString);
-//            if (matcher.find()) {
-//                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-//                logger.info("File size " + a);
-//                httpFile.setFileSize(a);
-//                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-//            } else logger.warning("File size was not found" + contentAsString);
-//
-//        } else logger.warning("File name was not found" + contentAsString);
+
+            Matcher matcher = PlugUtils.matcher("12black\">([0-9.]* .B)", contentAsString);
+            if (matcher.find()) {
+                logger.info("Founded : " + matcher.group(1));
+                
+                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+                logger.info("File size " + a);
+                httpFile.setFileSize(a);
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            } else logger.warning("File size was not found" + contentAsString);
+
+        //} else logger.warning("File name was not found" + contentAsString);
 
 
     }

@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.youtube.srt;
 
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import jlibs.xml.sax.binding.Attr;
 import jlibs.xml.sax.binding.Binding;
 import jlibs.xml.sax.binding.Relation;
@@ -38,7 +39,7 @@ public class TranscriptionBinding {
 
     @Relation.Finish("text")
     public static void relateText(List<SrtItem> list, String text) {
-        list.get(list.size() - 1).setText(text);
+        list.get(list.size() - 1).setText(PlugUtils.unescapeHtml(text));
     }
 
 }

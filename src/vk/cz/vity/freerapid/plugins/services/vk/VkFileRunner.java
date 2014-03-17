@@ -104,21 +104,32 @@ class VkFileRunner extends AbstractRunner {
         }
         String userId = matcher.group(1);
         String videoId = matcher.group(2);
-        //sometimes requires login, redirect to biqle as workaround
+        //sometimes requires login, redirect to biqle as workaround.
         //alternatives :
         //http://hdxit.ru/video/140538996_164236408/
         //http://mirhdtv.ru/video/-36880507_165363780/
         String biqleUrl = String.format("http://biqle.ru/watch/%s_%s", userId, videoId);
-        GetMethod method = getGetMethod(biqleUrl);
-        if (!makeRedirectedRequest(method)) {
-            checkProblems();
+        boolean biqleOK = false;
+        for (int i = 0; i < 3; i++) {
+            // sometimes receives 404, re-request the page
+            GetMethod method = getGetMethod(biqleUrl);
+            biqleOK = makeRedirectedRequest(method);
+            if (!biqleOK) {
+                logger.warning("Error getting embedded URL, retrying to request page..");
+            } else {
+                break;
+            }
+        }
+        if (!biqleOK) {
             throw new ServiceConnectionProblemException("Error getting embedded URL");
         }
         matcher = getMatcherAgainstContent("src=\"(http://vk\\.com/video_ext\\.php.+?)\"");
         if (!matcher.find()) {
             throw new PluginImplementationException("Cannot find embedded URL");
         }
-        return matcher.group(1);
+        String embeddedUrl = matcher.group(1);
+        logger.info("Embedded URL : " + embeddedUrl);
+        return embeddedUrl;
     }
 
     private VkVideo getSelectedVkVideo() throws Exception {
@@ -128,12 +139,16 @@ class VkFileRunner extends AbstractRunner {
         while (matcher.find()) {
             int quality = Integer.parseInt(matcher.group(1));
             String url = matcher.group(2).replace("\\/", "/");
-            VkVideo vkVideo = new VkVideo(VideoQuality.valueOf("_" + quality), url);
-            vkVideos.add(vkVideo);
-            logger.info(vkVideo.toString());
+            try {
+                VkVideo vkVideo = new VkVideo(VideoQuality.valueOf("_" + quality), url);
+                vkVideos.add(vkVideo);
+                logger.info(vkVideo.toString());
+            } catch (Exception e) {
+                throw new PluginImplementationException("Unknown video quality : " + quality);
+            }
         }
         if (vkVideos.isEmpty()) {
-            throw new PluginImplementationException("Video quality list is empty");
+            throw new PluginImplementationException("No available video");
         }
         return Collections.min(vkVideos);
     }

@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class GigaSizeServiceImpl extends AbstractFileShareService {
     private final static String SERVICE_NAME = "gigasize.com";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }

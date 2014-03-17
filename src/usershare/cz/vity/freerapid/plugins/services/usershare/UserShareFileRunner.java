@@ -36,8 +36,8 @@ class UserShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<TD colspan=2>", "</TD>");
-        PlugUtils.checkFileSize(httpFile, content, "<small>(", ")</small>");
+        PlugUtils.checkName(httpFile, content, "<h3>Download File:", "</h3>");
+        PlugUtils.checkFileSize(httpFile, content, "Size:</label> <span>", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

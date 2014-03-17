@@ -1,20 +1,18 @@
 package cz.vity.freerapid.plugins.services.mega1280;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
+import java.net.URI;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -23,20 +21,22 @@ import java.util.logging.Logger;
  */
 class Mega1280FileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(Mega1280FileRunner.class.getName());
-    private final static int COLOR_LIMIT = 200;
-    private final static int CAPTCHA_MAX = 6;
-    private int captchaCounter = 0;
+    private String reCaptchaKey;
+    private String file_id;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
-            checkNameAndSize();
-        } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
+        if (!checkIsFolder()) {
+
+            final HttpMethod getMethod = getGetMethod(fileURL);
+            if (makeRedirectedRequest(getMethod)) {
+                checkProblems();
+                checkNameAndSize();
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
         }
     }
 
@@ -50,27 +50,36 @@ class Mega1280FileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
-            checkProblems();
-            checkNameAndSize();
-            final String firstPage = "name=\"code_security\" id=\"code_security\"";
-            while (getContentAsString().contains(firstPage)) {
-                final HttpMethod httpMethod = stepCaptcha();
-                if (!makeRedirectedRequest(httpMethod))
-                    throw new ServiceConnectionProblemException();
-            }
-            final HttpMethod httpMethod = getMethodBuilder().setActionFromTextBetween("onclick=\"window.location='", "'\"").toGetMethod();
-            //waiting is not necessary
-            //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var count =", ";") + 1);
-            setClientParameter("considerAsStream", "text/plain; charset=UTF-8");
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
-            }
+        if (checkIsFolder()) {
+            runFolder();
+            return;
         } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
+
+            final HttpMethod method = getGetMethod(fileURL);
+            if (makeRedirectedRequest(method)) {
+                checkProblems();
+                checkNameAndSize();
+
+                do {
+                    if (!makeRedirectedRequest(stepCaptcha())) {
+                        throw new ServiceConnectionProblemException();
+                    }
+                } while (getContentAsString().contains("recaptcha"));
+
+                final String url = PlugUtils.getStringBetween(getContentAsString(), "onclick=\"window.location='", "'\"/>");
+                final Integer time = PlugUtils.getNumberBetween(getContentAsString(), "var count = ", ";");
+                downloadTask.sleep(time + 1);
+                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
+
+
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
         }
     }
 
@@ -83,7 +92,7 @@ class Mega1280FileRunner extends AbstractRunner {
                 || contentAsString.contains("Li\u00EAn k\u1EBFt b\u1EA1n ch\u1ECDn kh\u00F4ng t\u1ED3n")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (contentAsString.contains("Vui l\u00F2ng ch\u1EDD cho l\u01B0\u1EE3t download k\u1EBF ti\u1EBFp"))
+        if (contentAsString.contains("Vui l\u00F2ng ch\u1EDD l\u01B0\u1EE3t download k\u1EBF ti\u1EBFp"))
             throw new ServiceConnectionProblemException("Please wait for your previous download to finish");
         if (contentAsString.contains("Limit download xx !")) {
             throw new ServiceConnectionProblemException("Limit download xx ! - unknown error message from server");
@@ -91,95 +100,60 @@ class Mega1280FileRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha() throws Exception {
+        if (reCaptchaKey == null)
+            reCaptchaKey = PlugUtils.getStringBetween(getContentAsString(), "/api/noscript?k=", "\"");
+        if (file_id == null)
+            file_id = PlugUtils.getStringBetween(getContentAsString(), "file_id\" value=\"", "\"");
+        final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaURL = "http://mega.1280.com/security_code.php";
-        final String captcha;
-        if (captchaCounter < CAPTCHA_MAX) {
-            ++captchaCounter;
-            final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaURL));
-            //captcha = PlugUtils.recognize(captchaImage, "-d -1 -C a-z-0-9");
-            captcha = new CaptchaRecognizer().recognize(captchaImage);
-            logger.info("Attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", OCR recognized " + captcha);
-        } else {
-            captcha = captchaSupport.getCaptcha(captchaURL);
-            if (captcha == null) throw new CaptchaEntryInputMismatchException();
-            logger.info("Manual captcha " + captcha);
-        }
 
-        return getMethodBuilder().setReferer(fileURL).setActionFromFormByName("frm_download", true).setAction(fileURL).setParameter("code_security", captcha).toPostMethod();
+        final String captchaURL = r.getImageURL();
+        logger.info("Captcha URL " + captchaURL);
+
+        final String captcha = captchaSupport.getCaptcha(captchaURL);
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
+        r.setRecognized(captcha);
+
+        final HttpMethod httpMethod = r.modifyResponseMethod(
+                getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(fileURL)
+                        .setParameter("btn_download", "Download")
+                        .setParameter("action", "download_file")
+                        .setParameter("file_id", file_id)
+                //
+        ).toPostMethod();
+        //httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");//use AJAX
+        return httpMethod;
     }
 
-    private BufferedImage prepareCaptchaImage(final BufferedImage input) {
-        final int w = input.getWidth();
-        final int h = input.getHeight();
-
-        //convert input image to greyscale
-        final BufferedImage greyScale = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_GRAY);
-        greyScale.getGraphics().drawImage(input, 0, 0, Color.WHITE, null);
-
-        //convert greyscale image to black and white according to COLOR_LIMIT
-        final BufferedImage blackAndWhite = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                final int red = new Color(greyScale.getRGB(x, y)).getRed();
-                final int color = red > COLOR_LIMIT ? Color.WHITE.getRGB() : Color.BLACK.getRGB();
-                blackAndWhite.setRGB(x, y, color);
-            }
-        }
-
-        //remove the small distraction dots
-        final BufferedImage output = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
-        output.getGraphics().drawImage(blackAndWhite, 0, 0, Color.WHITE, null);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                if (blackAndWhite.getRGB(x, y) == Color.BLACK.getRGB()) {
-                    final int color = getBlock(blackAndWhite, x, y).size() > 5 ? Color.BLACK.getRGB() : Color.WHITE.getRGB();
-                    output.setRGB(x, y, color);
-                }
-            }
-        }
-
-        //JOptionPane.showConfirmDialog(null, new ImageIcon(output));
-
-        return output;
+    private boolean checkIsFolder() {
+        return fileURL.contains("/folder/");
     }
 
-    //from megaupload.captcha.CaptchaReader with minor modifications
 
-    private ArrayList<Point> getBlock(final BufferedImage image, final int bx, final int by) {
-        ArrayList<Point> block = new ArrayList<Point>();
-        int colour = image.getRGB(bx, by);
-        List<Point> edge = new ArrayList<Point>();
-        edge.add(new Point(bx, by));
-        block.add(new Point(bx, by));
+    public void runFolder() throws Exception {
 
-        while (edge.size() > 0) {
-            List<Point> newedge = new ArrayList<Point>();
-            for (final Point p : edge) {
-                int x = p.x;
-                int y = p.y;
-                List<Point> adjacent = new ArrayList<Point>();
-                adjacent.add(new Point(x + 1, y));
-                adjacent.add(new Point(x - 1, y));
-                adjacent.add(new Point(x, y + 1));
-                adjacent.add(new Point(x, y - 1));
-                for (final Point q : adjacent) {
-                    int s = q.x;
-                    int t = q.y;
+        HashSet<URI> queye = new HashSet<URI>();
+        final String REGEX = "class=\"w_80pc\"><a href=\"(http://(?:www\\.)?mega\\.1280\\.com/file/[^\"]+)\"";
 
-                    if (isWithin(image, s, t) && !block.contains(new Point(s, t)) && image.getRGB(s, t) == colour) {
-                        block.add(new Point(s, t));
-                        newedge.add(new Point(s, t));
-                    }
-                }
+        final HttpMethod getMethod = getGetMethod(fileURL);
+        getMethod.setFollowRedirects(true);
+        if (makeRedirectedRequest(getMethod)) {
+            Matcher matcher = getMatcherAgainstContent(REGEX);
+            while (matcher.find()) {
+                queye.add(new URI(matcher.group(1)));
             }
-            edge = newedge;
-        }
-        return block;
-    }
 
-    private boolean isWithin(final BufferedImage image, final int x, final int y) {
-        return 0 <= x && x < image.getWidth() && 0 <= y && y < image.getHeight();
+        } else
+            throw new PluginImplementationException("Folder Can't be Loaded !!");
+
+
+        synchronized (getPluginService().getPluginContext().getQueueSupport()) {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, new ArrayList<URI>(queye));
+        }
+        httpFile.getProperties().put("removeCompleted", true);
+
     }
 
 }

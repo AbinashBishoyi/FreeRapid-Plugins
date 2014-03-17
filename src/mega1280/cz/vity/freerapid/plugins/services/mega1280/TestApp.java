@@ -16,14 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://mega.1280.com/file/EXMM6LVXFV/"));
+            httpFile.setNewURL(new URL("http://mega.1280.com/folder/TWH7GM2STU/"));
+            //httpFile.setNewURL(new URL("http://mega.1280.com/file/BT7I3QG8HJ/"));
+
+
+            //httpFile.setNewURL(new URL("http://mega.1280.com/file/EXMM6LVXFV/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final Mega1280ServiceImpl service = new Mega1280ServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
+            testRunCheck(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console

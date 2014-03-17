@@ -55,7 +55,7 @@ class DatoidFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             login();
 
-            final Matcher match = PlugUtils.matcher("<a.+?href=\"(.*?/f/.+?)\">\\s*?[Ss]t.hnout", getContentAsString());
+            final Matcher match = PlugUtils.matcher("<a.+?href=\"(.*?/f/.+?)\".*?>\\s*?[Ss]t.hnout", getContentAsString());
             if (!match.find())
                 throw new PluginImplementationException("Download options not found");
             String linkUrl = match.group(1);

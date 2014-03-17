@@ -54,7 +54,7 @@ class ForSharedRunner extends AbstractRunner {
             if (isFolder()) {
                 parseFolder();
             } else {
-                method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
+                method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("<a id=\"btnLink\" href=\"", "\"").toGetMethod();
                 if (makeRedirectedRequest(method)) {
                     checkProblems();
                     method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("Download file").toGetMethod();

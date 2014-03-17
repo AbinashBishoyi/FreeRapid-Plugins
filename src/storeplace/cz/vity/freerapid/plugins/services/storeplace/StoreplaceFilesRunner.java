@@ -1,26 +1,17 @@
 package cz.vity.freerapid.plugins.services.storeplace;
 
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.util.regex.Matcher;
 
 /**
  * @author RickCL
  */
 class StoreplaceFilesRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(StoreplaceFilesRunner.class.getName());
-
-
     @Override
     public void runCheck() throws Exception {
         super.runCheck();

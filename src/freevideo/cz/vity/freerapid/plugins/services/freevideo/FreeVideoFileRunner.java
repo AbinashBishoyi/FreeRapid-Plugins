@@ -7,11 +7,11 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -30,8 +30,8 @@ class FreeVideoFileRunner extends AbstractRunner {
             MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
             digest.update(data.getBytes());
             byte[] hash = digest.digest();
-            for (int i = 0; i < hash.length; i++) {
-                String hex = Integer.toHexString(hash[i] & 0xff);
+            for (byte aHash : hash) {
+                String hex = Integer.toHexString(aHash & 0xff);
                 if (hex.length() == 1) {
                     hex = "0" + hex;
                 }
@@ -40,11 +40,6 @@ class FreeVideoFileRunner extends AbstractRunner {
         } catch (NoSuchAlgorithmException ex) {
         }
         return ret;
-    }
-
-    private String generateProtection(String param1, String param2) {
-        String _loc_3 = "Hi934IlH0AzILsGa";
-        return md5(_loc_3 + "/" + param2 + param1) + "/" + param1;
     }
 
     @Override

@@ -1,15 +1,8 @@
 package cz.vity.freerapid.plugins.services.ulozto.captcha;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
-import javazoom.jl.decoder.Bitstream;
-import javazoom.jl.decoder.Decoder;
-import javazoom.jl.decoder.Header;
-import javazoom.jl.decoder.JavaLayerException;
-import javazoom.jl.decoder.SampleBuffer;
+import javazoom.jl.decoder.*;
+
+import java.io.*;
 
 /**
  * Class for reading Uloz.to sound captcha

@@ -3,7 +3,7 @@
 <plugin id="imageshack.us" version="1.0.0" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.services.imageshack.ImageShackServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://.?imageshack\.us/.+"/>
+        <attribute id="urlRegex" value="http://.*imageshack\.us/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="imageshack.us"/>

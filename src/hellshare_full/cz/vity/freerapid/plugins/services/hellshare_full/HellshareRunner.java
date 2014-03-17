@@ -40,7 +40,7 @@ class HellshareRunner extends AbstractRunner {
 
             checkNameAndSize(getContentAsString());
 
-            Matcher matcher = getMatcherAgainstContent("<h2 class=\"hidden\">P.ihl.si. s.</h2>|<h2 class=\"hidden\">Bejelentkezés</h2>|<h2 class=\"hidden\">Sign In</h2>");
+            Matcher matcher = getMatcherAgainstContent("<h2 class=\"[^\"]+\">P.ihl.si. s.</h2>|<h2 class=\"[^\"]+\">Bejelentkezés</h2>|<h2 class=\"[^\"]+\">Sign In</h2>");
             if (matcher.find()) {
                 Login(getContentAsString());
             }
@@ -103,7 +103,7 @@ class HellshareRunner extends AbstractRunner {
             postmethod.addParameter("DownloadRedirect", "");
 
             if (makeRedirectedRequest(postmethod)) {
-                matcher = getMatcherAgainstContent("<h2 class=\"hidden\">P.ihl.si. s.</h2>|<h2 class=\"hidden\">Bejelentkezés</h2>|<h2 class=\"hidden\">Sign In</h2>");
+                matcher = getMatcherAgainstContent("<h2 class=\"[^\"]+\">P.ihl.si. s.</h2>|<h2 class=\"[^\"]+\">Bejelentkezés</h2>|<h2 class=\"[^\"]+\">Sign In</h2>");
                 if (matcher.find()) {
                     badConfig = true;
                     throw new NotRecoverableDownloadException("Bad HellShare full account login information!");
@@ -125,7 +125,7 @@ class HellshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", 30);
+            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
         }
         if (badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad HellShare full account login information!");

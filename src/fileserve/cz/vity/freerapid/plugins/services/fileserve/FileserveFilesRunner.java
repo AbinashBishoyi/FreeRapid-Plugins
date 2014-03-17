@@ -101,7 +101,7 @@ class FileserveFilesRunner extends AbstractRunner {
 
             pMethod = getMethodBuilder().setAction(fileURL).setReferer(fileURL).setParameter("download", "normal").toPostMethod();
 
-            client.getHTTPClient().getParams().setParameter("considerAsStream", "X-LIGHTTPD-send-file");
+            setFileStreamContentTypes("X-LIGHTTPD-send-file");
 
             if (!tryDownloadAndSaveFile(pMethod)) {
                 checkProblems();
@@ -115,7 +115,11 @@ class FileserveFilesRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<h1>", "<");
-        PlugUtils.checkFileSize(httpFile, content, "<span><strong>", "</strong>");
+        final Matcher size = getMatcherAgainstContent("<strong>\\s*(\\d).+?\\s*</strong>");
+        if (!size.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

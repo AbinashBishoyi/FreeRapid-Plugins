@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="Gulfup.net" default="all" basedir=".">
+<project name="Gulfup.com" default="all" basedir=".">
     <property name="application" value="gulfup"/>
 
     <property name="version" value="1.0"/>

@@ -12,7 +12,7 @@ public class GulfupServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "gulfup.net";
+        return "gulfup.com";
     }
 
     @Override

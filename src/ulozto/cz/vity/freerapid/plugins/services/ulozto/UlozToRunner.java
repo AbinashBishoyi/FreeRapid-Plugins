@@ -84,8 +84,14 @@ class UlozToRunner extends AbstractRunner {
             }
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
+                if (method != null) {
+                    logger.warning("Final download link URI: " + method.getURI().toString());
+                }
                 logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
+            }
+            if (method != null) {
+                logger.warning("Final download link URI: " + method.getURI().toString());
             }
         } else {
             checkProblems();

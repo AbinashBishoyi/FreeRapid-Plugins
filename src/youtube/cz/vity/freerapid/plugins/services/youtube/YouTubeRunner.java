@@ -65,7 +65,7 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
                 return;
             }
 
-            if (getContentAsString().contains("&fmt_map=&")) {
+            if (getContentAsString().contains("&amp;fmt_map=&")) {
                 RtmpSession rtmpSession = handleStreamMap();
                 tryDownloadAndSaveFile(rtmpSession);
 
@@ -73,7 +73,7 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
                 checkFmtParameter();
                 checkName();
 
-                String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_url_map=", "&");
+                String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "&amp;fmt_url_map=", "&");
                 fmt_url_map = URLDecoder.decode(fmt_url_map, "UTF-8");
                 Matcher matcher = PlugUtils.matcher("," + fmt + "\\|(http[^\\|]+)(,[0-9]+\\||$)", "," + fmt_url_map);
 
@@ -143,7 +143,7 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
     }
 
     private void processConfig() throws ErrorDuringDownloadingException {
-        String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_map=", "&");
+        String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "&amp;fmt_map=", "&");
         try {
             fmt_map = URLDecoder.decode(fmt_map, "UTF-8");
         } catch (UnsupportedEncodingException e) {
@@ -159,10 +159,10 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
         int qualityWidth = config.getQualityWidth();
         int qualityIndex = -1;
         if (qualityWidth == YouTubeSettingsConfig.MAX_WIDTH) {
-            logger.info("Selecting maximal quality");
+            logger.info("Selecting maximum quality");
             qualityIndex = 0;
         } else if (qualityWidth == YouTubeSettingsConfig.MIN_WIDTH) {
-            logger.info("Selecting minimal quality");
+            logger.info("Selecting minimum quality");
             qualityIndex = formatParts.length - 1;
         } else {
             int nearestGreater = Integer.MAX_VALUE;
@@ -192,7 +192,7 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
                     logger.info("Selected quality not found, using nearest lower");
                 } else {
                     qualityIndex = nearestGreaterIndex;
-                    logger.info("Selected quality not found, using nearest greater");
+                    logger.info("Selected quality not found, using nearest better");
                 }
             }
         }
@@ -219,7 +219,7 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
     }
 
     private RtmpSession handleStreamMap() throws Exception {
-        String fmt_stream_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_stream_map=", "&");
+        String fmt_stream_map = PlugUtils.getStringBetween(getContentAsString(), "&amp;fmt_stream_map=", "&");
         try {
             fmt_stream_map = URLDecoder.decode(fmt_stream_map, "UTF-8");
         } catch (UnsupportedEncodingException e) {

@@ -64,7 +64,6 @@ class HuluFileRunner extends AbstractRtmpRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         if (isSubtitle()) return;
-        checkUrl();
         final HttpMethod method = getGetMethod(fileURL);
         //Server sometimes sends a 404 response
         makeRedirectedRequest(method);
@@ -121,7 +120,6 @@ class HuluFileRunner extends AbstractRtmpRunner {
             processSubtitle();
             return;
         }
-        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         setConfig();
         login();
@@ -176,10 +174,6 @@ class HuluFileRunner extends AbstractRtmpRunner {
             checkProblems(getContentAsString());
             throw new ServiceConnectionProblemException();
         }
-    }
-
-    private void checkUrl() {
-        fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
     }
 
     private void checkProblems(final String content) throws ErrorDuringDownloadingException {

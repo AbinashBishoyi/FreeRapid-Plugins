@@ -1,9 +1,12 @@
 package cz.vity.freerapid.plugins.services.rapidshare;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
+import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.jdesktop.application.Application;
 
+import java.net.URL;
 import java.util.logging.Logger;
 
 /**
@@ -14,19 +17,19 @@ public class TestApp extends PluginDevApplication {
 
     @Override
     protected void startup() {
-//        final HttpFile httpFile = getHttpFile();
-//        try {
-//            httpFile.setNewURL(new URL("http://rapidshare.com/files/169450403/samantha.who.s02e08.hdtv.xvid-xor.avi"));
-//            testRun(new RapidShareServiceImpl(), httpFile, new ConnectionSettings());
-//        } catch (Exception e) {
-//            LogUtils.processException(logger, e);
-//        }
-
+        final HttpFile httpFile = getHttpFile();
         try {
-            testOptions();
+            httpFile.setNewURL(new URL("http://rs127.rapidshare.com/files/168210633/Silviya.part3.rar&s104857"));
+            testRunCheck(new RapidShareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             LogUtils.processException(logger, e);
         }
+
+//        try {
+//            testOptions();
+//        } catch (Exception e) {
+//            LogUtils.processException(logger, e);
+//        }
         this.exit();
 
     }

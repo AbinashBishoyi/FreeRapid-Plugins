@@ -172,7 +172,7 @@ class ForSharedRunner extends AbstractRunner {
                 if (passwdCookie != null) {
                     cookies[1] = passwdCookie;
                 }
-                if (cookies.length != 2) {
+                if ((cookies[0] == null) || (cookies[1] == null)) {
                     throw new PluginImplementationException("Login cookies not found");
                 }
                 LOGIN_CACHE.put(getClass(), new LoginData(pa, cookies));
@@ -198,6 +198,22 @@ class ForSharedRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("Invalid e-mail address or password")) {
             throw new BadLoginException("Invalid 4Shared account login information");
+        }
+
+        //language is based on account pref,
+        //setting language cookie doesn't work
+        Cookie langCookie = getCookieByName("4langcookie");
+        if ((langCookie == null) || !langCookie.getValue().equalsIgnoreCase("en")) {
+            method = getMethodBuilder()
+                    .setAction("http://www.4shared.com/web/user/language") //set account's language preference
+                    .setParameter("code", "en")
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            if (!getContentAsString().contains("\"status\":\"ok\"")) {
+                throw new PluginImplementationException("Setting language to EN failed");
+            }
         }
     }
 

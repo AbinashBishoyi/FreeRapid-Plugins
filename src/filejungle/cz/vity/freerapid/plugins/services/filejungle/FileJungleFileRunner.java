@@ -120,6 +120,12 @@ class FileJungleFileRunner extends AbstractRunner implements FileStreamRecognize
                                 throw new ServiceConnectionProblemException();
                             }
 
+                            content = getContentAsString();
+
+                            if (content.contains("forcePremiumDownload")) {
+                                throw new NotSupportedDownloadByServiceException("Premium account is required for this file download");
+                            }
+
                             method = getMethodBuilder().setParameter("download", "normal").setReferer(ref).setAction(startUrl).toPostMethod();
                             setAjaxHeaders(method);
 

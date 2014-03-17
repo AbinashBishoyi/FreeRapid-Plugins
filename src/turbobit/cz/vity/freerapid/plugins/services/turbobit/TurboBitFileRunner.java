@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.concurrent.TimeUnit;
@@ -21,9 +22,6 @@ import java.util.regex.Matcher;
  */
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
-    private final static String LANG_REF = "http://www.turbobit.net/lang/en";
-
-    private String urlCode;
 
     private final static int CAPTCHA_MAX = 0;
     private int captchaCounter = 1;
@@ -31,17 +29,12 @@ class TurboBitFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".turbobit.net", "user_lang", "en", "/", 86400, false));
         fileURL = checkFileURL(fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
-        if (makeRedirectedRequest(httpMethod)) {
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
-            if (makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                checkNameAndSize();
-            } else {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
+        final HttpMethod method = getMethodBuilder().setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -53,8 +46,7 @@ class TurboBitFileRunner extends AbstractRunner {
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing download link");
         }
-        urlCode = matcher.group(1);
-        return "http://turbobit.net/" + urlCode + ".html";
+        return "http://turbobit.net/" + matcher.group(1) + ".html";
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
@@ -76,62 +68,62 @@ class TurboBitFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        fileURL = checkFileURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
-        if (makeRedirectedRequest(httpMethod)) {
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
-            if (makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                checkNameAndSize();
+        addCookie(new Cookie(".turbobit.net", "user_lang", "en", "/", 86400, false));
+        fileURL = checkFileURL(fileURL);
 
-                final String freeAction = "http://turbobit.net/download/free/" + urlCode + "/";
-                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(freeAction).toGetMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
+        HttpMethod method = getMethodBuilder().setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
 
-                Matcher matcher = getMatcherAgainstContent("limit: (\\d+),");
-                if (matcher.find()) {
-                    throw new YouHaveToWaitException("Download limit reached", Integer.parseInt(matcher.group(1)));
-                }
-
-                while (getContentAsString().contains("captcha")) {
-                    if (!makeRedirectedRequest(stepCaptcha(freeAction))) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException();
-                    }
-                }
-
-                int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "minTimeLimit : ", ",", TimeUnit.SECONDS);
-                if (getContentAsString().contains("Timeout.minTimeLimit = Timeout.minTimeLimit/")) { // there is divider
-                    final int waitTimeDivider = PlugUtils.getNumberBetween(getContentAsString(), "Timeout.minTimeLimit = Timeout.minTimeLimit/", ";");
-                    waitTime = waitTime / waitTimeDivider;
-                }
-                downloadTask.sleep(waitTime);
-
-                final String timeoutAction = "http://turbobit.net/download/getLinkAfterTimeout/" + urlCode;
-                httpMethod = getMethodBuilder()
-                        .setReferer(freeAction)
-                        .setAction(timeoutAction)
-                        .toGetMethod();
-                httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
-                if (!makeRedirectedRequest(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-
-                final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(getContentAsString(), "<a href='/download/redirect/", "'");
-                logger.info("Final URL: " + finalURL);
-                httpMethod = getMethodBuilder().setReferer(timeoutAction).setAction(finalURL).toGetMethod();
-                if (!tryDownloadAndSaveFile(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
-                }
-            } else {
+            method = getMethodBuilder()
+                    .setReferer(method.getURI().toString())
+                    .setActionFromAHrefWhereATagContains("Regular Download")
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
+            }
+
+            final Matcher matcher = getMatcherAgainstContent("limit: (\\d+),");
+            if (matcher.find()) {
+                throw new YouHaveToWaitException("Download limit reached", Integer.parseInt(matcher.group(1)));
+            }
+
+            while (getContentAsString().contains("captcha")) {
+                if (!makeRedirectedRequest(stepCaptcha(method.getURI().toString()))) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            }
+
+            int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "minTimeLimit : ", ",", TimeUnit.SECONDS);
+            if (getContentAsString().contains("Timeout.minTimeLimit = Timeout.minTimeLimit/")) { // there is divider
+                final int waitTimeDivider = PlugUtils.getNumberBetween(getContentAsString(), "Timeout.minTimeLimit = Timeout.minTimeLimit/", ";");
+                waitTime = waitTime / waitTimeDivider;
+            }
+
+            method = getMethodBuilder()
+                    .setReferer(method.getURI().toString())
+                    .setActionFromTextBetween(".load(\"", "\"")
+                    .toGetMethod();
+            method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+            downloadTask.sleep(waitTime);
+
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+
+            method = getMethodBuilder()
+                    .setReferer(method.getURI().toString())
+                    .setActionFromAHrefWhereATagContains("Download")
+                    .toGetMethod();
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();

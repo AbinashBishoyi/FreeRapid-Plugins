@@ -46,8 +46,11 @@ class TwitchTvFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h2 id='broadcast_title'>", "</h2>");
-        httpFile.setFileName(httpFile.getFileName() + ".flv");
+        final Matcher matcher = Pattern.compile("<h2 id='broadcast_title'>(.+?)</h2>", Pattern.DOTALL).matcher(content);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Filename not found");
+        }
+        httpFile.setFileName(matcher.group(1).replaceAll("\\s", " "));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -79,15 +82,15 @@ class TwitchTvFileRunner extends AbstractRunner {
                 //add title and counter to url's tail so we can extract it later.
                 //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv -> original videoUrl
                 //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv/česká kvalifikace na ESWC!! 2/4_2 -> title+"_"+counter added
-                String title = matcher.group(2);
-                Integer value;
-                if ((value = titleMap.get(title)) == null) {
-                    value = 1;
-                    titleMap.put(title, value); //value=1 if key doesn't exist
+                String title = matcher.group(2).replaceAll("\\s", " "); // to avoid illegal chars in filename
+                Integer counter;
+                if ((counter = titleMap.get(title)) == null) {
+                    counter = 1;
+                    titleMap.put(title, counter); //counter=1 if title doesn't exist
                 } else {
-                    titleMap.put(title, ++value); //increase value if key exists
+                    titleMap.put(title, ++counter); //increase counter if title exists
                 }
-                title = value == 1 ? URLEncoder.encode(title, "UTF-8") : URLEncoder.encode(title + "_" + value, "UTF-8");
+                title = counter == 1 ? URLEncoder.encode(title, "UTF-8") : URLEncoder.encode(title + "_" + counter, "UTF-8");
                 final String videoUrl = String.format("%s/%s", matcher.group(1), title);
                 uriList.add(new URI(videoUrl));
             }
@@ -111,26 +114,27 @@ class TwitchTvFileRunner extends AbstractRunner {
     }
 
     private void isAtHomePage(final HttpMethod method) throws URLNotAvailableAnymoreException, URIException {
-        if (method.getURI().toString().matches("http://(www\\.)?(cs\\.)?twitch\\.tv/.+?/videos/?")) {
+        if (method.getURI().toString().matches("http://(?:.+?\\.)?(?:twitch|justin)\\.tv/.+?/videos/?")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
     private boolean isVideoUrl() {
-        return fileURL.matches("http://media\\d+\\.justin\\.tv/archives/.+?/.+?\\..{3}/.+");
+        return fileURL.matches("http://media\\d+\\.justin\\.tv/archives/.+?/.+?\\..{3}(/.+)?");
     }
 
     private void processVideoUrl() throws Exception {
-        //add title and counter to url's tail so we can extract it later.
         //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv -> original videoUrl
         //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv/česká kvalifikace na ESWC!! 2/4_2 -> title+"_"+counter added
-        final Matcher matcher = PlugUtils.matcher("(http://media\\d+\\.justin\\.tv/archives/.+?/.+?\\..{3})/(.+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("(http://media\\d+\\.justin\\.tv/archives/.+?/.+?\\..{3})(/.+)?", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing video URL");
         }
         fileURL = matcher.group(1);
         final String extension = fileURL.substring(fileURL.lastIndexOf("."));
-        httpFile.setFileName(URLDecoder.decode(matcher.group(2), "UTF-8") + extension);
+        final String filename = matcher.group(2) == null ? fileURL.substring(fileURL.lastIndexOf("/") + 1) : URLDecoder.decode(matcher.group(2).substring(matcher.group(2).indexOf("/") + 1) + extension, "UTF-8");
+        httpFile.setFileName(filename);
+        client.setReferer(httpFile.getFileUrl().getProtocol() + "://" + httpFile.getFileUrl().getAuthority());
         GetMethod method = getGetMethod(fileURL);
         if (!tryDownloadAndSaveFile(method)) {
             checkProblems();

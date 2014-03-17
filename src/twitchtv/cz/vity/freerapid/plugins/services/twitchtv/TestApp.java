@@ -18,9 +18,12 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://cs.twitch.tv/wries/b/319029303"));
             //httpFile.setNewURL(new URL("http://www.twitch.tv/paradoxinteractive/b/326746473"));
             //httpFile.setNewURL(new URL("http://www.twitch.tv/tsm_chaox/b/328855029"));
-            //httpFile.setNewURL(new URL("http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv/česká kvalifikace na ESWC!! 2/4_1346350462")); //videoUrl
+            //httpFile.setNewURL(new URL("http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv/česká kvalifikace na ESWC!! 2/4_1")); //videoUrl
+            //httpFile.setNewURL(new URL("http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv")); //videoUrl
             //httpFile.setNewURL(new URL("http://www.justin.tv/wries/b/330488455"));
             httpFile.setNewURL(new URL("http://www.justin.tv/tsm_chaox/b/328855029"));
+            //httpFile.setNewURL(new URL("http://en.twitch.tv/teamsp00ky/b/330898023"));
+            //httpFile.setNewURL(new URL("http://www.twitch.tv/wries/b/330499955"));  //not found
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final TwitchTvServiceImpl service = new TwitchTvServiceImpl();

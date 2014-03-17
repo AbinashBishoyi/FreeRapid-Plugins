@@ -31,7 +31,8 @@ class CloudyVideosFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add(0, "<a href\\s?=\\s?(?:\"|')(http.+?cloudyvideos.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
+        downloadLinkRegexes.clear();
+        downloadLinkRegexes.add(0, "<a href\\s?=\\s?(?:\"|')(http.+?/d/.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
         return downloadLinkRegexes;
     }
 }

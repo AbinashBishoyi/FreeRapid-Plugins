@@ -117,7 +117,7 @@ class EnteruploadRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, YouHaveToWaitException {
-        if (getContentAsString().contains("File not found") || getContentAsString().contains("No such file")) {
+        if (getContentAsString().contains("File not found") || getContentAsString().contains("File Not Found") || getContentAsString().contains("No such file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
 
         }
@@ -132,7 +132,7 @@ class EnteruploadRunner extends AbstractRunner {
                 timeToWait += Integer.parseInt(second.group(1));
             }
             if (timeToWait == 0) timeToWait = 5 * 60;
-            throw new YouHaveToWaitException("You have reached the download-limit for free-users.", timeToWait+1);
+            throw new YouHaveToWaitException("You have reached the download-limit for free-users.", timeToWait + 1);
         }
 
 

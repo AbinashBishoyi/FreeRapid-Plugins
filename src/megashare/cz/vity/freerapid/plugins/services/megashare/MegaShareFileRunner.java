@@ -149,8 +149,9 @@ class MegaShareFileRunner extends AbstractRunner {
 
         final String captcha;
         if (captchaCounter <= CAPTCHA_MAX) {
-            final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaSrc));
-            captcha = PlugUtils.recognize(captchaImage, "-d -1 -C 0-9");
+            //final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaSrc));
+            //captcha = PlugUtils.recognize(captchaImage, "-d -1 -C 0-9");
+            captcha = new CaptchaRecognizer().recognize(captchaSupport.getCaptchaImage(captchaSrc));
             logger.info("OCR attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", recognized " + captcha);
             captchaCounter++;
         } else {

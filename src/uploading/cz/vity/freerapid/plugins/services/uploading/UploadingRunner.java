@@ -47,49 +47,24 @@ class UploadingRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("downloadform", true).toPostMethod();
+            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")") + 1);
+            method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction("http://uploading.com/files/get/?ajax")
+                    .setParameter("action", "get_link")
+                    .setParameter("code", PlugUtils.getStringBetween(fileURL + "/", "get/", "/"))
+                    .setParameter("pass", "false")
+                    .toPostMethod();
             if (makeRedirectedRequest(method)) {
                 checkProblems();
-                if (getContentAsString().contains("timeadform")) {
-                    method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("timeadform", true).toPostMethod();
-                    int wait;
-                    try {
-                        wait = PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")");
-                    } catch (PluginImplementationException e) {
-                        wait = PlugUtils.getNumberBetween(getContentAsString(), "timead_counter\">", "<");
-                    }
-                    downloadTask.sleep(wait + 1);
-                    if (!makeRedirectedRequest(method)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException();
-                    }
+                final Matcher matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Download link not found");
                 }
-                try {
-                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")") + 1);
-                } catch (PluginImplementationException e) {
-                    //no waiting time
-                }
-                method = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setAction("http://uploading.com/files/get/?ajax")
-                        .setParameter("pass", "")
-                        .setParameter("code", PlugUtils.getStringBetween(fileURL + "/", "get/", "/"))
-                        .setParameter("action", "get_link")
-                        .toGetMethod();
-                if (makeRedirectedRequest(method)) {
+                method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1).replace("\\/", "/")).toGetMethod();
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
-                    final Matcher matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
-                    if (!matcher.find()) {
-                        throw new PluginImplementationException("Download link not found");
-                    }
-                    method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1).replace("\\/", "/")).toGetMethod();
-                    if (!tryDownloadAndSaveFile(method)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
-                } else {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             } else {
                 checkProblems();
@@ -108,8 +83,8 @@ class UploadingRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span>File size:", "</span>");
-        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download", "for");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download", "for free on");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"file_size\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

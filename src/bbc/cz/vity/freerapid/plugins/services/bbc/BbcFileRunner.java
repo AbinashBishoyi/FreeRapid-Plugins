@@ -218,10 +218,10 @@ class BbcFileRunner extends AbstractRtmpRunner {
         for (Stream stream : list) {
             if (video) {
                 int quality = stream.quality;
-                if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate >= stream.bitrate)) { //put the highest bitrate on same quality
+                if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate > stream.bitrate)) { //put the highest bitrate on same quality
                     continue;
                 }
-                if (streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight") || stream.supplier.equals("akamai"))) { //akamai is not downloadable, prefer limelight
+                if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight"))) || stream.supplier.equals("akamai")) { //akamai is not downloadable, prefer limelight
                     continue;
                 }
                 streamMap.put(quality, stream); //For TV : key=quality, value=stream
@@ -306,7 +306,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 subtitleSb.append(pElement.getAttribute("end").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d)$", ",00$1"));
                 subtitleSb.append("\n");
                 addSubtitleElement(subtitleSb, pElement.getChildNodes(), pElement.getChildNodes().getLength(), 0);
-                subtitleSb.append("\n");
+                subtitleSb.append("\n\n");
             }
         } catch (Exception e) {
             LogUtils.processException(logger, e);
@@ -328,7 +328,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
             if (childNode.getNodeName().equals("br")) {
                 sb.append("\n");
             } else if (childNode.getNodeName().equals("#text")) {
-                sb.append(PlugUtils.unescapeUnicode(childNode.getNodeValue()));
+                sb.append(PlugUtils.unescapeUnicode(childNode.getNodeValue().trim()));
             } else if (childNode.getNodeName().equals("span")) {
                 addSubtitleElement(sb, childNode.getChildNodes(), childNode.getChildNodes().getLength(), 0);
             }

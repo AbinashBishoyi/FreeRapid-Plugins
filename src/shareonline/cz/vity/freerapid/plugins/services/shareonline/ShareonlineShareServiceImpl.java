@@ -8,12 +8,11 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class ShareonlineShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "share-online.biz";
-    private ServicePluginContext context = new ServicePluginContext();
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
-
 
     @Override
     public boolean supportsRunCheck() {
@@ -22,7 +21,7 @@ public class ShareonlineShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new ShareonlineRunner(context);
+        return new ShareonlineRunner();
     }
 
 }

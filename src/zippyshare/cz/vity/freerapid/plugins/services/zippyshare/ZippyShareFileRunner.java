@@ -25,8 +25,7 @@ class ZippyShareFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
-
+        final HttpMethod httpMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
@@ -41,22 +40,20 @@ class ZippyShareFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
-
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
-
-            final String contentAsString = getContentAsString();
-            String var = PlugUtils.getStringBetween(contentAsString, "var pong = '", "';");
-            final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
+            final Matcher matcher = getMatcherAgainstContent("var (?:pong|foken) = '(.+?)';");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download link not found");
+            }
+            String var = matcher.group(1);
+            final String unescape = getStringBetween(getContentAsString(), "= unescape(", ");", 2);
             logger.info("unescape = " + unescape);
             var = applyReplace(var, unescape);
-
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(URLDecoder.decode(var, "UTF-8")).toGetMethod();
-
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
-                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {

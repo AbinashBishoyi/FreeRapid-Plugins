@@ -6,7 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
 
@@ -19,10 +19,8 @@ class ToSharedRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-
-        final GetMethod getMethod = getGetMethod(fileURL);
-
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
         } else {
@@ -34,23 +32,21 @@ class ToSharedRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-
         logger.info("Starting download is TASK " + fileURL);
-
-        final GetMethod getMethod = getGetMethod(fileURL);
-
-        if (makeRedirectedRequest(getMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-
-            final String downloadURL = PlugUtils.getStringBetween(getContentAsString(), "window.location = \"", "\";");
-
-            final GetMethod method = getGetMethod(downloadURL);
-
-            if (!tryDownloadAndSaveFile(method)) {
+            method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setActionFromTextBetween("$.get('", "',").toGetMethod();
+            if (makeRedirectedRequest(method)) {
+                method = getMethodBuilder().setReferer(fileURL).setAction(getContentAsString().trim()).toGetMethod();
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+            } else {
                 checkProblems();
-                logger.warning(getContentAsString());
-                throw new ServiceConnectionProblemException("Error starting download");
+                throw new ServiceConnectionProblemException();
             }
         } else {
             checkProblems();
@@ -60,10 +56,8 @@ class ToSharedRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         PlugUtils.checkName(httpFile, getContentAsString(), "download", "</title>");
-
         final String fileSize = PlugUtils.getStringBetween(getContentAsString(), "File size:</span>\n", "&nbsp;");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize.replace(",", "")));
-
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

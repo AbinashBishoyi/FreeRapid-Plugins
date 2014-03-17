@@ -21,6 +21,12 @@ public class TestApp extends PluginDevApplication {
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final RyuShareServiceImpl service = new RyuShareServiceImpl();
+            /*
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("freerapid");
+            config.setPassword("freerapid");
+            service.setConfig(config);
+            */
             testRun(service, httpFile, connectionSettings);
 
         } catch (Exception e) {

@@ -17,14 +17,12 @@ import java.net.URL;
 public abstract class RegisteredUserRunner extends XFileSharingRunner implements RegisteredUser {
     private final static Logger logger = Logger.getLogger(RegisteredUserRunner.class.getName());
 
-    protected final String loginURL; //ex : "http://www.ryushare.com/login.python" or "http://www.ddlstorage.com/login.html"
     protected final String loginAction; // ex : "http://www.ryushare.com"
     protected final Class runnerClass; //ex : RyuShareFileRunner.class
     protected final Class implClass; // ex : RyuShareServiceImpl.class
 
-    public RegisteredUserRunner(String serviceTitle, String loginURL, String loginAction, Class runnerClass, Class implClass) {
+    public RegisteredUserRunner(String serviceTitle, String loginAction, Class runnerClass, Class implClass) {
         super(serviceTitle);
-        this.loginURL = loginURL;
         this.loginAction = loginAction;
         this.runnerClass = runnerClass;
         this.implClass = implClass;
@@ -34,7 +32,6 @@ public abstract class RegisteredUserRunner extends XFileSharingRunner implements
     @Override
     protected void checkPrerequisites() throws PluginImplementationException {
         super.checkPrerequisites();
-        if (loginURL == null) throw new PluginImplementationException("loginURL cannot be null");
         if (loginAction == null) throw new PluginImplementationException("loginAction cannot be null");
         if (runnerClass == null) throw new PluginImplementationException("runnerClass cannot be null");
         if (implClass == null) throw new PluginImplementationException("implClass cannot be null");
@@ -56,10 +53,10 @@ public abstract class RegisteredUserRunner extends XFileSharingRunner implements
             }
             final String cookieDomain = "." + new URL(getBaseURL()).getHost();
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(loginURL)
+                    .setReferer(loginAction)
                     .setAction(loginAction)
                     .setParameter("op", "login")
-                    .setParameter("redirect", "")
+                    .setParameter("redirect", loginAction)
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
                     .setParameter("submit", "")

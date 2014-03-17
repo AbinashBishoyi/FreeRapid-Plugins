@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.multiupload;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -13,6 +12,8 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -23,6 +24,7 @@ import java.util.regex.Matcher;
  */
 class MultiUploadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MultiUploadFileRunner.class.getName());
+    private final Map<String, String> serviceShortName = new HashMap<String, String>();
     private MultiUploadSettingsConfig config;
 
     @Override
@@ -43,18 +45,15 @@ class MultiUploadFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         setConfig();
+        prepareMap();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();
             for (final String service : config.getServices()) {
-                final String url = checkService(service);
-                if (url != null) {
-                    httpFile.setNewURL(new URL(url));
-                    httpFile.setPluginID("");
-                    httpFile.setState(DownloadState.QUEUED);
-                }
+                if (checkService(service)) return;
             }
+            throw new URLNotAvailableAnymoreException("File not available anymore; All links expired");
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -80,10 +79,21 @@ class MultiUploadFileRunner extends AbstractRunner {
         config = service.getConfig();
     }
 
-    private String checkService(final String service) throws Exception {
-        final Matcher matcher = getMatcherAgainstContent(">(http://www\\.multiupload\\.com/" + getServiceShortName(service) + "_.+?)<");
+    private void prepareMap() {
+        serviceShortName.put("RapidShare.com", "RS");
+        serviceShortName.put("MegaUpload.com", "MU");
+        serviceShortName.put("HotFile.com", "HF");
+        serviceShortName.put("DepositFiles.com", "DF");
+        serviceShortName.put("zShare.net", "ZS");
+        serviceShortName.put("Badongo.com", "BD");
+        serviceShortName.put("Uploading.com", "UP");
+        serviceShortName.put("2shared.com", "2S");
+    }
+
+    private boolean checkService(final String service) throws Exception {
+        final Matcher matcher = getMatcherAgainstContent(">(http://www\\.multiupload\\.com/" + serviceShortName.get(service) + "_.+?)<");
         if (!matcher.find())
-            return null;
+            return false;
 
         /*
          * TODO
@@ -98,20 +108,11 @@ class MultiUploadFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Could not find redirect location");
         final String url = locationHeader.getValue();
 
-        logger.info("URL OK: " + url);
-        return url;
-    }
-
-    private String getServiceShortName(final String service) throws PluginImplementationException {
-        if (service.equals("RapidShare.com")) return "RS";
-        else if (service.equals("MegaUpload.com")) return "MU";
-        else if (service.equals("HotFile.com")) return "HF";
-        else if (service.equals("DepositFiles.com")) return "DF";
-        else if (service.equals("zShare.net")) return "ZS";
-        else if (service.equals("Badongo.com")) return "BD";
-        else if (service.equals("Uploading.com")) return "UP";
-        else if (service.equals("2shared.com")) return "2S";
-        else throw new PluginImplementationException("Unknown service name");
+        logger.info("New URL: " + url);
+        httpFile.setNewURL(new URL(url));
+        httpFile.setPluginID("");
+        httpFile.setState(DownloadState.QUEUED);
+        return true;
     }
 
 }

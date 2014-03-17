@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin id="extrashare.us" version="1.0.0" vendor="Javi"
-        class="cz.vity.freerapid.plugins.services.extrashare.eXtraShareServiceImpl">
+        class="cz.vity.freerapid.plugins.services.extrashare.ExtraShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?extrashare\.us(/.+)?/file/.+/(.+)?"/>
         <attribute id="minver" value="0.83"/>

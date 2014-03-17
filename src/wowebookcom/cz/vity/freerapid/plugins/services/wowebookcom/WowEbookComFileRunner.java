@@ -48,6 +48,7 @@ class WowEbookComFileRunner extends AbstractRunner {
                 directURL = PlugUtils.getStringBetween(getContentAsString(), start, end, i);
                 if (directURL == null) throw new ErrorDuringDownloadingException("Can't find download link");
                 if (directURL.contains("adf.ly")) break;
+                if (directURL.contains("q.gs")) break;
                 if (directURL.contains("sh.st")) {
                     final HttpMethod httpMethod = getMethodBuilder()
                             .setReferer(fileURL)

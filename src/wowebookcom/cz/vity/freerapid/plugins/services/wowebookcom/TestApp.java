@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.wowebook.com/book/advanced-unix-programming-2nd-edition/"));
+            httpFile.setNewURL(new URL("http://www.wowebook.com/book/backbone-js-cookbook/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final WowEbookComServiceImpl service = new WowEbookComServiceImpl();

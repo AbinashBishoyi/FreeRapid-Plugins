@@ -144,7 +144,7 @@ class CbsFileRunner extends AbstractRtmpRunner {
     }
 
     private boolean isSubtitle(String fileURL) {
-        return fileURL.contains("/videos/captions/");
+        return fileURL.contains("/videos/captions/") || fileURL.contains("/closedcaption/");
     }
 
     private void queueSubtitle(String subtitleUrl) throws Exception {

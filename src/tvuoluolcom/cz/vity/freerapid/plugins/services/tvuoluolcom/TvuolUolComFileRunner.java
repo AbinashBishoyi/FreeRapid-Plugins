@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -27,19 +26,19 @@ class TvuolUolComFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span class=\"fn\">", "</span>");
-        httpFile.setFileName(httpFile.getFileName() + ".mp4");
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<span class=\"fn\">", "</span>");
+        httpFile.setFileName(name + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -47,11 +46,10 @@ class TvuolUolComFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            final String contentAsString = getContentAsString();
             checkProblems();
-            checkNameAndSize(contentAsString);
+            checkNameAndSize();
 
             final Matcher mediaIdMatcher = getMatcherAgainstContent("\"mediaId\"\\s*:(.+?),");
             if (!mediaIdMatcher.find()) {
@@ -65,7 +63,7 @@ class TvuolUolComFileRunner extends AbstractRunner {
             }
             final String player = playerMatcher.group(1).trim().replace("\"", "");
 
-            HttpMethod httpMethod = getMethodBuilder()
+            method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://mais.uol.com.br/apiuol/player/media.js")
                     .setParameter("mediaId", mediaId)
@@ -73,7 +71,7 @@ class TvuolUolComFileRunner extends AbstractRunner {
                     .setParameter("action", "showPlayer")
                     .setParameter("types", "V")
                     .toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
+            if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
@@ -81,7 +79,7 @@ class TvuolUolComFileRunner extends AbstractRunner {
             logger.info(getContentAsString());
 
             final String videoURL = getVideoURL();
-            httpMethod = getMethodBuilder()
+            method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(videoURL)
                     .setParameter("ver", "1")
@@ -89,7 +87,7 @@ class TvuolUolComFileRunner extends AbstractRunner {
                     .toGetMethod();
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
 
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
@@ -99,14 +97,14 @@ class TvuolUolComFileRunner extends AbstractRunner {
         }
     }
 
-    private String getVideoURL() {
+    private String getVideoURL() throws ErrorDuringDownloadingException {
         //2  : 640x360
         //5  : 1280x720
         //6  : 426x240
         //7  : 1920x1080
         //8  : 256x144
         //9  : 568x320
-        final Matcher videoMatcher = getMatcherAgainstContent("\\{\"id\":(\\d+),\"url\":\"(.+?)\"\\}");
+        final Matcher videoMatcher = getMatcherAgainstContent("\\{\"id\":(\\d+),.*?\"url\":\"(.+?)\"\\}");
         final SortedMap<Integer, String> videoMap = new TreeMap<Integer, String>();
         while (videoMatcher.find()) {
             final int formatId = Integer.parseInt(videoMatcher.group(1).trim());
@@ -134,6 +132,9 @@ class TvuolUolComFileRunner extends AbstractRunner {
                     break;
             }
         }
+        if (videoMap.isEmpty()) {
+            throw new PluginImplementationException("No streams found");
+        }
         if (videoMap.lastKey() == 0) {
             logger.warning("Unknown video dimension is selected : " + videoMap.get(videoMap.lastKey()));
         }
@@ -141,8 +142,8 @@ class TvuolUolComFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("O vídeo não foi encontrado")) {
+        if (getContentAsString().contains("O vídeo não foi encontrado")
+                || getContentAsString().contains("Falha no carregamento")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

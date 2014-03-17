@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://tvuol.uol.com.br/assistir.htm?video=confira-os-destaques-do-festival-de-musica-eletronica-sonar-04024E993464D0B92326&orderBy=mais-recentes&edFilter=all&time=all&currentPage=1")); //HD
+            httpFile.setNewURL(new URL("http://tvuol.uol.com.br/assistir.htm?currentPage=1&tagIds=3173&time=all&orderBy=mais-recentes&edFilter=editorial&discard_cache=true&video=cientistas-testam-se-e-possivel-fabricar-diamantes-em-casa-04028C1C3470D4994326"));
             //httpFile.setNewURL(new URL("http://tvuol.uol.com.br/assistir.htm?video=auto-cruze-hatch-aposta-nos-mais-exigentes-04024D1A356EC0C12326&tagIds=31909&orderBy=mais-recentes&edFilter=editorial&time=all&currentPage=1")); //HD
             //httpFile.setNewURL(new URL("http://tvuol.uol.com.br/assistir.htm?video=making-of-do-ensaio-da-exbbb-laisa-para-a-playboy-em-2011-04020D183072D0B12326"));
             //httpFile.setNewURL(new URL("http://tvuol.uol.com.br/assistir.htm?video=mulher-fica-nua-em-canteiro-da-br101-em-vitoria-04024D1A396EC0C12326"));

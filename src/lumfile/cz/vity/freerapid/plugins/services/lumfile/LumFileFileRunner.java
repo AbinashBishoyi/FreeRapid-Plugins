@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -21,6 +22,21 @@ class LumFileFileRunner extends XFileSharingRunner {
         fileSizeHandlers.add(0, new LumFileFileSizeHandler());
         return fileSizeHandlers;
     }
+
+    @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("LumFile Download Manager");
+        return downloadPageMarkers;
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "product_download_url=(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
+        return downloadLinkRegexes;
+    }
+
 
     @Override
     protected void checkFileProblems() throws ErrorDuringDownloadingException {
@@ -38,6 +54,8 @@ class LumFileFileRunner extends XFileSharingRunner {
                 content.contains("This file is available for Premium Users only")) {
             throw new NotRecoverableDownloadException("File is only for premium users");
         }
+        if (content.contains("no more than  files per day"))
+            throw new NotRecoverableDownloadException("Daily download limit reached");
         super.checkDownloadProblems();
     }
 }

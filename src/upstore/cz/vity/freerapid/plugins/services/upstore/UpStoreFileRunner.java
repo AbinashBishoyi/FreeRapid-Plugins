@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -22,6 +23,7 @@ class UpStoreFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception { //this method validates file
+        addCookie(new Cookie(".upstore.net", "lang", "en", "/", 86400, false));
         if (fileURL.contains("upsto.re/")) fileURL = fileURL.replace("upsto.re/", "upstore.net/");
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
@@ -45,6 +47,7 @@ class UpStoreFileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
+        addCookie(new Cookie(".upstore.net", "lang", "en", "/", 86400, false));
         if (fileURL.contains("upsto.re/")) fileURL = fileURL.replace("upsto.re/", "upstore.net/");
         super.run();
         logger.info("Starting download in TASK " + fileURL);

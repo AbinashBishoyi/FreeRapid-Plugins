@@ -1,14 +1,17 @@
 package cz.vity.freerapid.plugins.services.zshare;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.io.IOException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -137,7 +140,7 @@ class ZShareRunner extends AbstractRunner {
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL");
         }
-        return mURL;
+        return tURL;
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
@@ -145,11 +148,12 @@ class ZShareRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
         }
     }
-    
+
     /**
      * This will find out the hidden URL stored in the .html page.
      * Generally ZShare displays the hidden links after 20 secs.
      * Using this we can find out the hidden link and can save that 20 secs of time.
+     *
      * @param link
      * @return
      * @throws java.lang.Exception

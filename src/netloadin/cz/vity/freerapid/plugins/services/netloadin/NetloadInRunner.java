@@ -26,8 +26,7 @@ class NetloadInRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             if (!getContentAsString().contains("Netload")) {
                 logger.warning(getContentAsString());
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
@@ -37,8 +36,10 @@ class NetloadInRunner extends AbstractRunner {
                 throw new URLNotAvailableAnymoreException(String.format("<b>Requested file isn't hosted. Probably was deleted.</b>"));
             }
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else
+        } else {
+            checkProblems();
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        }
     }
 
 
@@ -165,11 +166,12 @@ class NetloadInRunner extends AbstractRunner {
             final int time = Integer.parseInt(matcher.group(1)) / 6000;
             throw new YouHaveToWaitException(String.format("<b> You could download your next file in %s minutes", time), time * 60);
         }
-        matcher = getMatcherAgainstContent("Sorry, we don't host the requested file");
-        if (matcher.find()) {
+        if (getContentAsString().contains("Sorry, we don't host the requested file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Requested file isn't hosted. Probably was deleted.</b>"));
         }
-
+        if (getContentAsString().contains("currently in maintenance work")) {
+            throw new ServiceConnectionProblemException("This Server is currently in maintenance work. Please try it in a few hours again.");
+        }
     }
 
 }

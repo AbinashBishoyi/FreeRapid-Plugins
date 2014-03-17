@@ -46,7 +46,7 @@ class WatFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems(method);
             checkNameAndSize();
-            final String id = PlugUtils.getStringBetween(getContentAsString(), "/swf2/188507nIc0K11", "\"");
+            final String id = PlugUtils.getStringBetween(getContentAsString(), "id=\"media\" value=\"", "\"");
             final String url = "/webhd/" + id;
             method = getMethodBuilder()
                     .setAction("/get" + url)

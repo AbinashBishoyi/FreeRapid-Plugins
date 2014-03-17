@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class DepositFilesShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "depositfiles.com";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }

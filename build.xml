@@ -172,6 +172,7 @@
         <ant dir="${src.dir}/superfastfile/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/imzupload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/megasharevn/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/mega1280/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

@@ -35,22 +35,21 @@ class DepositFilesRunner {
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
 
-            Matcher matcher = Pattern.compile("<b>([0-9.]+&nbsp;.B)</b>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = PlugUtils.matcher("<b>([0-9.]+&nbsp;.B)</b>", client.getContentAsString());
             if (matcher.find()) {
                 logger.info("File size " + matcher.group(1));
                 httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
             }
-            matcher = Pattern.compile("class\\=\"info[^=]*\\=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = PlugUtils.matcher("class\\=\"info[^=]*\\=\"([^\"]*)\"", client.getContentAsString());
             if (matcher.find()) {
                 final String fn = matcher.group(1);
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
             } else logger.warning("File name was not found" + client.getContentAsString());
 
-            matcher = Pattern.compile("Free downloading mode", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (!matcher.find()) {
+            if (!client.getContentAsString().contains("Free downloading mode")) {
 
-                matcher = Pattern.compile("form action=\\\"([^l\\\"]*[^o\\\"]*[^g\\\"]*)\\\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+                matcher = PlugUtils.matcher("form action=\\\"([^h\\\"][^t\\\"][^t\\\"][^p\\\"][^\\\"]*)\\\"", client.getContentAsString());
                 if (!matcher.find()) {
                     checkProblems();
                     logger.warning(client.getContentAsString());
@@ -70,7 +69,7 @@ class DepositFilesRunner {
 
             }
             //        <span id="download_waiter_remain">60</span>
-            matcher = Pattern.compile("download_waiter_remain\">([0-9]+)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = PlugUtils.matcher("download_waiter_remain\">([0-9]+)", client.getContentAsString());
             if (!matcher.find()) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
@@ -83,7 +82,7 @@ class DepositFilesRunner {
                 throw new InterruptedException();
 
 
-            matcher = Pattern.compile("form action=\"([^\"]*)\" method=\"get\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = PlugUtils.matcher("form action=\"([^\"]*)\" method=\"get\"", client.getContentAsString());
             if (matcher.find()) {
                 t = matcher.group(1);
                 logger.info("Download URL: " + t);
@@ -123,22 +122,21 @@ class DepositFilesRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = Pattern.compile("already downloading", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
+        String content = client.getContentAsString();
+        if (content.contains("already downloading")) {
             throw new ServiceConnectionProblemException(String.format("<b>Your IP is already downloading a file from our system.</b><br>You cannot download more than one file in parallel."));
         }
-        matcher = Pattern.compile("Please try in\\s*([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(client.getContentAsString());
+        matcher = Pattern.compile("Please try in\\s*([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
         if (matcher.find()) {
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 + 20);
         }
 
-        matcher = Pattern.compile("slots[^<]*busy", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = PlugUtils.matcher("slots[^<]*busy", content);
         if (matcher.find()) {
             throw new ServiceConnectionProblemException(String.format("<b>All downloading slots for your country are busy</b><br>"));
 
         }
-        matcher = Pattern.compile("file does not exist", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
+        if (content.contains("file does not exist")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
 
         }

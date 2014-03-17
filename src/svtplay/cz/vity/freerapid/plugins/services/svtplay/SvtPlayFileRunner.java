@@ -38,17 +38,8 @@ class SvtPlayFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("<title>\\s*(.+?)\\s*\\| SVT Play\\s*</title>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Show name not found");
-        }
-        final String showName = PlugUtils.unescapeHtml(matcher.group(1));
-        matcher = getMatcherAgainstContent("</span>\\s*<h2>(.+?)</h2>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Episode name not found");
-        }
-        final String episodeName = PlugUtils.unescapeHtml(matcher.group(1));
-        httpFile.setFileName(showName + " - " + episodeName + ".flv");
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<title>", "| SVT Play</title>");
+        httpFile.setFileName(PlugUtils.unescapeHtml(name) + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -56,12 +47,19 @@ class SvtPlayFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
-            final RtmpSession rtmpSession = getRtmpSession();
-            tryDownloadAndSaveFile(rtmpSession);
+            setFileStreamContentTypes(new String[0], new String[]{"application/json"});
+            method = getGetMethod("http://www.svtplay.se/video/" + getIdFromUrl() + "?output=json");
+            if (makeRedirectedRequest(method)) {
+                final RtmpSession rtmpSession = getRtmpSession();
+                tryDownloadAndSaveFile(rtmpSession);
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -69,47 +67,36 @@ class SvtPlayFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("som du försöker nå saknas")
-                || getContentAsString().contains("som du f&ouml;rs&ouml;ker n&aring; saknas")) {
+        if (getContentAsString().contains("sidan finns inte")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
+    private String getIdFromUrl() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("/video/(\\d+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing file URL");
+        }
+        return matcher.group(1);
+    }
+
     private RtmpSession getRtmpSession() throws ErrorDuringDownloadingException {
-        final String[] dynamicStreamStrings = PlugUtils.getStringBetween(getContentAsString(), "dynamicStreams=", "&amp;").split("\\|");
-        if (dynamicStreamStrings.length == 0) {
+        final List<Stream> list = new LinkedList<Stream>();
+        final Matcher matcher = getMatcherAgainstContent("\"url\":\"([^\"]+)\",\"bitrate\":(\\d+),\"playerType\":\"flash\"");
+        while (matcher.find()) {
+            list.add(new Stream(matcher.group(1), Integer.parseInt(matcher.group(2))));
+        }
+        if (list.isEmpty()) {
             throw new PluginImplementationException("No streams found");
         }
-        final List<Stream> dynamicStreams = new LinkedList<Stream>();
-        for (final String s : dynamicStreamStrings) {
-            logger.info(s);
-            dynamicStreams.add(Stream.parse(s));
-        }
-        return Collections.min(dynamicStreams).getRtmpSession();
+        return Collections.max(list).getRtmpSession();
     }
 
     private static class Stream implements Comparable<Stream> {
         private final String url;
         private final int bitrate;
 
-        public static Stream parse(final String properties) throws ErrorDuringDownloadingException {
-            String url = null;
-            int bitrate = -1;
-            for (final String property : properties.split(",")) {
-                if (property.startsWith("url:")) {
-                    url = property.substring("url:".length());
-                } else if (property.startsWith("bitrate:")) {
-                    bitrate = Integer.parseInt(property.substring("bitrate:".length()));
-                }
-            }
-            if (url == null || bitrate == -1) {
-                logger.warning(properties);
-                throw new PluginImplementationException("Error parsing stream parameters");
-            }
-            return new Stream(url, bitrate);
-        }
-
-        private Stream(final String url, final int bitrate) {
+        public Stream(final String url, final int bitrate) {
             this.url = url;
             this.bitrate = bitrate;
         }
@@ -132,7 +119,7 @@ class SvtPlayFileRunner extends AbstractRtmpRunner {
 
         @Override
         public int compareTo(final Stream that) {
-            return Integer.valueOf(that.bitrate).compareTo(this.bitrate);
+            return Integer.valueOf(this.bitrate).compareTo(that.bitrate);
         }
     }
 

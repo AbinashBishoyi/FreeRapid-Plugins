@@ -55,7 +55,7 @@ class YouTubeFileRunner extends AbstractRunner {
             
             String fmt_url_map=PlugUtils.getStringBetween(getContentAsString(), "\"fmt_url_map\": \"", "\"");
             fmt_url_map=URLDecoder.decode(fmt_url_map,"UTF-8");            
-            Matcher matcher = PlugUtils.matcher(""+fmt+"\\|(http[^\\|]+)(,[0-9]+\\||$)",fmt_url_map);
+            Matcher matcher = PlugUtils.matcher(","+fmt+"\\|(http[^\\|]+)(,[0-9]+\\||$)",","+fmt_url_map);
 
             if (matcher.find()) {
                 client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);

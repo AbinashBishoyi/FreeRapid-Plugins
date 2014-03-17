@@ -2,21 +2,23 @@ package cz.vity.freerapid.plugins.services.imzupload;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 
 /**
  * Class that provides basic info about plugin
  *
  * @author Vity
  */
-public class ImzUploadServiceImpl extends AbstractFileShareService {
+public class ImzUploadServiceImpl extends XFileSharingServiceImpl {
 
-    public String getName() {
-        return "imzupload.com";
+    @Override
+    public String getServiceTitle() {
+        return "ImzUpload";
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;//ok
+    public String getName() {
+        return "imzupload.com";
     }
 
     @Override

@@ -61,22 +61,29 @@ class KeyCaptchaClient {
         }
     }
 
-    public HttpMethod getResult(final List<Point> pieceLocations) throws Exception {
+    public HttpMethod getResult(final List<Point> pieceLocations, final List<Point> mouseLocations) throws Exception {
         try {
             final String webServerSignParam = parameters.get("s_s_c_web_server_sign");
-            final String js1Url = responseUrl.substring(0, responseUrl.indexOf('/', "https://".length()))
-                    + "/swfs/mm?pS=" + KeyCaptchaCrypt.encrypt(webServerSignParam, webServerSignParam + "02njhd8322")
-                    + "&cP=" + sscGetParams()
+            final String js1Url = responseUrl + "/swfs/mm?pS="
+                    + KeyCaptchaCrypt.encrypt(webServerSignParam, webServerSignParam + "Khd21M47")
+                    + "&cP=" + sscGetParams("")
                     + "&mms=" + Math.random()
                     + "&r=" + Math.random();
             client.makeRequest(client.getGetMethod(js1Url), true);
-
-            final String js2Url = responseUrl + createResponse(pieceLocations) + "&cP=" + sscGetParams();
-            client.makeRequest(client.getGetMethod(js2Url), true);
-
-            final Matcher matcher = PlugUtils.matcher("s_s_c_setcapvalue\\(\\s*\"(.+?)\"", client.getContentAsString());
+            Matcher matcher = PlugUtils.matcher("\\|(.+?)'\\.split", client.getContentAsString());
             if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing KeyCaptcha server response");
+                throw new PluginImplementationException("Error parsing KeyCaptcha server response (1)");
+            }
+
+            parameters.put("extra", "2813d567024c09716fa4b1244a98b7c7");
+            final String js2Url = responseUrl + "/swfs/cjs?pS=123&cOut="
+                    + KeyCaptchaCrypt.encrypt(createResponse(pieceLocations), matcher.group(1))
+                    + "..." + createResponse(mouseLocations)
+                    + "&cP=" + sscGetParams("");
+            client.makeRequest(client.getGetMethod(js2Url), true);
+            matcher = PlugUtils.matcher("s_s_c_setcapvalue\\(\\s*\"(.+?)\"", client.getContentAsString());
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error parsing KeyCaptcha server response (2)");
             }
             final String result = matcher.group(1);
             checkResponse(result);
@@ -87,18 +94,19 @@ class KeyCaptchaClient {
         }
     }
 
-    private String createResponse(final List<Point> pieceLocations) {
+    private String createResponse(final List<Point> points) {
         final StringBuilder sb = new StringBuilder();
-        for (final Point point : pieceLocations) {
+        for (final Point point : points) {
             sb.append(point.x).append('.').append(point.y).append('.');
         }
-        return sb.deleteCharAt(sb.length() - 1).toString();
+        sb.setLength(sb.length() - 1);
+        return sb.toString();
     }
 
     private void checkResponse(final String result) {
         final String[] split = result.split("\\|");
         if (split.length != 5) {
-            logger.info("Unable to parse captcha response");
+            logger.warning("Unable to parse captcha response: " + result);
         } else {
             if ("1".equals(split[4])) {
                 logger.info("Correct captcha answer");
@@ -109,7 +117,7 @@ class KeyCaptchaClient {
     }
 
     private String findFormContent(final String pageContent) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("(?s)(<form.+?</form>)", pageContent);
+        final Matcher matcher = PlugUtils.matcher("(?s)(<form\\b.+?</form>)", pageContent);
         while (matcher.find()) {
             final String formContent = matcher.group(1);
             if (formContent.contains("var s_s_c_")) {
@@ -121,26 +129,32 @@ class KeyCaptchaClient {
 
     private void loadPagesAndPopulateParameters(final String formContent, final String pageUrl) throws Exception {
         findParameters(formContent);
-        parameters.put("pageUrl", URLEncoder.encode(pageUrl.split("#")[0], "UTF-8"));
+        parameters.put("pageUrl", pageUrl.split("#")[0]);
 
         final String js1Url = findString("<script [^<>]+?src=['\"](.+?)['\"]", "script 1 URL", formContent);
         client.makeRequest(client.getGetMethod(js1Url), true);
 
         final String js2Url = findString("var _13=\"(.+?)\"", "script 2 URL", client.getContentAsString())
-                + parameters.get("s_s_c_user_id") + "&u=" + parameters.get("pageUrl") + "&r=" + Math.random();
+                + parameters.get("s_s_c_user_id")
+                + "&u=" + URLEncoder.encode(parameters.get("pageUrl"), "UTF-8")
+                + "&r=" + Math.random();
         client.makeRequest(client.getGetMethod(js2Url), true);
 
         parameters.put("s_s_c_web_server_sign4",
                 findString("s_s_c_web_server_sign4=\"(.+?)\";", "parameter 4", client.getContentAsString()));
+        parameters.put("extra",
+                findString("s_s_c_check_process\\)\\{\\s*return \"(.+?)\"", "extra parameter", client.getContentAsString()));
 
+        final String extra2 = findString("dn3iufwwoi4=\"(.+?)\"", "js3 extra2 parameter", client.getContentAsString());
         final String js3Url = findString("\"src\",\"(.+?)\"", "script 3 URL", client.getContentAsString())
-                + sscGetParams() + "&r=" + Math.random();
+                + sscGetParams("|" + extra2) + "&r=" + Math.random();
         client.makeRequest(client.getGetMethod(js3Url), true);
 
         parameters.put("s_s_c_web_server_sign3",
                 findString("s_s_c_setnewws\\(\"(.+?)\"", "parameter 3", client.getContentAsString()));
 
         responseUrl = findString("setAttribute\\('src','(.+?)'", "response URL", client.getContentAsString());
+        responseUrl = responseUrl.substring(0, responseUrl.indexOf('/', "https://".length()));
         responseMethodBuilder = new MethodBuilder(formContent, client)
                 .setReferer(pageUrl)
                 .setBaseURL(pageUrl.substring(0, pageUrl.indexOf('/', "https://".length()) + 1))
@@ -169,7 +183,7 @@ class KeyCaptchaClient {
         return matcher.group(1);
     }
 
-    private String sscGetParams() throws Exception {
+    private String sscGetParams(final String extra) throws Exception {
         return URLEncoder.encode(
                 getParam("s_s_c_user_id") + '|'
                         + getParam("pageUrl") + '|'
@@ -180,7 +194,7 @@ class KeyCaptchaClient {
                         + getParam("s_s_c_web_server_sign2") + '|'
                         + getParam("s_s_c_web_server_sign3") + '|'
                         + getParam("s_s_c_web_server_sign4")
-                        + "|1|25dc2223e02daffa61bfb7df7db93e1d|561cd5b30b488b9b232e5e5fb37824e9f956d1a2"
+                        + "|1|" + getParam("extra") + extra
                 , "UTF-8");
     }
 

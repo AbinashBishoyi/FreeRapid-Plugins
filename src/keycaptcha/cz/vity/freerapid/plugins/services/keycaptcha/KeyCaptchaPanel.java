@@ -7,6 +7,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -40,10 +41,17 @@ class KeyCaptchaPanel extends JPanel {
         return keyCaptchaComponent.getPieceLocations();
     }
 
+    public List<Point> getMouseLocations() {
+        return keyCaptchaComponent.getMouseLocations();
+    }
+
     private static class KeyCaptchaComponent extends JComponent implements MouseListener, MouseMotionListener {
 
         private final KeyCaptchaImages images;
         private final List<Point> pieceLocations;
+
+        private final LinkedList<Point> mouseLocations = new LinkedList<Point>();
+        private long lastMouseLogTime;
 
         private Point dragLocation = null;
         private int pieceBeingDragged = -1;
@@ -64,6 +72,10 @@ class KeyCaptchaPanel extends JPanel {
 
         public List<Point> getPieceLocations() {
             return pieceLocations;
+        }
+
+        public List<Point> getMouseLocations() {
+            return mouseLocations;
         }
 
         @Override
@@ -135,6 +147,7 @@ class KeyCaptchaPanel extends JPanel {
 
         @Override
         public void mouseDragged(final MouseEvent e) {
+            logMouseLocation(e.getPoint());
             if (dragLocation != null) {
                 final Point eventLocation = e.getPoint();
                 final int x = eventLocation.x - dragLocation.x;
@@ -154,6 +167,24 @@ class KeyCaptchaPanel extends JPanel {
         }
 
         @Override
+        public void mouseMoved(final MouseEvent e) {
+            logMouseLocation(e.getPoint());
+        }
+
+        private void logMouseLocation(final Point p) {
+            if (System.currentTimeMillis() > lastMouseLogTime + 1000) {
+                lastMouseLogTime = System.currentTimeMillis();
+                p.translate(465, 264);
+                if (mouseLocations.isEmpty() || !mouseLocations.getLast().equals(p)) {
+                    mouseLocations.add(p);
+                    if (mouseLocations.size() > 40) {
+                        mouseLocations.removeFirst();
+                    }
+                }
+            }
+        }
+
+        @Override
         public void mouseClicked(final MouseEvent e) {
         }
 
@@ -163,10 +194,6 @@ class KeyCaptchaPanel extends JPanel {
 
         @Override
         public void mouseExited(final MouseEvent e) {
-        }
-
-        @Override
-        public void mouseMoved(final MouseEvent e) {
         }
 
     }

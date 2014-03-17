@@ -2,7 +2,10 @@ package cz.vity.freerapid.plugins.services.rapidgator;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.solvemediacaptcha.SolveMediaCaptcha;
-import cz.vity.freerapid.plugins.webclient.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -44,7 +47,7 @@ class RapidGatorFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final String filenameRegexRule = "Downloading:\\s*</strong>\\s*<a.+?>\\s*(\\S+)\\s*</a>\\s*</p>";
+        final String filenameRegexRule = "Downloading:\\s*</strong>\\s*<a.+?>\\s*(\\S+)\\s*</a>";
         final String filesizeRegexRule = "File size:\\s*<strong>(.+?)</strong>";
         final Matcher filenameMatcher = PlugUtils.matcher(filenameRegexRule, content);
         if (filenameMatcher.find()) {

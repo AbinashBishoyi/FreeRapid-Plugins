@@ -34,7 +34,7 @@ class RapidGatorFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
-        final String filenameRegexRule = "Downloading:\\s*</strong>\\s*<a.+?>\\s*(\\S+)\\s*</a>\\s*</p>";
+        final String filenameRegexRule = "Downloading:\\s*</strong>\\s*<a.+?>\\s*(\\S+)\\s*</a>";
         final String filesizeRegexRule = "File size:\\s*<strong>(.+?)</strong>";
 
         final Matcher filenameMatcher = PlugUtils.matcher(filenameRegexRule, content);

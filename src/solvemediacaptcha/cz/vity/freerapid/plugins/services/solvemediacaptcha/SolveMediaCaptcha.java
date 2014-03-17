@@ -44,11 +44,14 @@ public class SolveMediaCaptcha {
 
         Matcher matcher;
         if (theme.equals(THEME_UNDEFINED)) {
-            matcher = Pattern.compile("var ACPuzzleOptions = \\{.*?theme:\\s*'(.+?)'", Pattern.DOTALL).matcher(client.getContentAsString());
-            if (!matcher.find()) {
-                theme = "white";
-            } else {
-                theme = matcher.group(1);
+            theme = "white";
+            try {
+                matcher = Pattern.compile("var ACPuzzleOptions = \\{.*?theme:\\s*'(.+?)'", Pattern.DOTALL).matcher(client.getContentAsString());
+                if (matcher.find()) {
+                    theme = matcher.group(1);
+                }
+            } catch (Exception e) {
+                //
             }
         }
 

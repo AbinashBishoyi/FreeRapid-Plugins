@@ -34,8 +34,8 @@ public class TestApp extends PluginDevApplication {
             logger.info(client.getContentAsString());
             */
 
-            //final SolveMediaCaptcha captcha = new SolveMediaCaptcha("a9P0IXFCBW4I3MBD6jhOqaI2-tG7KEKl", client, captchaSupport, false, "red");
-            final SolveMediaCaptcha captcha = new SolveMediaCaptcha("hfwE8LDc6hPLdz4l4YEntxhGqF.XDx7B", client, captchaSupport, true, "custom");
+            final SolveMediaCaptcha captcha = new SolveMediaCaptcha("a9P0IXFCBW4I3MBD6jhOqaI2-tG7KEKl", client, captchaSupport, false, "red");
+            //final SolveMediaCaptcha captcha = new SolveMediaCaptcha("hfwE8LDc6hPLdz4l4YEntxhGqF.XDx7B", client, captchaSupport, true, "custom");
             //final SolveMediaCaptcha captcha = new SolveMediaCaptcha("oy3wKTaFP368dkJiGUqOVjBR2rOOR7GR", client, captchaSupport);
         } catch (final Exception e) {
             e.printStackTrace();

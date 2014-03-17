@@ -205,6 +205,9 @@
         <ant dir="${src.dir}/multishare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/x7/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/hulkshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/cryptit/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/securedin/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/protectlinks/" antfile="build.xml" inheritall="false"/>
 
     </target>
 

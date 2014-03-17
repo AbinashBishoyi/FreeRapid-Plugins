@@ -27,6 +27,7 @@ class NetloadInRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             if (!getContentAsString().contains("Netload")) {
                 logger.warning(getContentAsString());
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
@@ -48,7 +49,6 @@ class NetloadInRunner extends AbstractRunner {
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
             do {
                 stepEnterPage(getContentAsString());
@@ -160,7 +160,10 @@ class NetloadInRunner extends AbstractRunner {
         return false;
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("This file is secured with a password!")) {
+            throw new NotRecoverableDownloadException("This file is secured with a password!");
+        }
         Matcher matcher;
         matcher = getMatcherAgainstContent("You could download your next file in.*countdown\\(([0-9]+)");
         if (matcher.find()) {

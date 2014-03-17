@@ -4,15 +4,12 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, ntoskrnl
@@ -25,9 +22,10 @@ class UploadedToRunner extends AbstractRunner {
         super.runCheck();
         addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
         addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            checkSizeAndName(getContentAsString());
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkSizeAndName();
+            checkProblems();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -40,35 +38,46 @@ class UploadedToRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
         addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            final String contentAsString = getContentAsString();
-            checkSizeAndName(contentAsString);
-
-            //they usually redirect
-            fileURL = getMethod.getURI().toString();
-
-            Matcher matcher = PlugUtils.matcher("var secs = ([0-9]+);", contentAsString);
-            if (!matcher.find()) {
-                if (contentAsString.contains("is exceeded")) {
-                    matcher = PlugUtils.matcher("wait ([0-9]+) minute", contentAsString);
-                    if (matcher.find()) {
-                        Integer waitMinutes = Integer.valueOf(matcher.group(1));
-                        if (waitMinutes == 0)
-                            waitMinutes = 1;
-                        throw new YouHaveToWaitException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!", (waitMinutes * 60));
-                    }
-                    throw new YouHaveToWaitException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!", 60);
-                } else if (contentAsString.contains("File doesn")) {
-                    throw new URLNotAvailableAnymoreException("<b>Uploaded.to error:</b><br>File doesn't exist");
+            checkSizeAndName();
+            fileURL = method.getURI().toString();
+            final String fileId = getFileId();
+            final int wait = PlugUtils.getNumberBetween(getContentAsString(), "<span>", "</span> seconds");
+            setFileStreamContentTypes(new String[0], new String[]{"application/javascript"});
+            method = getGetMethod("http://uploaded.to/io/ticket/slot/" + fileId);
+            if (makeRedirectedRequest(method)) {
+                if (getContentAsString().contains("err:")) {
+                    throw new ServiceConnectionProblemException("All download slots are full");
                 }
-                throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-            }
-            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
-
-            while (!tryDownloadAndSaveFile(stepCaptcha())) {
+                downloadTask.sleep(wait + 1);
+                while (true) {
+                    if (!makeRedirectedRequest(stepCaptcha(fileId))) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                    if (!getContentAsString().contains("err:\"captcha")) {
+                        if (getContentAsString().contains("limit-dl")) {
+                            throw new ServiceConnectionProblemException("Free download limit reached");
+                        }
+                        if (getContentAsString().contains("limit-parallel")) {
+                            throw new ServiceConnectionProblemException("You are already downloading a file");
+                        }
+                        if (getContentAsString().contains("limit-size")) {
+                            throw new NotRecoverableDownloadException("Only premium users may download files larger than 1 GB");
+                        }
+                        method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("url:'", "'").toGetMethod();
+                        if (!tryDownloadAndSaveFile(method)) {
+                            checkProblems();
+                            throw new ServiceConnectionProblemException("Error starting download");
+                        }
+                        break;
+                    }
+                }
+            } else {
                 checkProblems();
+                throw new ServiceConnectionProblemException();
             }
         } else {
             checkProblems();
@@ -76,68 +85,52 @@ class UploadedToRunner extends AbstractRunner {
         }
     }
 
-    private void checkSizeAndName(String content) throws Exception {
-        if (!content.contains("uploaded.to")) {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+    private void checkSizeAndName() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.to</title>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name/size not found");
         }
-        if (content.contains("File doesn")) {
-            throw new URLNotAvailableAnymoreException("<b>Uploaded.to error:</b><br>File doesn't exist");
-        }
-
-        Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
-        if (matcher.find()) {
-            final String fileSize = matcher.group(1);
-            logger.info("File size " + fileSize);
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-        }
-
-        matcher = Pattern.compile("Filename: &nbsp;</td><td><b>(.*?)</b></td></tr>", Pattern.DOTALL).matcher(content);
-        if (matcher.find()) {
-            String fn = matcher.group(1).trim();
-            matcher = PlugUtils.matcher("Filetype: &nbsp;</td><td>(\\S*)</td></tr>", content);
-            if (matcher.find()) {
-                fn = fn + matcher.group(1);
-            }
-            logger.info("File name '" + fn + "'");
-            httpFile.setFileName(fn);
-        } else logger.warning("File name was not found" + content);
-
+        httpFile.setFileName(matcher.group(1));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-
     }
 
-
-    private void checkProblems() throws ServiceConnectionProblemException {
-        if (getContentAsString().contains("already downloading")) {
-            throw new ServiceConnectionProblemException(String.format("<b>Uploaded.to Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("Page not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (getContentAsString().contains("The internal connection has failed")) {
-            throw new ServiceConnectionProblemException(String.format("<b>Uploaded.to Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
+        if (getContentAsString().contains("Our service is currently unavailable in your country")) {
+            throw new NotRecoverableDownloadException("Our service is currently unavailable in your country");
+        }
+        if (getContentAsString().contains("already downloading") || getContentAsString().contains("The internal connection has failed")) {
+            throw new ServiceConnectionProblemException("Your IP address is already downloading a file");
         }
         if (getContentAsString().contains("Currently a lot of users")) {
-            throw new ServiceConnectionProblemException(String.format("<b>Uploaded to Error:</b><br>Currently a lot of users are downloading files."));
+            throw new ServiceConnectionProblemException("Currently a lot of users are downloading files");
         }
         if (getContentAsString().contains("can only be queried by premium users")) {
-            throw new ServiceConnectionProblemException(String.format("The file status can only be queried by premium users"));
+            throw new ServiceConnectionProblemException("The file status can only be queried by premium users");
         }
     }
 
-    private HttpMethod stepCaptcha() throws Exception {
-        MethodBuilder request = getMethodBuilder()
-                .setReferer(fileURL)
-                .setBaseURL(fileURL)
-                .setActionFromFormByName("download_form", true);
+    private String getFileId() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("/file/([^/]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing file URL");
+        }
+        return matcher.group(1);
+    }
 
-        Matcher m = getMatcherAgainstContent("/noscript\\?k=([^\"]+)\"");
-        if (!m.find()) throw new PluginImplementationException("ReCaptcha key not found");
-
-        ReCaptcha r = new ReCaptcha(m.group(1), client);
-        String imageURL = r.getImageURL();
-        String captcha = getCaptchaSupport().getCaptcha(imageURL);
-        if (captcha == null) throw new CaptchaEntryInputMismatchException();
+    private HttpMethod stepCaptcha(final String fileId) throws Exception {
+        final ReCaptcha r = new ReCaptcha("6Lcqz78SAAAAAPgsTYF3UlGf2QFQCNuPMenuyHF3", client);
+        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        }
         r.setRecognized(captcha);
-
-        return r.modifyResponseMethod(request).toPostMethod();
+        return r.modifyResponseMethod(
+                getMethodBuilder().setReferer(fileURL).setAction("http://uploaded.to/io/ticket/captcha/" + fileId)
+        ).toPostMethod();
     }
 
 }

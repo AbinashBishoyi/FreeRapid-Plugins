@@ -7,10 +7,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -23,9 +20,10 @@ public final class ContainerPluginImpl extends ContainerPlugin {
     private final static List<String[]> SUPPORTED_FILES_LIST;
 
     static {
-        SUPPORTED_FILES = new LinkedHashMap<String[], Class<? extends ContainerFormat>>(5, 1.0f);
+        SUPPORTED_FILES = new LinkedHashMap<String[], Class<? extends ContainerFormat>>(6, 1.0f);
         SUPPORTED_FILES.put(Txt.getSupportedFiles(), Txt.class);
         SUPPORTED_FILES.put(Ccf.getSupportedFiles(), Ccf.class);
+        SUPPORTED_FILES.put(Cdd.getSupportedFiles(), Cdd.class);
         SUPPORTED_FILES.put(Dlc.getSupportedFiles(), Dlc.class);
         SUPPORTED_FILES.put(Jdc.getSupportedFiles(), Jdc.class);
         SUPPORTED_FILES.put(Rsdf.getSupportedFiles(), Rsdf.class);
@@ -78,13 +76,13 @@ public final class ContainerPluginImpl extends ContainerPlugin {
     }
 
     private static String getFileExt(final String format) {
-        return format.substring(format.lastIndexOf('.') + 1);
+        return format.substring(format.lastIndexOf('.') + 1).toLowerCase(Locale.ENGLISH);
     }
 
     private ContainerFormat getHandler(final String format) throws Exception {
         for (final Map.Entry<String[], Class<? extends ContainerFormat>> entry : SUPPORTED_FILES.entrySet()) {
             for (final String s : entry.getKey()) {
-                if (s.equalsIgnoreCase(format)) {
+                if (s.equals(format)) {
                     try {
                         return entry.getValue().getConstructor(ContainerPlugin.class).newInstance(this);
                     } catch (Exception e) {

@@ -7,7 +7,6 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.jdesktop.application.Application;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.logging.Logger;
@@ -18,7 +17,7 @@ import java.util.logging.Logger;
 public final class TestApp extends PluginDevApplication {
     private final static Logger logger = Logger.getLogger(TestApp.class.getName());
 
-    private final static String FILE = "E:\\Apps\\CryptLoad\\cont\\test.jdc";
+    private final static String FILE = "E:\\Apps\\CryptLoad\\settings\\load.cdd";
     private final static String FILE2 = "C:\\Users\\Administrator\\Desktop\\test2.jdc";
 
     @Override
@@ -32,11 +31,11 @@ public final class TestApp extends PluginDevApplication {
             for (final FileInfo file : list) {
                 logger.info(file.getFileUrl().toString());
             }
-            plugin.write(list, new FileOutputStream(FILE2), FILE2);
+            /*plugin.write(list, new FileOutputStream(FILE2), FILE2);
             list = plugin.read(new FileInputStream(FILE2), FILE2);
             for (final FileInfo file : list) {
                 logger.info(file.getFileUrl().toString());
-            }
+            }*/
         } catch (Exception e) {
             LogUtils.processException(logger, e);
         }

@@ -17,7 +17,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -39,7 +39,7 @@ public class Rsdf implements ContainerFormat {
 
     @Override
     public List<FileInfo> read(final InputStream is) throws Exception {
-        final List<FileInfo> list = new ArrayList<FileInfo>();
+        final List<FileInfo> list = new LinkedList<FileInfo>();
         final BufferedReader reader = new BufferedReader(new InputStreamReader(new HexInputStream(is)));
         final Cipher cipher = Cipher.getInstance("AES/CFB8/NoPadding");
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(KEY, "AES"), new IvParameterSpec(IV));

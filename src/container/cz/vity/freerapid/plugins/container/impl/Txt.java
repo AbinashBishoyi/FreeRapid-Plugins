@@ -14,7 +14,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -35,7 +35,7 @@ public class Txt implements ContainerFormat {
 
     @Override
     public List<FileInfo> read(final InputStream is) throws Exception {
-        final List<FileInfo> list = new ArrayList<FileInfo>();
+        final List<FileInfo> list = new LinkedList<FileInfo>();
         final Matcher matcher = PlugUtils.matcher("(https?://\\S+)", ContainerUtils.readToString(is));
         while (matcher.find()) {
             try {

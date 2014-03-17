@@ -40,7 +40,7 @@ class LetitbitRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "File:: <span>", "</span>");
+        PlugUtils.checkName(httpFile, contentAsString, "File: <span>", "</span>");
         PlugUtils.checkFileSize(httpFile, contentAsString, "[<span>", "</span>]");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -116,7 +116,7 @@ class LetitbitRunner extends AbstractRunner {
             }
 
             final HttpMethod httpMethod4 = getMethodBuilder()
-                    .setActionFromAHrefWhereATagContains("Link to file download")
+                    .setActionFromAHrefWhereATagContains("ownload")
                     .setReferer(thirdPageUrl)
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod4)) {

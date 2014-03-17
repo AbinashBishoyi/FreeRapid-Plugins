@@ -332,11 +332,11 @@ class BadongoFileRunner extends AbstractRunner {
         }
         return sb.toString();
     }
+    */
 
     @Override
     protected String getBaseURL() {
         return SERVICE_WEB;
     }
-    */
 
 }

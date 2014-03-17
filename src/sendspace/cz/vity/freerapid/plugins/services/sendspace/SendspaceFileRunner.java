@@ -18,9 +18,14 @@ import java.util.regex.Matcher;
 class SendspaceFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(SendspaceFileRunner.class.getName());
 
+    private void checkUrl() {
+        fileURL = fileURL.replace("://sendspace", "://www.sendspace");
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkSeriousProblems();
@@ -34,6 +39,7 @@ class SendspaceFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -78,6 +84,9 @@ class SendspaceFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("You cannot download more than one file at a time")) {
             throw new YouHaveToWaitException("You cannot download more than one file at a time", 60);
+        }
+        if (contentAsString.contains("the free service is at full capacity")) {
+            throw new YouHaveToWaitException("The free service is at full capacity", 60);
         }
     }
 

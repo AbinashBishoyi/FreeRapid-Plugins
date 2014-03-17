@@ -18,9 +18,14 @@ import java.util.regex.Matcher;
 class SendSpaceFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SendSpaceFileRunner.class.getName());
 
+    private void checkUrl() {
+        fileURL = fileURL.replace("://sendspace", "://www.sendspace");
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -34,6 +39,7 @@ class SendSpaceFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         login();
         HttpMethod method = getGetMethod(fileURL);
@@ -85,7 +91,7 @@ class SendSpaceFileRunner extends AbstractRunner {
                 }
             }
             final HttpMethod method = getMethodBuilder()
-                    .setAction("/login.html")
+                    .setAction("http://www.sendspace.com/login.html")
                     .setParameter("action", "login")
                     .setParameter("submit", "login")
                     .setParameter("target", "/")

@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.URIException;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -76,7 +77,7 @@ class UploadBoxFileRunner extends AbstractRunner {
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("File removed from service")) {
+        if (contentAsString.contains("File removed from service") || contentAsString.contains("File deleted from service")) {
             throw new URLNotAvailableAnymoreException("File removed from service");
         }
 
@@ -92,6 +93,8 @@ class UploadBoxFileRunner extends AbstractRunner {
         if (contentAsString.contains("You allready download some file")) {
             throw new YouHaveToWaitException("You already download some file. Please finish download and try again", 2 * 60);
         }
+
+
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
@@ -101,9 +104,10 @@ class UploadBoxFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
+    private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException, URIException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = SERVICE_WEB + PlugUtils.getStringBetween(getContentAsString(), "class=\"captcha\"><img src=\"", "\"");
+        final String captchaSrc = getMethodBuilder().setBaseURL(SERVICE_WEB).setActionFromImgSrcWhereTagContains("id=\"captcha\"").toGetMethod().getURI().toString();
+        //final String captchaSrc = SERVICE_WEB + PlugUtils.getStringBetween(getContentAsString(), "class=\"captcha\"><img src=\"", "\"");
         logger.info("Captcha URL " + captchaSrc);
         final String captcha = captchaSupport.getCaptcha(captchaSrc);
 

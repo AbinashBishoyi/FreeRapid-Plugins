@@ -19,13 +19,13 @@ public class CaptchasCaptchaType implements CaptchaType {
 
     @Override
     public boolean canHandle(final String content) {
-        return content.contains("/captcha/");
+        return content.contains("/captchas/");
     }
 
     @Override
     public void handleCaptcha(final MethodBuilder methodBuilder, final HttpDownloadClient client, final CaptchaSupport captchaSupport) throws Exception {
         final String captchaUrl = new MethodBuilder(client)
-                .setActionFromImgSrcWhereTagContains("/captcha/")
+                .setActionFromImgSrcWhereTagContains("/captchas/")
                 .getEscapedURI();
         String captcha;
         if (captchaCounter < CAPTCHA_MAX) {

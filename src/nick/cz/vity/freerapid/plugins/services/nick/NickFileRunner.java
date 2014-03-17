@@ -62,7 +62,8 @@ class NickFileRunner extends AbstractRtmpRunner {
             checkProblems();
             checkNameAndSize();
             final String mgid = getMgid();
-            method = getGetMethod("http://www.nick.com/dynamo/video/data/mrssGen.jhtml?type=normal&mgid=" + mgid);
+            logger.info("mgid = " + mgid);
+            method = getGetMethod("http://www.nick.com/dynamo/video/data/mrssGen.jhtml?type=normal&demo=nill&mgid=" + mgid);
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();

@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="czshare.com_profi" version="1.0.0" vendor="Smisek"
+        class="cz.vity.freerapid.plugins.services.czshare_profi.CzshareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?czshare\.com/.+"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="czshare.com"/>
+        <!-- ID pluginu, pro ktere je to premium -->
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="czshare.com" path="/" type="code"/>
+    </runtime>
+</plugin>

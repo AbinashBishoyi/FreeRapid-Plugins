@@ -1,10 +1,7 @@
 package cz.vity.freerapid.plugins.services.megaupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -42,19 +39,17 @@ class MegauploadRunner {
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-            Matcher matcher = Pattern.compile(" ([0-9.]+) MB.?</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = Pattern.compile(" ([0-9.]+ .B).?</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
                 logger.info("File size " + matcher.group(1));
-                Double a = new Double(matcher.group(1).replaceAll(" ", ""));
-                a = (a * 1024 * 1024);
-                httpFile.setFileSize(a.longValue());
+                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
             } else {
                 if (client.getContentAsString().contains("trying to access is temporarily unavailable"))
                     throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
             }
             matcher = Pattern.compile("Filename:(</font>)?</b> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
-                final String fn = matcher.group(2);
+                final String fn =   PlugUtils.unescapeHtml(matcher.group(2));
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
             } else logger.warning("File name was not found" + client.getContentAsString());

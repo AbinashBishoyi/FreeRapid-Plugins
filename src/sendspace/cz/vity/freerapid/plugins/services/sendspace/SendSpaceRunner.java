@@ -12,6 +12,8 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 /**
  * @author Alex
@@ -71,7 +73,7 @@ class SendSpaceRunner extends AbstractRunner {
                     logger.warning(decoded);//something was really wrong, we will explore it from the logs :-)
                     throw new PluginImplementationException("Can't find download link");
                 }
-                String mLink = matcher.group(1);
+                String mLink = encodeURL(matcher.group(1));
                 logger.info("Final Link :" + mLink);
                 getMethod = getGetMethod(mLink);
 
@@ -185,6 +187,14 @@ class SendSpaceRunner extends AbstractRunner {
 
 
         return gblQxi;
+    }
+
+    private String encodeURL(String s) throws UnsupportedEncodingException {
+        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
+        if (matcher.find()) {
+            return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
+        }
+        return s;
     }
 
 

@@ -42,7 +42,7 @@ class FileVelocityFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h2>Download File", "</h2></div>");
+        PlugUtils.checkName(httpFile, content, "<h2>Download File:", "</h2>");
         PlugUtils.checkFileSize(httpFile, content, "<font color=\"red\">(", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

@@ -44,10 +44,11 @@ class ZippyShareFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
+
             final String contentAsString = getContentAsString();
             String var;
-            if (contentAsString.contains("var pong = '")) {
-                var = PlugUtils.getStringBetween(contentAsString, "var pong = '", "';");
+            if (contentAsString.contains("var ping = '")) {
+                var = PlugUtils.getStringBetween(contentAsString, "var ping = '", "';");
                 final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
                 logger.info("unescape = " + unescape);
                 var = applyReplace(var, unescape);

@@ -6,11 +6,14 @@ import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.net.URL;
+import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -25,10 +28,12 @@ class SafeLinkingFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        checkURL();
         addCookie(new Cookie(".safelinking.net", "language", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
+            httpFile.setFileName("Ready to Extract Link(s)");
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
@@ -36,13 +41,15 @@ class SafeLinkingFileRunner extends AbstractRunner {
         }
     }
 
-    protected void stepDirectLink(String directLinkURL) throws Exception {
+    private void checkURL() {
+        if (fileURL.startsWith("http://"))
+            fileURL = fileURL.replaceFirst("http://", "https://");
+    }
+
+    protected URI stepDirectLink(String directLinkURL) throws Exception {
         final GetMethod method = getGetMethod(directLinkURL);
         if (makeRedirectedRequest(method)) {
-            this.httpFile.setNewURL(new URL(method.getURI().getURI())); //to setup new URL
-            this.httpFile.setFileState(FileState.NOT_CHECKED);
-            this.httpFile.setPluginID(""); //to run detection what plugin should be used for new URL, when file is in QUEUED state
-            this.httpFile.setState(DownloadState.QUEUED);
+            return new URI(method.getURI().getURI());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -52,18 +59,27 @@ class SafeLinkingFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkURL();
         addCookie(new Cookie(".safelinking.net", "language", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
 
+        final String HEADER_LINK_TYPE_1 = "<strong>Direct links</strong>";
+        final String HEADER_LINK_TYPE_2 = "<strong>Live links</strong>";
+
+        List<URI> list = new LinkedList<URI>();
+
         if (fileURL.contains("/d/")) {
-            stepDirectLink(fileURL);
+            list.add(stepDirectLink(fileURL));
         } else if (fileURL.contains("/p/")) {
             HttpMethod method = getGetMethod(fileURL); //create GET request
             if (!makeRedirectedRequest(method)) { //we make the main request
                 checkProblems();//check problems
                 throw new ServiceConnectionProblemException();
             }
-            while (!getContentAsString().contains("safelinking.net/d/")) {
+            int count = 0;
+            while (!getContentAsString().contains(HEADER_LINK_TYPE_1) &&
+                    !getContentAsString().contains(HEADER_LINK_TYPE_2) &&
+                    (count++ < 3)) {
                 MethodBuilder builder = getMethodBuilder()
                         .setActionFromFormWhereTagContains("Protected link", true)
                         .setReferer(fileURL).setAction(fileURL);
@@ -87,12 +103,34 @@ class SafeLinkingFileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("err 1");
                 }
             }
-            MethodBuilder mbuild = getMethodBuilder().setActionFromAHrefWhereATagContains("safelinking.net/d/");
-            stepDirectLink(mbuild.getAction());
+
+            String content;
+            if (getContentAsString().contains(HEADER_LINK_TYPE_1)) {
+                content = PlugUtils.getStringBetween(getContentAsString(), HEADER_LINK_TYPE_1, "</fieldset>");
+            } else if (getContentAsString().contains(HEADER_LINK_TYPE_2)) {
+                content = PlugUtils.getStringBetween(getContentAsString(), HEADER_LINK_TYPE_2, "</fieldset>");
+            } else {
+                throw new PluginImplementationException("Captcha Text Error : SafeLinking site changed : SafeLinking feature not supported yet");
+            }
+
+            Matcher m = PlugUtils.matcher("<a href=\"([^\"]+)\" class=\"result-a\">", content);
+            while (m.find()) {
+                list.add(new URI(m.group(1)));
+            }
+            if (getContentAsString().contains(HEADER_LINK_TYPE_1)) {
+                for (int ii = 0; ii < list.size(); ii++)
+                    list.set(ii, stepDirectLink(list.get(ii).toASCIIString()));
+            }
+
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException("Invalid link");
         }
+        if (list.isEmpty()) throw new PluginImplementationException("No links found");
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        httpFile.setFileName("Link(s) Extracted !");
+        httpFile.setState(DownloadState.COMPLETED);
+        httpFile.getProperties().put("removeCompleted", true);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -137,8 +175,6 @@ class SafeLinkingFileRunner extends AbstractRunner {
 
         method.setParameter("adcopy_challenge", captchaChID);
         method.setParameter("solvemedia_response", captchaTxt);
-        method.setParameter("captcha_response_field", captchaTxt);
-        method.setParameter("captcha_response_field2", captchaTxt);
     }
 
 }

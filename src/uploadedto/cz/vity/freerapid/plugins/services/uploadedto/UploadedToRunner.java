@@ -56,7 +56,7 @@ class UploadedToRunner extends AbstractRunner {
             int seconds = new Integer(s);
             downloadTask.sleep(seconds + 1);
 
-            matcher = PlugUtils.matcher("action=\"([^\"]*)\"", getContentAsString());
+            matcher = PlugUtils.matcher("name=\"download_form\" method=\"post\" action=\"([^\"]*)\"", getContentAsString());
             if (matcher.find()) {
                 s = matcher.group(1);
                 logger.info("Found File URL - " + s);

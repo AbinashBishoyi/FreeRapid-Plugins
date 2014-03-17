@@ -36,9 +36,11 @@ class FreakShareFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         runCheck();
 
+        String hostName =  fileURL.substring(0,fileURL.indexOf("/",8));
+
         waitForTime();
         HttpMethod httpMethod = getMethodBuilder()
-                .setActionFromFormWhereActionContains("http://freakshare.net/files", true)
+                .setActionFromFormWhereActionContains( hostName + "/files", true)
                 .toHttpMethod();
 
         if (!makeRedirectedRequest(httpMethod))
@@ -47,7 +49,7 @@ class FreakShareFileRunner extends AbstractRunner {
         waitForTime();
 
         httpMethod = getMethodBuilder()
-                .setActionFromFormWhereActionContains("http://freakshare.net/files", true)
+                .setActionFromFormWhereActionContains( hostName + "/files", true)
                 .toHttpMethod();
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();

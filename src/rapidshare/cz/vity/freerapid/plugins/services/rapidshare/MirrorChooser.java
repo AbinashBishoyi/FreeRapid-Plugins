@@ -62,7 +62,7 @@ class MirrorChooser {
             logger.info("Found mirror " + mirrorName + " ident " + ident);
             mirrorConfig.getAr().add(new MirrorBean(mirrorName, ident));
         }
-        getMirrorConfig().setChosen(new MirrorBean());
+        getMirrorConfig().setChosen(MirrorBean.createDefault());
         logger.info("Saving config ");
         storage.storeConfigToFile(getMirrorConfig(), CONFIGFILE);
         // <input checked type="radio" name="mirror" onclick="document.dlf.action=\'http://rs332gc.rapidshare.com/files/168531395/2434660/rkdr.part3.rar\';" /> GlobalCrossing<br />

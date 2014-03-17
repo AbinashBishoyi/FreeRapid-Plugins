@@ -14,7 +14,7 @@ public class ShareBombServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 2;
+        return 1;
     }
 
     @Override

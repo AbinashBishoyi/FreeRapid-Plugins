@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="sharebomb.com" version="0.1.0" vendor="Eterad"
+<plugin id="sharebomb.com" version="0.1.1" vendor="Eterad"
         class="cz.vity.freerapid.plugins.services.sharebomb.ShareBombServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://([a-z0-9]+\.)?sharebomb\.com/[0-9]+\.html"/>
@@ -8,7 +8,7 @@
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="sharebomb.com"/>
         <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
-        <attribute id="maxDownloads" value="2"/>
+        <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

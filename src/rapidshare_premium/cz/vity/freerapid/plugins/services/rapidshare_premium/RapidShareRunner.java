@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 1789 2009-06-19 09:25:50Z Atom $
+ * $Id: RapidShareRunner.java 2374 2010-04-15 13:19:06Z ntoskrnl $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -146,7 +146,7 @@ class RapidShareRunner extends AbstractRunner {
         throw new PluginImplementationException();
     }
 
-    private void chechFile() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException, BadLoginException, YouHaveToWaitException {
+    private void chechFile() throws ErrorDuringDownloadingException {
         String code = client.getContentAsString().toLowerCase();
         // Fast detec known error messages
         if (code.contains("illegal content")) {
@@ -181,20 +181,19 @@ class RapidShareRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("<b>RapidShare unknown error:</b><br> " + error);
         }
 
-        // Unknown error message
-        if (code.contains("error")) {
-            logger.warning(client.getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Unknown RapidShare error");
-        }
+        matcher = PlugUtils.matcher("([^/]+)\\.htm", fileURL);
+        if (!matcher.find()) throw new PluginImplementationException("File name not found");
+        logger.info("File name " + matcher.group(1));
+        httpFile.setFileName(matcher.group(1));
 
         //| 5277 KB</font>
         matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
-        if (matcher.find()) {
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        }
+        if (!matcher.find()) throw new PluginImplementationException("File size not found");
+        Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+        logger.info("File size " + a);
+        httpFile.setFileSize(a);
+
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
@@ -259,32 +258,33 @@ class RapidShareRunner extends AbstractRunner {
         }
     }
 
-	private String login(String login, String password) throws IOException {
-		if (RapidShareRunner.cookie !=null) {
-			return RapidShareRunner.cookie;
-		}
+    private String login(String login, String password) throws IOException {
+        if (RapidShareRunner.cookie != null) {
+            return RapidShareRunner.cookie;
+        }
 
         final PostMethod pm = getPostMethod("https://ssl.rapidshare.com/cgi-bin/premiumzone.cgi");
-		pm.addParameter("login", login);
-		pm.addParameter("password", password);
+        pm.addParameter("login", login);
+        pm.addParameter("password", password);
         client.makeRequest(pm, false);
         pm.releaseConnection();
         Cookie[] cookies = client.getHTTPClient().getState().getCookies();
-		for (Cookie c : cookies) {
-			if ("enc".equals(c.getName())) {
-				RapidShareRunner.cookie = c.getValue();
-				return c.getValue();
-			}
-		}
-		return null;
-	}
+        for (Cookie c : cookies) {
+            if ("enc".equals(c.getName())) {
+                RapidShareRunner.cookie = c.getValue();
+                return c.getValue();
+            }
+        }
+        return null;
+    }
 
     private void setBadConfig() {
         badConfig = true;
     }
 
     private boolean badConfig = false;
-	private static String cookie = null;;
+    private static String cookie = null;
+    ;
 
 }
 

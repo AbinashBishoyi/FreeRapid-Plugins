@@ -55,7 +55,7 @@ class Go4upFileRunner extends AbstractRunner {
             if (fileURL.contains("/rd/"))   // single redirect url link
                 processLink(fileURL, list);
             else {   // get multiple redirect url links
-                final Matcher matcher = getMatcherAgainstContent("href=\"([^\"]*)\"[^>]*>http://go4up.com/rd/");
+                final Matcher matcher = getMatcherAgainstContent("href=\"(http://go4up.com/rd/[^/]+?/\\w\\w?\\w?\\w?)\"");
                 while (matcher.find()) {
                     processLink(matcher.group(1), list);
                 }
@@ -82,6 +82,9 @@ class Go4upFileRunner extends AbstractRunner {
                     String subContent = getContentAsString().replace("\n", "").replace("\r", "");
                     if (subContent.contains("content=\"0;url=")) {
                         String strNewUrl = PlugUtils.getStringBetween(subContent, "content=\"0;url=", "\">");
+                        listing.add(new URI(strNewUrl));
+                    } else if (subContent.contains("window.location =")) {
+                        String strNewUrl = PlugUtils.getStringBetween(subContent, "window.location = \"", "\"");
                         listing.add(new URI(strNewUrl));
                     }
                 }

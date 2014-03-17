@@ -143,6 +143,9 @@ class RapidShareRunner extends AbstractRunner {
             if (getContentAsString().contains("no more download slots")) {
                 throw new ServiceConnectionProblemException("There are no more download slots available for free users right now");
             }
+            if (getContentAsString().contains("Unfortunately right now our servers are overloaded")) {
+                throw new ServiceConnectionProblemException("Unfortunately right now our servers are overloaded and we have no more download slots left for non-members. Of course you can also try again later.");
+            }
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         matcher = getMatcherAgainstContent("\"downloadlink\">(.*?)<font");
@@ -194,7 +197,10 @@ class RapidShareRunner extends AbstractRunner {
         if (getContentAsString().contains("This file is larger than")) {
             throw new NotRecoverableDownloadException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
         }
-        if (getContentAsString().contains("There are no more download slots available for free users right now")) {
+        if (getContentAsString().contains("Unfortunately right now our servers are overloaded")) {
+            throw new ServiceConnectionProblemException("Unfortunately right now our servers are overloaded and we have no more download slots left for non-members. Of course you can also try again later.");
+        }
+        if (getContentAsString().contains("no more download slots")) {
             throw new ServiceConnectionProblemException("There are no more download slots available for free users right now");
         }
     }

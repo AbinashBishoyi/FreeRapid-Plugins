@@ -1,8 +1,8 @@
 package cz.vity.freerapid.plugins.services.bagruj;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
@@ -51,8 +51,8 @@ public class BagrujServiceImpl extends AbstractFileShareService {
         return config;
     }
 
-    void SetMaxDown(int m) {
-        maxDown=m;
+    void setMaxDown(int m) {
+        maxDown = m;
     }
 
 }

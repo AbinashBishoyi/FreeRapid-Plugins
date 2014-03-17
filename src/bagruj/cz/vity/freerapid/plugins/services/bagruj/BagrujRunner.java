@@ -146,7 +146,7 @@ class BagrujRunner extends AbstractRunner {
     private void Login() throws Exception {
         synchronized (BagrujRunner.class) {
             BagrujServiceImpl service = (BagrujServiceImpl) getPluginService();
-            service.SetMaxDown(1);
+            service.setMaxDown(1);
             PremiumAccount pa = service.getConfig();
             if (!pa.isSet()) {
                 return;
@@ -171,7 +171,7 @@ class BagrujRunner extends AbstractRunner {
                 if (!makeRedirectedRequest(getMethod)) {
                     throw new PluginImplementationException();
                 } else {
-                    service.SetMaxDown(2);
+                    service.setMaxDown(2);
                 }
             }
         }

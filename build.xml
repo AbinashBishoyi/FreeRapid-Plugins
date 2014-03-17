@@ -120,6 +120,7 @@
         <ant dir="${src.dir}/paid4share/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/ulozisko/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/webshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/linkbucks/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

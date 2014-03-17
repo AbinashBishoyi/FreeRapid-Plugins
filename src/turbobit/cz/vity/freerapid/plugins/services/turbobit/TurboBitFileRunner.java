@@ -33,10 +33,10 @@ class TurboBitFileRunner extends AbstractRunner {
         fileURL = checkFileURL(fileURL);
         final HttpMethod method = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(method)) {
-            checkProblems();
+            checkFileProblems();
             checkNameAndSize();
         } else {
-            checkProblems();
+            checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
     }
@@ -85,6 +85,7 @@ class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            checkProblems();
 
             final Matcher matcher = getMatcherAgainstContent("limit: (\\d+),");
             if (matcher.find()) {
@@ -96,6 +97,7 @@ class TurboBitFileRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                checkProblems();
             }
 
             int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "minTimeLimit : ", ",", TimeUnit.SECONDS);
@@ -116,6 +118,7 @@ class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            checkProblems();
 
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
@@ -155,6 +158,9 @@ class TurboBitFileRunner extends AbstractRunner {
                         || errMatcher.group(1).contains("\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442!"))
                     throw new CaptchaEntryInputMismatchException();
                 throw new PluginImplementationException();
+            }
+            if (getContentAsString().contains("The file is not avaliable now because of technical problems")) {
+                throw new ServiceConnectionProblemException("The file is not available now because of technical problems");
             }
             if (getContentAsString().contains("\u00d0\u00a1\u00d1?\u00d1\u2039\u00d0\u00bb\u00d0\u00ba\u00d0\u00b0 \u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d1?\u00d1\u20ac\u00d0\u00be\u00d1\u2021\u00d0\u00b5\u00d0\u00bd\u00d0\u00b0")) // it's unlikely we get this...
                 throw new YouHaveToWaitException("Trying again...", 10);

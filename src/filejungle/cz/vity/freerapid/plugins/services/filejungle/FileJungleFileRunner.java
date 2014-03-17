@@ -53,10 +53,11 @@ class FileJungleFileRunner extends AbstractRunner implements FileStreamRecognize
             checkNameAndSize(content);
 
             final String ref = fileURL;
-            final String code = PlugUtils.getStringBetween(fileURL, "/f/", "/");
+
+            final String code = PlugUtils.getStringBetween(content, "\"regularForm\" action=\"/f/", "\"");
             final String capUrl = getBaseURL() + "/checkReCaptcha.php";
             final String startUrl = getBaseURL() + "/f/" + code;
-            final String captchaKey = PlugUtils.getStringBetween(getContentAsString(), "reCAPTCHA_publickey='", "';");
+            final String captchaKey = PlugUtils.getStringBetween(content, "reCAPTCHA_publickey='", "';");
 
             logger.info("code: " + code);
             logger.info("start: " + startUrl);

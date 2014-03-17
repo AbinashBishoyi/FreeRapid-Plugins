@@ -5,11 +5,12 @@ import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -17,14 +18,11 @@ import java.util.regex.Matcher;
  * @author JPEXS, ntoskrnl
  */
 class FileSonicFileRunner extends AbstractRunner {
-
     private final static Logger logger = Logger.getLogger(FileSonicFileRunner.class.getName());
 
-    private void ensureENLanguage() {
-        final Matcher m = PlugUtils.matcher("http://(?:www\\.)?filesonic.com/(?:[^/]*/)?(file/.*)", fileURL);
-        if (m.matches()) {
-            fileURL = "http://www.filesonic.com/en/" + m.group(1);
-        }
+    private void ensureENLanguage() throws Exception {
+        final String domain = new URI(getMethodBuilder().getBaseURL()).getHost();
+        addCookie(new Cookie(domain, "lang", "en", "/", 86400, false));
     }
 
     @Override
@@ -56,7 +54,7 @@ class FileSonicFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            fileURL = fileURL.replaceFirst("/en/", "/");
+            fileURL = method.getURI().toString();
             final String startUrl = fileURL + "?start=1";
             method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
             while (true) {

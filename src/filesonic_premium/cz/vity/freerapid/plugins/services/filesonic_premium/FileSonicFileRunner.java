@@ -8,43 +8,42 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URI;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
  * @author valankar
+ * @author ntoskrnl
  */
 class FileSonicFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileSonicFileRunner.class.getName());
 
-    private String ensureENLanguage(String url) {
-        Matcher m = Pattern.compile("http://(www\\.)?filesonic.com/([^/]*/)?(file/.*)").matcher(url);
-        if (m.matches()) {
-            return "http://www.filesonic.com/en/" + m.group(3);
-        }
-        return url;
+    private void ensureENLanguage() throws Exception {
+        final String domain = new URI(getMethodBuilder().getBaseURL()).getHost();
+        addCookie(new Cookie(domain, "lang", "en", "/", 86400, false));
     }
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(ensureENLanguage(fileURL));//make first request
-        if (makeRedirectedRequest(getMethod)) {
+        ensureENLanguage();
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
         PlugUtils.checkName(httpFile, content, "<span>Filename: </span> <strong>", "</strong>");
         PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -54,8 +53,9 @@ class FileSonicFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        runCheck();
         login();
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         setFileStreamContentTypes("\"application/octet-stream\"");
         if (!tryDownloadAndSaveFile(method)) {
             checkProblems();
@@ -74,15 +74,14 @@ class FileSonicFileRunner extends AbstractRunner {
                 }
             }
         }
-        final PostMethod pm = getPostMethod("http://www.filesonic.com/user/login");
-        pm.addParameter("email", pa.getUsername());
-        pm.addParameter("password", pa.getPassword());
-
-        logger.info("Logging to FileSonic...");
+        final HttpMethod pm = getMethodBuilder()
+                .setAction("/user/login")
+                .setParameter("email", pa.getUsername())
+                .setParameter("password", pa.getPassword())
+                .toPostMethod();
         if (!makeRedirectedRequest(pm)) {
             throw new ServiceConnectionProblemException("Error posting login info");
         }
-
         // "view" is purposely misspelled.
         if (getContentAsString().contains("You must be logged in to veiw this page")) {
             throw new NotRecoverableDownloadException("Invalid FileSonic Premium account login information!");
@@ -90,9 +89,10 @@ class FileSonicFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        final String content = getContentAsString();
+        if (content.contains("File not found") || content.contains("This file was deleted")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
+
 }

@@ -76,11 +76,11 @@ class MediafireRunner extends AbstractRunner {
                 if (makeRequest(method)) {
 
                     String u2 = PlugUtils.getStringBetween(getContentAsString(), "key to support (", ")\"");
-                    String ml = PlugUtils.getStringBetween(getContentAsString(), "var mL='", "';");
+                    String m1 = PlugUtils.getStringBetween(getContentAsString(), "='download", "com';var");
                     String mh = PlugUtils.getStringBetween(getContentAsString(), "var mH='", "';");
                     String my = PlugUtils.getStringBetween(getContentAsString(), "var mY='", "';");
 
-                    String finalLink = "http://" + ml + "/" + u2 + "g/" + mh + "/" + my;
+                    String finalLink = "http://download" + m1 + "com/" + u2 + "g/" + mh + "/" + my;
                     logger.info("Final URL " + finalLink);
 
                     GetMethod method2 = getGetMethod(finalLink);

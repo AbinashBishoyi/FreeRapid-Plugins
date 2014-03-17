@@ -7,45 +7,44 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
- * @author JPEXS
+ * @author JPEXS, ntoskrnl
  */
 class FileSonicFileRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(FileSonicFileRunner.class.getName());
 
-    private String ensureENLanguage(String url) {
-        Matcher m = Pattern.compile("http://(www\\.)?filesonic.com/([^/]*/)?(file/.*)").matcher(url);
+    private void ensureENLanguage() {
+        final Matcher m = PlugUtils.matcher("http://(?:www\\.)?filesonic.com/(?:[^/]*/)?(file/.*)", fileURL);
         if (m.matches()) {
-            return "http://www.filesonic.com/en/" + m.group(3);
+            fileURL = "http://www.filesonic.com/en/" + m.group(1);
         }
-        return url;
     }
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(ensureENLanguage(fileURL));//make first request
-        if (makeRedirectedRequest(getMethod)) {
+        ensureENLanguage();
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize();
         } else {
-            throw new PluginImplementationException();
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span>Filename: </span> <strong>", "</strong>");
-        PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\">", "</span>");
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, getContentAsString(), "<span>Filename: </span> <strong>", "</strong>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"size\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -53,21 +52,23 @@ class FileSonicFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(ensureENLanguage(fileURL)); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            String startUrl = fileURL + "?start=1";
-            HttpMethod methodFree = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
+        ensureENLanguage();
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
+            fileURL = fileURL.replaceFirst("/en/", "/");
+            final String startUrl = fileURL + "?start=1";
+            method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
             while (true) {
-                if (!makeRedirectedRequest(methodFree)) {
-                    throw new PluginImplementationException();
+                method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
                 }
                 final String content = getContentAsString();
-
-                if (content.contains("captchaForm")) {
-                    String reCaptchaKey = PlugUtils.getStringBetween(content, "Recaptcha.create(\"", "\",");
+                if (content.contains("Recaptcha")) {
+                    String reCaptchaKey = PlugUtils.getStringBetween(content, "Recaptcha.create(\"", "\"");
                     ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
                     CaptchaSupport captchaSupport = getCaptchaSupport();
                     String captchaURL = r.getImageURL();
@@ -76,19 +77,19 @@ class FileSonicFileRunner extends AbstractRunner {
                         throw new CaptchaEntryInputMismatchException();
                     } else {
                         r.setRecognized(captcha);
-                        methodFree = r.modifyResponseMethod(getMethodBuilder().setReferer(fileURL).setAction(startUrl)).toPostMethod();
+                        method = r.modifyResponseMethod(getMethodBuilder().setReferer(fileURL).setAction(startUrl)).toPostMethod();
                     }
-                } else if (content.contains("Please Wait")) {
-                    final int waitTime = PlugUtils.getWaitTimeBetween(content, "\"countdown\">", "</strong>", TimeUnit.SECONDS);
-                    downloadTask.sleep(waitTime);
-                    methodFree = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
-                } else if (content.contains("Download Ready")) {
-                    final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start download now!").toGetMethod();
-                    if (!tryDownloadAndSaveFile(httpMethod)) {
-                        logger.warning(getContentAsString());//log the info
-                        throw new PluginImplementationException();//some unknown problem
+                } else if (content.contains("var countDownDelay =")) {
+                    final int waitTime = PlugUtils.getWaitTimeBetween(content, "var countDownDelay =", ";", TimeUnit.SECONDS);
+                    downloadTask.sleep(waitTime + 1);
+                    method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
+                } else if (content.contains("Start download now")) {
+                    method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start download now").toGetMethod();
+                    if (!tryDownloadAndSaveFile(method)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException("Error starting download");
                     }
-                    return;
+                    break;
                 } else {
                     checkProblems();
                     throw new PluginImplementationException();
@@ -102,13 +103,11 @@ class FileSonicFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-
-
-        if(contentAsString.contains("error: already processing a download")){
-            throw new YouHaveToWaitException("Error: already processing a download", 30);
+        if (contentAsString.contains("for parallel downloads")) {
+            throw new YouHaveToWaitException("Already processing a download", 30);
         }
         if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 }

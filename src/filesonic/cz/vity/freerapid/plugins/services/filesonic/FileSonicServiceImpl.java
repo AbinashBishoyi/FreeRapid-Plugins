@@ -5,15 +5,18 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author JPEXS
  */
 public class FileSonicServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "filesonic.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {        
+    @Override
+    public int getMaxDownloadsFromOneIP() {
         return 1;
     }
 

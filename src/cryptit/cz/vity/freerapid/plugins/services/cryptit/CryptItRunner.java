@@ -13,7 +13,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 /**
@@ -35,6 +34,7 @@ class CryptItRunner extends AbstractRunner {
     private String cryptitcod;
 
     @Override
+    @SuppressWarnings(value="deprecation")
     public void run() throws Exception {
         super.run();
 
@@ -70,8 +70,11 @@ class CryptItRunner extends AbstractRunner {
             queye.add(new URI(matcher.group(0)));
         }
 
-        httpFile.setState(DownloadState.COMPLETED);
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, queye);
+        synchronized ( getPluginService().getPluginContext().getQueueSupport() ) {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, queye);
+        }
+        //downloadTask.sleep(2);
+        //httpFile.setState(DownloadState.COMPLETED);
     }
 
 }

@@ -10,13 +10,14 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class RelinkServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "relink.us";
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return false;//Check not supported
+        return false;
     }
 
     @Override

@@ -73,6 +73,7 @@ class FreakShareFileRunner extends AbstractRunner {
          * automatically redirected request.
          */
         makeRequest(httpMethod2);
+        checkProblems();
 
         if(httpMethod2.getStatusCode() / 100 != 3)
         	unimplemented(String.format("Unexpected status line: %s", httpMethod2.getStatusLine()));
@@ -80,7 +81,7 @@ class FreakShareFileRunner extends AbstractRunner {
         final HttpMethod httpMethod3=getGetMethod(httpMethod2.getResponseHeader("Location").getValue());
         	
        	httpMethod3.setRequestHeader("Accept-Encoding", "");
-        client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
+        client.getHTTPClient().getParams().setParameter("considerAsStream", "");
 
         //here is the download link extraction
         if (!tryDownloadAndSaveFile(httpMethod3)) {

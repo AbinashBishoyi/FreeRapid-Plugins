@@ -2,10 +2,10 @@ package cz.vity.freerapid.plugins.services.depositfiles;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -30,7 +30,7 @@ class DepositFilesRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         fileURL = CheckURL(fileURL);
-        if( !checkIsFolder() ) {
+        if (!checkIsFolder()) {
             final GetMethod getMethod = getGetMethod(fileURL);
             getMethod.setFollowRedirects(true);
             if (makeRequest(getMethod)) {
@@ -45,91 +45,87 @@ class DepositFilesRunner extends AbstractRunner {
         super.run();
         fileURL = CheckURL(fileURL);
         //Support to Folder
-        if( checkIsFolder() ) {
+        if (checkIsFolder()) {
             runFolder();
             return;
-        }
-        final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
+        } else {
+            final GetMethod getMethod = getGetMethod(fileURL);
+            getMethod.setFollowRedirects(true);
+            if (makeRequest(getMethod)) {
 
-            checkNameAndSize(getContentAsString());
-            Matcher matcher;
+                checkNameAndSize(getContentAsString());
+                Matcher matcher;
 
-            if (!getContentAsString().contains("Free downloading mode")) {
+                if (!getContentAsString().contains("Free downloading mode")) {
+                    matcher = getMatcherAgainstContent("gateway_result");
+                    if (matcher.find()) {
+                        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("gateway_result", true).toHttpMethod();
+                        if (!makeRequest(httpMethod)) {
+                            logger.info(getContentAsString());
+                            throw new PluginImplementationException();
+                        }
 
-                matcher = getMatcherAgainstContent("form action=\"(/.+)\" method");
+                    } else {
+                        checkProblems();
+                        // throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+                    }
+
+                }
+
+                //	<img src="http://depositfiles.com/en/get_download_img_code.php?icid=yxcWQT8XPbxGNQxdTxTfEg__"/>
+                matcher = getMatcherAgainstContent("src=\"(.*?/get_download_img_code.php[^\"]*)\"");
+                if (matcher.find()) {
+                    String s = PlugUtils.replaceEntities(matcher.group(1));
+                    logger.info("Captcha - image " + s);
+                    String captcha;
+                    final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
+                    //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
+                    captcha = getCaptchaSupport().askForCaptcha(captchaImage);
+
+                    client.setReferer(HTTP_DEPOSITFILES + getMethod.getPath());
+                    final PostMethod postMethod = getPostMethod(HTTP_DEPOSITFILES + getMethod.getPath());
+                    PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"icid"});
+
+                    postMethod.addParameter("img_code", captcha);
+
+                    if (!makeRequest(postMethod)) {
+                        logger.info(getContentAsString());
+                        throw new PluginImplementationException();
+                    }
+                }
+
+                //        <span id="download_waiter_remain">60</span>
+                matcher = getMatcherAgainstContent("download_waiter_remain\">([0-9]+)");
                 if (!matcher.find()) {
+
+
                     checkProblems();
-                    logger.warning(getContentAsString());
-                    throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+                    throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
                 }
-                String s = matcher.group(1);
+                String t = matcher.group(1);
+                int seconds = new Integer(t);
+                logger.info("wait - " + t);
 
-                logger.info("Submit form to - " + s);
-                client.setReferer(fileURL);
-                final PostMethod postMethod = getPostMethod(HTTP_DEPOSITFILES + s);
-                postMethod.addParameter("gateway_result", "1");
-
-                if (!makeRequest(postMethod)) {
+                matcher = getMatcherAgainstContent("<td class=\"repeat\"><a href=\"(.+?)\">");
+                if (matcher.find()) {
+                    t = matcher.group(1);
+                    logger.info("Download URL: " + t);
+                    //   downloadTask.sleep(seconds + 1);
+                    //  httpFile.setState(DownloadState.GETTING);
+                    final GetMethod method = getGetMethod(t);
+                    if (!tryDownloadAndSaveFile(method)) {
+                        checkProblems();
+                        throw new IOException("File input stream is empty.");
+                    }
+                } else {
+                    checkProblems();
                     logger.info(getContentAsString());
                     throw new PluginImplementationException();
                 }
 
-            }
-
-            //	<img src="http://depositfiles.com/en/get_download_img_code.php?icid=yxcWQT8XPbxGNQxdTxTfEg__"/>
-            matcher = getMatcherAgainstContent("src=\"(.*?/get_download_img_code.php[^\"]*)\"" );
-            if (matcher.find()) {
-                String s = PlugUtils.replaceEntities(matcher.group(1));
-                logger.info("Captcha - image " + s);
-                String captcha;
-                final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
-                //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
-                captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-
-                client.setReferer(HTTP_DEPOSITFILES + getMethod.getPath());
-                final PostMethod postMethod = getPostMethod(HTTP_DEPOSITFILES + getMethod.getPath());
-                PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"icid"});
-
-                postMethod.addParameter("img_code", captcha);
-
-                if (!makeRequest(postMethod)) {
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
-                }
-            }
-
-
-            //        <span id="download_waiter_remain">60</span>
-            matcher = getMatcherAgainstContent("download_waiter_remain\">([0-9]+)");
-            if (!matcher.find()) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
-            }
-            String t = matcher.group(1);
-            int seconds = new Integer(t);
-            logger.info("wait - " + t);
-
-            matcher = getMatcherAgainstContent("form action=\"([^\"]*)\" method=\"get\"");
-            if (matcher.find()) {
-                t = matcher.group(1);
-                logger.info("Download URL: " + t);
-                downloadTask.sleep(seconds + 1);
-                httpFile.setState(DownloadState.GETTING);
-                final GetMethod method = getGetMethod(t);
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
-                    throw new IOException("File input stream is empty.");
-                }
-            } else {
-                checkProblems();
-                logger.info(getContentAsString());
+            } else
                 throw new PluginImplementationException();
-            }
-
-        } else
-            throw new PluginImplementationException();
+        }
     }
 
     private String CheckURL(String URL) {
@@ -182,7 +178,7 @@ class DepositFilesRunner extends AbstractRunner {
         }
         matcher = PlugUtils.matcher("slots[^<]*busy", content);
         if (matcher.find()) {
-            throw new YouHaveToWaitException(String.format("<b>All downloading slots for your country are busy</b><br>"), 60 * 2);
+            throw new YouHaveToWaitException(String.format("<b>All downloading slots for your country are busy</b><br>"), 60);
 
         }
         if (content.contains("file does not exist")) {
@@ -198,6 +194,7 @@ class DepositFilesRunner extends AbstractRunner {
 
     public void runFolder() throws Exception {
         HashSet<URI> queye = new HashSet<URI>();
+        httpFile.getProperties().put("removeCompleted", true);
 
         final String REGEX = "href=\"(http://(?:www\\.)?depositfiles\\.com/files/[^\"]+)\"";
 
@@ -205,16 +202,16 @@ class DepositFilesRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
             Matcher matcher = getMatcherAgainstContent(REGEX);
-            while(matcher.find()) {
-                queye.add( new URI(matcher.group(1)) );
+            while (matcher.find()) {
+                queye.add(new URI(matcher.group(1)));
             }
             Matcher matcherPages = getMatcherAgainstContent("href=\"[^\\?]+\\?(page=\\d+)\"");
-            while(matcherPages.find()) {
-                GetMethod getPageMethod = getGetMethod(fileURL + "?" + matcherPages.group(1) );
+            while (matcherPages.find()) {
+                GetMethod getPageMethod = getGetMethod(fileURL + "?" + matcherPages.group(1));
                 if (makeRequest(getPageMethod)) {
                     matcher = getMatcherAgainstContent(REGEX);
-                    while(matcher.find()) {
-                        queye.add( new URI(matcher.group(1)) );
+                    while (matcher.find()) {
+                        queye.add(new URI(matcher.group(1)));
                     }
                 } else
                     throw new PluginImplementationException("Folder " + matcherPages.group(1) + " Can't be Loaded !!");
@@ -222,7 +219,7 @@ class DepositFilesRunner extends AbstractRunner {
         } else
             throw new PluginImplementationException("Folder Can't be Loaded !!");
 
-        synchronized ( getPluginService().getPluginContext().getQueueSupport() ) {
+        synchronized (getPluginService().getPluginContext().getQueueSupport()) {
             getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, new ArrayList<URI>(queye));
         }
 

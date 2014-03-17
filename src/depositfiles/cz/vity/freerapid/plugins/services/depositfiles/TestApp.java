@@ -15,7 +15,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://depositfiles.com/de/files/7845416"));
+            httpFile.setNewURL(new URL("http://depositfiles.com/files/yn9v6v3dh"));
+            // httpFile.setNewURL(new URL("http://depositfiles.com/de/files/7845416"));
             //httpFile.setNewURL(new URL("http://depositfiles.com/en/folders/K50LZLHAY"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             // connectionSettings.setProxy("localhost", 8081);

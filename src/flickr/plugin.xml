@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.flickr.FlickrServiceImpl" id="flickr.com" vendor="Arthur" version="1.0.3">
+<plugin class="cz.vity.freerapid.plugins.services.flickr.FlickrServiceImpl" id="flickr.com" vendor="Arthur+tong2shot" version="1.1.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?flickr\.com/photos/.+/[0-9]+/"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="urlRegex" value="http://(www\.)?flickr\.com/photos/.+/((sets/|galleries/)?[0-9]+/.*|favorites/?)"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="flickr.com"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="5"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

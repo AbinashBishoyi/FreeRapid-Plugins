@@ -13,14 +13,9 @@ public class FlickrServiceImpl extends AbstractFileShareService {
         return "flickr.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 5;
-    }
-
     @Override
     public boolean supportsRunCheck() {
-        return false;//ok
+        return false;
     }
 
     @Override

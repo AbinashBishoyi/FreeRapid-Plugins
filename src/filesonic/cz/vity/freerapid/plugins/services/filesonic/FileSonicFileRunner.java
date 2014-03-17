@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -68,21 +67,20 @@ class FileSonicFileRunner extends AbstractRunner {
                 }
                 final String content = getContentAsString();
                 if (content.contains("Recaptcha")) {
-                    String reCaptchaKey = PlugUtils.getStringBetween(content, "Recaptcha.create(\"", "\"");
-                    ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
-                    CaptchaSupport captchaSupport = getCaptchaSupport();
-                    String captchaURL = r.getImageURL();
-                    String captcha = captchaSupport.getCaptcha(captchaURL);
+                    final String reCaptchaKey = PlugUtils.getStringBetween(content, "Recaptcha.create(\"", "\"");
+                    final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+                    final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
                     if (captcha == null) {
                         throw new CaptchaEntryInputMismatchException();
-                    } else {
-                        r.setRecognized(captcha);
-                        method = r.modifyResponseMethod(getMethodBuilder().setReferer(fileURL).setAction(startUrl)).toPostMethod();
                     }
+                    r.setRecognized(captcha);
+                    method = r.modifyResponseMethod(getMethodBuilder().setReferer(fileURL).setAction(startUrl)).toPostMethod();
                 } else if (content.contains("var countDownDelay =")) {
+                    final String tm = PlugUtils.getParameter("tm", content);
+                    final String tm_hash = PlugUtils.getParameter("tm_hash", content);
+                    method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).setParameter("tm", tm).setParameter("tm_hash", tm_hash).toPostMethod();
                     final int waitTime = PlugUtils.getWaitTimeBetween(content, "var countDownDelay =", ";", TimeUnit.SECONDS);
                     downloadTask.sleep(waitTime + 1);
-                    method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
                 } else if (content.contains("Start download now")) {
                     method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start download now").toGetMethod();
                     if (!tryDownloadAndSaveFile(method)) {
@@ -102,12 +100,13 @@ class FileSonicFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("for parallel downloads")) {
+        final String content = getContentAsString();
+        if (content.contains("for parallel downloads")) {
             throw new YouHaveToWaitException("Already processing a download", 30);
         }
-        if (contentAsString.contains("File not found")) {
+        if (content.contains("File not found") || content.contains("This file was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
+
 }

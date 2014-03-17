@@ -38,7 +38,7 @@ class RapidshareUserRunner extends AbstractRunner {
             if (!getContentAsString().contains("View LinkList"))
                 throw new NotRecoverableDownloadException("No link list available");
             checkProblems();
-            //javascript:folderoeffnen('4');
+
             final Matcher matcher = getMatcherAgainstContent("javascript:folderoeffnen\\('([0-9]+)'\\);");
 
             if (!matcher.find())

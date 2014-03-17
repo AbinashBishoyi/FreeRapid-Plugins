@@ -77,7 +77,7 @@ class RuutuFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Sivua ei löytynyt")) {
+        if (getContentAsString().contains("Sivua ei löydy")) {
             throw new URLNotAvailableAnymoreException("Page not found");
         }
         if (getContentAsString().contains("<ErrorText>")) {

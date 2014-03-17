@@ -92,7 +92,7 @@ class TurboBitFileRunner extends AbstractRunner {
                 throw new YouHaveToWaitException("Download limit reached", Integer.parseInt(matcher.group(1)));
             }
 
-            while (getContentAsString().contains("captcha")) {
+            while (getContentAsString().contains("/captcha/")) {
                 if (!makeRedirectedRequest(stepCaptcha(method.getURI().toString()))) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();

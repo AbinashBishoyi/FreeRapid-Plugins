@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.xhamster;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -51,13 +52,14 @@ class xHamsterFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
-            final String file = PlugUtils.getStringBetween(getContentAsString(), "'file': '", "',");
+            final String file = PlugUtils.getStringBetween(getContentAsString(), "&file=", "&");   //flv
+            //final String file = PlugUtils.getStringBetween(getContentAsString(), "file=\"", "\"");  //mp4
             final String videoURL;
             if (file.startsWith("http")) {
                 videoURL = URLDecoder.decode(file, "UTF-8");
             } else {
-                final String srv = PlugUtils.getStringBetween(getContentAsString(), "'srv': '", "',");
-                videoURL = srv + "/key=" + file;
+                final String srv = PlugUtils.getStringBetween(getContentAsString(), "&srv=", "&");
+                videoURL = URLDecoder.decode(srv + "/key=" + file, "UTF-8");
             }
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL.replace("88.208.24.43", "xhamster.com"))
@@ -79,6 +81,9 @@ class xHamsterFileRunner extends AbstractRunner {
         if (contentAsString.contains("not found on this server") ||
                 contentAsString.contains("This video was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("<title>Restricted access to video")) {
+            throw new NotRecoverableDownloadException("Access to video is restricted");
         }
     }
 

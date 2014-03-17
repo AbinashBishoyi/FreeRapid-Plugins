@@ -190,7 +190,6 @@
         <ant dir="${src.dir}/microsoftdownloads/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/hyperfileshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/turbobit/" antfile="build.xml" inheritall="false"/>
-        <ant dir="${src.dir}/narod/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/gigaup/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/getthebit/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/createfile/" antfile="build.xml" inheritall="false"/>
@@ -200,6 +199,11 @@
         <ant dir="${src.dir}/data/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/data_premium/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/addat/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/extrashare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/uploadcomua/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/forusto/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/multishare/" antfile="build.xml" inheritall="false"/>
+
     </target>
 
     <target name="manualBuild" description="building">

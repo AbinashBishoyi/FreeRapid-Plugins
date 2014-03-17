@@ -118,15 +118,15 @@ class DailymotionRunner extends AbstractRunner {
             final String swfStr = swfToString(is);
             if (swfStr.contains("ldURL")) {
                 //sequence found in swf
-                Matcher matcher = PlugUtils.matcher(String.format("(%s%s%s:%s\\p{Graph}+?)%s", Pattern.quote("\\\""), "ldURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote(",\\\"cdn")), swfStr);
+                Matcher matcher = PlugUtils.matcher(String.format("(%s%s%s:%s\\p{Graph}+?)(?:%s|%s)", Pattern.quote("\\\""), "ldURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote(",\\\"cdn"), Pattern.quote(",\\\"autoURL")), swfStr);
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Sequence not found in SWF");
                 }
                 sequence = matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/");
                 logger.info("Sequence in SWF");
-            } else {
+            } else if (swfStr.contains("autoURL")) {
                 //find sequence in manifest
-                Matcher matcher = PlugUtils.matcher(String.format("%s%s%s:%s(\\p{Graph}+?)%s", Pattern.quote("\\\""), "autoURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote("\\\",\\\"cdn")), swfStr);
+                Matcher matcher = PlugUtils.matcher(String.format("%s%s%s:%s(\\p{Graph}+?)(?:%s|%s)", Pattern.quote("\\\""), "autoURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote("\\\",\\\"cdn"), Pattern.quote(",\\\"allowStageVideo")), swfStr);
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Manifest not found in SWF");
                 }
@@ -146,6 +146,8 @@ class DailymotionRunner extends AbstractRunner {
                 sequenceInManifest = true;
                 httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", ".flv"));
                 logger.info("Sequence in manifest");
+            } else {
+                throw new PluginImplementationException("External video channel is not supported");
             }
 
             logger.info("Quality setting : " + config.getQualitySetting());

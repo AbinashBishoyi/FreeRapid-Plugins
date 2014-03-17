@@ -55,7 +55,7 @@ class Go4upFileRunner extends AbstractRunner {
             if (fileURL.contains("/rd/"))   // single redirect url link
                 processLink(fileURL, list);
             else {   // get multiple redirect url links
-                final Matcher matcher = getMatcherAgainstContent("href=\"(http://go4up.com/rd/.+?/[a-z]{2,3})\" class=\"dl\"");
+                final Matcher matcher = getMatcherAgainstContent("href=\"([^\"]*)\"[^>]*>http://go4up.com/rd/");
                 while (matcher.find()) {
                     processLink(matcher.group(1), list);
                 }
@@ -73,18 +73,22 @@ class Go4upFileRunner extends AbstractRunner {
     }
 
     private void processLink(String Go4Up_rd_Link, List<URI> listing) throws Exception {
-        try {//process redirection link to get final url
-            final GetMethod submethod = getGetMethod(Go4Up_rd_Link); //create GET request
-            if (makeRedirectedRequest(submethod)) { //we make the main request
-                String subContent = getContentAsString().replace("\n", "").replace("\r", "");
-                if (subContent.contains("content=\"0;url=")) {
-                    String strNewUrl = PlugUtils.getStringBetween(subContent, "content=\"0;url=", "\">");
-                    listing.add(new URI(strNewUrl));
+        if (!Go4Up_rd_Link.contains("/rd/")) {
+            listing.add(new URI(Go4Up_rd_Link.trim()));
+        } else {
+            try {//process redirection link to get final url
+                final GetMethod submethod = getGetMethod(Go4Up_rd_Link); //create GET request
+                if (makeRedirectedRequest(submethod)) { //we make the main request
+                    String subContent = getContentAsString().replace("\n", "").replace("\r", "");
+                    if (subContent.contains("content=\"0;url=")) {
+                        String strNewUrl = PlugUtils.getStringBetween(subContent, "content=\"0;url=", "\">");
+                        listing.add(new URI(strNewUrl));
+                    }
                 }
+            } catch (final URISyntaxException e) {
+                LogUtils.processException(logger, e);
+                throw new ServiceConnectionProblemException("Error retrieving link");
             }
-        } catch (final URISyntaxException e) {
-            LogUtils.processException(logger, e);
-            throw new ServiceConnectionProblemException("Error retrieving link");
         }
     }
 

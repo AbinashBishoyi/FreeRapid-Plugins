@@ -1,19 +1,20 @@
 package cz.vity.freerapid.plugins.services.ifilez;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+
 import java.awt.image.BufferedImage;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 /**
  * @author RickCL
@@ -29,31 +30,54 @@ class IFilezFileRunner extends AbstractRunner {
         super.runCheck();
 
         HttpMethod httpMethod = getMethodBuilder()
-            .setAction(fileURL)
-            .toGetMethod();
+                .setAction(fileURL)
+                .toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             throw new ServiceConnectionProblemException();
         }
-        
+
+        //set language to english
+        httpMethod = getMethodBuilder()
+                .setAction(fileURL)
+                .setParameter("language", "2") //2 = english
+                .setParameter("SetLng", "SetLng")
+                .toPostMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
         checkNameAndSize();
     }
-    
+
     @Override
     public void run() throws Exception {
         super.run();
 
         HttpMethod httpMethod = getMethodBuilder()
-            .setAction(fileURL)
-            .toGetMethod();
+                .setAction(fileURL)
+                .toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             throw new ServiceConnectionProblemException();
         }
+
+        //set language to english
+        httpMethod = getMethodBuilder()
+                .setAction(fileURL)
+                .setParameter("language", "2") //2 = english
+                .setParameter("SetLng", "SetLng")
+                .toPostMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            throw new ServiceConnectionProblemException();
+        }
+
         String content = getContentAsString();
-        
-        while( content.contains("verifycode") ) {
-            final PostMethod postMethod = (PostMethod) getMethodBuilder().setActionFromFormByIndex(4, true).removeParameter("verifycode").toPostMethod();
-            logger.info( httpMethod.getURI().toString() );
-            
+        checkProblems();
+        checkNameAndSize();
+
+        while (content.contains("verifycode")) {
+            final PostMethod postMethod = (PostMethod) getMethodBuilder().setActionFromFormByIndex(3, true).removeParameter("verifycode").toPostMethod();
+            logger.info(httpMethod.getURI().toString());
+
             Matcher matcher = getMatcherAgainstContent("src=\"(/includes/vvc.php[^\"]*)\"");
             if (matcher.find()) {
                 String s = HTTP_IFILEZ + PlugUtils.replaceEntities(matcher.group(1));
@@ -72,31 +96,38 @@ class IFilezFileRunner extends AbstractRunner {
             }
             content = getContentAsString();
         }
-        
+
         String url = PlugUtils.getStringBetween(content, "document.getElementById(\"wait_input\").value= unescape('", "');");
-        url = URLDecoder.decode(url,"UTF-8");
+        url = URLDecoder.decode(url, "UTF-8");
 
         int waitTime = PlugUtils.getWaitTimeBetween(content, "var sec=", ";", TimeUnit.SECONDS);
         downloadTask.sleep(waitTime);
-        
+
         httpMethod = getMethodBuilder()
-            .setAction( url )
-            .setReferer(fileURL)
-            .toGetMethod();
+                .setAction(url)
+                .setReferer(fileURL)
+                .toGetMethod();
         if (!tryDownloadAndSaveFile(httpMethod)) {
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException,Exception {
+    private void checkNameAndSize() throws ErrorDuringDownloadingException, UnsupportedEncodingException {
         String content = getContentAsString();
-        
-        String fileName = PlugUtils.getStringBetween(content, "<th>Nome do arquivo:</th>", "</td>").replaceAll("<[^>]*>", "").trim();
-        String fileSize = PlugUtils.getStringBetween(content, "<th>Tamanho:</th>", "</td>").replaceAll("<[^>]*>", "").trim();
-        final long lsize = PlugUtils.getFileSizeFromString( fileSize );
 
-        httpFile.setFileName( URLDecoder.decode(fileName,"UTF-8") );
-        httpFile.setFileSize( lsize );
+        String fileName = PlugUtils.getStringBetween(content, "<th>File name:</th>", "</td>").replaceAll("<[^>]*>", "").trim();
+        String fileSize = PlugUtils.getStringBetween(content, "<th>Size:</th>", "</td>").replaceAll("<[^>]*>", "").trim();
+        final long lsize = PlugUtils.getFileSizeFromString(fileSize);
+
+        httpFile.setFileName(URLDecoder.decode(fileName, "UTF-8"));
+        httpFile.setFileSize(lsize);
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        final String contentAsString = getContentAsString();
+        if (contentAsString.contains("File was not found")) {
+            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
     }
 
 }

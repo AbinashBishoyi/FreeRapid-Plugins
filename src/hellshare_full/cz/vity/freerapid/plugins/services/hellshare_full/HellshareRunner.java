@@ -51,9 +51,8 @@ class HellshareRunner extends AbstractRunner {
                 throw new NotRecoverableDownloadException("No credit for download!");
             }
 
-            matcher = getMatcherAgainstContent(", [0-9]+[)];\" href=\"([^\"]+)\" target=\"full-download-iframe\">Download</a> .</span></p>");
-            if(matcher.find())
-            {
+            matcher = getMatcherAgainstContent(", [0-9]+[)];\" href=\"([^\"]+)\" target=\"full-download-iframe\">Download</a>");
+            if (matcher.find()) {
                 String downURL = matcher.group(1);
                 final GetMethod getmethod = getGetMethod(downURL);
                 httpFile.setState(DownloadState.GETTING);
@@ -108,9 +107,9 @@ class HellshareRunner extends AbstractRunner {
             if (!matcher.find()) {
                 throw new PluginImplementationException();
             }
-            String loginURL = matcher.group(1)!=null?matcher.group(1):(matcher.group(2)!=null?matcher.group(2):matcher.group(3));
+            String loginURL = matcher.group(1) != null ? matcher.group(1) : (matcher.group(2) != null ? matcher.group(2) : matcher.group(3));
             GetMethod loginMethod = getGetMethod(loginURL);
-            if(makeRequest(loginMethod)) {
+            if (makeRequest(loginMethod)) {
                 matcher = PlugUtils.matcher("<form name=\"([^\"]+)\" method=\"post\" action=\"([^\"]+)\">", getContentAsString());
                 if (!matcher.find()) {
                     throw new PluginImplementationException();
@@ -127,8 +126,8 @@ class HellshareRunner extends AbstractRunner {
 
                 if (makeRedirectedRequest(postmethod)) {
                     matcher = getMatcherAgainstContent("<h1>P.ihl..en.</h1>|<h1>Prihl.si.</h1>|<h1>Bejelentkez.s</h1>");
-                    if(matcher.find()) {
-                        badConfig=true;
+                    if (matcher.find()) {
+                        badConfig = true;
                         throw new NotRecoverableDownloadException("Bad HellShare full account login information!");
                     }
                     GetMethod getMethod = getGetMethod(fileURL);
@@ -141,7 +140,7 @@ class HellshareRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, NotRecoverableDownloadException {
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, NotRecoverableDownloadException {
         Matcher matcher;
         matcher = getMatcherAgainstContent("Soubor nenalezen|S.bor nen.jden.|A f.jl nem volt megtal.lhat.");
         if (matcher.find()) {
@@ -149,9 +148,9 @@ class HellshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", 30);
+            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
         }
-        if(badConfig || getContentAsString().equals("")) {
+        if (badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad HellShare full account login information!");
         }
     }

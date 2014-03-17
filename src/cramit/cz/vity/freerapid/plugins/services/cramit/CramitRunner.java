@@ -1,18 +1,18 @@
 package cz.vity.freerapid.plugins.services.cramit;
 
-import java.io.IOException;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
+
+import java.io.IOException;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author RickCL
@@ -26,9 +26,8 @@ public class CramitRunner extends AbstractRunner {
 
         logger.info("Starting run task " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
-        logger.info(fileURL);
 
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             final HttpMethod httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("method_free", true).setAction(fileURL).toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
@@ -36,11 +35,11 @@ public class CramitRunner extends AbstractRunner {
             }
 
             Matcher matcher = getMatcherAgainstContent("Wait.*\">(\\d*)</span>");
-            if( !matcher.find() ) {
-                throw new ServiceConnectionProblemException();
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Waiting time not found");
             }
 
-            downloadTask.sleep( Integer.parseInt( matcher.group(1) ) + 1 );
+            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
 
             final HttpMethod httpMethod2 = getMethodBuilder().setActionFromFormWhereTagContains("method_free", true).setAction(fileURL).toPostMethod();
             if (!makeRedirectedRequest(httpMethod2)) {
@@ -55,6 +54,7 @@ public class CramitRunner extends AbstractRunner {
                 throw new IOException("File input stream is empty");
             }
         } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
@@ -65,7 +65,7 @@ public class CramitRunner extends AbstractRunner {
 
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
-        if (makeRequest(httpMethod)) {
+        if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
         } else {
@@ -75,22 +75,15 @@ public class CramitRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        httpFile.setFileName( fileURL.substring(fileURL.lastIndexOf('/') + 1) );
-
-        Matcher matcher = getMatcherAgainstContent("You have requested.*\\(([\\d\\.\\s\\w]*)\\)");
-        if( !matcher.find() ) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString( matcher.group(1)) );
-
+        final String content = getContentAsString();
+        PlugUtils.checkName(httpFile, content, "<h2>Download File ", "</h2>");
+        PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException,
-            URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if ( content.contains("No such file with this filename") ) {
+        if (content.contains("<h2>File Not Found</h2>") || content.contains("No such file with this filename")) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
     }

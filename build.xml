@@ -75,6 +75,7 @@
         <ant dir="${src.dir}/upnito/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/flyshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/ziddu/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/usercash/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

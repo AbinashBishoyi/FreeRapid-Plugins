@@ -60,7 +60,7 @@ class UploadingRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException("Error getting wait time");
             }
             checkProblems();
-            Matcher matcher = getMatcherAgainstContent("\"wait_time\"\\s*:\\s*\"(\\d+)\"");
+            Matcher matcher = getMatcherAgainstContent("\"wait_time\"\\s*:\\s*\"?(\\d+)\"?");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Wait time not found");
             }
@@ -72,6 +72,7 @@ class UploadingRunner extends AbstractRunner {
                     .setParameter("action", "get_link")
                     .setParameter("code", PlugUtils.getStringBetween(fileURL + "/", "get/", "/"))
                     .setParameter("pass", "false")
+                    .setParameter("force_exe", "0") //disable download manager
                     .toPostMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (!makeRedirectedRequest(method)) {
@@ -82,6 +83,16 @@ class UploadingRunner extends AbstractRunner {
             matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Download page link not found");
+            }
+            method = getGetMethod((matcher.group(1).replace("\\/", "/")));
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error getting thanks page");
+            }
+            checkProblems();
+            matcher = getMatcherAgainstContent("document\\.location\\.href='(http.+?)'");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Thanks page not found");
             }
             method = getGetMethod((matcher.group(1).replace("\\/", "/")));
             if (!makeRedirectedRequest(method)) {

@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -28,8 +29,6 @@ import java.util.regex.Pattern;
 class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(CeskaTelevizeFileRunner.class.getName());
     private CeskaTelevizeSettingsConfig config;
-    private SwitchItem selectedSwitchItem;
-    private Video selectedVideo;
 
     private void setConfig() throws Exception {
         CeskaTelevizeServiceImpl service = (CeskaTelevizeServiceImpl) getPluginService();
@@ -39,31 +38,115 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        checkName();
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkName();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private void checkName() throws Exception {
+        HttpMethod httpMethod;
+        if (!getContentAsString().contains("callSOAP(")) {
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromIFrameSrcWhereTagContains("iFramePlayer").toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+        }
+        if (!getContentAsString().contains("callSOAP(")) {
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Přehrát video").toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+        }
+
+        Matcher matcher;
+        String filename;
+        String nazev;
+        try {
+            nazev = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"nazev\":\"", "\"").trim());
+        } catch (PluginImplementationException e) {
+            throw new PluginImplementationException("Program title not found");
+        }
+        filename = nazev;
+
+        String nazevCasti = "";
+        matcher = getMatcherAgainstContent("\"nazevCasti\":(?:null|\"(.*?)\")");
+        if (matcher.find()) {
+            try {
+                nazevCasti = PlugUtils.unescapeUnicode(matcher.group(1).trim());
+            } catch (Exception e) {
+                //
+            }
+        }
+
+        String nazevCastiProgram = "";
+        matcher = getMatcherAgainstContent("\"nazevCastiProgram\":(?:null|\"(.*?)\")");
+        if (matcher.find()) {
+            try {
+                nazevCastiProgram = PlugUtils.unescapeUnicode(matcher.group(1).trim());
+            } catch (Exception e) {
+                //
+            }
+        }
+
+        //they don't provide a consistent way to get program and episode name, so we have to do this weird thing
+        if (!nazevCastiProgram.isEmpty() && !nazevCasti.isEmpty() && nazevCastiProgram.contains(nazevCasti)) {
+            filename += " - " + nazevCastiProgram;
+        } else {
+            if (!nazevCasti.isEmpty() && !filename.contains(nazevCasti)) {
+                filename += " - " + nazevCasti;
+            }
+            if (!nazevCastiProgram.isEmpty() && !filename.contains(nazevCastiProgram)) {
+                filename += " - " + nazevCastiProgram;
+            }
+        }
+
+        String title;
+        matcher = getMatcherAgainstContent("\"Type\":\"Archive\".+?\"Title\":\"(.*?)\"");
+        if (matcher.find()) {
+            title = PlugUtils.unescapeUnicode(matcher.group(1).trim());
+            if (!title.isEmpty() && !filename.contains(title)) {
+                filename += " - " + title;
+            }
+        }
+
+        //the only way to be sure.. for now...
+        if (filename.equals(nazev)) {
+            String fDodatek;
+            matcher = getMatcherAgainstContent("\"fDodatek\":(?:null|\"(.*?)\")");
+            if (matcher.find()) {
+                try {
+                    fDodatek = PlugUtils.unescapeHtml(PlugUtils.unescapeUnicode(matcher.group(1).trim()));
+                    if (!fDodatek.isEmpty() && !filename.contains(fDodatek)) {
+                        filename += " - " + fDodatek;
+                    }
+                } catch (Exception e) {
+                    //
+                }
+            }
+        }
+
+        filename += ".flv";
+        httpFile.setFileName(filename);
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        checkName();
-        RtmpSession rtmpSession = new RtmpSession(selectedSwitchItem.getBase(), selectedVideo.getSrc());
-        rtmpSession.disablePauseWorkaround();
-        tryDownloadAndSaveFile(rtmpSession);
-    }
-
-    private void checkName() throws Exception {
-        setConfig();
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            if (!getContentAsString().contains("callSOAP(")) {
-                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromIFrameSrcWhereTagContains("iFramePlayer").toGetMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                checkProblems();
-            }
+            checkProblems();
+            checkName();
+
             final String callSoapParams = PlugUtils.getStringBetween(getContentAsString(), "callSOAP(", ");");
             final ScriptEngineManager factory = new ScriptEngineManager();
             final ScriptEngine engine = factory.getEngineByName("JavaScript");
@@ -105,6 +188,9 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             getPlayListMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
             getPlayListMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
             getPlayListMethod.setRequestHeader("x-addr", "127.0.0.1");
+            SwitchItem selectedSwitchItem;
+            Video selectedVideo;
+            setConfig();
             if (makeRequest(getPlayListMethod)) {
                 if (!getContentAsString().startsWith("http")) {
                     throw new PluginImplementationException("Server returned invalid playlist URL");
@@ -116,22 +202,22 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 }
                 selectedSwitchItem = getSelectedSwitchItem(getContentAsString());
                 selectedVideo = getSelectedVideo(selectedSwitchItem);
-
-                Matcher filenameMatcher = Pattern.compile("/([^/]+)\\....$").matcher(selectedVideo.getSrc());
-                if (filenameMatcher.find()) {
-                    httpFile.setFileName(filenameMatcher.group(1) + ".flv");
-                }
             } else {
+                checkProblems();
                 throw new PluginImplementationException("Cannot load playlist URL");
             }
+            RtmpSession rtmpSession = new RtmpSession(selectedSwitchItem.getBase(), selectedVideo.getSrc());
+            rtmpSession.disablePauseWorkaround();
+            tryDownloadAndSaveFile(rtmpSession);
         } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Neexistuj")) {
+        if (contentAsString.contains("Neexistuj") || contentAsString.contains("Stránka nenalezena")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (contentAsString.contains("content is not available at")) {

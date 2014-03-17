@@ -12,7 +12,7 @@ public class VideoWeedServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "videoweed.com";
+        return "videoweed.es";
     }
 
     @Override

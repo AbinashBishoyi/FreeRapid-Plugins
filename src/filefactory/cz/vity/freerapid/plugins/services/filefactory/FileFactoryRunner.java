@@ -3,13 +3,11 @@ package cz.vity.freerapid.plugins.services.filefactory;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -43,7 +41,7 @@ class FileFactoryFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize();
 
-            Matcher matcher = getMatcherAgainstContent("class=\"download\" href=\"(.+?)\"");
+            Matcher matcher = getMatcherAgainstContent("action=\"(.+?)\" method=\"post\">");
 
             if (matcher.find()) {
                 client.setReferer(fileURL);
@@ -51,6 +49,7 @@ class FileFactoryFileRunner extends AbstractRunner {
                 getMethod = getGetMethod(redirectURL);
 
                 if (makeRedirectedRequest(getMethod)) {
+                    /*
                     if (getContentAsString().contains("captcha")) {
                         int captchaOCRCounter = 1;
 
@@ -79,6 +78,26 @@ class FileFactoryFileRunner extends AbstractRunner {
                     } else {
                         throw new PluginImplementationException("Captcha form was not found");
                     }
+                    */
+
+                    checkAllProblems();
+
+                    matcher = getMatcherAgainstContent("href=\"(.+?)\">Click here to begin your download");
+
+                    if (matcher.find()) {
+                        downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"countdown\">", "<", TimeUnit.SECONDS));
+                        client.setReferer(redirectURL);
+                        final String finalURL = matcher.group(1);
+                        getMethod = getGetMethod(finalURL);
+
+                        if (!tryDownloadAndSaveFile(getMethod)) {
+                            checkAllProblems();
+                            logger.warning(getContentAsString());
+                            throw new IOException("File input stream is empty");
+                        }
+                    } else {
+                        throw new PluginImplementationException("Download link was not found");
+                    }
                 } else {
                     throw new ServiceConnectionProblemException();
                 }
@@ -96,18 +115,24 @@ class FileFactoryFileRunner extends AbstractRunner {
         if (contentAsString.contains("Sorry, this file is no longer available")) {
             throw new URLNotAvailableAnymoreException("Sorry, this file is no longer available. It may have been deleted by the uploader, or has expired");
         }
+
+        if (contentAsString.contains("Sorry, there are currently no free download slots available on this server")) {
+            throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server", 60);
+        }
     }
 
     private void checkAllProblems() throws ErrorDuringDownloadingException {
         checkSeriousProblems();
         final String contentAsString = getContentAsString();
 
+        /*
         if (contentAsString.contains("Sorry, your time to enter the code has expired")) {
             throw new YouHaveToWaitException("Sorry, your time to enter the code has expired. Please try again", 60);
         }
+        */
 
-        if (contentAsString.contains("Sorry, there are currently no free download slots available on this server")) {
-            throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server", 60);
+        if (contentAsString.contains("Your download slot has expired")) {
+            throw new YouHaveToWaitException("Your download slot has expired.  Please try again", 60);
         }
 
         if (contentAsString.contains("You are currently downloading too many files at once")) {
@@ -161,6 +186,7 @@ class FileFactoryFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
+    /*
     private PostMethod stepCaptcha(String redirectURL, int captchaOCRCounter) throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
 
@@ -205,4 +231,5 @@ class FileFactoryFileRunner extends AbstractRunner {
 
         return captcha;
     }
+    */
 }

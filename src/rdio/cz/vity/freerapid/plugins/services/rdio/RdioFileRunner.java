@@ -37,6 +37,8 @@ class RdioFileRunner extends AbstractRunner {
                 .setParameter("extras", "tracks")
                 .setParameter("method", "getObjectFromUrl")
                 .setParameter("_authorization_key", authorizationKey)
+                        //httpclient-3 messes up non-ascii characters in the url parameter without this
+                .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
                 .toPostMethod();
         if (!makeRedirectedRequest(method)) {
             checkProblems();
@@ -79,7 +81,7 @@ class RdioFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String artist = PlugUtils.getStringBetween(getContentAsString(), "\"artist\": \"", "\"");
         final String name = PlugUtils.getStringBetween(getContentAsString(), "\"name\": \"", "\"");
-        httpFile.setFileName(artist + " - " + name + ".mp3");
+        httpFile.setFileName(PlugUtils.unescapeUnicode(artist + " - " + name + ".mp3"));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

@@ -59,7 +59,10 @@ class EasyShareRunner extends AbstractRunner {
 
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            if (!(getContentAsString().contains("kaptchacluster") || getContentAsString().contains("<th class=\"last\">") || getContentAsString().contains("u='"))) {
+            if (!(getContentAsString().contains("kaptchacluster") || 
+            		  getContentAsString().contains("<th class=\"last\">") || 
+            		  getContentAsString().contains("u='") || 
+            		  getContentAsString().contains("class=\"captcha1\""))) {
                 checkProblems();
                 logger.warning(getContentAsString());
                 throw new PluginImplementationException("Plugin implementation problem");
@@ -86,7 +89,9 @@ class EasyShareRunner extends AbstractRunner {
             if (!getContentAsString().contains("kaptchacluster") && getContentAsString().contains("Download the file")) {
                 stepNoCaptcha(getContentAsString());
             } else while (true) {
-                if (!(getContentAsString().contains("kaptchacluster") || getContentAsString().contains("u='"))) {
+                if (!(getContentAsString().contains("kaptchacluster") || 
+                		  getContentAsString().contains("u='") ||
+                		  getContentAsString().contains("class=\"captcha1\""))) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new PluginImplementationException("Plugin implementation problem");
@@ -128,11 +133,6 @@ class EasyShareRunner extends AbstractRunner {
     }
 
     private boolean stepCaptcha(String contentAsString) throws Exception {
-        if (!contentAsString.contains("kaptchacluster") && contentAsString.contains("u='")) {
-
-            loadCaptchaPage();
-            contentAsString = getContentAsString();
-        }
         if (contentAsString.contains("kaptchacluster")) {
             try {
                 String s = httpSite + getMethodBuilder(contentAsString).setReferer(baseURL).
@@ -154,6 +154,22 @@ class EasyShareRunner extends AbstractRunner {
             }
 
         }
+        else if(contentAsString.contains("class=\"captcha1\"")) {
+        	HttpMethod finalMethod=getMethodBuilder()
+        		.setActionFromFormWhereTagContains("class=\"captcha1\"", true)
+        		.toHttpMethod();
+          if (tryDownloadAndSaveFile(finalMethod)) return true;
+          else {
+              checkProblems();
+              if (getContentAsString().contains("kaptchacluster"))
+                  return false;
+              logger.warning(getContentAsString());
+              throw new IOException("File input stream is empty.");
+          }
+        } else if (contentAsString.contains("u='")) {
+
+          loadCaptchaPage();
+      }
         return false;
     }
 

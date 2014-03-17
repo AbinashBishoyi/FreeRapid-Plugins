@@ -53,7 +53,7 @@ class SharingMatrixFileRunner extends AbstractRunner {
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/download.php?type_membership=free&link_id=" + linkId).toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 int ctjv = PlugUtils.getWaitTimeBetween(getContentAsString(), "ctjv = '", "';", TimeUnit.SECONDS);
-                downloadTask.sleep(ctjv);
+                //downloadTask.sleep(ctjv);
                 String dlID = "";
                 if (getContentAsString().contains("_get2.php")) {
                     dlID = PlugUtils.getStringBetween(getContentAsString(), "showLink(", ", '');");

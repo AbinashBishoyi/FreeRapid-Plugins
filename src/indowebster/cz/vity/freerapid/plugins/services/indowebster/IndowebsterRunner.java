@@ -12,8 +12,10 @@ import org.apache.commons.codec.binary.Base64;
 
 
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Alex, JPEXS
@@ -29,6 +31,18 @@ class IndowebsterRunner extends AbstractRunner {
         checkNameandSize(getContentAsString());        
     }
 
+    public static String replaceUnicode(String s){
+        String r="";
+        for(int i=0;i<s.length();i++){
+            if((s.charAt(i)=='\\')&&(s.charAt(i+1)=='u')){
+                r=r+(char)Integer.parseInt(s.substring(i+2,i+6), 16);
+                i+=5;
+            }else{
+                r=r+s.charAt(i);
+            }
+        }
+        return r;
+    }
 
     @Override
     public void run() throws Exception {
@@ -45,12 +59,50 @@ class IndowebsterRunner extends AbstractRunner {
                 if (makeRedirectedRequest(method2)){
                     String content=getContentAsString();
                     String temp=PlugUtils.getStringBetween(content, "var temp=\"", "\"");
-                    int maxRetries=10;
+                    /*int maxRetries=10;
                     int i=0;
                     do{
                         temp=new String(Base64.decodeBase64(temp.getBytes()));
                         i++;
                     }while((!content.contains("id=\""+temp+"\""))&&(i<maxRetries));
+*/
+                    matcher=getMatcherAgainstContent("\"text/javascript\">document\\.write\\('(\\\\u[^']*)'");
+                    if(matcher.find()){
+                        String script=replaceUnicode(matcher.group(1));
+                        logger.info("Found script:"+script);
+                        matcher=Pattern.compile("'temp\\|parseInt\\|([0-9]+)\\|([0-9]+)'").matcher(script);
+                        if(matcher.find()){
+                            logger.info("Number base javascript found");
+                            int base=Integer.parseInt(matcher.group(1));
+                            int add=Integer.parseInt(matcher.group(2));
+                            try{
+                                int n=Integer.parseInt(temp, base)+add;
+                                temp=""+n;
+                            }catch(NumberFormatException nex){
+                                throw new InvalidURLOrServiceProblemException("Invalid number format - download javascript probably changed");
+                            }                                                        
+                        }else{
+                            matcher=Pattern.compile("'temp\\|parseInt\\|decode64\\|([0-9]+)'").matcher(script);
+                            if(matcher.find()){
+                                logger.info("Base64 javascript found");
+                                try{
+                                temp=new String(Base64.decodeBase64(temp.getBytes()));
+                                int add=Integer.parseInt(matcher.group(1));
+                                temp=""+(Integer.parseInt(temp)+add);
+                                }catch(Exception ex){
+                                    throw new InvalidURLOrServiceProblemException("Invalid number format - download javascript probably changed");
+                                }
+
+                            }
+                            else{
+                             throw new InvalidURLOrServiceProblemException("Download javascript probably changed");
+                            }
+                        }
+                    }else{
+                        throw new InvalidURLOrServiceProblemException("Cant find download javascript");
+                    }
+
+
                     matcher=getMatcherAgainstContent("id=\""+temp+"\"[^']*location\\.href='([^']*)'");
                     if(matcher.find()){
                         final HttpMethod method3=getMethodBuilder().setReferer(secondUrl).setAction(matcher.group(1)).toGetMethod();

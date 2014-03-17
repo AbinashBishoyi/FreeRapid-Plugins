@@ -52,7 +52,7 @@ class UltraMegabitFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("download_recaptcha", true)
+                    .setActionFromFormWhereTagContains("recaptcha", true)
                     .toPostMethod();
 
             //here is the download link extraction

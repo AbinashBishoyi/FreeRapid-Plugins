@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.secureupload;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 
 import java.util.List;
@@ -22,7 +22,7 @@ class SecureUploadFileRunner extends XFileSharingRunner {
     protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         if (content.contains("Only Premium members can access this file")) {
-            throw new ServiceConnectionProblemException("Only Premium members can access this file");
+            throw new NotRecoverableDownloadException("Only Premium members can access this file");
         }
         super.checkDownloadProblems();
     }

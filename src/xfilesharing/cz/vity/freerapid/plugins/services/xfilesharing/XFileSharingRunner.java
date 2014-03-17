@@ -77,9 +77,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
         final MethodBuilder methodBuilder = getMethodBuilder()
                 .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("method_free", true)
+                .setActionFromFormWhereTagContains("method_", true)
                 .setAction(fileURL);
-        if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
+        if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
             methodBuilder.removeParameter("method_premium");
         }
         return methodBuilder;

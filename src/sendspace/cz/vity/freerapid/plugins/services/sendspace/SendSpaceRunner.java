@@ -7,8 +7,11 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.codec.net.BCodec;
 import org.apache.commons.httpclient.methods.GetMethod;
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -19,6 +22,7 @@ import java.util.regex.Matcher;
  */
 class SendSpaceRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SendSpaceRunner.class.getName());
+    private static final String HTTP_SENDSPACE = "http://www.sendspace.com";
     public String mLink;
 
     @Override
@@ -52,8 +56,46 @@ class SendSpaceRunner extends AbstractRunner {
                 String mCode = matcher.group(1);
                 logger.info("Code :" + mCode);
 
-                mLink = new BCodec().decode(matcher.group(1));
-                logger.info("Final Link :" + mLink);
+                String script1, script2;
+                
+                String scriptFileURL = HTTP_SENDSPACE + "/jsc/download.js";
+                getMethod = getGetMethod(scriptFileURL);
+                if (makeRequest(getMethod)) {
+                    script1 = getContentAsString();
+                    logger.info("Script1 :" + script1);
+                } else {
+                    throw new InvalidURLOrServiceProblemException("Can't load script file");
+                }
+
+                matcher = PlugUtils.matcher("\\<script type=\"text/javascript\"\\>(function enc\\(text\\)\\{.+\\})\\</script\\>", contentAsString);
+                if (matcher.find()) {
+                    script2 = matcher.group(1);
+                    logger.info("Script2 :" + script2);
+                    
+                    script2 += "\n" + script1;
+                    script2 += "\n" + "function decodeLink(code) { return enc(base64ToText(code)); }";
+  
+                    ScriptEngineManager manager = new ScriptEngineManager();
+                    ScriptEngine engine = manager.getEngineByName("javascript");
+                    engine.eval(script2);
+                    Invocable invokeEngine = (Invocable) engine;
+                    Object o = invokeEngine.invokeFunction("decodeLink", mCode);
+
+                    mCode = o.toString();
+                    logger.info("Code after decoding :" + mCode);
+                } else {
+                    throw new PluginImplementationException("Can't find decode function");
+                }
+
+                matcher = PlugUtils.matcher("href=\"(.+)\" onclick", mCode);
+                if (matcher.find()) {
+                    mLink = matcher.group(1);
+                    mLink = mLink.replace(" ", "%20");
+                    logger.info("Final Link :" + mLink);
+                } else {
+                    throw new PluginImplementationException("Can't find final download link");
+                }
+
                 getMethod = getGetMethod(mLink);
 
                 if (!tryDownloadAndSaveFile(getMethod)) {

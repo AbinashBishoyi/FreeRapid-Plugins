@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareServiceImpl.java 967 2008-12-05 20:49:53Z Vity $
+ * $Id: RapidShareServiceImpl.java 972 2008-12-05 23:20:43Z Vity $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -69,7 +69,7 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
                 pa = new PremiumAccount();
             }
         } else pa = new PremiumAccount();
-        pa = getPluginContext().getDialogSupport().showAccountDialog(pa, "RapidShare Premium");
+        pa = getPluginContext().getDialogSupport().showAccountDialog(pa, "RapidShare");//vysledek bude Premium ucet - Rapidshare
         if (pa != null) {
             try {
                 storageSupport.storeConfigToFile(pa, PLUGIN_CONFIG_FILE);

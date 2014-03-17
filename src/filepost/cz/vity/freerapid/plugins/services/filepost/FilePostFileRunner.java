@@ -26,7 +26,7 @@ import java.util.regex.Matcher;
  */
 class FilePostFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FilePostFileRunner.class.getName());
-    private final static Semaphore SEMAPHORE = new Semaphore(5, true);
+    private final static Semaphore SEMAPHORE = new Semaphore(2, true);
 
     @Override
     public void runCheck() throws Exception {

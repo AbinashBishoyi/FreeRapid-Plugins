@@ -60,7 +60,7 @@ class RapidShareRunner extends AbstractRunner {
 
         checkLogin();
 
-        client.makeFinalRequestForFile(getMethod, httpFile);
+        client.makeFinalRequestForFile(getMethod, httpFile, false);
         // Redirect directly to download file.
         if (getMethod.getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
             logger.info("Direct download mode");
@@ -189,7 +189,7 @@ class RapidShareRunner extends AbstractRunner {
         final PostMethod method = client.getPostMethod(url);
         method.addParameter("mirror", "on");
         try {
-            final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
+            final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, true);//TODO redirect on?
             if (inputStream != null) {
                 downloadTask.saveToFile(inputStream);
             } else {

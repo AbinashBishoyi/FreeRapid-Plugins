@@ -70,7 +70,7 @@ class OronFileRunner extends AbstractRunner {
 			.toPostMethod();
 
 		if(!makeRequest(method))
-			unimplemented();
+			throw new ServiceConnectionProblemException();
 		checkProblems();
 
 		MethodBuilder request2 = getMethodBuilder()
@@ -86,11 +86,8 @@ class OronFileRunner extends AbstractRunner {
 			.toPostMethod();
 
 		if(!makeRequest(method2))
-			unimplemented();
+			throw new ServiceConnectionProblemException();
 		checkProblems();
-
-		if(getContentAsString().contains("<input type=\"submit\" name=\"method_free\""))
-			throw new CaptchaEntryInputMismatchException();
 
 		final HttpMethod method3 = getMethodBuilder()
 			.setActionFromAHrefWhereATagContains("Download")
@@ -123,6 +120,8 @@ class OronFileRunner extends AbstractRunner {
 					Integer.valueOf("0"+m.group(1))*3600+
 					Integer.valueOf("0"+m.group(2))*60+
 					Integer.valueOf("0"+m.group(3)));
+			if(getContentAsString().contains("Wrong captcha"))
+				throw new CaptchaEntryInputMismatchException();
 			unimplemented();
 		}
 	}

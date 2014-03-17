@@ -29,6 +29,7 @@ public class TestApp extends PluginDevApplication {
             //then we tries to download
             final BbcServiceImpl service = new BbcServiceImpl(); //instance of service - of our plugin
             SettingsConfig config = new SettingsConfig();
+            config.setVideoQuality(VideoQuality._480);
             config.setDownloadSubtitles(true);
             service.setConfig(config);
             //runcheck makes the validation

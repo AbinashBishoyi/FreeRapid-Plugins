@@ -5,7 +5,16 @@ package cz.vity.freerapid.plugins.services.bbc;
  */
 public class SettingsConfig {
 
+    private VideoQuality videoQuality = VideoQuality.Highest;
     private boolean downloadSubtitles = false;
+
+    public VideoQuality getVideoQuality() {
+        return videoQuality;
+    }
+
+    public void setVideoQuality(VideoQuality videoQuality) {
+        this.videoQuality = videoQuality;
+    }
 
     public boolean isDownloadSubtitles() {
         return downloadSubtitles;
@@ -18,7 +27,7 @@ public class SettingsConfig {
     @Override
     public String toString() {
         return "SettingsConfig{" +
-                "downloadSubtitles=" + downloadSubtitles +
+                "videoQuality=" + videoQuality +
                 '}';
     }
 }

@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
  */
 class BbcFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(BbcFileRunner.class.getName());
-
     private final static String SWF_URL = "http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
     private final static String DEFAULT_EXT = ".flv";
@@ -127,7 +126,13 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 }
                 pid = matcher.group(1);
             }
-            method = getGetMethod("http://www.bbc.co.uk/mediaselector/4/mtis/stream/" + pid + "?cb=" + new Random().nextInt(100000));
+            String mediaSelector;
+            try {
+                mediaSelector = PlugUtils.getStringBetween(getContentAsString(), "\"my_mediaselector_json_url\":\"", "\"").replace("\\/", "/").replace("/all/", "/stream/");
+            } catch (PluginImplementationException e) {
+                mediaSelector = "http://www.bbc.co.uk/mediaselector/4/mtis/stream/" + pid + "?cb=" + new Random().nextInt(100000);
+            }
+            method = getGetMethod(mediaSelector);
             if (!client.getSettings().isProxySet()) {
                 Tunlr.setupMethod(method);
             }
@@ -145,31 +150,8 @@ class BbcFileRunner extends AbstractRtmpRunner {
                     throw new NotRecoverableDownloadException("Error fetching playlist: '" + id + "'");
                 }
             }
-            final List<Stream> list = new ArrayList<Stream>();
-            try {
-                final NodeList nodeList = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
-                        new ByteArrayInputStream(getContentAsString().getBytes("UTF-8"))
-                ).getElementsByTagName("media");
-                for (int i = 0, n = nodeList.getLength(); i < n; i++) {
-                    try {
-                        final Element element = (Element) nodeList.item(i);
-                        if (config.isDownloadSubtitles() && element.getAttribute("kind").equals("captions")) {
-                            queueSubtitle(element);
-                        } else {
-                            final Stream stream = Stream.build(element);
-                            if (stream != null) {
-                                list.add(stream);
-                            }
-                        }
-                    } catch (Exception e) {
-                        LogUtils.processException(logger, e);
-                    }
-                }
-            } catch (Exception e) {
-                throw new PluginImplementationException("Error parsing playlist XML", e);
-            }
-            if (list.isEmpty()) throw new PluginImplementationException("No suitable streams found");
-            final RtmpSession rtmpSession = getRtmpSession(Collections.max(list));
+
+            final RtmpSession rtmpSession = getRtmpSession(getStream(getContentAsString()));
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
             helper.setSwfVerification(rtmpSession, client);
@@ -191,6 +173,85 @@ class BbcFileRunner extends AbstractRtmpRunner {
 
     private RtmpSession getRtmpSession(Stream stream) {
         return new RtmpSession(stream.server, 1935, stream.app, stream.play, stream.encrypted);
+    }
+
+    private Stream getStream(String content) throws Exception {
+        boolean video = false;
+        final List<Stream> list = new ArrayList<Stream>();
+        //streamMap
+        //For radio : key=bitrate, value=stream
+        //For TV    : key=quality, value=stream
+        //sorted by key, ascending
+        final TreeMap<Integer, Stream> streamMap = new TreeMap<Integer, Stream>();
+        try {
+            final NodeList nodeList = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(content.getBytes("UTF-8"))
+            ).getElementsByTagName("media");
+            for (int i = 0, n = nodeList.getLength(); i < n; i++) {
+                try {
+                    final Element element = (Element) nodeList.item(i);
+                    if (config.isDownloadSubtitles() && element.getAttribute("kind").equals("captions")) {
+                        queueSubtitle(element);
+                    } else {
+                        final Stream stream = Stream.build(element);
+                        if (stream != null) {
+                            list.add(stream);
+                            if (!video && element.getAttribute("kind").equals("video")) {
+                                video = true;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+        } catch (Exception e) {
+            throw new PluginImplementationException("Error parsing playlist XML", e);
+        }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No suitable streams found");
+        }
+
+        for (Stream stream : list) {
+            if (video) {
+                int quality = stream.quality;
+                if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate >= stream.bitrate)) { //put the highest bitrate on same quality
+                    continue;
+                }
+                streamMap.put(quality, stream); //For TV : key=quality, value=stream
+            } else {
+                streamMap.put(stream.bitrate, stream); //For radio : key=bitrate, value=stream
+            }
+        }
+
+        Stream selectedStream = null;
+        if (video) { //video/tv
+            if (config.getVideoQuality() == VideoQuality.Highest) {
+                selectedStream = streamMap.get(streamMap.lastKey());
+            } else if (config.getVideoQuality() == VideoQuality.Lowest) {
+                selectedStream = streamMap.get(streamMap.firstKey());
+            } else {
+                final int LOWER_QUALITY_PENALTY = 10;
+                int weight = Integer.MAX_VALUE;
+                for (Map.Entry<Integer, Stream> streamEntry : streamMap.entrySet()) {
+                    Stream stream = streamEntry.getValue();
+                    int deltaQ = stream.quality - config.getVideoQuality().getQuality();
+                    int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
+                    if (tempWeight < weight) {
+                        weight = tempWeight;
+                        selectedStream = stream;
+                    }
+                }
+            }
+        } else { //audio/radio, ignore config, always pick the highest bitrate
+            selectedStream = streamMap.get(streamMap.lastKey());
+        }
+
+        logger.info("Stream kind : " + (video ? "TV" : "Radio"));
+        if (video) {
+            logger.info("Config settings : " + config);
+        }
+        logger.info("Selected stream : " + selectedStream);
+        return selectedStream;
     }
 
     private boolean isSubtitle(String fileUrl) {
@@ -269,12 +330,13 @@ class BbcFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private static class Stream implements Comparable<Stream> {
+    private static class Stream {
         private final String server;
         private final String app;
         private final String play;
         private final boolean encrypted;
         private final int bitrate;
+        private final int quality;
 
         public static Stream build(final Element media) {
             final Element connection = (Element) media.getElementsByTagName("connection").item(0);
@@ -292,22 +354,21 @@ class BbcFileRunner extends AbstractRtmpRunner {
             final String play = connection.getAttribute("identifier");
             final boolean encrypted = protocol.startsWith("rtmpe") || protocol.startsWith("rtmpte");
             final int bitrate = Integer.parseInt(media.getAttribute("bitrate"));
-            return new Stream(server, app, play, encrypted, bitrate);
+            final boolean video = media.getAttribute("kind").equals("video");
+            final int quality = video ? Integer.parseInt(media.getAttribute("height")) : -1; //height as quality;
+            return new Stream(server, app, play, encrypted, bitrate, quality);
         }
 
-        private Stream(String server, String app, String play, boolean encrypted, int bitrate) {
+        private Stream(String server, String app, String play, boolean encrypted, int bitrate, int quality) {
             this.server = server;
             this.app = app;
             this.play = play;
             this.encrypted = encrypted;
             this.bitrate = bitrate;
+            this.quality = quality;
             logger.info("Found stream : " + this);
         }
 
-        @Override
-        public int compareTo(final Stream that) {
-            return Integer.valueOf(this.bitrate).compareTo(that.bitrate);
-        }
 
         @Override
         public String toString() {
@@ -317,6 +378,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                     ", play='" + play + '\'' +
                     ", encrypted=" + encrypted +
                     ", bitrate=" + bitrate +
+                    ", quality=" + quality +
                     '}';
         }
     }

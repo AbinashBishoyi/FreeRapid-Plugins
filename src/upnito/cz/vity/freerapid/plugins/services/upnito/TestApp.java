@@ -17,12 +17,13 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.upnito.sk/download.php?dwToken=8ab899bc3c0ddcbb7d8a4620a9a13b2e"));
-            httpFile.setNewURL(new URL("http://www.upnito.sk/download.php?dwToken=3fcc2d384254fb058e514834a6160c0b"));
+            //httpFile.setNewURL(new URL("http://www.upnito.sk/download.php?dwToken=3fcc2d384254fb058e514834a6160c0b"));
+            httpFile.setNewURL(new URL("http://www.upnito.sk/subor/8cf2ee9d80ab993d83fdf7f799b1e0de.html"));
             //musi fungovat take
             //   httpFile.setNewURL(new URL("http://www.upnito.sk/subor/3fcc2d384254fb058e514834a6160c0b.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final UpnitoShareServiceImpl service = new UpnitoShareServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

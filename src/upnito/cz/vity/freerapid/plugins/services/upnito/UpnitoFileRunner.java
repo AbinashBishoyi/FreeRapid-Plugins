@@ -3,9 +3,11 @@ package cz.vity.freerapid.plugins.services.upnito;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -42,9 +44,9 @@ class UpnitoFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         //novy zpusob stahovani souboru
-        if (fileURL.contains("download.php")) {
+        if (content.contains("download.php")) {
             //chyst·ö sa stiahnuù s˙bor flyshare.frp (<strong>4</strong>KB)</td>
-            PlugUtils.checkName(httpFile, content, "sa stiahnu\u0165 s\u00FAbor", "(");
+            PlugUtils.checkName(httpFile, content, "bor", "(<strong");
             Matcher matcher = PlugUtils.matcher("\\(<strong>([0-9]+)</strong>(.?B)\\)", content);
             if (matcher.find()) {
                 final long size = PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2));
@@ -78,17 +80,23 @@ class UpnitoFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-            client.setReferer(newUrl);
-            final PostMethod postMethod = getPostMethod(newUrl);
-            PlugUtils.addParameters(postMethod, contentAsString, new String[]{"dl2", "verifytext", "sid", "auth_token"});
 
-            postMethod.addParameter("file", "");
-            postMethod.addParameter("userinput", "");
-            postMethod.addParameter("validated", "yes");
-            postMethod.addParameter("tahaj", "Stiahnuù");
+            this.downloadTask.sleep(10);
+            final MethodBuilder builder = getMethodBuilder();
+            builder.setBaseURL("http://dl1.upnito.sk").setActionFromFormByName("gdl", true).setReferer(newUrl);
+            builder.setAndEncodeParameter("tahaj", "Stiahnuù");
+            final HttpMethod httpMethod = builder.toHttpMethod();
+            addCookie(new Cookie(".upnito.sk", "verifytext", builder.getParameters().get("verifytext")));
+//            final PostMethod postMethod = getPostMethod(newUrl);
+//            PlugUtils.addParameters(postMethod, contentAsString, new String[]{"dl2", "verifytext", "sid", "auth_token"});
+//
+//            postMethod.addParameter("file", "");
+//            postMethod.addParameter("userinput", "");
+//            postMethod.addParameter("validated", "yes");
+//            postMethod.addParameter("tahaj", "Stiahnuù");
 
             //downloadTask.sleep(650);
-            if (!tryDownloadAndSaveFile(postMethod)) {
+            if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 logger.warning(getContentAsString());
                 throw new IOException("File input stream is empty.");

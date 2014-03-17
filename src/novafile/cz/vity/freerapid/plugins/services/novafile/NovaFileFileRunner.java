@@ -1,10 +1,14 @@
 package cz.vity.freerapid.plugins.services.novafile;
 
 import cz.vity.freerapid.plugins.exceptions.BadLoginException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.List;
@@ -22,6 +26,18 @@ class NovaFileFileRunner extends XFileSharingRunner {
         final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
         fileSizeHandlers.add(0, new NovaFileFileSizeHandler());
         return fileSizeHandlers;
+    }
+
+    @Override
+    protected List<FileNameHandler> getFileNameHandlers() {
+        final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
+        fileNameHandlers.add(0, new FileNameHandler() {
+            @Override
+            public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
+                PlugUtils.checkName(httpFile, content, "class=\"name\">", "</");
+            }
+        });
+        return fileNameHandlers;
     }
 
     @Override

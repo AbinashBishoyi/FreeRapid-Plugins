@@ -20,7 +20,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://www.file2box.com/i75495lusvkq"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final File2BoxServiceImpl service = new File2BoxServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

@@ -1,23 +1,20 @@
 package cz.vity.freerapid.plugins.services.file2box;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
- * @author Vity
+ * @author Vity, Abinash Bishoyi
  */
 class File2BoxFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(File2BoxFileRunner.class.getName());
@@ -26,12 +23,13 @@ class File2BoxFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        throw new URLNotAvailableAnymoreException("Service Not Available Anymore.");
+        /*final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else
-            throw new PluginImplementationException();
+            throw new PluginImplementationException();*/
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
@@ -44,7 +42,8 @@ class File2BoxFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
+        throw new URLNotAvailableAnymoreException("Service Not Available Anymore.");
+        /*final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
@@ -94,7 +93,7 @@ class File2BoxFileRunner extends AbstractRunner {
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
-        }
+        }*/
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

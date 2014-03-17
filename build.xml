@@ -79,6 +79,7 @@
         <ant dir="${src.dir}/cramit" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/createfile" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/cryptit" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/ctdisk" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/czshare" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/czshare_profi" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/dailymotion" antfile="build.xml" inheritall="false"/>

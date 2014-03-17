@@ -1,18 +1,12 @@
 package cz.vity.freerapid.plugins.services.ctdisk;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -28,8 +22,8 @@ class CtdiskRunner extends AbstractRunner {
         super.runCheck();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            checkSizeAndName();
             checkProblems();
+            checkSizeAndName();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -58,7 +52,7 @@ class CtdiskRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException("Free download limit reached");
                     }
 
-                    final String downloadLinkBase64 = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"telecom\" href=\"", "\"" );
+                    final String downloadLinkBase64 = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"telecom\" href=\"", "\"");
                     final String downloadLink = new String(Base64.decodeBase64(downloadLinkBase64), "UTF-8");
                     logger.info(String.format("Download link: %s\nDecoded link: %s", downloadLinkBase64, downloadLink));
                     method = getMethodBuilder().setReferer(fileURL).setAction(downloadLink).toGetMethod();

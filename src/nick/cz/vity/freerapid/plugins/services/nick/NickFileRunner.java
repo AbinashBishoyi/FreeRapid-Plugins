@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.nick;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -64,11 +61,9 @@ class NickFileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String mgid = getMgid();
-            logger.info("mgid = " + mgid);
-            method = getGetMethod("http://udat.mtvnservices.com/service1/dispatch.htm?feed=nick_arc_player_prime&mgid=" + mgid);
-            //there seems to be no geocheck
-            //method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
+            final Cms cms = getCms();
+            method = getGetMethod(cms.getPlaylistUrl());
+            method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -78,13 +73,16 @@ class NickFileRunner extends AbstractRtmpRunner {
                 getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, videoItems);
                 httpFile.getProperties().put("removeCompleted", true);
             } else {
-                method = getGetMethod("http://media-utils.mtvnservices.com/services/MediaGenerator/" + mgid + "?arcStage=live&acceptMethods=fms,hdn1,hds");
-                //method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
+                method = getGetMethod(cms.getVideoInfoUrl());
+                method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
                 if (!makeRedirectedRequest(method)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
                 final String url = getStreamUrl();
+                if (!url.startsWith("rtmp")) {
+                    throw new NotRecoverableDownloadException("This video is unavailable from your location");
+                }
                 final RtmpSession rtmpSession = new RtmpSession(url);
                 final String playName = rtmpSession.getPlayName();
                 if (playName.endsWith(".mp4") && !playName.startsWith("mp4:")) {
@@ -99,12 +97,18 @@ class NickFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private String getMgid() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("mgid:arc:[^:]+:([^:]+):([a-z\\d\\-]+)");
+    private Cms getCms() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("mgid:(arc|cms):[^:]+:([^:]+):([a-z\\d\\-]+)");
         if (!matcher.find()) {
             throw new PluginImplementationException("Video ID not found");
         }
-        return "mgid:arc:video:" + matcher.group(1) + ":" + matcher.group(2);
+        final String mgid = "mgid:" + matcher.group(1) + ":video:" + matcher.group(2) + ":" + matcher.group(3);
+        logger.info("mgid = " + mgid);
+        if ("arc".equals(matcher.group(1))) {
+            return new ArcCms(mgid);
+        } else {
+            return new CmsCms(mgid);
+        }
     }
 
     private List<URI> getVideoItems() throws ErrorDuringDownloadingException {
@@ -164,6 +168,48 @@ class NickFileRunner extends AbstractRtmpRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().isEmpty() || getContentAsString().contains("The page you're looking for")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+    }
+
+    private static interface Cms {
+        String getPlaylistUrl();
+
+        String getVideoInfoUrl();
+    }
+
+    private static class CmsCms implements Cms {
+        private final String mgid;
+
+        public CmsCms(final String mgid) {
+            this.mgid = mgid;
+        }
+
+        @Override
+        public String getPlaylistUrl() {
+            return "http://www.nick.com/dynamo/video/data/mrssGen.jhtml?type=normal&demo=nill&mgid=" + mgid;
+        }
+
+        @Override
+        public String getVideoInfoUrl() {
+            return "http://www.nick.com/dynamo/video/data/mediaGen.jhtml?mgid=" + mgid;
+        }
+    }
+
+    private static class ArcCms implements Cms {
+        private final String mgid;
+
+        public ArcCms(final String mgid) {
+            this.mgid = mgid;
+        }
+
+        @Override
+        public String getPlaylistUrl() {
+            return "http://udat.mtvnservices.com/service1/dispatch.htm?feed=nick_arc_player_prime&mgid=" + mgid;
+        }
+
+        @Override
+        public String getVideoInfoUrl() {
+            return "http://media-utils.mtvnservices.com/services/MediaGenerator/" + mgid + "?arcStage=live&acceptMethods=fms,hdn1,hds";
         }
     }
 

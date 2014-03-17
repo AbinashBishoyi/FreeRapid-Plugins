@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareServiceImpl.java 2794 2010-11-14 18:49:02Z ntoskrnl $
+ * $Id: RapidShareServiceImpl.java 2993 2011-01-05 13:23:01Z ntoskrnl $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -27,6 +27,39 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Ladislav Vitásek &amp; Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
  */
 public class RapidShareServiceImpl extends AbstractFileShareService {
+
+    static {
+        if (!"yes".equals(System.getProperty("cz.vity.freerapid.updatechecked", null))) {
+            try {
+                System.setProperty("cz.vity.freerapid.updatechecked", "yes");
+                @SuppressWarnings("unchecked")
+                final Class<org.jdesktop.application.Application> mainApp =
+                        (Class<org.jdesktop.application.Application>) Class.forName("cz.vity.freerapid.core.MainApp");
+                try {
+                    //make sure that version < 0.85u1
+                    Class.forName("cz.vity.freerapid.plugins.webclient.utils.ScriptUtils");
+                } catch (ClassNotFoundException e) {
+                    {
+                        final java.io.File file = new java.io.File(cz.vity.freerapid.utilities.Utils.getAppPath(), "startup.properties");
+                        String s = cz.vity.freerapid.utilities.Utils.loadFile(file, "UTF-8");
+                        s = s.replaceAll("(?m)^\\-\\-debug$", "#--debug");
+                        if (file.delete()) {
+                            final java.io.OutputStream os = new java.io.BufferedOutputStream(new java.io.FileOutputStream(file));
+                            os.write(s.getBytes("UTF-8"));
+                            os.close();
+                        }
+                    }
+                    {
+                        final java.lang.reflect.Method startCheckNewVersion = mainApp.getDeclaredMethod("startCheckNewVersion");
+                        startCheckNewVersion.setAccessible(true);
+                        startCheckNewVersion.invoke(org.jdesktop.application.Application.getInstance(mainApp));
+                    }
+                }
+            } catch (Throwable t) {
+                //ignore
+            }
+        }
+    }
 
     private static final String SERVICE_NAME = "RapidShare.com (premium)";
     private static final String PLUGIN_CONFIG_FILE = "plugin_RapidSharePremium.xml";

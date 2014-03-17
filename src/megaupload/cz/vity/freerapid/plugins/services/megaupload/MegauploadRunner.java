@@ -50,6 +50,9 @@ class MegauploadRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
             Matcher matcher;
             //       captchaCount = 0;
+            if (getContentAsString().contains("download is password protected")) {
+                stepPasswordPage();
+            }
             while (getContentAsString().contains("Enter this")) {
                 stepCaptcha(getContentAsString());
             }
@@ -186,4 +189,25 @@ class MegauploadRunner extends AbstractRunner {
         }
         return s;
     }
+
+    private void stepPasswordPage() throws Exception {
+        while (getContentAsString().contains("Please enter the password below to proceed.")) {
+            PostMethod post1 = getPostMethod(fileURL);
+            post1.addParameter("filepassword", getPassword());
+            logger.info("Posting password to url - " + fileURL);
+            if (!makeRedirectedRequest(post1)) {
+                throw new PluginImplementationException();
+            }
+        }
+
+    }
+
+    private String getPassword() throws Exception {
+        MegauploadPasswordUI ps = new MegauploadPasswordUI();
+        if (getDialogSupport().showOKCancelDialog(ps, "Secured file on Megaupload")) {
+            return (ps.getPassword());
+        } else throw new NotRecoverableDownloadException("This file is secured with a password!");
+
+    }
+
 }

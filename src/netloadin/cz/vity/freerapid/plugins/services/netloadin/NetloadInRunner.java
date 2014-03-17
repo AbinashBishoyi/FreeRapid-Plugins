@@ -196,7 +196,7 @@ class NetloadInRunner extends AbstractRunner {
 
     private String getPassword() throws Exception {
         NetloadPasswordUI ps = new NetloadPasswordUI();
-        if (getDialogSupport().showOKCancelDialog(ps, "Enter password")) {
+        if (getDialogSupport().showOKCancelDialog(ps, "Secured file on Netload.in")) {
             return (ps.getPassword());
         } else throw new NotRecoverableDownloadException("This file is secured with a password!");
 

@@ -174,7 +174,8 @@ class BitRoadFileRunner extends AbstractRunner {
 
     private String readCaptchaImage(String captchaSrc) throws Exception {
         final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaSrc);
-        String captcha = PlugUtils.recognize(captchaImage, "-C A-z-0-9");
+        final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2, captchaImage.getHeight() - 2);
+        String captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
 
         if (captcha != null) {
             logger.info("Captcha - OCR recognized " + captcha);

@@ -46,27 +46,29 @@ class SecuredinRunner extends AbstractRunner {
             throw new PluginImplementationException("Can't load main page");
         }
         String content = getContentAsString();
-        matcher = PlugUtils.matcher("<input name=\"captcha_hash\".*value=\"(.*)\"", content);
-        if (matcher.find()) {
-            String captchaHash = matcher.group(1);
-            matcher = PlugUtils.matcher("<img src=\"(captcha-[^\"]+)", content);
+        while( content.contains("captcha_hash") ) {
+            matcher = PlugUtils.matcher("<input name=\"captcha_hash\".*value=\"(.*)\"", content);
             if (matcher.find()) {
-                String captchaImg = HTTP_BASE + matcher.group(1);
-                logger.info("Captcha image = " + captchaImg);
-                String captchaKey = getCaptchaSupport().getCaptcha(captchaImg);
-                if (captchaKey != null) {
-                    PostMethod pMethod = getPostMethod(fileURL);
-                    pMethod.addParameter("captcha_key", captchaKey);
-                    pMethod.addParameter("captcha_hash", captchaHash);
-                    if (!makeRequest(pMethod)) {
-                        throw new PluginImplementationException("Error posting Captcha Code ! Please Retry !");
-                    } else
-                        content = getContentAsString();
+                String captchaHash = matcher.group(1);
+                matcher = PlugUtils.matcher("<img src=\"(captcha-[^\"]+)", content);
+                if (matcher.find()) {
+                    String captchaImg = HTTP_BASE + matcher.group(1);
+                    logger.info("Captcha image = " + captchaImg);
+                    String captchaKey = getCaptchaSupport().getCaptcha(captchaImg);
+                    if (captchaKey != null) {
+                        PostMethod pMethod = getPostMethod(fileURL);
+                        pMethod.addParameter("captcha_key", captchaKey);
+                        pMethod.addParameter("captcha_hash", captchaHash);
+                        if (!makeRequest(pMethod)) {
+                            throw new PluginImplementationException("Error posting Captcha Code ! Please Retry !");
+                        } else
+                            content = getContentAsString();
+                    } else {
+                        throw new PluginImplementationException("Can't load captcha image");
+                    }
                 } else {
-                    throw new PluginImplementationException("Can't load captcha image");
+                    throw new PluginImplementationException("Can't find captcha image");
                 }
-            } else {
-                throw new PluginImplementationException("Can't find captcha image");
             }
         }
         matcher = PlugUtils.matcher("accessDownload\\([\\w|,|\\s]+\\'([\\w|-]+)\\'", content);

@@ -1,46 +1,30 @@
 /*
  * Filename.......: RapidShareLoginUI.java
  * Project........: cz.vity.freerapid.plugins.services.rapidshare_premium
- * Last modified..: $Date: 2008-09-16 19:30:16 +0530 (Tue, 16 Sep 2008) $
- * Revision.......: $Revision: 556 $
+ * Last modified..: $Date: 2008-09-17 19:24:33 +0530 (Wed, 17 Sep 2008) $
+ * Revision.......: $Revision: 571 $
  * Author.........: Tomáš Procházka <tomas.prochazka@atomsoft.cz>
  * Created date...: 16.9.2008 9:29:09 GMT +2
  */
 
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
-import java.awt.Dimension;
 import java.awt.Frame;
 
 /**
  * Login UI.
  * 
  * @author Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
- * @version $Revision: 556 $ ($Date: 2008-09-16 19:30:16 +0530 (Tue, 16 Sep 2008) $)
+ * @version $Revision: 571 $ ($Date: 2008-09-17 19:24:33 +0530 (Wed, 17 Sep 2008) $)
  */
-public class RapidShareLoginUI extends javax.swing.JDialog {
+class RapidShareLoginUI extends javax.swing.JDialog {
 
 	/** Creates new form RapidShareLoginUI */
 	public RapidShareLoginUI() {
 		//super(new JFrame(), true);
 		super(Frame.getFrames()[0], true);
 		initComponents();
-
 		this.setName("RapidSharePremiumLogin");
-
-		/*
-		this.locateOnScreenCenter();
-		this.setVisible(true);
-		this.setAlwaysOnTop(true);
-		 */
-	}
-
-	public void locateOnScreenCenter() {
-		Dimension paneSize = this.getSize();
-		Dimension screenSize = this.getToolkit().getScreenSize();
-		this.setLocation(
-				(screenSize.width - paneSize.width) / 2,
-				(int) ((screenSize.height - paneSize.height) * 0.45));
 	}
 
 	/** This method is called from within the constructor to
@@ -80,7 +64,7 @@ public class RapidShareLoginUI extends javax.swing.JDialog {
         okButton.setName("okButton"); // NOI18N
         okButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                okButtonActionPerformed(evt);
+                okButtonActionPerformed();
             }
         });
 
@@ -103,7 +87,7 @@ public class RapidShareLoginUI extends javax.swing.JDialog {
                 .addContainerGap())
         );
 
-        panelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {loginLabel, passwordLabel});
+        panelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, loginLabel, passwordLabel);
 
         panelLayout.setVerticalGroup(
             panelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -135,29 +119,9 @@ public class RapidShareLoginUI extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-	private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okButtonActionPerformed
+	private void okButtonActionPerformed() {//GEN-FIRST:event_okButtonActionPerformed
 		this.setVisible(false);
 	}//GEN-LAST:event_okButtonActionPerformed
-
-	/**
-	 * @param args the command line arguments
-	 */
-	public static RapidShareLoginUI open() {
-		java.awt.EventQueue.invokeLater(new Runnable() {
-
-			public void run() {
-				instance = new RapidShareLoginUI();
-				instance.setVisible(true);
-			}
-		});
-
-		do {
-			Thread.yield();
-			System.out.println(instance);
-		} while (instance == null);
-
-		return instance;
-	}
 
 	public String getLogin() {
 		return loginField.getText();
@@ -166,10 +130,8 @@ public class RapidShareLoginUI extends javax.swing.JDialog {
 	public String getPassword() {
 		return new String(passwordField.getPassword());
 	}
-	private static RapidShareLoginUI instance = null;
-	;
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+	// Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField loginField;
     private javax.swing.JLabel loginLabel;
     private javax.swing.JButton okButton;

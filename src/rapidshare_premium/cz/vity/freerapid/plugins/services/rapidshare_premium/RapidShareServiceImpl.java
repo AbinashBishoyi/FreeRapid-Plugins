@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
  */
 public class RapidShareServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "RapidShare.com (premium)";
+    private static final String SERVICE_NAME = "RapidShare.com";
     private final static Pattern pattern = Pattern.compile("http://(www\\.)?rapidshare\\.com/files/[0-9]*/.*", Pattern.CASE_INSENSITIVE);
 
     public String getName() {

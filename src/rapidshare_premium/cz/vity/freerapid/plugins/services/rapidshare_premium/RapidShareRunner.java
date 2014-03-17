@@ -32,7 +32,7 @@ class RapidShareRunner {
 
 	public void run(HttpFileDownloader downloader) throws Exception {
 
-		configProvider = new RapidShareConfigProvider();
+		configProvider = RapidShareConfigProvider.getInstance();
 		logger.info("Starting download in TASK " + downloader.getDownloadFile().getFileUrl());
 		client = downloader.getClient();
 
@@ -49,14 +49,14 @@ class RapidShareRunner {
 		} while (i < 4);
 	}
 
-	private void tryDownload(HttpFileDownloader downloader) throws IOException, Exception {
+	private void tryDownload(HttpFileDownloader downloader) throws Exception {
 		HttpFile httpFile = downloader.getDownloadFile();
 		final String fileURL = httpFile.getFileUrl().toString();
 		final GetMethod getMethod = client.getGetMethod(fileURL);
 
 		checkLogin();
 
-		InputStream is = client.makeFinalRequestForFile(getMethod, httpFile);
+		client.makeFinalRequestForFile(getMethod, httpFile);
 		// Redirect directly to download file.
 		if (getMethod.getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
 			logger.info("Direct download mode");
@@ -67,7 +67,7 @@ class RapidShareRunner {
 				newUri = header.getValue();
 			}
 			if (newUri != null) {
-				finalDownload(newUri, downloader, 0);
+				finalDownload(newUri, downloader);
 			}
 		} else if (getMethod.getStatusCode() == HttpStatus.SC_OK) {
 
@@ -96,7 +96,7 @@ class RapidShareRunner {
 					matcher = Pattern.compile("(http://.*?\\.rapidshare\\.com/files/.*?)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
 					if (matcher.find()) {
 						s = matcher.group(1);
-						finalDownload(s, downloader, 0);
+						finalDownload(s, downloader);
 					} else {
 						checkProblems();
 						logger.info(client.getContentAsString());
@@ -148,9 +148,9 @@ class RapidShareRunner {
 		}
 	}
 
-	private void finalDownload(String url, HttpFileDownloader downloader, int seconds) throws Exception, IllegalArgumentException, InterruptedException {
+	private void finalDownload(String url, HttpFileDownloader downloader) throws Exception {
 		logger.info("Download URL: " + url);
-		downloader.sleep(seconds + 1);
+		downloader.sleep(0);
 		if (downloader.isTerminated()) {
 			throw new InterruptedException();
 		}

@@ -1,8 +1,8 @@
 /*
  * Filename.......: RapidShareConfig.java
  * Project........: cz.vity.freerapid.plugins.services.rapidshare_premium
- * Last modified..: $Date: 2008-09-16 19:30:16 +0530 (Tue, 16 Sep 2008) $
- * Revision.......: $Revision: 556 $
+ * Last modified..: $Date: 2008-09-17 19:24:33 +0530 (Wed, 17 Sep 2008) $
+ * Revision.......: $Revision: 571 $
  * Author.........: Tomáš Procházka <tomas.prochazka@atomsoft.cz>
  * Created date...: 15.9.2008 7:12:51 GMT +2
  */
@@ -11,12 +11,14 @@ package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * POJO for RS account configuration.
  *
  * @author Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
- * @version $Revision: 556 $ ($Date: 2008-09-16 19:30:16 +0530 (Tue, 16 Sep 2008) $)
+ * @version $Revision: 571 $ ($Date: 2008-09-17 19:24:33 +0530 (Wed, 17 Sep 2008) $)
  */
 public class RapidShareConfig {
 
@@ -56,6 +58,7 @@ public class RapidShareConfig {
 			try {
 				return login + "-" + URLEncoder.encode(password, "UTF-8");
 			} catch (UnsupportedEncodingException ex1) {
+				Logger.getLogger(RapidShareConfigProvider.class.getName()).log(Level.SEVERE, "Password encoding failed.");
 			}
 		}
 		return "";

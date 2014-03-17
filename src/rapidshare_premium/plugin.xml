@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="rapidshare.com" version="0.8"
+<plugin id="rapidshare.com" version="0.9"
         class="cz.vity.freerapid.plugins.services.rapidshare_premium.RapidShareServiceImpl">
     <runtime>
         <library id="rapidshare.com" path="/" type="code"/>

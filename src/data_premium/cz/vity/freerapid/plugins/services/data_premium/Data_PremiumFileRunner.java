@@ -50,26 +50,19 @@ class Data_PremiumFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
-            Matcher matcher = getMatcherAgainstContent("<input type=\"submit\" onclick=\"document.loginform.submit");
+            Matcher matcher = getMatcherAgainstContent("class=\"login_button\"");
             if (matcher.find()) {
                 logger.info("Starting login");
                 Login();
             }
 
 
-            matcher = getMatcherAgainstContent("<a href=\"/premium.php\">Nem vagy prémium");
+            matcher = getMatcherAgainstContent("Nincs érvényes prémium elõfizetésed!");
             if (matcher.find()) {
                 logger.info("No premium");
                 throw new NotRecoverableDownloadException("Not premium account!");
             }
-            matcher = getMatcherAgainstContent("Tovább a Fõoldalra");
-            if (matcher.find()) {
-              String url = fileURL;
-                HttpMethod m = getGetMethod(url);
-                makeRequest(m);
-                logger.info("Advertisment fails!");
-            }
-            matcher = getMatcherAgainstContent("window.location.href='(.*?)';");
+            matcher = getMatcherAgainstContent("<a href=\"(.*?)\" onmousedown=\"reload_median");
             if (matcher.find()) {
                 String downURL = matcher.group(1);
                 logger.info("downURL: " + downURL);
@@ -107,11 +100,11 @@ class Data_PremiumFileRunner extends AbstractRunner {
             }
             String redirname = redir.group(1);
 
-            Matcher matcher = PlugUtils.matcher("<form name=\"([^\"]+)\" action=\"([^\"]+)\" method=\"post\" autocomplete=\"off\">", getContentAsString());
+            Matcher matcher = PlugUtils.matcher("<form name=\"([^\"]+)\" id=\"([^\"]+)\" action=\"([^\"]+)\" method=\"post\" autocomplete=\"off\">", getContentAsString());
             if (!matcher.find()) {
                 throw new PluginImplementationException();
             }
-            String postURL = matcher.group(2);
+            String postURL = matcher.group(3);
             Matcher pass = PlugUtils.matcher("<input type=\"password\" name=\"([^\"]+)\"", getContentAsString());
             if (!pass.find()) {
                 throw new PluginImplementationException();
@@ -131,13 +124,14 @@ class Data_PremiumFileRunner extends AbstractRunner {
             postmethod.addParameter("remember", "on");
 
             if (makeRedirectedRequest(postmethod)) {
-                matcher = getMatcherAgainstContent("<input type=\"submit\" onclick=\"document.loginform.submit");
+                matcher = getMatcherAgainstContent("class=\"login_button\"");
                 if (matcher.find()) {
                     badConfig = true;
                     logger.info("bad info");
                     throw new NotRecoverableDownloadException("Bad data.hu login information!");
                 }
             } else {
+                logger.info(postURL);
                 throw new PluginImplementationException("Bad login URL");
             }
         }

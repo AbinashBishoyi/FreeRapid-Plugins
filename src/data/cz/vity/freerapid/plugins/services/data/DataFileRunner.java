@@ -48,7 +48,7 @@ class DataFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final Matcher matcher = getMatcherAgainstContent("download_it\"><a href=\"(.*?)\"");
+            final Matcher matcher = getMatcherAgainstContent("download_box_button\"><a href=\"(.*?)\"");
             if (matcher.find()) {
                 final String downURL = matcher.group(1);
                 logger.info("downURL: " + downURL);

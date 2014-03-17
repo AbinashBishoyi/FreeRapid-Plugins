@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 class RapidLibraryFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidLibraryFileRunner.class.getName());
-    private int captchaCounter = 1, captchaMax = 10;
+    private int captchaCounter = 1, captchaMax = 3;
 
 
     @Override

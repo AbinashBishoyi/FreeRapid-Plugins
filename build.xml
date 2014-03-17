@@ -111,6 +111,13 @@
         <ant dir="${src.dir}/badongo/" antfile="build.xml" inheritall="false"/>
     </target>
 
+    <target name="manualBuild" description="building">
+        <input message="Get plugin folder name to build" addproperty="input.plugin"/>
+
+        <ant dir="${src.dir}/${input.plugin}/" antfile="build.xml" inheritall="false"/>
+        <echo message="Plugin ${input.plugin} was succesfully built"/>
+    </target>
+
 
     <target name="init" description="initialization">
         <tstamp/>

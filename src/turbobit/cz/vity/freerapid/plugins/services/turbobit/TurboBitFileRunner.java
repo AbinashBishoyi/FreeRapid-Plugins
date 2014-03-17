@@ -102,6 +102,9 @@ public class TurboBitFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
+            if (getContentAsString().contains("Error: 2965")) {
+                throw new PluginImplementationException("Plugin is broken, xor value has changed");
+            }
 
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
@@ -197,7 +200,7 @@ public class TurboBitFileRunner extends AbstractRunner {
         final String random = String.valueOf(1 + new Random().nextInt(100000));
         final byte[] bytes = (fileId + random).getBytes("ISO-8859-1");
         for (int i = 0; i < bytes.length; i++) {
-            bytes[i] ^= 1;
+            bytes[i] ^= 61;
         }
         final String base64 = Base64.encodeBase64String(bytes).replace('/', '_');
         return "/download/getlinktimeout/" + fileId + "/" + random + "/" + base64;

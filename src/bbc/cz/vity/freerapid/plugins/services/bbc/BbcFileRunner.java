@@ -12,7 +12,6 @@ import jlibs.core.net.URLUtil;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -288,46 +287,13 @@ class BbcFileRunner extends AbstractRtmpRunner {
         }
         checkProblems();
 
-        //Timed Text to SubRip
-        StringBuilder subtitleSb = new StringBuilder();
-        try {
-            Element body = (Element) DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(getContentAsString().getBytes("UTF-8"))).getElementsByTagName("body").item(0);
-            NodeList pElements = body.getElementsByTagName("p");
-            for (int i = 0, pElementsLength = pElements.getLength(); i < pElementsLength; i++) {
-                Element pElement = (Element) pElements.item(i);
-                subtitleSb.append(i + 1).append("\n");
-                subtitleSb.append(pElement.getAttribute("begin").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d)$", ",00$1")); //pad out, 3 digits
-                subtitleSb.append(" --> ");
-                subtitleSb.append(pElement.getAttribute("end").replace(".", ",").replaceFirst(",(\\d{2})$", ",0$1").replaceFirst(",(\\d)$", ",00$1"));
-                subtitleSb.append("\n");
-                addSubtitleElement(subtitleSb, pElement.getChildNodes(), pElement.getChildNodes().getLength(), 0);
-                subtitleSb.append("\n\n");
-            }
-        } catch (Exception e) {
-            LogUtils.processException(logger, e);
-        }
-
-        final byte[] subtitle = subtitleSb.toString().getBytes("UTF-8");
+        final byte[] subtitle = TimedText2Srt.convert(getContentAsString()).getBytes("UTF-8");
         httpFile.setFileSize(subtitle.length);
         try {
             downloadTask.saveToFile(new ByteArrayInputStream(subtitle));
         } catch (Exception e) {
             LogUtils.processException(logger, e);
             throw new PluginImplementationException("Error saving subtitle", e);
-        }
-    }
-
-    private void addSubtitleElement(StringBuilder sb, NodeList childNodes, int childNodeLength, int childNodeCounter) throws PluginImplementationException {
-        if (childNodeCounter < childNodeLength) {
-            Node childNode = childNodes.item(childNodeCounter);
-            if (childNode.getNodeName().equals("br")) {
-                sb.append("\n");
-            } else if (childNode.getNodeName().equals("#text")) {
-                sb.append(PlugUtils.unescapeUnicode(childNode.getNodeValue().trim()));
-            } else if (childNode.getNodeName().equals("span")) {
-                addSubtitleElement(sb, childNode.getChildNodes(), childNode.getChildNodes().getLength(), 0);
-            }
-            addSubtitleElement(sb, childNodes, childNodeLength, childNodeCounter + 1);
         }
     }
 

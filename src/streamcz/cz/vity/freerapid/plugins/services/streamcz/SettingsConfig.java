@@ -4,7 +4,7 @@ package cz.vity.freerapid.plugins.services.streamcz;
  * @author tong2shot
  */
 public class SettingsConfig {
-    private VideoQuality videoQuality = VideoQuality._480;
+    private VideoQuality videoQuality = VideoQuality._720;
 
     public VideoQuality getVideoQuality() {
         return videoQuality;

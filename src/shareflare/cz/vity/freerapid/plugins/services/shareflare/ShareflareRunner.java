@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 
@@ -35,8 +36,8 @@ class ShareflareRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<p>File:", "</p>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<p>Size:", "</p>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "File: <span>", "</span>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "[<span>", "</span>]");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -71,10 +72,17 @@ class ShareflareRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
 
-        final HttpMethod httpMethod4 = getMethodBuilder()
-                .setActionFromAHrefWhereATagContains("Your link to file download")
-                .setReferer(methodBuilder.getEscapedURI())
-                .toGetMethod();
+        final HttpMethod httpMethod31 = getMethodBuilder().setReferer(methodBuilder.getEscapedURI()).setActionFromTextBetween("window.location.href=\"", "\";").toGetMethod();
+        int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "y = ", ";", TimeUnit.SECONDS);
+        downloadTask.sleep(waitTime+1);
+        if (!makeRedirectedRequest(httpMethod31)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+
+        String action = PlugUtils.getStringBetween(getContentAsString(), "direct_links = {", "\" :");
+        action = action.substring( action.indexOf("http") );
+        final HttpMethod httpMethod4 = getMethodBuilder().setAction(action).toGetMethod();
         if (!tryDownloadAndSaveFile(httpMethod4)) {
             checkProblems();
             throw new ServiceConnectionProblemException("Error starting download");

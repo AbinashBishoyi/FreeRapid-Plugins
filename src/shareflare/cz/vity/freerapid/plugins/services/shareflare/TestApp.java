@@ -18,7 +18,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
 
-            httpFile.setNewURL(new URL("http://shareflare.net/download/5978.54cfc9fa9a3b2495a671e860a000/Maksimal_Drive.rar.html"));
+            httpFile.setNewURL(new URL("http://shareflare.net/download/90756.909741e4d128441be0b7b5e6fb09/3dmaxemaya.part01.rar.html"));
 
             // httpFile.setNewURL(new URL("http://shareflare.net/download/76849.76d21d2528f62b25c3de425c088ca4688/logovq.zip.html"));
             //the way we connect to the internet
@@ -41,7 +41,7 @@ public class TestApp extends PluginDevApplication {
      * @param args arguments for application
      */
     public static void main(String[] args) throws IOException, ClassNotFoundException {
-        Application.launch(TestApp.class, args);//starts the application - calls startup() internally     
+        Application.launch(TestApp.class, args);//starts the application - calls startup() internally
 //        InputStream in = TestApp.class.getResourceAsStream("/resources/shareflare-captcha.bin");
 //        //InputStream in = new ByteArrayInputStream(letters);
 //        GZIPInputStream gzis = new GZIPInputStream(in);

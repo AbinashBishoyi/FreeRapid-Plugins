@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -42,7 +43,7 @@ class HellshareRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
 
         final int fid;
-        final Matcher fidMatcher = PlugUtils.matcher("http://(?:www\\.)?download\\.hellshare\\.[a-z]{2,3}/[^/]+/(\\d+)/?", fileURL);
+        final Matcher fidMatcher = PlugUtils.matcher("http://(?:www\\.)?download\\.hellshare\\.[a-z]{2,3}/[^/]+/(?:[^/]+/)?(\\d+)/?", fileURL);
         if (fidMatcher.find()) {
             fid = Integer.parseInt(fidMatcher.group(1));
         } else {
@@ -83,10 +84,16 @@ class HellshareRunner extends AbstractRunner {
             if (saveSucceed = tryDownloadAndSaveFile(httpMethod)) {
                 break;
             }
+            final Header header = httpMethod.getResponseHeader("Location");
+            if (header != null) {
+                if (header.getValue().contains("/?error=")) //there is no popup shown, no captcha, no error message found, web UI doesn't respond
+                    throw new ServiceConnectionProblemException("Server didn't respond");
+            }
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            checkProblems();
         }
         if (!saveSucceed) {
             checkProblems();
@@ -109,7 +116,7 @@ class HellshareRunner extends AbstractRunner {
                 .getAction();
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captcha;
-        captchaCounter = CAPTCHA_MAX + 1; //it seems captcha recognizer is broken, comment this line if captcha recognizer works.
+        //captchaCounter = CAPTCHA_MAX + 1; //it seems captcha recognizer is broken, comment this line if captcha recognizer works.
         if (captchaCounter <= CAPTCHA_MAX) {
             final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaURL));
             captcha = new CaptchaRecognizer().recognize(captchaImage);

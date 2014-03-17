@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author Arthur Gunawan
  */
 public class LinksaveServiceImpl extends AbstractFileShareService {
@@ -14,12 +15,12 @@ public class LinksaveServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 10;
+        return 9;
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return false;//ok
+        return false;
     }
 
     @Override

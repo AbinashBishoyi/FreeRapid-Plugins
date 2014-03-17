@@ -1,134 +1,153 @@
 package cz.vity.freerapid.plugins.services.linksave;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-// import java.net.urlDECODER;
-import java.net.URLDecoder;
-import java.net.URL;
-import java.lang.Character;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
- * @author Arthur Gunawan
+ * @author Arthur Gunawan, ntoskrnl
  */
 class LinksaveFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LinksaveFileRunner.class.getName());
-
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
 
+            while (getContentAsString().contains("captcha")) {
+                if (!makeRedirectedRequest(stepCaptcha())) throw new ServiceConnectionProblemException();
+                if (getContentAsString().contains("Wrong code")) {
+                    if (!makeRedirectedRequest(method)) throw new ServiceConnectionProblemException();
+                }
+            }
 
-        if (fileURL.length() < 42) {
-            final String escapedURI = getMethodBuilder().setAction(PlugUtils.unescapeHtml(fileURL)).toHttpMethod().getURI().getEscapedURI();
-            logger.info("New Link : " + escapedURI);     //Debug purpose, show the new found link
-            this.httpFile.setNewURL(new URL(escapedURI));  //Set New URL for the link
-            this.httpFile.setPluginID("linksavegroup.in");
-            this.httpFile.setState(DownloadState.QUEUED);
+            //preparations - these will be used as progress indicators
+            long size = 0;
+            int count = 1;
+            final Matcher prep = getMatcherAgainstContent("<td align=\"center\">(?:&lt;)?([^<>]+?)</td>");
+            if (prep.find(0)) {
+                size = PlugUtils.getFileSizeFromString(prep.group(1));
+                httpFile.setFileSize(size);
+            }
+            if (prep.find(prep.end())) {
+                count = Integer.valueOf(prep.group(1));
+            }
+            //avoid division by zero, just in case
+            if (count < 1) count = 1;
+            httpFile.setState(DownloadState.GETTING);
 
+            //first check for "premiumlinks" AKA unprotected plaintext links
+            Matcher matcher = getMatcherAgainstContent("(?s)<textarea[^<>]*>(.+?)</textarea>");
+            if (matcher.find()) {
+                final String found = matcher.group(1).trim();
+                final String[] split = found.split("\\s+");
 
+                final List<URI> uriList = new LinkedList<URI>();
+                for (String link : split) {
+                    link = link.trim();
+                    if (link == null || link.isEmpty()) continue;
+                    try {
+                        uriList.add(new URI(link));
+                    } catch (URISyntaxException e) {
+                        LogUtils.processException(logger, e);
+                    }
+                }
+                httpFile.setDownloaded(size);
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+
+                return;
+            }
+
+            //then check for "webprotection" links
+            final List<URI> uriList = new LinkedList<URI>();
+            int page = 1;
+            String content;
+            int i = 0;
+            do {
+                if (page > 1) {
+                    final HttpMethod pageMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL + "?s=" + page + "#down").toGetMethod();
+                    if (!makeRedirectedRequest(pageMethod)) throw new ServiceConnectionProblemException();
+                }
+                content = getContentAsString();
+                matcher = getMatcherAgainstContent("href=\"(http://.+?)\" onclick=\"javascript:");
+                if (matcher.find()) {
+                    int start = 0;
+                    while (matcher.find(start)) {
+                        final String link = unWebProtect(matcher.group(1));
+                        try {
+                            uriList.add(new URI(link));
+                        } catch (URISyntaxException e) {
+                            LogUtils.processException(logger, e);
+                        }
+                        start = matcher.end();
+                        httpFile.setDownloaded(++i * (size / count));
+                    }
+                } else break;
+            } while (content.contains(">[" + ++page + "]<"));
+
+            if (!uriList.isEmpty()) {
+                httpFile.setDownloaded(size);
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+            } else {
+                //this might happen eg. if only containers are available
+                throw new NotRecoverableDownloadException("No download links found");
+            }
         } else {
-
-
-            GetMethod method = getGetMethod(fileURL); //create GET request
-            if (!makeRedirectedRequest(method)) { //we make the main request
-                checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
-            }
-            String contentAsString = getContentAsString();//check for response
-
-
-            if (contentAsString.contains("downloadbutton_highlight.png")) {
-                String mLink = PlugUtils.getStringBetween(contentAsString, "<a href=\"", "\" onclick=\"javascript:document.getElementById");
-                method = getGetMethod(PlugUtils.unescapeHtml(mLink));
-                if (!makeRedirectedRequest(method)) { //we make the main request
-                    checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
-                }
-                contentAsString = getContentAsString();//check for response
-
-            }
-
-            String mLink = PlugUtils.getStringBetween(contentAsString, "\"auto\" noresize src=\"", "\"");
-
-            logger.info(mLink);
-            method = getGetMethod(mLink);
-            if (!makeRedirectedRequest(method)) { //we make the main request
-                checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
-            }
-            contentAsString = getContentAsString();//check for response
-            logger.info(contentAsString);
-
-
-            if (contentAsString.contains("<iframe src=\"&#")) {
-                String unCode = PlugUtils.getStringBetween(contentAsString, "<iframe src=\"", "\"");
-
-                logger.info("Code : " + PlugUtils.unescapeHtml(unCode));
-
-                final String escapedURI = getMethodBuilder().setAction(PlugUtils.unescapeHtml(unCode)).toHttpMethod().getURI().getEscapedURI();
-                logger.info("New Link : " + escapedURI);     //Debug purpose, show the new found link
-                this.httpFile.setNewURL(new URL(escapedURI));  //Set New URL for the link
-                this.httpFile.setPluginID("");
-                this.httpFile.setState(DownloadState.QUEUED);
-
-
-                contentAsString = getContentAsString();//check for response
-
-            }
-
-            if (contentAsString.contains("llIIllIIlIIIIIllllllllllllllllllIIIIIl")) {
-                String unCode = PlugUtils.getStringBetween(contentAsString, "IIIIIl(\"", "\"");
-                String mCode = URLDecoder.decode(unCode, "UTF-8");
-                String mEncrypted = PlugUtils.getStringBetween(mCode, "a('", "')");
-                String mDecrypted = decrypt(mEncrypted);
-
-                logger.info("Decodes : " + mCode);
-                logger.info("Decrypt : " + mDecrypted);
-
-
-                String encURL = "http://" + PlugUtils.getStringBetween(mDecrypted, "http://", "\"");
-                encURL = encURL.replace("');", "");
-
-
-                logger.info("Enc URL: " + encURL);
-
-
-                method = getGetMethod(encURL);
-                if (!makeRedirectedRequest(method)) { //we make the main request
-                    checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
-                }
-                contentAsString = getContentAsString();//check for response
-
-            }
-
-            mLink = PlugUtils.getStringBetween(contentAsString, "iframe src=\"", "\"");
-            final String escapedURI = getMethodBuilder().setAction(PlugUtils.unescapeHtml(mLink)).toHttpMethod().getURI().getEscapedURI();
-            logger.info("New Link : " + escapedURI);     //Debug purpose, show the new found link
-            this.httpFile.setNewURL(new URL(escapedURI));  //Set New URL for the link
-            this.httpFile.setPluginID("");
-            this.httpFile.setState(DownloadState.QUEUED);
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("Folder not found") || content.contains("<h1>404 - Not Found</h1>")) {
+            throw new URLNotAvailableAnymoreException("Folder not found");
+        }
+    }
+
+    private String unWebProtect(final String url) throws Exception {
+        HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
+        if (!makeRedirectedRequest(method)) throw new ServiceConnectionProblemException();
+
+        method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromIFrameSrcWhereTagContains("scrolling=\"auto\"").toGetMethod();
+        if (!makeRedirectedRequest(method)) throw new ServiceConnectionProblemException();
+
+        if (getContentAsString().contains("IIIIIl(\"")) {
+            final String toUnescape = PlugUtils.getStringBetween(getContentAsString(), "IIIIIl(\"", "\"");
+            final String unescaped = URLDecoder.decode(toUnescape, "UTF-8");
+            final String toDecrypt = PlugUtils.getStringBetween(unescaped, "a('", "')");
+            final String decrypted = decrypt(toDecrypt);
+
+            final Matcher matcher = PlugUtils.matcher("(?:location\\.replace\\('|src=\"|URL=)(.+?)['\"\\)]", decrypted);
+            if (!matcher.find()) throw new PluginImplementationException("Problem with final download link");
+
+            method = getMethodBuilder(decrypted).setReferer(method.getURI().toString()).setAction(matcher.group(1)).toGetMethod();
+            if (!makeRedirectedRequest(method)) throw new ServiceConnectionProblemException();
+        }
+
+        final String src = PlugUtils.getStringBetween(getContentAsString(), "<iframe src=\"", "\"");
+
+        return PlugUtils.unescapeHtml(src);
+    }
 
     private String decrypt(String m) {
         String c = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -152,25 +171,38 @@ class LinksaveFileRunner extends AbstractRunner {
             char nCode = (char) d;
             b = b + nCode;
             if (k != 64) {
-
                 nCode = (char) e;
-
                 b = b + nCode;
             }
             if (l != 64) {
-
                 nCode = (char) f;
                 b = b + nCode;
             }
         } while (i < m.length());
+
         return b;
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {//TODO
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
-        }
+    private HttpMethod stepCaptcha() throws Exception {
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final String captchaURL = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
+        logger.info("Captcha URL " + captchaURL);
+
+        final String captcha = captchaSupport.getCaptcha(captchaURL);
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
+        logger.info("Manual captcha " + captcha);
+
+        return getMethodBuilder()
+                .setReferer(fileURL)
+                .setBaseURL(fileURL)
+                .setActionFromFormWhereTagContains("captcha", true)
+                .setParameter("code", captcha)
+                .toPostMethod();
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://linksave.in/";
     }
 
 }

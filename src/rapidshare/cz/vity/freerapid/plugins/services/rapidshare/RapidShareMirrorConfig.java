@@ -1,17 +1,18 @@
 package cz.vity.freerapid.plugins.services.rapidshare;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 
 public class RapidShareMirrorConfig {
-    private ArrayList<MirrorBean> ar;
+    private List<MirrorBean> ar = Collections.emptyList();
     private MirrorBean chosen;
 
-    public ArrayList<MirrorBean> getAr() {
+    public List<MirrorBean> getAr() {
         return ar;
     }
 
-    public void setAr(ArrayList<MirrorBean> ar) {
+    public void setAr(List<MirrorBean> ar) {
         this.ar = ar;
     }
 

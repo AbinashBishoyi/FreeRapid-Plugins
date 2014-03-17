@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSuppor
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -65,25 +66,30 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
 
     @Override
     public void showOptions() throws Exception {
-        MirrorChooser chooser = new MirrorChooser(getPluginContext(), getConfig());
+
+        //this bloody shit should be rewritten
+        final RapidShareMirrorConfig config = getConfig();
+        MirrorChooser chooser = new MirrorChooser(getPluginContext(), config);
         chooser.chooseFromList();
     }
 
     RapidShareMirrorConfig getConfig() throws Exception {
-
         ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
         if (mirrorConfig == null)
-            if (!storage.configFileExists(MirrorChooser.CONFIGFILE)) {
-                logger.info("Initializing new mirrorConfig ");
-                mirrorConfig = new RapidShareMirrorConfig();
-                mirrorConfig.setAr(new ArrayList<MirrorBean>());
-                MirrorChooser.initPreferred(mirrorConfig);
-            } else {
-                logger.info("Loading mirrorConfig from config file");
+            mirrorConfig = new RapidShareMirrorConfig();
+        mirrorConfig.setAr(new ArrayList<MirrorBean>());
+        if (!storage.configFileExists(MirrorChooser.CONFIGFILE)) {
+            logger.info("Initializing new mirrorConfig ");
+        } else {
+            logger.info("Loading mirrorConfig from config file");
+            try {
                 mirrorConfig = storage.loadConfigFromFile(MirrorChooser.CONFIGFILE, RapidShareMirrorConfig.class);
-
+                logger.info("Loading mirrorConfig from config file failed");
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Loading mirrorConfig from config file failed", e);
             }
-
+        }
+        MirrorChooser.initPreferred(mirrorConfig);
         return mirrorConfig;
     }
 

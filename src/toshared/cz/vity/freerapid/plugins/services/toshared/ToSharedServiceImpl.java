@@ -14,7 +14,6 @@ public class ToSharedServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-
     @Override
     public boolean supportsRunCheck() {
         return true;

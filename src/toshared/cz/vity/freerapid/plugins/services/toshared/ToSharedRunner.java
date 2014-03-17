@@ -38,9 +38,8 @@ class ToSharedRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String url = "/pageDownload1/retrieveLink.jsp?id=" + decode(
-                    PlugUtils.getStringBetween(getContentAsString(), "var em='", "';"),
-                    PlugUtils.getStringBetween(getContentAsString(), "var key='", "';"));
+            final String url = "/pageDownload1/retrieveLink.jsp?id="
+                    + PlugUtils.getStringBetween(getContentAsString(), "var key='", "';");
             method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setAction(url).toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (makeRedirectedRequest(method)) {
@@ -63,7 +62,7 @@ class ToSharedRunner extends AbstractRunner {
         }
     }
 
-    private void checkNameAndSize() throws Exception {
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, getContentAsString(), "download", "</title>");
         final String fileSize = PlugUtils.getStringBetween(getContentAsString(), "File size:</span>", "&nbsp;");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize.replace(",", "")));
@@ -80,6 +79,7 @@ class ToSharedRunner extends AbstractRunner {
         }
     }
 
+    /*
     private static String decode(final String em, final String key) throws ErrorDuringDownloadingException {
         try {
             final StringBuilder sb = new StringBuilder(key.length());
@@ -91,6 +91,7 @@ class ToSharedRunner extends AbstractRunner {
             throw new PluginImplementationException("Error decrypting download link: " + e.getLocalizedMessage());
         }
     }
+    */
 
     /*
     private static String getUrl(String url) throws ErrorDuringDownloadingException {

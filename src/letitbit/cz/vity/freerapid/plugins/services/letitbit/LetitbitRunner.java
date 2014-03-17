@@ -67,7 +67,7 @@ class LetitbitRunner extends AbstractRunner {
                 //Russian IPs may see a different page here, let's handle it
                 httpMethod = getMethodBuilder()
                         .setReferer(pageUrl)
-                        .setActionFromFormWhereTagContains("\u0421\u043F\u0430\u0441\u0438\u0431\u043E", true)
+                        .setActionFromFormWhereTagContains("download4", true)
                         .toPostMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();

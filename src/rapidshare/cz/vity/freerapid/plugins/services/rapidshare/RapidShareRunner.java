@@ -90,7 +90,7 @@ class RapidShareRunner extends AbstractRunner {
         }
         Matcher matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds[^\"']*");
         if (matcher.find()) {
-            throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1) + 10));
+            throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)) + 10);
         }
         matcher = getMatcherAgainstContent("ERROR:([^\"']+)");
         if (matcher.find()) {

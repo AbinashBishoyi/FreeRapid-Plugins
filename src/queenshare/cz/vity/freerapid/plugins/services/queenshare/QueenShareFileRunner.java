@@ -20,14 +20,7 @@ class QueenShareFileRunner extends XFileSharingRunner {
 
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        final MethodBuilder methodBuilder = getMethodBuilder(getContentAsString() + "</Form>")        //# missing end form tag
-                .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("method_", true)
-                .setAction(fileURL);
-        if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
-            methodBuilder.removeParameter("method_premium");
-        }
-        return methodBuilder;
+        return getXFSMethodBuilder(getContentAsString() + "</Form>");     //# missing end form tag
     }
 
     @Override

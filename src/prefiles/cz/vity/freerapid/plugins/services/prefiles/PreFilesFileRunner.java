@@ -58,8 +58,8 @@ class PreFilesFileRunner extends XFileSharingRunner {
         if (getContentAsString().contains("The file you were looking for could not be found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (getContentAsString().contains("File owner set free user can download max file size 5 MB only.")) {
-            throw new NotSupportedDownloadByServiceException("User can download max file size 5 MB only");
+        if (getContentAsString().contains("File owner set free user can download max file size")) {
+            throw new NotSupportedDownloadByServiceException("File exceeds free user max file size set by file owner");
         }
     }
 }

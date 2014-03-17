@@ -75,7 +75,11 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     }
 
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        final MethodBuilder methodBuilder = getMethodBuilder()
+        return getXFSMethodBuilder(getContentAsString());
+    }
+
+    protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
+        final MethodBuilder methodBuilder = getMethodBuilder(content)
                 .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("method_", true)
                 .setAction(fileURL);

@@ -29,10 +29,11 @@ class OteUploadFileRunner extends XFileSharingRunner {
             public void handleCaptcha(MethodBuilder methodBuilder, HttpDownloadClient client, CaptchaSupport captchaSupport) throws Exception {
                 super.handleCaptcha(methodBuilder, client, captchaSupport);
                 final String captcha = methodBuilder.getParameters().get("code");
-                if (captcha.length() > 4) { //captcha length = 8
+                if (captcha.length() > 4) { //captcha length = 8 OR 12
+                    int div = captcha.length() / 4;
                     final StringBuilder sb = new StringBuilder(4);
                     for (int i = 0; i < captcha.length(); i++) {
-                        if ((i % 2) == 1) sb.append(captcha.charAt(i)); //remove redundant commented captcha
+                        if ((i % div) == 1) sb.append(captcha.charAt(i)); //remove redundant commented captcha
                     }
                     methodBuilder.setParameter("code", sb.toString()); //captcha length = 4
                 }
@@ -43,8 +44,13 @@ class OteUploadFileRunner extends XFileSharingRunner {
 
     @Override
     protected void checkFileProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("could not be found")) {
+        if (getContentAsString().contains("could not be found") ||
+                getContentAsString().contains("No such file with this filename")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("THIS FILE IS ONLY FOR PREMIUM USERS")
+                || getContentAsString().contains("This file can be only downloaded by Premium users")) {
+            throw new NotRecoverableDownloadException("This file is only available to premium users");
         }
         super.checkFileProblems();
     }

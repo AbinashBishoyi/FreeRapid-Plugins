@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.hulkload;
 
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
 import java.util.List;
@@ -14,14 +15,14 @@ class HulkLoadFileRunner extends XFileSharingRunner {
 
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        final MethodBuilder methodBuilder = getMethodBuilder(getContentAsString() + "</Form>")   //# one page was missing a tag
-                .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("method_free", true)
-                .setAction(fileURL);
-        if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
-            methodBuilder.removeParameter("method_premium");
-        }
-        return methodBuilder;
+        return getXFSMethodBuilder(getContentAsString() + "</Form>");     //# missing end form tag
+    }
+
+    @Override
+    protected List<FileSizeHandler> getFileSizeHandlers() {
+        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
+        fileSizeHandlers.add(new HulkLoadFileSizeHandler());
+        return fileSizeHandlers;
     }
 
     @Override

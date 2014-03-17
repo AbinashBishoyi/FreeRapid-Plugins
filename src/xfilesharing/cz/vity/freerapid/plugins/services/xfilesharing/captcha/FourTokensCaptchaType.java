@@ -37,7 +37,7 @@ public class FourTokensCaptchaType implements CaptchaType {
         for (final Token token : tokens) {
             sb.append(token.getValue());
         }
-        final String captcha = Integer.toString(Integer.parseInt(sb.toString())); //omit leading '0'
+        final String captcha = Long.toString(Long.parseLong(sb.toString())); //omit leading '0'
         methodBuilder.setParameter("code", captcha);
     }
 

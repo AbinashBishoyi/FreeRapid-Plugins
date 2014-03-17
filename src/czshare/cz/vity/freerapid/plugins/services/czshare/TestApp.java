@@ -20,10 +20,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://czshare.com/2855293/Ulver+The+Norwegian+National+Opera.part3.rar"));
+            httpFile.setNewURL(new URL("http://czshare.com/3627352/The+Big+Bang+Theory+S05E23+480p+HDTV+H264.zip"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("222.124.191.186", 8080);//eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("222.124.191.186", 8080);//eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CzshareServiceImpl service = new CzshareServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

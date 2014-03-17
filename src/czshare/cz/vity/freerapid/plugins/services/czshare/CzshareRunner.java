@@ -96,6 +96,17 @@ class CzshareRunner extends AbstractRunner {
             }
             checkProblems();
         }
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+        //final int waitTime = PlugUtils.getNumberBetween(getContentAsString(),"countdown_number =",";");
+        //downloadTask.sleep(waitTime);
+        httpMethod = getMethodBuilder()
+                .setReferer(downloadPageURL)
+                .setActionFromAHrefWhereATagContains("Stáhnout free omezenou rychlostí")
+                .toGetMethod();
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();
@@ -123,8 +134,8 @@ class CzshareRunner extends AbstractRunner {
         if (contentAsString.contains("Soubor expiroval")) {
             throw new URLNotAvailableAnymoreException("<b>Soubor expiroval</b><br>");
         }
-        if (contentAsString.contains("Soubor byl smaz.n jeho odesilatelem</strong>")) {
-            throw new URLNotAvailableAnymoreException("<b>Soubor byl smaz�n jeho odesilatelem</b><br>");
+        if (contentAsString.contains("Soubor byl smaz.n jeho odesilatelem</strong>")||contentAsString.contains("Soubor byl smazán jeho odesilatelem")) {
+            throw new URLNotAvailableAnymoreException("<b>Soubor byl smazán jeho odesilatelem</b><br>");
         }
         if (contentAsString.contains("Tento soubor byl na upozorn.n. identifikov.n jako warez.</strong>")) {
             throw new URLNotAvailableAnymoreException("<b>Tento soubor byl na upozorn�n� identifikov�n jako warez</b><br>");

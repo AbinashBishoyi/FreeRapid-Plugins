@@ -22,12 +22,16 @@ import java.util.regex.Matcher;
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
     private final static String LANG_REF = "http://www.turbobit.net/en";
+
+    private String urlCode;
+
     private final static int CAPTCHA_MAX = 0;
     private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        fileURL = checkFileURL(fileURL);
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(httpMethod)) {
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
@@ -42,6 +46,15 @@ class TurboBitFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private String checkFileURL(final String fileURL) throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/(?:download/free/)?([a-z0-9]+)(?:\\.html?)?", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing download link");
+        }
+        urlCode = matcher.group(1);
+        return "http://www.turbobit.net/" + urlCode + ".html";
     }
 
     /**
@@ -65,9 +78,17 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        httpFile.setFileName(findNextTextAfter("File name:"));
-        long size = PlugUtils.getFileSizeFromString(findNextTextAfter("File size:"));
-        httpFile.setFileSize(size);
+        try {
+            httpFile.setFileName(findNextTextAfter("File name:"));
+        } catch (Exception e) {
+            throw new PluginImplementationException("File name not found", e);
+        }
+        try {
+            long size = PlugUtils.getFileSizeFromString(findNextTextAfter("File size:"));
+            httpFile.setFileSize(size);
+        } catch (Exception e) {
+            throw new PluginImplementationException("File size not found", e);
+        }
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -75,6 +96,7 @@ class TurboBitFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        fileURL = checkFileURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(httpMethod)) {
@@ -83,11 +105,6 @@ class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
                 checkNameAndSize();
 
-                Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/(?:download/free/)?([a-z0-9]+)(?:\\.html?)?", fileURL);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Error parsing download link");
-                }
-                final String urlCode = matcher.group(1);
                 final String freeAction = "http://www.turbobit.net/download/free/" + urlCode + "/";
                 httpMethod = getMethodBuilder().setReferer(fileURL).setAction(freeAction).toGetMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
@@ -95,7 +112,7 @@ class TurboBitFileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
 
-                matcher = getMatcherAgainstContent("limit: (\\d+),");
+                Matcher matcher = getMatcherAgainstContent("limit: (\\d+),");
                 if (matcher.find()) {
                     throw new YouHaveToWaitException("Waiting time between downloads", Integer.parseInt(matcher.group(1)));
                 }

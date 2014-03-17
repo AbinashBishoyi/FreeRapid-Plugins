@@ -47,7 +47,7 @@ class IFileFileRunner extends AbstractRunner {
 
             if (filePath.length > 1) {
                 final String contentAsString = getContentAsString();
-                final String redirectURL = PlugUtils.getStringBetween(contentAsString, "var url = '", "'") + filePath[1] + ",type=simple," + PlugUtils.getStringBetween(contentAsString, "esn='+__esn+',", "' + c;");
+                final String redirectURL = PlugUtils.getStringBetween(contentAsString, "var url = '", "'") + filePath[1] + ",type=simple" + PlugUtils.getStringBetween(getContentAsString(), "var url = url + '", "'") + PlugUtils.getStringBetween(contentAsString, "esn='+__esn+'", "' + c;");
                 httpMethod = getMethodBuilder().setReferer(REDIRECT_URL).setAction(redirectURL).toHttpMethod();
 
                 if (makeRedirectedRequest(httpMethod)) {

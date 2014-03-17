@@ -56,10 +56,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             throw new PluginImplementationException("serviceTitle cannot be null.");
     }
 
-    protected String getDownloadLinkRegex() {
-        return "<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"";
-    }
-
     protected void setLanguageCookie() throws Exception {
         final String cookieDomain = "." + new URL(getBaseURL()).getHost();
         addCookie(new Cookie(cookieDomain, "lang", "english", "/", 86400, false));
@@ -96,13 +92,12 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
         checkFileProblems();
         checkNameAndSize();
-
-        int loopCounter = 0;
-        while (true) {
-            if (loopCounter++ >= 5) {
-                throw new PluginImplementationException("Max captcha retry or broken plugin");
+        for (int loopCounter = 0; ; loopCounter++) {
+            if (loopCounter >= 8) {
+                //avoid infinite loops
+                throw new PluginImplementationException("Cannot proceed to download link");
             }
-            MethodBuilder methodBuilder = getMethodBuilder()
+            final MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("method_free", true)
                     .setAction(fileURL)
@@ -113,7 +108,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             stepCaptcha(methodBuilder);
             method = methodBuilder.toPostMethod();
             final int httpStatus = client.makeRequest(method, false);
-            if (httpStatus / 100 == 3) { //redirect to download file location
+            if (httpStatus / 100 == 3) {
+                //redirect to download file location
                 final Header locationHeader = method.getResponseHeader("Location");
                 if (locationHeader == null) {
                     throw new PluginImplementationException("Invalid redirect");
@@ -123,8 +119,10 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                         .setAction(locationHeader.getValue())
                         .toGetMethod();
                 break;
-            } else if (PlugUtils.find(getDownloadLinkRegex(), getContentAsString())) { //page containing download link
-                final Matcher matcher = getMatcherAgainstContent(getDownloadLinkRegex());
+            } else if (getContentAsString().contains("File Download Link Generated")
+                    || getContentAsString().contains("This direct link will be available for your IP")) {
+                //page containing download link
+                final Matcher matcher = getMatcherAgainstContent("<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Download link not found");
                 }
@@ -143,7 +141,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
     }
 
-    protected void stepWaitTime() throws InterruptedException {
+    protected void stepWaitTime() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
             downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);

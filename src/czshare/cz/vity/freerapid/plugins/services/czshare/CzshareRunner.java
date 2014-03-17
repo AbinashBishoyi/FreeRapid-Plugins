@@ -207,6 +207,10 @@ class CzshareRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("<b>Soubor nenalezen</b><br>");
         }
+        matcher = getMatcherAgainstContent("Soubor expiroval");
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException("<b>Soubor expiroval</b><br>");
+        }
         matcher = getMatcherAgainstContent("Soubor byl smaz.n jeho odesilatelem</strong>");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("<b>Soubor byl smazán jeho odesilatelem</b><br>");

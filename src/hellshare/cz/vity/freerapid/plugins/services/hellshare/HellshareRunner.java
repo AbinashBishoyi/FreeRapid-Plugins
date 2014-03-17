@@ -52,6 +52,9 @@ class HellshareRunner extends AbstractRunner {
                     PostMethod method = stepCaptcha();
                     httpFile.setState(DownloadState.GETTING);
                     if (!tryDownloadAndSaveFile(method)) {
+                        matcher = getMatcherAgainstContent("Omlouv.me se, ale tento soubor nen. pro danou zemi v tuto chv.li dostupn.. Pracujeme na odstran.n. probl.mu.|We are sorry, but this file is not accessible at this time for this country. We are currenlty working on fixing this problem");
+                        if(matcher.find())
+                            throw new PluginImplementationException("This file is not available for this country for this moment");
                         boolean finish = false;
                         while (!finish) {
                             method = stepCaptcha();
@@ -75,15 +78,12 @@ class HellshareRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws Exception {
         if (getContentAsString().contains("FreeDownProgress")) {
-            Matcher matcher = PlugUtils.matcher("<tr><th scope=\"row\" class=\"download-properties-label\">N.zev:</th><td><h2>([^<]+)</h2></td></tr>", content);
+            Matcher matcher = PlugUtils.matcher("<table class=\"download-properties\">[^<]+<tr><th scope=\"row\" class=\"download-properties-label\">[^<]+</th><td><h2>([^<]+)</h2></td></tr>[^<]+<tr><th scope=\"row\" class=\"download-properties-label\">[^<]+</th><td>([^<]+ .B)</td></tr>", content);
             if (matcher.find()) {
-                String fn = matcher.group(matcher.groupCount());
+                String fn = matcher.group(1);
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
-            }
-            matcher = PlugUtils.matcher("<tr><th scope=\"row\" class=\"download-properties-label\">Velikost:</th><td>([^<]+ .B)</td></tr>", content);
-            if (matcher.find()) {
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+                Long a = PlugUtils.getFileSizeFromString(matcher.group(2));
                 logger.info("File size " + a);
                 httpFile.setFileSize(a);
             }
@@ -135,15 +135,13 @@ class HellshareRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = getMatcherAgainstContent("Soubor nenalezen");
+        matcher = getMatcherAgainstContent("Soubor nenalezen|S.bor nen.jden.|A f.jl nem volt megtal.lhat.");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }
-        matcher = getMatcherAgainstContent("Na serveru jsou .* free download");
+        matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
         if (matcher.find()) {
             throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", 30);
         }
-
-
     }
 }

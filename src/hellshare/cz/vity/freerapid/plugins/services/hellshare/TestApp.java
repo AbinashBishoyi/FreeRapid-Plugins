@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
 
-           httpFile.setNewURL(new URL("http://www.hellshare.com/209896/DXTR/dexter.s03e08.hdtv-lol.avi/"));
+           httpFile.setNewURL(new URL("http://download.hellshare.hu/aaa/monk-s5-08-cz.avi/166090"));//http://www.hellshare.com/209896/DXTR/dexter.s03e08.hdtv-lol.avi/"));
             testRun(new HellshareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

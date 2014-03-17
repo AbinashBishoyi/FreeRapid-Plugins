@@ -46,11 +46,11 @@ class CzshareRunner extends AbstractRunner {
 
             client.setReferer(fileURL);
 
-            Matcher matcher = PlugUtils.matcher("<div class=\"profy-download\">[ ]*\n[ ]*<form action=\"([^\"]*)\" method=\"post\">", content);
+            Matcher matcher = PlugUtils.matcher("<div class=\"profy-download\">[ ]*\n[ ]*<form action=\"([^\"]*)\" method=\"post\">|</table>[ ]*\n[ ]*<form action=\"([^\"]*)\" method=\"post\">", content);
             if (!matcher.find()) {
                 throw new PluginImplementationException();
             }
-            String postURL = matcher.group(1);
+            String postURL = matcher.group(1)!=null?matcher.group(1):matcher.group(2);
 
             final PostMethod postmethod = getPostMethod(postURL);
 
@@ -164,6 +164,10 @@ class CzshareRunner extends AbstractRunner {
         matcher = getMatcherAgainstContent("Soubor nenalezen");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("<b>Soubor nenalezen</b><br>");
+        }
+        matcher = getMatcherAgainstContent("Soubor expiroval");
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException("<b>Soubor expiroval</b><br>");
         }
         matcher = getMatcherAgainstContent("Soubor byl smaz.n jeho odesilatelem</strong>");
         if (matcher.find()) {

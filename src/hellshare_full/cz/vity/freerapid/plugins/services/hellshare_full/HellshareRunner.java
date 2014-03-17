@@ -26,7 +26,7 @@ class HellshareRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("1");
+            throw new PluginImplementationException();
     }
 
     @Override
@@ -41,12 +41,12 @@ class HellshareRunner extends AbstractRunner {
 
             client.setReferer(fileURL);
 
-            Matcher matcher = getMatcherAgainstContent("<p>U.ivatel nep.ihl..en.</p>");
+            Matcher matcher = getMatcherAgainstContent("<p>U.ivatel nep.ihl..en.</p>|<p>Pou..vate. neprihl.sen..</p>|<p>A felhaszn.l. nincs bejelentkezve.</p>");
             if (matcher.find()) {
                 Login(getContentAsString());
             }
 
-            matcher = getMatcherAgainstContent("Bohu.el nem.te dostatek kredit. na sta.en. souboru");
+            matcher = getMatcherAgainstContent("Bohu.el nem.te dostatek kredit. na sta.en. souboru|Nem.te dostato.n. kredit pre download s.boru|Nem rendelkezik elegend. kredittel a f.jl let.lt.s.hez");
             if (matcher.find()) {
                 throw new NotRecoverableDownloadException("No credit for download!");
             }
@@ -60,29 +60,26 @@ class HellshareRunner extends AbstractRunner {
                 if (!tryDownloadAndSaveFile(getmethod)) {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("2");
+                    throw new PluginImplementationException();
                 }
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("3");
+                throw new PluginImplementationException();
             }
 
         } else
-            throw new PluginImplementationException("4");
+            throw new PluginImplementationException();
     }
 
     private void checkNameAndSize(String content) throws Exception {
         if (getContentAsString().contains("FreeDownProgress")) {
-            Matcher matcher = PlugUtils.matcher("<tr><th scope=\"row\" class=\"download-properties-label\">N.zev:</th><td><h2>([^<]+)</h2></td></tr>", content);
+            Matcher matcher = PlugUtils.matcher("<table class=\"download-properties\">[^<]+<tr><th scope=\"row\" class=\"download-properties-label\">[^<]+</th><td><h2>([^<]+)</h2></td></tr>[^<]+<tr><th scope=\"row\" class=\"download-properties-label\">[^<]+</th><td>([^<]+ .B)</td></tr>", content);
             if (matcher.find()) {
-                String fn = matcher.group(matcher.groupCount());
+                String fn = matcher.group(1);
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
-            }
-            matcher = PlugUtils.matcher("<tr><th scope=\"row\" class=\"download-properties-label\">Velikost:</th><td>([^<]+ .B)</td></tr>", content);
-            if (matcher.find()) {
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+                Long a = PlugUtils.getFileSizeFromString(matcher.group(2));
                 logger.info("File size " + a);
                 httpFile.setFileSize(a);
             }
@@ -107,16 +104,16 @@ class HellshareRunner extends AbstractRunner {
                 badConfig = false;
             }
 
-            Matcher matcher = PlugUtils.matcher("<p><span>. <a href=\"([^\"]+)\">P.ihl..en.</a> .</span></p>", content);
+            Matcher matcher = PlugUtils.matcher("<p><span>. <a href=\"([^\"]+)\">P.ihl..en.</a> .</span></p>|<p><span>. <a href=\"([^\"]+)\">Prihl.senie</a> .</span></p>|<p><span>. <a href=\"([^\"]+)\">Bejelentkez.s</a> .</span></p>", content);
             if (!matcher.find()) {
-                throw new PluginImplementationException("5");
+                throw new PluginImplementationException();
             }
-            String loginURL = matcher.group(1);
+            String loginURL = matcher.group(1)!=null?matcher.group(1):(matcher.group(2)!=null?matcher.group(2):matcher.group(3));
             GetMethod loginMethod = getGetMethod(loginURL);
             if(makeRequest(loginMethod)) {
                 matcher = PlugUtils.matcher("<form name=\"([^\"]+)\" method=\"post\" action=\"([^\"]+)\">", getContentAsString());
                 if (!matcher.find()) {
-                    throw new PluginImplementationException("6");
+                    throw new PluginImplementationException();
                 }
                 String formName = matcher.group(1);
                 String postURL = matcher.group(2);
@@ -129,14 +126,14 @@ class HellshareRunner extends AbstractRunner {
                 postmethod.addParameter("DownloadRedirect", "");
 
                 if (makeRedirectedRequest(postmethod)) {
-                    matcher = getMatcherAgainstContent("<h1>P.ihl..en.</h1>");
+                    matcher = getMatcherAgainstContent("<h1>P.ihl..en.</h1>|<h1>Prihl.si.</h1>|<h1>Bejelentkez.s</h1>");
                     if(matcher.find()) {
                         badConfig=true;
                         throw new NotRecoverableDownloadException("Bad HellShare full account login information!");
                     }
                     GetMethod getMethod = getGetMethod(fileURL);
                     if (!makeRedirectedRequest(getMethod))
-                        throw new PluginImplementationException("7");
+                        throw new PluginImplementationException();
                 }
             } else {
                 throw new PluginImplementationException("Bad login URL");
@@ -146,11 +143,11 @@ class HellshareRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, NotRecoverableDownloadException {
         Matcher matcher;
-        matcher = getMatcherAgainstContent("Soubor nenalezen");
+        matcher = getMatcherAgainstContent("Soubor nenalezen|S.bor nen.jden.|A f.jl nem volt megtal.lhat.");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }
-        matcher = getMatcherAgainstContent("Na serveru jsou .* free download");
+        matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
         if (matcher.find()) {
             throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", 30);
         }

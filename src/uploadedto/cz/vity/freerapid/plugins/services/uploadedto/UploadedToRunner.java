@@ -21,7 +21,7 @@ class UploadedToRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
-            checkSize(getContentAsString());
+            checkSizeAndName(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -33,7 +33,7 @@ class UploadedToRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             final String contentAsString = getContentAsString();
-            checkSize(contentAsString);
+            checkSizeAndName(contentAsString);
 
             Matcher matcher = PlugUtils.matcher("var secs = ([0-9]+);", contentAsString);
             if (!matcher.find()) {
@@ -77,7 +77,7 @@ class UploadedToRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    private void checkSize(String content) throws Exception {
+    private void checkSizeAndName(String content) throws Exception {
 
         if (!content.contains("uploaded.to")) {
             logger.warning(getContentAsString());
@@ -94,6 +94,18 @@ class UploadedToRunner extends AbstractRunner {
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
 
         }
+
+        matcher = PlugUtils.matcher("Filename: &nbsp;</td><td><b>\\s*(\\S*)", content);
+        if (matcher.find()) {
+            String fn = matcher.group(1);
+            matcher = PlugUtils.matcher("Filetype: &nbsp;</td><td>(\\S*)</td></tr>", content);
+            if (matcher.find()) {
+                fn = fn + matcher.group(1);
+            }
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+        } else logger.warning("File name was not found" + content);
+
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 
     }

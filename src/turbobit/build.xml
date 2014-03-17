@@ -37,6 +37,7 @@
         <include name="**/?*.tld"/>
         <include name="**/?*.mid"/>
         <include name="**/?*.wav"/>
+        <include name="**/?*.bin"/>
 
         <exclude name="**/plugin.xml"/>
     </patternset>
@@ -61,7 +62,8 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/TestApp*"/>
+            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**"
+                     excludes="**/TestApp*, **/SamplesCreator*"/>
         </copy>
 
         <copy todir="${build.dir}">
@@ -72,7 +74,8 @@
 
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
-        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6" encoding="utf-8">
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6"
+               encoding="utf-8">
 
             <sourcepath location="../devapp"/>
         </javac>

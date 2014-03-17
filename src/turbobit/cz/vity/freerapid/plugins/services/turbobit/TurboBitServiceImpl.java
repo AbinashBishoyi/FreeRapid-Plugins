@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author Arthur Gunawan
  */
 public class TurboBitServiceImpl extends AbstractFileShareService {

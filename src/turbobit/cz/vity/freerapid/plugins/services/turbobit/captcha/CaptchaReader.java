@@ -1,7 +1,6 @@
-package cz.vity.freerapid.plugins.services.uploadcomua.captcha;
+package cz.vity.freerapid.plugins.services.turbobit.captcha;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,12 +11,12 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * @author JPEXS, ntoskrnl (getPreparedImage)
+ * @author JPEXS
  */
 public class CaptchaReader {
     private final static Logger logger = Logger.getLogger(CaptchaReader.class.getName());
     public static List<Sample> samples = new ArrayList<Sample>();
-    public static int SPLIT = 1;//space between two letters
+    public static int SPLIT = 2;//space between two letters
 
     /**
      * Loads samples from resources
@@ -26,8 +25,8 @@ public class CaptchaReader {
      */
     private static void loadSamples() throws IOException {
         logger.info("Loading captcha samples...");
-        //BufferedImage img = ImageIO.read(new File("E:\\projects\\captchatest\\samples3.png"));
-        //InputStream is = new FileInputStream("E:\\projects\\captchatest\\samples3.bin");
+        //BufferedImage img = ImageIO.read(new File("E:\\projects\\captchatest\\samples.png"));
+        //InputStream is = new FileInputStream("E:\\projects\\captchatest\\samples.bin");
         BufferedImage img = ImageIO.read((new CaptchaReader()).getClass().getResourceAsStream("/resources/samples.png"));
         InputStream is = (new CaptchaReader()).getClass().getResourceAsStream("/resources/samples.bin");
         int i = 0;
@@ -42,39 +41,10 @@ public class CaptchaReader {
     }
 
     /**
-     * Prepares captcha image for recognition
-     *
-     * @param originalImage Input image
-     * @return Prepared image
-     * @throws IOException
-     */
-    public static BufferedImage getPreparedImage(BufferedImage originalImage) throws IOException {
-        final int colorLimit = 220;
-
-        //fetch the image and remove the borders
-        //BufferedImage originalImage = ImageIO.read(new FileInputStream("E:\\projects\\captchatest\\captcha.jpg"));
-        originalImage = originalImage.getSubimage(1, 1, originalImage.getWidth() - 2, originalImage.getHeight() - 2);
-        final int w = originalImage.getWidth();
-        final int h = originalImage.getHeight();
-
-        //make it black and white
-        final BufferedImage newImage = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                final int red = new Color(originalImage.getRGB(j, i)).getRed();
-                final int color = red > colorLimit ? Color.WHITE.getRGB() : Color.BLACK.getRGB();
-                newImage.setRGB(j, i, color);
-            }
-        }
-
-        return newImage;
-    }
-
-    /**
      * Recognize text from captcha image
      *
      * @param input Captcha image to recognize
-     * @return String witch text or null on error
+     * @return String with text or null on error
      * @throws Exception
      */
     public static String recognize(final BufferedImage input) throws Exception {
@@ -82,7 +52,7 @@ public class CaptchaReader {
             loadSamples();
         }
         logger.info("Recognizing...");
-        final BufferedImage img = getPreparedImage(input);
+        final BufferedImage img = CaptchaPreparer.getPreparedImage(input);
 
         List<BufferedImage> tested = ImageFunctions.split(img, SPLIT);
         if (tested.size() != 4) { //cannot split captcha

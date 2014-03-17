@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -144,10 +143,7 @@ class UploadComUaFileRunner extends AbstractRunner {
             logger.info("Captcha URL " + captchaSrc);
 
             if (captchaCounter <= captchaMax) {
-                final HttpMethod getCaptcha = getMethodBuilder().setReferer(fileURL).setAction(captchaSrc).toGetMethod();
-                client.getHTTPClient().executeMethod(getCaptcha);
-                final InputStream is = getCaptcha.getResponseBodyAsStream();
-                captcha = CaptchaReader.recognize(is);
+                captcha = CaptchaReader.recognize(captchaSupport.getCaptchaImage(captchaSrc));
                 if (captcha == null) {
                     logger.info("Could not separate captcha letters, attempt " + captchaCounter + " of " + captchaMax);
                 }

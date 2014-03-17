@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="UploadComUa.com" default="all" basedir=".">
+<project name="Upload.com.ua" default="all" basedir=".">
     <property name="application" value="uploadcomua"/>
 
     <property name="version" value="1.0"/>
@@ -37,6 +37,7 @@
         <include name="**/?*.tld"/>
         <include name="**/?*.mid"/>
         <include name="**/?*.wav"/>
+        <include name="**/?*.bin"/>
 
         <exclude name="**/plugin.xml"/>
     </patternset>

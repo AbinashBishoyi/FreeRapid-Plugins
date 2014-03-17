@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.uploadcomua.captcha;
+package cz.vity.freerapid.plugins.services.turbobit.captcha;
 
 import java.awt.image.BufferedImage;
 
@@ -11,7 +11,7 @@ public class Sample {
     public int offset;
     public double distance;
 
-    public static int IMAGEWIDTH = 25;
+    public static int IMAGEWIDTH = 20;
     public static int IMAGEHEIGHT = 25;
 
     public Sample(BufferedImage sampleImage, int letter, int offset, boolean nochange) {

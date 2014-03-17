@@ -1,13 +1,13 @@
 package cz.vity.freerapid.plugins.services.turbobit;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.turbobit.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -15,48 +15,92 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Arthur Gunawan RickCL
+ * @author Arthur Gunawan, RickCL, ntoskrnl
  */
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
-    private final static String mRef = "http://www.turbobit.net/en";
+    private final static String LANG_REF = "http://www.turbobit.net/en";
+    private final int captchaMax = 10;
+    private int captchaCounter = 1;
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        client.setReferer(mRef);
-
-        HttpMethod httpMethod = getMethodBuilder().setReferer(mRef).setAction(fileURL).toGetMethod();
-        client.setReferer(mRef);
-        if (makeRequest(httpMethod)) {
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(LANG_REF).setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
-            throw new PluginImplementationException();
+            checkNameAndSize(getContentAsString());
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        logger.info(content);
-        if (!(content == null)) {
-            if (content.contains("&nbsp;</span><b>") && content.contains("</b></h1>") && content.contains(":</b>") && content.contains("</div>")) {
-                PlugUtils.checkName(httpFile, content, "&nbsp;</span><b>", "</b></h1>");
-                PlugUtils.checkFileSize(httpFile, content, "\u0420\u0430\u0437\u043c\u0435\u0440 \u0444\u0430\u0439\u043b\u0430:</b>", "</div>");
-                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-            }
-        }
+    private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, content, "<b>&nbsp;", "</b></h1>");
+        PlugUtils.checkFileSize(httpFile, content, "</b> ", "</div>");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        HttpMethod httpMethod = getMethodBuilder().setReferer(mRef).setAction(parseURL(fileURL)).toGetMethod();
 
-        if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
+        HttpMethod httpMethod = getMethodBuilder().setReferer(LANG_REF).setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(httpMethod)) {
+            checkProblems();
+            checkNameAndSize(getContentAsString());
+
+            Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/([a-z0-9]+)\\.html", fileURL);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error parsing download link");
+            }
+            final String urlCode = matcher.group(1);
+            final String freeAction = "http://www.turbobit.net/download/free/" + urlCode + "/";
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(freeAction).toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+
+            matcher = getMatcherAgainstContent("limit: (\\d+),");
+            if (matcher.find()) {
+                throw new YouHaveToWaitException("Waiting time between downloads", new Integer(matcher.group(1)));
+            }
+
+            while (getContentAsString().contains("captcha")) {
+                if (!makeRedirectedRequest(stepCaptcha(freeAction))) throw new ServiceConnectionProblemException();
+            }
+
+            matcher = getMatcherAgainstContent("limit: (\\d+),");
+            if (!matcher.find()) {
+                checkProblems();
+                throw new PluginImplementationException("Waiting time not found");
+            }
+            final String t = matcher.group(1);
+            logger.info("Waiting time: " + t);
+            downloadTask.sleep(new Integer(t) + 1);
+
+            final String timeoutAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
+            httpMethod = getMethodBuilder().setReferer(freeAction).setAction(timeoutAction).toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+
+            final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(getContentAsString(), "/download/redirect/", "'");
+            logger.info("Final URL: " + finalURL);
+            httpMethod = getMethodBuilder().setReferer(timeoutAction).setAction(finalURL).toGetMethod();
+
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();
+                logger.warning(getContentAsString());
+                throw new ServiceConnectionProblemException("Error starting download");
+            }
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -79,7 +123,7 @@ class TurboBitFileRunner extends AbstractRunner {
             Matcher errMatcher = PlugUtils.matcher("<div[^>]*class='error'[^>]*>([^<]*)<", getContentAsString());
             if (errMatcher.find() && !errMatcher.group(1).isEmpty()) {
                 if (errMatcher.group(1).contains("\u00d0?\u00d0\u00b5\u00d0\u00b2\u00d0\u00b5\u00d1\u20ac\u00d0\u00bd\u00d1\u2039\u00d0\u00b9 \u00d0\u00be\u00d1\u201a\u00d0\u00b2\u00d0\u00b5\u00d1\u201a")
-                 || errMatcher.group(1).contains("\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442!") )
+                        || errMatcher.group(1).contains("\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442!"))
                     throw new CaptchaEntryInputMismatchException();
                 throw new PluginImplementationException();
             }
@@ -95,82 +139,30 @@ class TurboBitFileRunner extends AbstractRunner {
         checkDownloadProblems();
     }
 
-    private String parseURL(String myURL) throws Exception {
+    private HttpMethod stepCaptcha(final String action) throws Exception {
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
+        logger.info("Captcha URL " + captchaSrc);
 
-        Matcher matcher = PlugUtils.matcher("http://(www\\.)?turbobit\\.net/([a-z0-9]+)\\.html", myURL);
-        if (!matcher.find()) {
-            checkProblems();
-            throw new PluginImplementationException();
-        }
-
-        String urlCode = matcher.group(2);
-        String myAction = "http://www.turbobit.net/download/free/" + urlCode + "/";
-        HttpMethod httpMethod = getMethodBuilder().setReferer(mRef).setAction(myAction).toGetMethod();
-        client.setReferer(mRef);
-        String getRef = client.getReferer();
-        logger.info("Get Referer : " + getRef);
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkProblems();
-            throw new PluginImplementationException();
-        }
-        //<img alt="Captcha" src="http://turbobit.net/captcha/securimg_1/1264152974"  />
-        matcher = getMatcherAgainstContent("<img alt=\"Captcha\"[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>" );
-        if (matcher.find()) {
-            String s = PlugUtils.replaceEntities(matcher.group(1));
-            logger.info("Captcha - image " + s);
-            String captcha;
-            final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
-            //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
-            captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-
-            client.setReferer(mRef);
-            final PostMethod postMethod = getPostMethod( myAction );
-            //PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"icid"});
-
-            postMethod.addParameter("captcha_response", captcha);
-
-            if (!makeRequest(postMethod)) {
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
+        String captcha;
+        if (captchaCounter <= captchaMax) {
+            captcha = CaptchaReader.recognize(captchaSupport.getCaptchaImage(captchaSrc));
+            if (captcha == null) {
+                logger.info("Could not separate captcha letters, attempt " + captchaCounter + " of " + captchaMax);
             }
+            logger.info("OCR recognized " + captcha + ", attempt " + captchaCounter + " of " + captchaMax);
+            captchaCounter++;
+        } else {
+            captcha = captchaSupport.getCaptcha(captchaSrc);
+            if (captcha == null) throw new CaptchaEntryInputMismatchException();
+            logger.info("Manual captcha " + captcha);
         }
 
-        matcher = getMatcherAgainstContent("limit: ([0-9]+),");
-        if (!matcher.find()) {
-            checkProblems();
-            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
-        }
-        String t = matcher.group(1);
-        int seconds = new Integer(t);
-        logger.info("wait - " + t);
-
-        logger.info("Download URL: " + t);
-        downloadTask.sleep(seconds + 1);
-
-        myAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
-        httpMethod = getMethodBuilder().setReferer(mRef).setAction(myAction).toGetMethod();
-        client.setReferer(mRef);
-        getRef = client.getReferer();
-        logger.info("Get Referer : " + getRef);
-
-        // <a href='/download/redirect/c8ca1469cb893d8acbb17305bf01035b/045888zyivux' onclick='mg_switch(this,event);'>
-        //matcher = getMatcherAgainstContent("<a href\\s*=\\s*['\"]([^'\"]+)['\"][^>]*['\"]" );
-
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkProblems();
-            throw new PluginImplementationException();
-        }
-
-        String contentAsString = getContentAsString();
-        if (!contentAsString.contains("download/redirect/")) {
-            checkProblems();
-            throw new PluginImplementationException();
-        }/**/
-
-        String finURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(contentAsString, "/download/redirect/", "'");
-        logger.info("Final URL: " + finURL);
-
-        return finURL;
+        return getMethodBuilder()
+                .setReferer(action)
+                .setAction(action)
+                .setParameter("captcha_response", captcha)
+                .toPostMethod();
     }
 
 }

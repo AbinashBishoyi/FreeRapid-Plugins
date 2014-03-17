@@ -31,11 +31,12 @@ class UlozToRunner extends AbstractRunner {
 
     private void ageCheck(String content) throws Exception {
         if (content.contains("confirmContent")) { //eroticky obsah vyzaduje potvruemo
-            String confirmUrl = checkURL(fileURL) + "?do=askAgeForm-submit";
+            String confirmUrl = fileURL + "?do=askAgeForm-submit";
             PostMethod confirmMethod = (PostMethod) getMethodBuilder()
                     .setAction(confirmUrl)
                     .setEncodePathAndQuery(true)
-                    .setAndEncodeParameter("agree", "Souhlas\u00edm")
+                    //.setAndEncodeParameter("agree", "Souhlas\u00edm")
+                    .setAndEncodeParameter("agree", "Souhlasím")
                     .toPostMethod();
             makeRedirectedRequest(confirmMethod);
             if (getContentAsString().contains("confirmContent")) {
@@ -47,7 +48,8 @@ class UlozToRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+        checkURL();
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             ageCheck(getContentAsString());
@@ -59,20 +61,21 @@ class UlozToRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkURL();
         setClientParameter(cz.vity.freerapid.plugins.webclient.DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2");
         //setClientParameter(cz.vity.freerapid.plugins.webclient.DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.2; rv:9.0.1) Gecko/20100101 Firefox/9.0.1");
         //Cookie: uloz-to-id=356097727; __utma=140660086.1203105506.1328293691.1329637591.1329640156.8; __utmz=140660086.1328293691.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __utmc=140660086; PHPSESSID=vs3jl2js8r1saohhobu8uinht4; nette-browser=xiaupyelif; __utmb=140660086.3.9.1329640178664
 
-        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             ageCheck(getContentAsString());
             checkNameAndSize(getContentAsString());
-            addCookie(new Cookie(".uloz.to", "__utma", "140660086.124876764.1329640156.1329640156.1329640156.1", "/", 86400, false));
-            addCookie(new Cookie(".uloz.to", "__utmb", "140660086.3.9.1329640592039", "/", 86400, false));
-            addCookie(new Cookie(".uloz.to", "__utmc", "140660086", "/", 86400, false));
-            addCookie(new Cookie(".uloz.to", "__utmz", "140660086.1328293691.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)", "/", 86400, false));
+            //addCookie(new Cookie(".uloz.to", "__utma", "140660086.124876764.1329640156.1329640156.1329640156.1", "/", 86400, false));
+            //addCookie(new Cookie(".uloz.to", "__utmb", "140660086.3.9.1329640592039", "/", 86400, false));
+            //addCookie(new Cookie(".uloz.to", "__utmc", "140660086", "/", 86400, false));
+            //addCookie(new Cookie(".uloz.to", "__utmz", "140660086.1328293691.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)", "/", 86400, false));
 
             if (getContentAsString().contains("captchaContainer")) {
                 boolean saved = false;
@@ -93,7 +96,7 @@ class UlozToRunner extends AbstractRunner {
                     makeRequest(method);
                     while ((method.getStatusCode() == 302) || (method.getStatusCode() == 303)) {
                         String nextUrl = method.getResponseHeader("Location").getValue();
-                        method = getMethodBuilder().setReferer(checkURL(fileURL)).setAction(nextUrl).toHttpMethod();
+                        method = getMethodBuilder().setReferer(fileURL).setAction(nextUrl).toHttpMethod();
                         method.setFollowRedirects(false);
                         //downloadTask.sleep(new Random().nextInt(15) + new Random().nextInt(3));
                         if (saved = tryDownloadAndSaveFile(method)) break loopcaptcha;
@@ -115,8 +118,8 @@ class UlozToRunner extends AbstractRunner {
         }
     }
 
-    private String checkURL(String fileURL) {
-        return fileURL.replaceFirst("(ulozto\\.net|ulozto\\.cz|ulozto\\.sk)", "uloz.to");
+    private void checkURL() {
+        fileURL = fileURL.replaceFirst("(ulozto\\.net|ulozto\\.cz|ulozto\\.sk)", "uloz.to");
     }
 
     private void checkNameAndSize(String content) throws Exception {
@@ -165,6 +168,7 @@ class UlozToRunner extends AbstractRunner {
         */
         String captcha = "";
         //precteni
+        //captchaCount=9; //for test purpose
         if (captchaCount++ < 6) {
             logger.warning("captcha url:" + captchaMethod.getAction());
             Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
@@ -181,7 +185,10 @@ class UlozToRunner extends AbstractRunner {
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            MethodBuilder sendForm = getMethodBuilder().setReferer(checkURL(fileURL)).setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
+            MethodBuilder sendForm = getMethodBuilder()
+                    .setBaseURL("http://www.uloz.to")
+                    .setReferer(fileURL)
+                    .setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
             //sendForm.setParameter("freeDownload", "St"+((char) 0xC3) + ((char)0xA1) + "hnout");
             //sendForm.setAndEncodeParameter("captcha[text]", captcha);
             sendForm.setParameter("captcha[text]", captcha);

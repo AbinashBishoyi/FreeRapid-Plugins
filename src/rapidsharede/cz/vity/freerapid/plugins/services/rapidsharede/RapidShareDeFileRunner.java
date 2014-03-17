@@ -30,7 +30,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
             final String requestURL = "http://rapidshare.de/";
             client.setReferer(requestURL);
             final PostMethod postMethod = getPostMethod(requestURL);
-            PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"uri"});
+            PlugUtils.addParameters(postMethod, getContentAsString(), new String[] {"uri"});
             postMethod.addParameter("dl.start", "Free");
 
             if (makeRedirectedRequest(postMethod)) {
@@ -119,7 +119,6 @@ class RapidShareDeFileRunner extends AbstractRunner {
             matcher = getMatcherAgainstContent("\\(Or wait (.+?) minute.?\\)");
 
             int waitMinutes = (matcher.find()) ? Integer.parseInt(matcher.group(1)) : 2;
-
             throw new YouHaveToWaitException("You have reached the download limit for free users", 60 * waitMinutes);
         }
 

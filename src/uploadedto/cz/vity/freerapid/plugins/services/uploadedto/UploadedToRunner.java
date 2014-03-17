@@ -61,6 +61,9 @@ class UploadedToRunner extends AbstractRunner {
                         if (getContentAsString().contains("You have reached")) {
                             throw new ServiceConnectionProblemException("Free download limit reached");
                         }
+                        if (getContentAsString().contains("available download slots")) {
+                            throw new ServiceConnectionProblemException("All download slots are busy currently, please try again within a few minutes.");
+                        }
                         if (getContentAsString().contains("You are already")) {
                             throw new ServiceConnectionProblemException("You are already downloading a file");
                         }

@@ -21,7 +21,7 @@ public class KeyCaptcha {
     private final DialogSupport dialogSupport;
     private final KeyCaptchaClient kc;
 
-    private final static int CAPTCHA_MAX = 5;
+    private final static int CAPTCHA_MAX = 0;//recognition is broken
     private int captchaCounter = 0;
 
     public KeyCaptcha(final DialogSupport dialogSupport, final HttpDownloadClient client) {

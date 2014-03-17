@@ -18,7 +18,7 @@ public class TestApp extends PluginDevApplication {
             final ConnectionSettings settings = new ConnectionSettings();
             //settings.setProxy("localhost", 8118);
             client.initClient(settings);
-            final String url = "https://www.keycaptcha.com/facecap/?ct=puzzleimgs";
+            final String url = "https://www.keycaptcha.com/demo-magnetic/";
             //final String url = "http://linkcrypt.ws/dir/w2m63xda7y88jj6";
             client.makeRequest(client.getGetMethod(url), true);
             final KeyCaptcha kc = new KeyCaptcha(new DevDialogSupport(null), client);

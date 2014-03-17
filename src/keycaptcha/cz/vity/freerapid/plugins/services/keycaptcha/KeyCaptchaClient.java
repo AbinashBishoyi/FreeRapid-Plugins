@@ -127,11 +127,11 @@ class KeyCaptchaClient {
         client.makeRequest(client.getGetMethod(js1Url), true);
 
         final String js2Url = findString("var _13=\"(.+?)\"", "script 2 URL", client.getContentAsString())
-                + parameters.get("pageUrl") + "&r=" + Math.random();
+                + parameters.get("s_s_c_user_id") + "&u=" + parameters.get("pageUrl") + "&r=" + Math.random();
         client.makeRequest(client.getGetMethod(js2Url), true);
 
         parameters.put("s_s_c_web_server_sign4",
-                findString("var s_s_c_web_server_sign4=\"(.+?)\";", "parameter 4", client.getContentAsString()));
+                findString("s_s_c_web_server_sign4=\"(.+?)\";", "parameter 4", client.getContentAsString()));
 
         final String js3Url = findString("\"src\",\"(.+?)\"", "script 3 URL", client.getContentAsString())
                 + sscGetParams() + "&r=" + Math.random();
@@ -180,6 +180,7 @@ class KeyCaptchaClient {
                         + getParam("s_s_c_web_server_sign2") + '|'
                         + getParam("s_s_c_web_server_sign3") + '|'
                         + getParam("s_s_c_web_server_sign4")
+                        + "|1|25dc2223e02daffa61bfb7df7db93e1d|561cd5b30b488b9b232e5e5fb37824e9f956d1a2"
                 , "UTF-8");
     }
 
@@ -228,8 +229,10 @@ class KeyCaptchaClient {
                 final String[] coordinates = split[1].split(",");
                 final int width = Integer.parseInt(coordinates[1]) + Integer.parseInt(coordinates[5]) + Integer.parseInt(coordinates[9]);
                 final int height = Integer.parseInt(coordinates[3]) + Integer.parseInt(coordinates[15]) + Integer.parseInt(coordinates[27]);
-                final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+                final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
                 final Graphics2D g = image.createGraphics();
+                g.setColor(new Color(255, 255, 255, 0));
+                g.fillRect(0, 0, image.getWidth(), image.getHeight());
                 for (int i = 0, dx = 0, dy = 0; i < 36; i += 4) {
                     final int sx = Integer.parseInt(coordinates[i]);
                     final int sy = Integer.parseInt(coordinates[i + 2]);

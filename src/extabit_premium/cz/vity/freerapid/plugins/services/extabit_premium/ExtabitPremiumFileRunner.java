@@ -78,7 +78,8 @@ class ExtabitPremiumFileRunner extends AbstractRunner {
         if (content.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (content.contains("File is temporary unavailable")) {
+        if (getContentAsString().contains("File is temporary unavailable") ||
+                getContentAsString().contains("the page you are looking for is currently unavailable")) {
             throw new ServiceConnectionProblemException("File is temporarily unavailable");
         }
     }

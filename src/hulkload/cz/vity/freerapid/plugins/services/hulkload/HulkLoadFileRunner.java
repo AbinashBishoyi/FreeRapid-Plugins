@@ -37,7 +37,8 @@ class HulkLoadFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add(0, "<a.+?href\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");   // only change  <a.+?href
+        downloadLinkRegexes.clear();
+        downloadLinkRegexes.add(0, "<a target=.+?href\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
         return downloadLinkRegexes;
     }
 

@@ -1,9 +1,7 @@
 package cz.vity.freerapid.plugins.services.safelinking;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.services.solvemediacaptcha.SolveMediaCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
@@ -153,13 +151,30 @@ class SafeLinkingFileRunner extends AbstractRunner {
     }
 
     private void stepCaptcha(MethodBuilder method) throws Exception {
-        final Matcher m = getMatcherAgainstContent("var solvemediaApiKey = '(.+?)';");
-        if (!m.find()) throw new PluginImplementationException("Captcha key not found");
-        final String captchaKey = m.group(1);
-        final SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport(), true);
-        solveMediaCaptcha.askForCaptcha();
-        solveMediaCaptcha.modifyResponseMethod(method);
-        method.setParameter("solvemedia_response", solveMediaCaptcha.getResponse());
+        if (getContentAsString().contains("solvemediaApiKey")) {
+            final Matcher m = getMatcherAgainstContent("var solvemediaApiKey = '(.+?)';");
+            if (!m.find()) throw new PluginImplementationException("Captcha key not found");
+            final String captchaKey = m.group(1);
+            final SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport(), true);
+            solveMediaCaptcha.askForCaptcha();
+            solveMediaCaptcha.modifyResponseMethod(method);
+            method.setParameter("solvemedia_response", solveMediaCaptcha.getResponse());
+
+        } else if (getContentAsString().contains("recaptcha/api")) {
+            final Matcher reCaptchaKeyMatcher = PlugUtils.matcher("recaptcha/api/(?:challenge|noscript)\\?k=(.+?)\"", getContentAsString());
+            if (!reCaptchaKeyMatcher.find()) {
+                throw new PluginImplementationException("ReCaptcha key not found");
+            }
+            final ReCaptcha r = new ReCaptcha(reCaptchaKeyMatcher.group(1), client);
+            final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            r.setRecognized(captcha);
+            r.modifyResponseMethod(method);
+        } else {
+            throw new PluginImplementationException("Unknown/unsupported captcha");
+        }
     }
 
     private URI encodeUri(final String sUri) throws Exception {

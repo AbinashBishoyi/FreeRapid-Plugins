@@ -47,13 +47,18 @@ class CtdiskRunner extends AbstractRunner {
             fileURL = method.getURI().toString();
             final String fileId = getFileId();
             pageContentWithCaptcha = getContentAsString();
-            while (!getContentAsString().contains("<a class=\"local\" href=\"")) {
+            while (!getContentAsString().contains("downlink=")) {
                 if (!makeRedirectedRequest(stepCaptcha(fileId))) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
                 checkProblems();
             }
+            if (!makeRedirectedRequest(getGetMethod(getUrlRoot() + PlugUtils.getStringBetween(getContentAsString(), "downlink=/", "\";")))) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
             final String downloadLinkBase64 = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"local\" href=\"", "\"");
             final String downloadLink = new String(Base64.decodeBase64(downloadLinkBase64), "UTF-8");
             logger.info(String.format("Download link: %s\nDecoded link: %s", downloadLinkBase64, downloadLink));
@@ -69,8 +74,8 @@ class CtdiskRunner extends AbstractRunner {
     }
 
     private void checkSizeAndName() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "file_title\">", "</");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "大小：", "</");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<h1>", "<");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<small>", "</");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -100,7 +105,7 @@ class CtdiskRunner extends AbstractRunner {
     private HttpMethod stepCaptcha(final String fileId) throws Exception {
         final String urlRoot = getUrlRoot();
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaURL = String.format("%srandcodeV2.php?fid=%s&rand=%f", urlRoot, fileId, Math.random());
+        final String captchaURL = String.format("%srandcodeV2_login.php?fid=%s&rand=%f", urlRoot, fileId, Math.random());
         logger.info("Captcha URL " + captchaURL);
         final String captcha;
         String captcha_result;
@@ -109,13 +114,13 @@ class CtdiskRunner extends AbstractRunner {
             captcha = PlugUtils.recognize(captchaImage, "-C 0-9");
             if (captcha == null) {
                 logger.info("Could not separate captcha letters (attempt " + captchaCounter + " of " + CAPTCHA_MAX + ")");
-                captcha_result = Integer.toString(random.nextInt(800) + 100);
+                captcha_result = Integer.toString(random.nextInt(8000) + 1000);
             } else {
                 captcha_result = captcha.replaceAll("\\D", "");
-                // There should be 3 digital chars, if not then they'll be the default random value.
-                if (captcha_result.length() != 3) {
-                    logger.info("Captcha length is not 3, randomizing captcha..");
-                    captcha_result = Integer.toString(random.nextInt(800) + 100);
+                // There should be 4 digital chars, if not then they'll be the default random value.
+                if (captcha_result.length() != 4) {
+                    logger.info("Captcha length is not 4, randomizing captcha..");
+                    captcha_result = Integer.toString(random.nextInt(8000) + 1000);
                 }
             }
 

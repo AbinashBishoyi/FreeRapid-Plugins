@@ -1,21 +1,20 @@
 package cz.vity.freerapid.plugins.services.ifile_login;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.ifile.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+
 import java.io.IOException;
 import java.io.InputStream;
-import org.apache.commons.httpclient.HttpMethod;
-
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 /**
  * @author JPEXS
@@ -134,7 +133,7 @@ class IFileFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            String content = getContentAsString();            
+            String content = getContentAsString();
             __x_fsa = PlugUtils.getStringBetween(content, "var __x_fsa = '", "';");
             __x_fs = PlugUtils.getStringBetween(content, "var __x_fs = '", "';");
             __x_c = PlugUtils.getStringBetween(content, "var __x_c = '", "';");
@@ -159,9 +158,9 @@ class IFileFileRunner extends AbstractRunner {
         checkLoginProblems();
     }
 
-    private void checkLoginProblems() throws BadLoginException{
-        if(getContentAsString().contains("sign in")){
-            badConfig=true;
+    private void checkLoginProblems() throws BadLoginException {
+        if (getContentAsString().contains("sign in")) {
+            badConfig = true;
             throw new BadLoginException("Bad login or password");
         }
     }
@@ -185,7 +184,7 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void stepReCaptcha() throws Exception {
-        ReCaptcha r = new ReCaptcha(__recaptcha_public, client);
+        cz.vity.freerapid.plugins.services.ifile_login.ReCaptcha r = new cz.vity.freerapid.plugins.services.ifile_login.ReCaptcha(__recaptcha_public, client);
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaSrc = r.getImageURL();
         logger.info("ReCaptcha URL " + captchaSrc);
@@ -239,10 +238,10 @@ class IFileFileRunner extends AbstractRunner {
         pm.addParameter("usernameFld", login);
         pm.addParameter("passwordFld", password);
         pm.addParameter("submitBtn", "continue");
-        int res=client.makeRequest(pm, false);
+        int res = client.makeRequest(pm, false);
         pm.releaseConnection();
-        if(res==301){
-            badConfig=true;
+        if (res == 301) {
+            badConfig = true;
             throw new BadLoginException("Bad login or password");
         }
         ////ifileit_auth=e942dfc474f1ff703cea17d26119f1891585740; expires=Sun, 08-Nov-2009 12:03:27 GMT; path=/; domain=.ifile.it
@@ -256,6 +255,7 @@ class IFileFileRunner extends AbstractRunner {
         }
         return null;
     }
+
     private boolean badConfig = false;
     private static String cookie = null;
 }

@@ -1,16 +1,15 @@
 package cz.vity.freerapid.plugins.services.ifile;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.ifile.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.io.IOException;
-import java.io.InputStream;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -65,7 +64,7 @@ class IFileFileRunner extends AbstractRunner {
             InputStream is = null;
             try {
                 is = method.getResponseBodyAsStream();
-                if(is!=null){
+                if (is != null) {
                     int i = 0;
                     while ((i = is.read()) != -1) {
                         content += (char) i;
@@ -98,8 +97,8 @@ class IFileFileRunner extends AbstractRunner {
          * Because server response content type is json,
          * internal function getContentAsString does not work.
          */
-        if (client.getHTTPClient().executeMethod(method)==200) {
-            String content = forcedGetContentAsString(method);           
+        if (client.getHTTPClient().executeMethod(method) == 200) {
+            String content = forcedGetContentAsString(method);
             //Response looks like this: {"status":"ok","captcha":"none","retry":"none"}
             String respStatus = PlugUtils.getStringBetween(content, "\"status\":\"", "\"");
             String respCaptcha = PlugUtils.getStringBetween(content, "\"captcha\":\"", "\"");
@@ -173,7 +172,7 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void stepReCaptcha() throws Exception {
-        ReCaptcha r = new ReCaptcha(__recaptcha_public, client);
+        cz.vity.freerapid.plugins.services.ifile_login.ReCaptcha r = new cz.vity.freerapid.plugins.services.ifile_login.ReCaptcha(__recaptcha_public, client);
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaSrc = r.getImageURL();
         logger.info("ReCaptcha URL " + captchaSrc);

@@ -122,7 +122,8 @@ class Data_PremiumFileRunner extends AbstractRunner {
             postmethod.addParameter(passname, pa.getPassword());
             postmethod.addParameter("target", redirname);
             postmethod.addParameter("remember", "on");
-
+            postmethod.addParameter("url_for_login", redirname);
+            logger.info(redirname);
             if (makeRedirectedRequest(postmethod)) {
                 matcher = getMatcherAgainstContent("class=\"login_button\"");
                 if (matcher.find()) {

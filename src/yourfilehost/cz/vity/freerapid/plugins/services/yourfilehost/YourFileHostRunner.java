@@ -44,30 +44,30 @@ class YourFileHostRunner extends AbstractRunner {
             //Matcher matcher = PlugUtils.matcher("<div class=\"download\"><a href=\"([^\"<]*)", contentAsString);
 
 
-            if (contentAsString.contains("www.yourfilehost.com/flash/flvplayer7.swf")) {
-                String vidEmbed = PlugUtils.getParameter("movie", contentAsString);
+            if (contentAsString.contains("www.yourfilehost.com/adcontent/flvplayer")) {
+            	Matcher parmMatcher=PlugUtils.matcher("name=\"movie\"\\s[^>]*value=\"([^\"]*)\"", contentAsString);
+            	if(!parmMatcher.find())
+            		throw new PluginImplementationException();
+            	String vidEmbed=parmMatcher.group(1);
 
-                vidEmbed = URLDecoder.decode(vidEmbed, "UTF-8");
+                if (vidEmbed.contains("video=")) {
 
-                if (vidEmbed.contains("video-embed")) {
-
-                    Matcher vidURL = PlugUtils.matcher("(www.yourfilehost.com/video-embed.php[^\"]+)&adult", vidEmbed);
+                    Matcher vidURL = PlugUtils.matcher("[&?]video=([^&]*)", vidEmbed);
                     if (vidURL.find()) {
 
 
-                        getMethod = getGetMethod("http://" + vidURL.group(1));
+                        getMethod = getGetMethod(URLDecoder.decode(vidURL.group(1), "UTF-8"));
 
 
                         if (makeRequest(getMethod)) {
                             contentAsString = getContentAsString();
-                            contentAsString = URLDecoder.decode(contentAsString, "UTF-8");
                             //video_id=http://cdn.yourfilehost.com/unit1/flash8/26/26330e1832d639cd184a61890d5219ff.flv&homeurl=http://www.yourfilehost.com&photo=http://cdnl3.yourfilehost.com/thumbs/26/26330e1832d639cd184a61890d5219ff.jpg&video_url_fs=javascript:fullscreen&flash_skin=100&url_share=http://www.yourfilehost.com/linkshare.php?cat=&file=&shared_same=0&xml_url=http://www.yourfilehost.com/flv-xml.php?cid=26330e1832d639cd184a61890d5219ff&adult=&rand=9553&xml_url2=http://traffic.liveuniversenetwork.com/xml/zones.rss?id=127&ip=202.77.98.130&ses_id=MjAyLjc3Ljk4LjEzMCwxMjI5NjYxODAy&embed=http://www.yourfilehost.com/media.php?cat=&file=&lu_userid_text=C2BA90801FB7450F88EE88DB0255220F&lu_siteid_text=42&ad_liveuniverse_type=3&ad_liveuniverse=1&lu_userid_postroll=3FA8DCD497384EF28089CC4517D88CC9&lu_siteid_postroll=32&family=on
 
 
-                            vidURL = PlugUtils.matcher("video_id=(http://[^&]+.flv)", contentAsString);
+                            vidURL = PlugUtils.matcher("video_id=([^&]+)", contentAsString);
                             if (vidURL.find()) {
 
-                                getMethod = getGetMethod(vidURL.group(1));
+                                getMethod = getGetMethod(URLDecoder.decode(vidURL.group(1), "UTF-8"));
                                 client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                                 logger.info("Final Link " + vidURL.group(1));
                                 if (!tryDownloadAndSaveFile(getMethod)) {

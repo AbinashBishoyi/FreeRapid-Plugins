@@ -35,28 +35,29 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "&nbsp;</span><b>", "</b></h1>");
-        PlugUtils.checkFileSize(httpFile, content, ":</b>", "</div>");
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        logger.info(content);
+        if (!(content == null)) {
+            if (content.contains("&nbsp;</span><b>") && content.contains("</b></h1>") && content.contains(":</b>") && content.contains("</div>")) {
+                PlugUtils.checkName(httpFile, content, "&nbsp;</span><b>", "</b></h1>");
+                PlugUtils.checkFileSize(httpFile, content, ":</b>", "</div>");
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            }
+        }
+
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-
         checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         HttpMethod httpMethod = getMethodBuilder().setReferer(mRef).setAction(parseURL(fileURL)).toGetMethod();
-
-
-        logger.info(getContentAsString());
-
+       
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();//if downloading failed
             logger.warning(getContentAsString());//log the info
             throw new PluginImplementationException();//some unknown problem
         }
-
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
@@ -78,7 +79,7 @@ class TurboBitFileRunner extends AbstractRunner {
             }
             Matcher errMatcher = PlugUtils.matcher("<div[^>]*class='error'[^>]*>([^<]*)<", getContentAsString());
             if (errMatcher.find() && !errMatcher.group(1).isEmpty()) {
-                if (errMatcher.group(1).contains("Неверный ответ"))
+                if (errMatcher.group(1).contains("�?еверный ответ"))
                     throw new CaptchaEntryInputMismatchException();
                 throw new PluginImplementationException();
             }
@@ -96,14 +97,12 @@ class TurboBitFileRunner extends AbstractRunner {
 
     private String parseURL(String myURL) throws Exception {
 
-        Matcher matcher = PlugUtils.matcher("http://turbobit\\.net/([a-z0-9]+)\\.html", myURL);
+        Matcher matcher = PlugUtils.matcher("http://(www\\.)?turbobit\\.net/([a-z0-9]+)\\.html", myURL);
         if (!matcher.find()) {
             checkProblems();
             throw new PluginImplementationException();
         }
-        String myAction = "http://turbobit.net/download/timeout/" + matcher.group(1) + "/";
-
-
+        String myAction = "http://www.turbobit.net/download/timeout/" + matcher.group(2) + "/";
         HttpMethod httpMethod = getMethodBuilder().setReferer(mRef).setAction(myAction).toGetMethod();
         client.setReferer(mRef);
         String getRef = client.getReferer();

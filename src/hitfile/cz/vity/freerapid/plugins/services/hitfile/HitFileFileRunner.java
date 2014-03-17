@@ -17,7 +17,7 @@ class HitFileFileRunner extends TurboBitFileRunner {
 
     @Override
     protected void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("Download file\\s*<br>.*?>(.+?)</span>");
+        Matcher matcher = getMatcherAgainstContent("Download file.+?<span.+?>(.+?)</span>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found");
         }

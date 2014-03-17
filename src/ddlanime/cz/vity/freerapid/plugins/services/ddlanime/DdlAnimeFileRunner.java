@@ -54,8 +54,11 @@ class DdlAnimeFileRunner extends AbstractRunner {
         if (!makeRedirectedRequest(method)) { //we make the main request
             logger.warning(getContentAsString());
             checkFileProblems();
+            checkDownloadProblems();
             throw new ServiceConnectionProblemException();
         }
+        checkFileProblems();
+        checkNameAndSize(getContentAsString());
 
         HttpMethod httpMethod = getMethodBuilder()
                 .setBaseURL(fileURL)

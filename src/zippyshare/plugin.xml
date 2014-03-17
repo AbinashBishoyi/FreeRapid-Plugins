@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="zippyshare.com" version="0.5" vendor="Kajda"
+<plugin id="zippyshare.com" version="0.5.1" vendor="Kajda"
         class="cz.vity.freerapid.plugins.services.zippyshare.ZippyShareServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://www\d+\.zippyshare\.com/v/.+"/>
+        <attribute id="urlRegex" value="http://(www(\d+)?\.)?zippyshare\.com/v/.+"/>
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="zippyshare.com"/>

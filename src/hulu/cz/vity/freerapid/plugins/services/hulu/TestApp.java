@@ -21,6 +21,7 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             httpFile.setNewURL(new URL("http://www.hulu.com/watch/163679/if-i-can-dream-menage-a-trois"));//international
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/307686/eureka-do-you-see-what-i-see"));//US-only
+            //httpFile.setNewURL(new URL("http://www.hulu.com/profiles/user/public_queue"));//user queue
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 9050, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication

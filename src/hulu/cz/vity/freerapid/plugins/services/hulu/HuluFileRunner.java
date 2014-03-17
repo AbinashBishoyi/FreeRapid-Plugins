@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -13,6 +14,8 @@ import org.apache.commons.httpclient.HttpMethod;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -51,16 +54,20 @@ class HuluFileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("File name not found");
         }
         String name = matcher.group(1).replace(": ", " - ");
-        matcher = getMatcherAgainstContent("Season (\\d+) [^<>]*?Ep\\. (\\d+)");
-        if (matcher.find()) {
-            final String[] s = name.split(" \\- ", 2);
-            if (s.length >= 2) {
-                final int season = Integer.parseInt(matcher.group(1));
-                final int episode = Integer.parseInt(matcher.group(2));
-                name = String.format("%s - S%02dE%02d - %s", s[0], season, episode, s[1]);
+        if (!isUserPage()) {
+            matcher = getMatcherAgainstContent("Season (\\d+) [^<>]*?Ep\\. (\\d+)");
+            if (matcher.find()) {
+                final String[] s = name.split(" \\- ", 2);
+                if (s.length >= 2) {
+                    final int season = Integer.parseInt(matcher.group(1));
+                    final int episode = Integer.parseInt(matcher.group(2));
+                    name = String.format("%s - S%02dE%02d - %s", s[0], season, episode, s[1]);
+                }
             }
+            httpFile.setFileName(name + ".flv");
+        } else {
+            httpFile.setFileName(name);
         }
-        httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -73,6 +80,11 @@ class HuluFileRunner extends AbstractRtmpRunner {
         makeRedirectedRequest(method);
         checkProblems(getContentAsString());
         checkNameAndSize();
+
+        if (isUserPage()) {
+            parseUserPage();
+            return;
+        }
 
         final String cid = PlugUtils.getStringBetween(getContentAsString(), "\"content_id\", ", ")");
         final String contentSelectUrl = getContentSelectUrl(cid);
@@ -244,6 +256,41 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
     private static String getSessionId() {
         return DigestUtils.md5Hex(String.valueOf(System.nanoTime())).toUpperCase(Locale.ENGLISH);
+    }
+
+    private boolean isUserPage() {
+        return fileURL.contains("/profiles/");
+    }
+
+    private void parseUserPage() throws Exception {
+        final Collection<URI> set = new LinkedHashSet<URI>();
+        for (int page = 1; ; page++) {
+            final HttpMethod method = getMethodBuilder().setAction(fileURL).setParameter("page", String.valueOf(page)).toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final int previousSize = set.size();
+            final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://www\\.hulu\\.com/watch/[^\"]+?)\" beaconid=\"");
+            while (matcher.find()) {
+                try {
+                    set.add(new URI(matcher.group(1)));
+                } catch (final URISyntaxException e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+            if (set.size() <= previousSize) {
+                break;
+            }
+        }
+        if (set.isEmpty()) {
+            throw new NotRecoverableDownloadException("No videos found");
+        }
+        final List<URI> list = new ArrayList<URI>(set);
+        // Hulu returns the videos in descending date order, which is a bit illogical
+        Collections.reverse(list);
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        logger.info(set.size() + " videos added");
+        httpFile.getProperties().put("removeCompleted", true);
     }
 
 }

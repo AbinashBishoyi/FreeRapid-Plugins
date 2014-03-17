@@ -35,8 +35,8 @@ class PreFilesFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Filename:</td><td><strong>", "</strong></td></tr>");
-        PlugUtils.checkFileSize(httpFile, content, "Size:</td><td><strong>", "</strong>");
+        PlugUtils.checkName(httpFile, content, "Filename:</td><td>", "</td></tr>");
+        PlugUtils.checkFileSize(httpFile, content, "Size:</td><td>", "</td></tr>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

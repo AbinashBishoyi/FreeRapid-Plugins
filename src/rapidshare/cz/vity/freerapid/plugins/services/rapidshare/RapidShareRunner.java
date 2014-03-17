@@ -1,9 +1,8 @@
 package cz.vity.freerapid.plugins.services.rapidshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -11,7 +10,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,16 +17,15 @@ import java.util.regex.Pattern;
 /**
  * @author Ladislav Vitasek
  */
-class RapidShareRunner {
+class RapidShareRunner extends AbstractRunner<RapidShareServiceImpl> {
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
-    private HttpDownloadClient client;
 
+    public RapidShareRunner(RapidShareServiceImpl shareDownloadService) {
+        super(shareDownloadService);
+    }
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        final String fileURL = httpFile.getFileUrl().toString();
-        logger.info("Starting download in TASK " + fileURL);
+        super.runCheck(downloader);
         final GetMethod getMethod = client.getGetMethod(fileURL);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
             Matcher matcher = Pattern.compile("form id=\"ff\" action=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
@@ -54,7 +51,6 @@ class RapidShareRunner {
                 logger.warning(client.getContentAsString());
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
             }
-            String s = matcher.group(1);
             //| 5277 KB</font>
             matcher = Pattern.compile("\\| (.*?) KB</font>", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find())
@@ -64,10 +60,7 @@ class RapidShareRunner {
     }
 
     public void run(HttpFileDownloader downloader) throws Exception {
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        final String fileURL = httpFile.getFileUrl().toString();
-        logger.info("Starting download in TASK " + fileURL);
+        super.run(downloader);
         final GetMethod getMethod = client.getGetMethod(fileURL);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
             Matcher matcher = Pattern.compile("form id=\"ff\" action=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
@@ -107,7 +100,7 @@ class RapidShareRunner {
                 matcher = Pattern.compile("var c=([0-9]+);", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (!matcher.find()) {
                     checkProblems();
-                    logger.log(Level.WARNING, client.getContentAsString());
+                    logger.warning(client.getContentAsString());
                     throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
                 }
                 s = matcher.group(1);

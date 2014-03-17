@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.rapidshare;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author Ladislav Vitasek
@@ -9,10 +9,12 @@ import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 public class RapidShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "RapidShare.com";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }
@@ -23,14 +25,7 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public void runCheck(HttpFileDownloader httpFileDownloader) throws Exception {
-        super.runCheck(httpFileDownloader);
-        new RapidShareRunner().runCheck(httpFileDownloader);
+    protected PluginRunner getPluginRunnerInstance() {
+        return new RapidShareRunner();
     }
-
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
-        new RapidShareRunner().run(downloader);
-    }
-
 }

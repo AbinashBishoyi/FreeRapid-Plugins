@@ -79,7 +79,7 @@ class BitRoadFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "class=\"content_text\"><h1>", " [");
+        PlugUtils.checkName(httpFile, contentAsString, "class=\"content_text\">\n<h1>", " [");
         PlugUtils.checkFileSize(httpFile, contentAsString, "[ ", " ]</h1>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

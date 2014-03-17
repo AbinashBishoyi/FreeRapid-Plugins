@@ -69,13 +69,13 @@ class YourFileHostRunner extends AbstractRunner {
                                 checkProblems();
                                 logger.warning(getContentAsString());//something was really wrong, we will explore it from the logs :-)
                                 throw new IOException("File input stream is empty.");
-                            }//TODO else
+                            } 
 
-                        }//TODO else
-                    }//TODO else
-                }//TODO else
-            }//TODO else
-        }//TODO else
+                        } else throw new InvalidURLOrServiceProblemException("Can't find download link 2");
+                    } else throw new InvalidURLOrServiceProblemException("Can't find download link 3");
+                } else throw new InvalidURLOrServiceProblemException("Can't find download link 4");
+            } else throw new InvalidURLOrServiceProblemException("Can't find download link 5");
+        } else throw new InvalidURLOrServiceProblemException("Can't find download link 6");
     }
 
     private void checkNameandSize(String content) throws Exception {
@@ -88,13 +88,6 @@ class YourFileHostRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("<b>SaveFile error:</b><br>File doesn't exist");
         }
 
-        // Matcher xmatcher = PlugUtils.matcher("Filesize: ([0-9.]*[K|M]B)", content);
-        //if (xmatcher.find()) {
-        //     final String fileSize = xmatcher.group(1);
-        //    logger.info("File size " + fileSize);
-        //     httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-
-        // } else logger.warning("File size was not found" + content);
 //http://www.yourfilehost.com/media.php?cat=video&file=bush_shoe_attack.flv
         Matcher xmatcher = PlugUtils.matcher("file=([^<]*)", fileURL);
         if (xmatcher.find()) {

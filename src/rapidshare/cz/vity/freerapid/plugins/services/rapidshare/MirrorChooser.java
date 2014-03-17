@@ -73,6 +73,7 @@ class MirrorChooser {
     }
 
     void chooseFromList() throws Exception {
+       if(mirrorConfig==null)  mirrorConfig = storage.loadConfigFromFile(CONFIGFILE, RapidShareMirrorConfig.class);
                 MirrorChooserUI ms = new MirrorChooserUI(this);
         if (dialogSupport.showOKCancelDialog(ms, "Vyber")) {
             setPreffered(ms.getChoosen());

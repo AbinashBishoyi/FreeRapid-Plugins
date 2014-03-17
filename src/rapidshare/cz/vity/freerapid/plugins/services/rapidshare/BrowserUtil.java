@@ -1,4 +1,4 @@
-package cz.vity.freerapid.utilities;
+package cz.vity.freerapid.plugins.services.rapidshare;
 
 import java.awt.*;
 import java.io.IOException;

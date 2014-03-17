@@ -7,249 +7,172 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, RubinX
  */
 class DepositFilesRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DepositFilesRunner.class.getName());
-    private static final String HTTP_DEPOSITFILES = "http://www.depositfiles.com";
-    private final static Random random = new Random(System.nanoTime());
+
+    private void setLanguageEN() {
+        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
+        fileURL = fileURL.replaceFirst("/[^/]{2}/(files|folders)/", "/$1/"); // remove language id from URL
+    }
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        fileURL = CheckURL(fileURL);
+        setLanguageEN();
         if (!checkIsFolder()) {
             final GetMethod getMethod = getGetMethod(fileURL);
-            getMethod.setFollowRedirects(true);
-            if (makeRequest(getMethod)) {
+            if (makeRedirectedRequest(getMethod)) {
                 checkNameAndSize(getContentAsString());
-            } else
-                throw new PluginImplementationException();
+            } else {
+                throw new ServiceConnectionProblemException();
+            }
         }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
-        fileURL = CheckURL(fileURL);
-        //Support to Folder
+        setLanguageEN();
+
         if (checkIsFolder()) {
             runFolder();
             return;
-        } else {
-            final GetMethod getMethod = getGetMethod(fileURL);
-            getMethod.setFollowRedirects(true);
-            addGACookies();
-            if (makeRequest(getMethod)) {
-                checkNameAndSize(getContentAsString());
-                Matcher matcher;
-                checkProblems();
-                if (!getContentAsString().contains("Free downloading mode")) {
-                    matcher = getMatcherAgainstContent("FREE downloading");
-                    if (matcher.find()) {
-                        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("free_btn", "FREE downloading").toPostMethod();
-                        if (!makeRequest(httpMethod)) {
-                            logger.info(getContentAsString());
-                            throw new PluginImplementationException();
-                        }
-
-                    } else {
-                        checkProblems();
-                        // throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-                    }
-
-                }
-
-                //	<img src="http://depositfiles.com/en/get_download_img_code.php?icid=yxcWQT8XPbxGNQxdTxTfEg__"/>
-                matcher = getMatcherAgainstContent("src=\"(.*?/get_download_img_code.php[^\"]*)\"");
-                if (matcher.find()) {
-                    String s = PlugUtils.replaceEntities(matcher.group(1));
-                    logger.info("Captcha - image " + s);
-                    String captcha;
-                    final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
-                    //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
-                    captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-
-                    client.setReferer(HTTP_DEPOSITFILES + getMethod.getPath());
-                    final PostMethod postMethod = getPostMethod(HTTP_DEPOSITFILES + getMethod.getPath());
-                    PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"icid"});
-
-                    postMethod.addParameter("img_code", captcha);
-
-                    if (!makeRequest(postMethod)) {
-                        logger.info(getContentAsString());
-                        throw new PluginImplementationException();
-                    }
-                }
-                //        <span id="download_waiter_remain">60</span>
-                matcher = getMatcherAgainstContent("download_waiter_remain\">([0-9]+)");
-                if (!matcher.find()) {
-
-
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
-                }
-                String t;
-                int seconds = (int) ((PlugUtils.getNumberBetween(getContentAsString(), "'load_form()', ", ")")) / 1000);
-                logger.info("wait - " + seconds);
-                matcher = getMatcherAgainstContent("load\\('(.*?)'\\);");
-                if (matcher.find()) {
-                    t = HTTP_DEPOSITFILES + matcher.group(1);
-                    logger.info("Download URL: " + t);
-                    downloadTask.sleep(seconds + 20);
-                    //  httpFile.setState(DownloadState.GETTING);
-
-
-                    HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(t).toHttpMethod();
-                    method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
-                    method.setFollowRedirects(true);
-                    if (!makeRedirectedRequest(method)) {
-                        logger.info(getContentAsString());
-                        throw new PluginImplementationException();
-                    }
-                    System.out.print(getContentAsString());
-                    method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("download", true).toHttpMethod();
-
-                    if (!tryDownloadAndSaveFile(method)) {
-                        checkProblems();
-                        throw new IOException("File input stream is empty.");
-                    }
-                } else {
-                    checkProblems();
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
-                }
-
-            } else
-                throw new PluginImplementationException();
         }
-    }
 
-    private String CheckURL(String URL) {
-        //addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(getMethod)) {
+            checkNameAndSize(getContentAsString());
+            checkProblems();
 
-        return URL.replaceFirst("/../files", "/en/files");
+            if (getContentAsString().contains("FREE downloading")) {
+                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("free_btn", "FREE downloading").toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    throw new ServiceConnectionProblemException();
+                }
+            }
 
+            Matcher matcher = getMatcherAgainstContent("setTimeout\\s*\\(\\s*'load_form\\s*\\(\\s*fid\\s*,\\s*msg\\s*\\)\\s*'\\s*,\\s*(\\d+)\\s*\\)");
+            if (!matcher.find()) {
+                throw new PluginImplementationException();
+            }
+            int seconds = Integer.parseInt(matcher.group(1)) / 1000;
+            logger.info("wait - " + seconds);
+
+            matcher = getMatcherAgainstContent("<a href=\"(/get_file\\.php\\?fid=[^&]+).*?\"[^>]*>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException();
+            }
+
+            downloadTask.sleep(seconds + 5);
+
+            String getFileUrl = matcher.group(1);
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(getFileUrl).toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+
+            matcher = getMatcherAgainstContent("<form[^>]+action=\"([^\"]+)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException();
+            }
+            String finalDownloadUrl = matcher.group(1);
+            logger.info("Download URL: " + finalDownloadUrl);
+
+            httpMethod = getMethodBuilder().setReferer(getFileUrl).setAction(finalDownloadUrl).toHttpMethod();
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
+            }
+        } else {
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        if (!content.contains("depositfiles")) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-        }
+        if (content.contains("file does not exist"))
+            throw new URLNotAvailableAnymoreException("Such file does not exist or it has been removed for infringement of copyrights");
 
-        if (content.contains("file does not exist")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
+        Matcher matcher = getMatcherAgainstContent("class=\"info[^=]*=\"([^\"]*)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found");
         }
-        Matcher matcher = getMatcherAgainstContent("<b>([0-9.]+&nbsp;.B)</b>");
-        if (matcher.find()) {
-            logger.info("File size " + matcher.group(1));
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        httpFile.setFileName(matcher.group(1));
+
+        matcher = getMatcherAgainstContent("<b>([0-9.]+&nbsp;.B)</b>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File size not found");
         }
-        matcher = getMatcherAgainstContent("class\\=\"info[^=]*\\=\"([^\"]*)\"");
-        if (matcher.find()) {
-            final String fn = matcher.group(1);
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-        } else logger.warning("File name was not found" + getContentAsString());
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         Matcher matcher;
         String content = getContentAsString();
-        if (content.contains("already downloading")) {
-            throw new ServiceConnectionProblemException(String.format("<b>Your IP is already downloading a file from our system.</b><br>You cannot download more than one file in parallel."));
-        }
+        if (content.contains("already downloading"))
+            throw new ServiceConnectionProblemException("Your IP is already downloading a file from our system. You cannot download more than one file in parallel.");
         matcher = Pattern.compile("Try in\\s*([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
-        if (matcher.find()) {
+        if (matcher.find())
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 + 20);
-        }
         matcher = Pattern.compile("Try in\\s*([0-9]+) hour", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
-        if (matcher.find()) {
+        if (matcher.find())
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 * 60 + 20);
-        }
         matcher = Pattern.compile("Please try in\\s*([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
-        if (matcher.find()) {
+        if (matcher.find())
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 + 20);
-        }
         matcher = Pattern.compile("Please try in\\s*([0-9]+) hour", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
-        if (matcher.find()) {
+        if (matcher.find())
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 * 60 + 20);
-        }
         matcher = Pattern.compile("Please try in\\s*([0-9]+):([0-9]+) hour", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
-        if (matcher.find()) {
+        if (matcher.find())
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 * 60 + Integer.parseInt(matcher.group(2)) * 60 + 20);
-        }
         matcher = PlugUtils.matcher("slots[^<]*busy", content);
-        if (matcher.find()) {
-            throw new YouHaveToWaitException(String.format("<b>All downloading slots for your country are busy</b><br>"), 60);
-
-        }
-        if (content.contains("file does not exist")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
-
-        }
-
+        if (matcher.find())
+            throw new YouHaveToWaitException("All downloading slots for your country are busy", 60);
+        if (content.contains("file does not exist"))
+            throw new URLNotAvailableAnymoreException("Such file does not exist or it has been removed for infringement of copyrights");
     }
 
     private boolean checkIsFolder() {
         return fileURL.contains("/folders/");
     }
 
-    public void runFolder() throws Exception {
-        HashSet<URI> queye = new HashSet<URI>();
-        httpFile.getProperties().put("removeCompleted", true);
-
-        final String REGEX = "href=\"(http://(?:www\\.)?depositfiles\\.com/files/[^\"]+)\"";
+    private void runFolder() throws Exception {
+        List<URI> queue = new LinkedList<URI>();
 
         final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
-            Matcher matcher = getMatcherAgainstContent(REGEX);
-            while (matcher.find()) {
-                queye.add(new URI(matcher.group(1)));
-            }
-            Matcher matcherPages = getMatcherAgainstContent("href=\"[^\\?]+\\?(page=\\d+)\"");
-            while (matcherPages.find()) {
-                GetMethod getPageMethod = getGetMethod(fileURL + "?" + matcherPages.group(1));
-                if (makeRequest(getPageMethod)) {
-                    matcher = getMatcherAgainstContent(REGEX);
-                    while (matcher.find()) {
-                        queye.add(new URI(matcher.group(1)));
-                    }
-                } else
-                    throw new PluginImplementationException("Folder " + matcherPages.group(1) + " Can't be Loaded !!");
+        if (makeRedirectedRequest(getMethod)) {
+            Matcher matcher = getMatcherAgainstContent("<a[^>]+href=\"/folders/[^\\?]+\\?page=(\\d+)\"[^>]*>\\d+</a>\\s*<a[^>]+href=\"[^\\?]+\\?page=(\\d+)\">&gt;&gt;&gt;</a>");
+            int maxPageNumber = 1;
+            if (matcher.find())
+                maxPageNumber = Integer.parseInt(matcher.group(1));
+            for (int i = 1; i <= maxPageNumber; i++) {
+                if (i > 1) { // 1st page is already loaded - skip
+                    GetMethod getPageMethod = getGetMethod(fileURL + "?page=" + i);
+                    if (!makeRedirectedRequest(getPageMethod))
+                        throw new ServiceConnectionProblemException();
+                }
+                matcher = getMatcherAgainstContent("<a\\s+href=\"(http://(www\\.)?depositfiles\\.com/([^/]{2}/)?files/[^\"]+)\"");
+                while (matcher.find())
+                    queue.add(new URI(matcher.group(1)));
             }
         } else
-            throw new PluginImplementationException("Folder Can't be Loaded !!");
+            throw new ServiceConnectionProblemException();
 
-        synchronized (getPluginService().getPluginContext().getQueueSupport()) {
-            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, new ArrayList<URI>(queye));
-        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, queue);
 
+        httpFile.getProperties().put("removeCompleted", true);
     }
-
-    private void addGACookies() {
-        addCookie(new Cookie(".depositfiles.com", "__utmz", String.valueOf(random.nextLong()), "/", 86400, false));
-        addCookie(new Cookie(".depositfiles.com", "__utma", String.valueOf(random.nextLong()), "/", 86400, false));
-        addCookie(new Cookie(".depositfiles.com", "__utmc", String.valueOf(random.nextLong()), "/", 86400, false));
-        addCookie(new Cookie(".depositfiles.com", "__utmb", String.valueOf(random.nextLong()), "/", 86400, false));
-        //Force English
-        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
-    }
-
 }

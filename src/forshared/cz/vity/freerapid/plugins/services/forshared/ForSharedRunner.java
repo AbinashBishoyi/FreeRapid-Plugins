@@ -14,7 +14,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Alex, ntoskrnl
@@ -77,8 +76,12 @@ class ForSharedRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         if (!isFolder()) {
-            PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- 4shared");
-            final Matcher matcher = Pattern.compile("\"fileInfo.+?([\\d,\\.]+ (?:KB|MB|GB))", Pattern.DOTALL).matcher(getContentAsString());
+            Matcher matcher = getMatcherAgainstContent("\"fileName\\b[^<>]+>(.+?)<");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File name not found");
+            }
+            httpFile.setFileName(matcher.group(1));
+            matcher = getMatcherAgainstContent("(?s)\"fileInfo\\b.+?([\\d,\\.]+ .?B) \\|");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File size not found");
             }
@@ -105,7 +108,7 @@ class ForSharedRunner extends AbstractRunner {
     }
 
     private boolean isFolder() {
-        return fileURL.contains("/dir/") || fileURL.contains("/folder/");
+        return fileURL.contains("/dir/") || fileURL.contains("/folder/") || fileURL.contains("/minifolder/");
     }
 
     private void parseFolder() throws Exception {
@@ -132,7 +135,7 @@ class ForSharedRunner extends AbstractRunner {
     }
 
     private String getFolderId() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("/(dir|folder)/([^/]+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("/(?:dir|folder|minifolder)/([^/]+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Folder ID not found");
         }

@@ -20,12 +20,12 @@ class HulkshareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HulkshareFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -33,8 +33,7 @@ class HulkshareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Filename:</b></td><td >", "</td>");
-        PlugUtils.checkFileSize(httpFile, content, "<small>(", ")</small>");
+        PlugUtils.checkName(httpFile, content, "Track: <b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -42,18 +41,19 @@ class HulkshareFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            final String x = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\" onclick=\"download");
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(x).toGetMethod();
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            final String contentAsString = getContentAsString();
+            checkProblems();
+            checkNameAndSize(contentAsString);
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromAHrefWhereATagContains("Download File")
+                    .toGetMethod();
 
-            //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -64,7 +64,7 @@ class HulkshareFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Not Found") || contentAsString.contains("No such user exist")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 

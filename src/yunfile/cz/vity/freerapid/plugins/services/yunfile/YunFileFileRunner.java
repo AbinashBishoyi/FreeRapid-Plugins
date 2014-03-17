@@ -128,6 +128,11 @@ class YunFileFileRunner extends AbstractRunner {
     }
 
     private void checkFileURL() {
-        fileURL = fileURL.replaceFirst("www\\.yunfile\\.com", "yunfile.com"); //apparently they redirect www.yunfile.com to yunfile.com
+        fileURL = fileURL.replaceFirst("yfdisk\\.com", "yunfile.com").replaceFirst("filemarkets\\.com", "yunfile.com").replaceFirst("www\\.yunfile\\.com", "yunfile.com"); //apparently they redirect www.yunfile.com to yunfile.com
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://yunfile.com";
     }
 }

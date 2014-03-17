@@ -19,6 +19,7 @@ class StiahniSiFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception {
+        setLang();
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -31,13 +32,21 @@ class StiahniSiFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1 title=\"", "\"");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "Veľkosť</td>", "</td>").replace("<td class=\"value\">", "")));
+        PlugUtils.checkName(httpFile, content, "file_download_name\">", "</div>");
+        PlugUtils.checkFileSize(httpFile, content, "Velikost:", "<br/>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private void setLang() {
+        if (fileURL.contains("lg="))
+            fileURL = fileURL.replaceFirst("lg=..", "lg=cz");
+        else
+            fileURL = fileURL + "&lg=cz";
     }
 
     @Override
     public void run() throws Exception {
+        setLang();
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
@@ -46,7 +55,7 @@ class StiahniSiFileRunner extends AbstractRunner {
             checkFileProblems();
             checkNameAndSize(contentAsString);
             checkDownloadProblems();
-            final String[] waitTimeArray = PlugUtils.getStringBetween(getContentAsString(), "var limit=\"", "\"").split(":");
+            final String[] waitTimeArray = PlugUtils.getStringBetween(getContentAsString(), "var limit='", "'").split(":");
             downloadTask.sleep(Integer.parseInt(waitTimeArray[0]) * 60 + Integer.parseInt(waitTimeArray[1]) + 1);
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
@@ -65,7 +74,10 @@ class StiahniSiFileRunner extends AbstractRunner {
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("bol zmazaný")) {
+        if (contentAsString.contains("bol zmazaný") ||
+                contentAsString.contains("Soubor nikdo nestáhnul více") ||
+                contentAsString.contains("Soubor obsahoval nelegální obsah") ||
+                contentAsString.contains("Soubor byl smazaný uploaderem")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

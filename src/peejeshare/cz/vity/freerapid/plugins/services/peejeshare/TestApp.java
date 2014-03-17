@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.peejeshare.com/files/362089787/Justin_Beiber_-_Boyfriend_-_Ringtones_For_Mobile.zip.html"));
+            httpFile.setNewURL(new URL("http://peejeshare.com/files/362123735/One_Piece_500v2_720p_HDTV_Yibis.rar.html"));
             //httpFile.setNewURL(new URL("http://www.peejeshare.com/files/362100946/black-load.blogspot.com_Sonic4.beta.part1.rar.html")); //p : black-load.blogspot.com
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

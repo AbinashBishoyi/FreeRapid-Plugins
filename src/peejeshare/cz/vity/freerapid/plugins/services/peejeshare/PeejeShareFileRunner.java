@@ -34,6 +34,9 @@ class PeejeShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        if (fileURL.contains("http://peejeshare")) {
+            fileURL = fileURL.replaceFirst("http://peejeshare", "http://www.peejeshare");
+        }
         if (!isPassworded()) {
             final String regexp = "File information:<b> (.+?) - (.+?) </b>";
             final Matcher matcher = getMatcherAgainstContent(regexp);
@@ -112,7 +115,7 @@ class PeejeShareFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("download slots for this file are currently filled")) {
-            throw new YouHaveToWaitException("All download slots for this file are currently filled", 15 * 60);
+            throw new YouHaveToWaitException("All download slots for this file are currently filled", 120);
         }
     }
 

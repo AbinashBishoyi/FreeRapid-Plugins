@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.warserver.cz/stahnout/1794/krajni-meze-cz-s5e01-avi"));
-            httpFile.setNewURL(new URL("http://www.warserver.cz/stahnout/1580/pomsta-sprtu-xxx-parody-rar"));
+            httpFile.setNewURL(new URL("http://www.warserver.cz/stahnout/559683871"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final WarServerCzServiceImpl service = new WarServerCzServiceImpl();

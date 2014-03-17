@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -52,7 +53,7 @@ class WarServerCzFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-
+            fileURL = URLDecoder.decode(PlugUtils.getStringBetween(contentAsString, "'http://www.warserver.cz/uzivatele/prihlaseni?ret=", "'>"), "UTF-8");
             while (getContentAsString().contains("recaptcha/api/noscript?k=")) {
                 final HttpMethod capMethod = reCaptcha(getMethodBuilder()
                         .setActionFromFormWhereTagContains("manual_challenge", true)
@@ -63,8 +64,8 @@ class WarServerCzFileRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error processing captcha");
                 }
+                checkProblems();
             }
-            checkProblems();
 
             Matcher matcher = getMatcherAgainstContent("startFreeDownload\\(.+?,\\s*(.+?),\\s*(.+?),\\s*(.+?)\\)");
             if (!matcher.find()) {
@@ -93,6 +94,10 @@ class WarServerCzFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Soubor nenalezen")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("Z Vaší IP již probíhá stahování") ||
+                contentAsString.contains("Z Vasi IP jiz probiha stahovani")) {
+            throw new ErrorDuringDownloadingException("Already downloading from your IP");
         }
     }
 

@@ -14,10 +14,14 @@ import java.util.regex.Matcher;
 
 /**
  * @author Jan Smejkal (edit from CZshare profi to RapidShare)
+ * @edit František Musil (lister@gamesplit.cz, repair multidownload)
  */
 class ShareRapidRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareRapidRunner.class.getName());
     private boolean badConfig = false;
+    //time to next check (seconds)
+    private final static Integer timeToCheck = 120;
+    private final static Integer maxReconnect = 30;
 
     @Override
     public void runCheck() throws Exception {
@@ -56,16 +60,25 @@ class ShareRapidRunner extends AbstractRunner {
                 String downURL = matcher.group(1);
                 if(!downURL.contains("http://"))
                     downURL = serverURL + downURL;
+                for(int i = 0; i <= maxReconnect; i++) {
+                    final GetMethod method = getGetMethod(downURL);
 
-                final GetMethod method = getGetMethod(downURL);
+                    httpFile.setState(DownloadState.GETTING);
+                    if(tryDownloadAndSaveFile(method))
+                        return;
+                    if(!getContentAsString().equals(""))
+                        checkProblems();
+                    downloadTask.sleep(timeToCheck);
 
-                httpFile.setState(DownloadState.GETTING);
-                if (!tryDownloadAndSaveFile(method)) {
-                    if(getContentAsString().equals(""))
-                        throw new NotRecoverableDownloadException("No credit for download this file!");
-                    checkProblems();
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
+                    /*
+                    if (!tryDownloadAndSaveFile(method)) {
+                        if(getContentAsString().equals(""))
+                            throw new NotRecoverableDownloadException("No credit for download this file!");
+                        checkProblems();
+                        logger.info(getContentAsString());
+                        throw new PluginImplementationException();
+                    }
+                    */
                 }
             } else {
                 checkProblems();

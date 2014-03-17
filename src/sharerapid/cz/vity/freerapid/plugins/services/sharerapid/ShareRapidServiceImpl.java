@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class ShareRapidServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "share-rapid.com";
     private static final String PLUGIN_CONFIG_FILE = "plugin_ShareRapid.xml";
+    private static final Integer MAX_DOWNLOADS = 3;  //max in PA
     private volatile PremiumAccount config;
 
     public String getName() {
@@ -19,6 +20,11 @@ public class ShareRapidServiceImpl extends AbstractFileShareService {
     @Override
     public boolean supportsRunCheck() {
         return true;
+    }
+
+    public int getMaxDownloadsFromOneIP() {
+        //don't forget to update this value, in plugin.xml don't forget to update this value too
+        return MAX_DOWNLOADS;
     }
 
     @Override

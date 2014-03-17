@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author ntoskrnl
+ * @author ntoskrnl, Tommy
  */
 
 /**

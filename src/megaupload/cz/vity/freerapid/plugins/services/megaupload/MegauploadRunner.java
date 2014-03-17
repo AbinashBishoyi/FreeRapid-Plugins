@@ -104,25 +104,25 @@ class MegauploadRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, IOException, YouHaveToWaitException {
         Matcher matcher;
-        matcher = PlugUtils.matcher("Download limit exceeded", client.getContentAsString());
-        if (matcher.find()) {
+        final String contentAsString = client.getContentAsString();
+        if (contentAsString.contains("Download limit exceeded")) {
             final GetMethod getMethod = client.getGetMethod(HTTP_SITE + "/premium/??");
             if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-                matcher = PlugUtils.matcher("Please wait ([0-9]+)", client.getContentAsString());
+                matcher = PlugUtils.matcher("Please wait ([0-9]+)", contentAsString);
                 if (matcher.find()) {
                     throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60 * Integer.parseInt(matcher.group(1)));
                 }
             }
-            throw new ServiceConnectionProblemException(String.format("Download limit exceeded."));
+            throw new ServiceConnectionProblemException("Download limit exceeded.");
         }
-        matcher = PlugUtils.matcher("All download slots", client.getContentAsString());
-        if (matcher.find()) {
 
-            throw new ServiceConnectionProblemException(String.format("No free slot for your country."));
+        if (contentAsString.contains("All download slots")) {
+
+            throw new ServiceConnectionProblemException("No free slot for your country.");
         }
-        matcher = PlugUtils.matcher("Unfortunately, the link you have clicked is not available", client.getContentAsString());
-        if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>The file is not available</b><br>"));
+
+        if (contentAsString.contains("Unfortunately, the link you have clicked is not available")) {
+            throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
 
         }
 
@@ -151,7 +151,7 @@ class MegauploadRunner {
 
                 if (captcha == null) {
                     captcha = downloader.askForCaptcha(captchaImage);
-                } else captchaImage.flush();//askForCaptcha release image
+                } else captchaImage.flush();//askForCaptcha uvolnuje ten obrazek, takze tady to udelame rucne
                 if (captcha == null)
                     throw new CaptchaEntryInputMismatchException();
 
@@ -177,9 +177,8 @@ class MegauploadRunner {
     }
 
 
-    private String replaceEntities(String s) {
-        s = s.replaceAll("\\&amp;", "&");
-        return s;
+    private static String replaceEntities(String s) {
+        return s.replaceAll("\\&amp;", "&");
     }
 
     private String encodeURL(String s) throws UnsupportedEncodingException {

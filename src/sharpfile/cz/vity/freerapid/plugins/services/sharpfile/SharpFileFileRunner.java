@@ -34,11 +34,7 @@ class SharpFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("File Name:\\s*</b>\\s*([^\\s]*)\\s*<br", content);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
-        }
-        httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)).trim());
+        PlugUtils.checkName(httpFile, content, "<title>Download", "</title>");
         // no file size listed
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -93,11 +89,8 @@ class SharpFileFileRunner extends AbstractRunner {
                     bReCaptcha = true;
             }
 
-            Matcher match = getMatcherAgainstContent("<a href=\"(.+" + httpFile.getFileName() + "[^\"]*)\">");
-            if (!match.find())
-                throw new PluginImplementationException("Unable to find download link");
-
-            if (!tryDownloadAndSaveFile(getGetMethod(match.group(1)))) {
+            HttpMethod hMethod = methodBuilder.setActionFromAHrefWhereATagContains(httpFile.getFileName()).toGetMethod();
+            if (!tryDownloadAndSaveFile(hMethod)) {
                 checkDownloadProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
@@ -119,6 +112,15 @@ class SharpFileFileRunner extends AbstractRunner {
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
+        if (content.contains("You have exceeded your download limit")) {
+            final Matcher matcher = getMatcherAgainstContent("(\\d+) minutes?");
+            int waitMinutes = 1;
+            if (matcher.find()) {
+                waitMinutes = Integer.parseInt(matcher.group(1));
+            }
+            final int waitTime = waitMinutes * 60;
+            throw new YouHaveToWaitException("You have to wait " + matcher.group(), waitTime);
+        }
         if (content.contains("till next download") || content.contains("You have to wait")) {
             final Matcher matcher = getMatcherAgainstContent("(?:(\\d+) hours?, )?(?:(\\d+) minutes?, )?(?:(\\d+) seconds?)");
             int waitHours = 0, waitMinutes = 0, waitSeconds = 0;

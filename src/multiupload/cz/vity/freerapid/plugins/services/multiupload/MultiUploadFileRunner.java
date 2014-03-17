@@ -51,9 +51,15 @@ class MultiUploadFileRunner extends AbstractRunner {
         if (PlugUtils.find("/.._", fileURL)) {
             processLink(fileURL, list);
         } else {
-            final Matcher matcher = getMatcherAgainstContent(">(http://www\\.multiupload\\.(com|co.uk|nl)/.._.+?)<");
-            while (matcher.find()) {
-                processLink(matcher.group(1), list);
+            final GetMethod getMethod = getGetMethod(fileURL);
+            if (makeRedirectedRequest(getMethod)) {
+                final Matcher matcher = getMatcherAgainstContent(">(http://www\\.multiupload\\.(com|co.uk|nl)/.._.+?)<");
+                while (matcher.find()) {
+                    processLink(matcher.group(1), list);
+                }
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
         }
         // add urls to queue - let their plugins do the validation

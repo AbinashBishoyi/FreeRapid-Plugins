@@ -56,46 +56,55 @@ class FileFactoryRunner extends AbstractRunner {
                 }
                 makeRedirectedRequest(getMethod);
             }
+            HttpMethod httpMethod;
+            if (!getContentAsString().contains("Recaptcha\\.create\\(\\s*?\"(.+?)\"")) {   // Get rid of the captcha during off-peak
+                String redirectUrl = PlugUtils.getStringBetween(getContentAsString(), "window.location = '", "';");
+                redirectUrl = redirectUrl.replaceFirst(Pattern.quote("' + document.location.host + '"), "filefactory.com");
+                httpMethod = getGetMethod(redirectUrl);
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkAllProblems();
+                    throw new PluginImplementationException("Problem redirecting to the download page");
+                }
+            } else {
+                do {
+                    if (!makeRedirectedRequest(stepCaptcha())) {
+                        throw new ServiceConnectionProblemException();
+                    }
+                } while (!getContentAsString().contains("\"status\":\"ok\""));
 
-            do {
-                if (!makeRedirectedRequest(stepCaptcha())) {
+                final String action = PlugUtils.getStringBetween(getContentAsString(), "\"path\":\"", "\"").replace("\\/", "/");
+                httpMethod = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(action)
+                        .toGetMethod();
+                if (makeRedirectedRequest(httpMethod)) {
+                    checkAllProblems();
                     throw new ServiceConnectionProblemException();
                 }
-            } while (!getContentAsString().contains("\"status\":\"ok\""));
+            }
+            checkAllProblems();
 
-            final String action = PlugUtils.getStringBetween(getContentAsString(), "\"path\":\"", "\"").replace("\\/", "/");
-            final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(action)
-                    .toGetMethod();
-            if (makeRedirectedRequest(httpMethod)) {
+            if (!getContentAsString().contains("Click here to download now")) {
+                final Matcher match = PlugUtils.matcher("<a href=\"(.+?" + Pattern.quote(httpFile.getFileName()) + ")\"", getContentAsString());
+                if (!match.find())
+                    throw new PluginImplementationException("Problem finding final page");
+                getMethod = getGetMethod(match.group(1));
+                if (!makeRedirectedRequest(getMethod)) {
+                    checkAllProblems();
+                    throw new PluginImplementationException("Problem loading final page");
+                }
                 checkAllProblems();
+            }
+            final HttpMethod finalMethod = getMethodBuilder()
+                    .setReferer(httpMethod.getURI().toString())
+                    .setActionFromAHrefWhereATagContains("Click here to download now")
+                    .toGetMethod();
 
-                if (!getContentAsString().contains("Click here to download now")) {
-                    final Matcher match = PlugUtils.matcher("<a href=\"(.+?" + Pattern.quote(httpFile.getFileName()) + ")\"", getContentAsString());
-                    if (!match.find())
-                        throw new PluginImplementationException("Problem finding final page");
-                    getMethod = getGetMethod(match.group(1));
-                    if (!makeRedirectedRequest(getMethod)) {
-                        checkAllProblems();
-                        throw new PluginImplementationException("Problem loading final page");
-                    }
-                    checkAllProblems();
-                }
-                final HttpMethod finalMethod = getMethodBuilder()
-                        .setReferer(httpMethod.getURI().toString())
-                        .setActionFromAHrefWhereATagContains("Click here to download now")
-                        .toGetMethod();
+            downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
 
-                downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
-
-                if (!tryDownloadAndSaveFile(finalMethod)) {
-                    checkAllProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
-                }
-
-            } else {
-                throw new ServiceConnectionProblemException();
+            if (!tryDownloadAndSaveFile(finalMethod)) {
+                checkAllProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkAllProblems();

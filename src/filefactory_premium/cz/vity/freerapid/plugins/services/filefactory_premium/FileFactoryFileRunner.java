@@ -106,6 +106,9 @@ class FileFactoryFileRunner extends AbstractRunner {
                 content.contains("The server hosting this file is temporarily overloaded")) {
             throw new ServiceConnectionProblemException("File's server is temporarily overloaded");
         }
+        if (content.contains("This file has been flagged as potentially containing content that contravenes FileFactory's policies")) {
+            throw new NotRecoverableDownloadException("This file has been flagged as potentially containing content that contravenes FileFactory's policies");
+        }
     }
 
     private void login() throws Exception {

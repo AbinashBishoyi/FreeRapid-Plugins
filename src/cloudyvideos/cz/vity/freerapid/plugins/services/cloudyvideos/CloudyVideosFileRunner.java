@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandl
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -27,4 +28,10 @@ class CloudyVideosFileRunner extends XFileSharingRunner {
         return fileSizeHandlers;
     }
 
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "<a href\\s?=\\s?(?:\"|')(http.+?cloudyvideos.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
+        return downloadLinkRegexes;
+    }
 }

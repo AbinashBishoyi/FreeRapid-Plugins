@@ -114,6 +114,9 @@ class FileFactoryRunner extends AbstractRunner {
                 || contentAsString.contains("Please purchase an account to download this file")) {
             throw new NotRecoverableDownloadException("This file is only for Premium members");
         }
+        if (contentAsString.contains("This file has been flagged as potentially containing content that contravenes FileFactory's policies")) {
+            throw new NotRecoverableDownloadException("This file has been flagged as potentially containing content that contravenes FileFactory's policies");
+        }
     }
 
     private void checkAllProblems() throws ErrorDuringDownloadingException {

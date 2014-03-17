@@ -1,10 +1,10 @@
 package cz.vity.freerapid.plugins.services.keep2share;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
-import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
@@ -58,7 +58,14 @@ class Keep2ShareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            if (!contentAsString.contains(" window.location.href = '")) {
+            if (!contentAsString.contains("If you want downloading file on slow speed")) {
+                final MethodBuilder aMethod = getMethodBuilder().setReferer(fileURL)
+                        .setActionFromFormWhereTagContains("slow_id", true);
+                if (!makeRedirectedRequest(aMethod.toPostMethod())) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();
                 boolean loopCaptcha = true;
                 while (loopCaptcha) {
                     loopCaptcha = false;
@@ -72,7 +79,10 @@ class Keep2ShareFileRunner extends AbstractRunner {
                     if (getContentAsString().contains("The verification code is incorrect"))
                         loopCaptcha = true;
                 }
-                downloadTask.sleep(1 + PlugUtils.getNumberBetween(getContentAsString(), "you have to wait:", "seconds"));
+                final Matcher match = PlugUtils.matcher("<div id=\"download-wait-timer\">\\s*?(.+?)\\s*?</div>", getContentAsString());
+                if (!match.find())
+                    throw new PluginImplementationException("Wait time not found");
+                downloadTask.sleep(1 + Integer.parseInt(match.group(1).trim()));
                 final MethodBuilder dlBuilder = getMethodBuilder()
                         .setReferer(fileURL)
                         .setAjax()
@@ -88,7 +98,7 @@ class Keep2ShareFileRunner extends AbstractRunner {
                 }
                 checkProblems();
             }
-            final HttpMethod httpMethod = getGetMethod(baseUrl + PlugUtils.getStringBetween(getContentAsString(), "window.location.href = '", "';"));
+            final HttpMethod httpMethod = getGetMethod(baseUrl + PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\">this link"));
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -110,13 +120,13 @@ class Keep2ShareFileRunner extends AbstractRunner {
     }
 
     private MethodBuilder doCaptcha(final MethodBuilder builder) throws Exception {
-        final String imgUrl = baseUrl + "/file/captcha" + PlugUtils.getStringBetween(getContentAsString(), "src=\"/file/captcha", "\"");
-        final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaTxt = captchaSupport.getCaptcha(imgUrl);
+        String key = PlugUtils.getStringBetween(getContentAsString(), "recaptcha/api/noscript?k=", "\"");
+        final ReCaptcha reCaptcha = new ReCaptcha(key, client);
+        final String captchaTxt = getCaptchaSupport().getCaptcha(reCaptcha.getImageURL());
         if (captchaTxt == null)
             throw new CaptchaEntryInputMismatchException();
-        builder.setParameter("CaptchaForm[code]", captchaTxt);
-        return builder;
+        reCaptcha.setRecognized(captchaTxt);
+        return reCaptcha.modifyResponseMethod(builder);
     }
 
 }

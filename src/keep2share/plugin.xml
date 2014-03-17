@@ -4,13 +4,16 @@
         id="keep2share.cc" vendor="birchie" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?keep2share\.cc/.+"/>
-        <attribute id="minver" value="0.853"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="keep2share.cc"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
+                plugin-version="1.0" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="keep2share.cc" path="/" type="code"/>
     </runtime>

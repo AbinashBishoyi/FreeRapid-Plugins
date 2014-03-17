@@ -50,9 +50,22 @@ class UploadingRunner extends AbstractRunner {
             HttpMethod method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("downloadform", true).toHttpMethod();
             if (makeRedirectedRequest(method)) {
                 checkProblems();
-                final String fileId = PlugUtils.getStringBetween(getContentAsString(), "file_id: ", ", ");
+                String fileId;
+                int wait;
+                try {
+                    fileId = PlugUtils.getStringBetween(getContentAsString(), "file_id: ", ", ");
+                } catch(PluginImplementationException e) {
+                    Matcher matcher = getMatcherAgainstContent("file_id[^\\d]*(\\d*)");
+                    if( !matcher.find() )
+                        throw e;
+                    fileId = matcher.group(1);
+                }
                 method = getMethodBuilder().setAction("http://uploading.com/files/get/?JsHttpRequest=" + new Random().nextInt(5000000)).setParameter("file_id", fileId).setParameter("pass", "").setParameter("code", PlugUtils.getStringBetween(fileURL, "files/", "/")).setParameter("action", "get_link").toHttpMethod();
-                final int wait = PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")");
+                try {
+                    wait = PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")");
+                } catch(PluginImplementationException e) {
+                    wait = PlugUtils.getNumberBetween(getContentAsString(), "timead_counter\">", "</span>");
+                }
                 this.downloadTask.sleep(wait + 1);
                 if (makeRedirectedRequest(method)) {
                     checkProblems();

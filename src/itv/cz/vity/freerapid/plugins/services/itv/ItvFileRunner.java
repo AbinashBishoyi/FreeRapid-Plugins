@@ -52,15 +52,15 @@ class ItvFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<faultcode>(.+?)</faultcode><faultstring[^<>]*?>(.+?)</faultstring>");
+        final Matcher matcher = getMatcherAgainstContent("<faultcode>(.+?)</faultcode>\\s*?<faultstring[^<>]*?>(.+?)</faultstring>");
         if (matcher.find()) {
-            final String id = matcher.group(1);
-            if (id.equals("s:InvalidVodcrid")) {
+            final String id = matcher.group(1).trim();
+            if (id.equals("s:InvalidVodcrid") || id.equals("s:ContentUnavailable")) {
                 throw new URLNotAvailableAnymoreException("File not found");
             } else if (id.equals("s:InvalidGeoRegion")) {
                 throw new NotRecoverableDownloadException("This video is not available in your area");
             } else {
-                throw new NotRecoverableDownloadException("Error fetching playlist: '" + id + "', '" + matcher.group(2) + "'");
+                throw new NotRecoverableDownloadException("Error fetching playlist: '" + id + "', '" + matcher.group(2).trim() + "'");
             }
         }
         if (getContentAsString().contains("Page not found")) {
@@ -98,39 +98,30 @@ class ItvFileRunner extends AbstractRtmpRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         runCheck();
-        Matcher matcher = PlugUtils.matcher("<Video timecode=", content);
+        Matcher matcher = PlugUtils.matcher("<Video timecode=[^<>]*?>(.+?)</Video>", content);
         if (!matcher.find()) {
-            throw new PluginImplementationException("Part 'video' not found in playlist");
+            throw new PluginImplementationException("'Video' tag not found in playlist");
         }
-        final int end = matcher.end();
-        matcher = PlugUtils.matcher("(?s)<MediaFiles base=\"(rtmp.+?)\".+?</MediaFiles>", content);
-        if (!matcher.find(end)) {
-            throw new PluginImplementationException("Part 'base' not found in playlist");
-        }
-        final String base = matcher.group(1);
-        matcher = PlugUtils.matcher("<URL><!\\[CDATA\\[(.+?)\\]\\]></URL>", matcher.group());
+        final String video = matcher.group(1);
+        matcher = PlugUtils.matcher("(?s)<MediaFiles base=\"(rtmp.+?)\"", video);
         if (!matcher.find()) {
-            throw new PluginImplementationException("Part 'url' not found in playlist");
+            throw new PluginImplementationException("URL not found in playlist");
         }
-        String play = matcher.group(1);
-        while (matcher.find()) {
+        final String url = PlugUtils.replaceEntities(matcher.group(1));
+        matcher = PlugUtils.matcher("(mp4:.+?\\.mp4)", video);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Play name not found in playlist");
+        }
+        String play;
+        do {
             //get the last item, which is the highest quality
             play = matcher.group(1);
-        }
-        final RtmpSession rtmpSession = getRtmpSession(base, play);
+        } while (matcher.find());
+        final RtmpSession rtmpSession = new RtmpSession(url, play);
         rtmpSession.getConnectParams().put("pageUrl", fileURL);
         rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
         helper.setSwfVerification(rtmpSession, client);
         tryDownloadAndSaveFile(rtmpSession);
-    }
-
-    private static RtmpSession getRtmpSession(final String base, final String play) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("(.+?)://(.+?)/(.+)", base);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing base URL");
-        }
-        final String protocol = matcher.group(1);
-        return new RtmpSession(matcher.group(2), 1935, PlugUtils.replaceEntities(matcher.group(3)), play, protocol.equals("rtmpe") || protocol.equals("rtmpte"));
     }
 
     private static String getRandomGuid() {

@@ -82,7 +82,8 @@ class File4GoFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             final String content = getContentAsString().trim();
-            return getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
+            //return getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
+            return getMethodBuilder().setActionFromTextBetween("<span id=\"boton_download\" ><a href=\"", "\" class=\"ddda\"").toGetMethod();
             /*
             if (content.contains("error_free_download_blocked")) {
                 throw new ErrorDuringDownloadingException("You have reached the daily download limit");

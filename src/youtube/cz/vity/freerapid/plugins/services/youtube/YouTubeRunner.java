@@ -243,14 +243,13 @@ class YouTubeRunner extends AbstractRtmpRunner {
     private void parseUserPage() throws Exception {
         final String user = getUserFromUrl();
         final List<URI> uriList = new LinkedList<URI>();
-        final int MAX_RESULTS = 50, MAX_SEARCH = 1000;
-        for (int index = 1; index <= MAX_SEARCH; index += MAX_RESULTS) {
+        final int MAX_RESULTS = 50;
+        for (int index = 1; ; index += MAX_RESULTS) {
             final HttpMethod method = getMethodBuilder()
                     .setReferer(null)
                     .setAction("http://gdata.youtube.com/feeds/api/users/" + user + "/uploads")
-                    .setParameter("orderby", "published")
                     .setParameter("start-index", String.valueOf(index))
-                    .setParameter("max-results", String.valueOf(Math.min(MAX_RESULTS, MAX_SEARCH - index + 1)))
+                    .setParameter("max-results", String.valueOf(MAX_RESULTS))
                     .toGetMethod();
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();

@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.filebox;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -41,14 +42,18 @@ class FileboxFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "<span id=\"countdown\">", "<", TimeUnit.SECONDS));
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("F1", true).setBaseURL(fileURL).toHttpMethod();
 
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkAllProblems();
-                logger.warning(getContentAsString());
-                throw new IOException("File input stream is empty");
-            }
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereActionContains("https://www.filebox.com", true).toHttpMethod();
+            if (makeRedirectedRequest(httpMethod)) {
+                final int sleep = PlugUtils.getWaitTimeBetween(getContentAsString(), "<span id=\"countdown\">", "<", TimeUnit.SECONDS);
+                downloadTask.sleep(sleep);
+                httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("F1", true).setBaseURL("https://www.filebox.com").toHttpMethod();
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkAllProblems();
+                    logger.warning(getContentAsString());
+                    throw new IOException("File input stream is empty");
+                }
+            } else throw new PluginImplementationException();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
@@ -65,7 +70,7 @@ class FileboxFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("No such file from this user");
         }
 
-        if (contentAsString.contains("No such file")) {
+        if (contentAsString.contains("No such file") || contentAsString.contains("contentAsString.contains(\"This Link Is Not Available\")")) {
             throw new URLNotAvailableAnymoreException("No such file");
         }
     }
@@ -76,8 +81,8 @@ class FileboxFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "Filename:</b></td>\n<td nowrap>", "<");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</b></td>\n<td>", "<");
+        PlugUtils.checkName(httpFile, contentAsString, ": &nbsp;<b title=\"", "\"");
+        PlugUtils.checkFileSize(httpFile, contentAsString, ": &nbsp; (", ")");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 }

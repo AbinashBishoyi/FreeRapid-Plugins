@@ -106,6 +106,7 @@
         <ant dir="${src.dir}/fileflyer/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/ifile/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidsharede/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/bitroad/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

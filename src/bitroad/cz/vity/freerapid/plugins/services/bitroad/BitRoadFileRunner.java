@@ -57,12 +57,11 @@ class BitRoadFileRunner extends AbstractRunner {
 
                     if (makeRedirectedRequest(postMethod)) {
                         if (getContentAsString().contains("name='cap'")) {
-                            boolean captchaOCR = true;
+                            int captchaOCRCounter = 1;
 
                             while (getContentAsString().contains("name='cap'")) {
-                                postMethod = stepCaptcha(redirectURL, paramUid, captchaOCR);
+                                postMethod = stepCaptcha(redirectURL, paramUid, captchaOCRCounter++);
                                 makeRedirectedRequest(postMethod);
-                                captchaOCR = false;
                             }
 
                             matcher = getMatcherAgainstContent("href='(.+?)' title='Your link to download file'");
@@ -141,7 +140,7 @@ class BitRoadFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
     
-    private PostMethod stepCaptcha(String redirectURL, String paramUid, boolean captchaOCR) throws Exception {
+    private PostMethod stepCaptcha(String redirectURL, String paramUid, int captchaOCRCounter) throws Exception {
         CaptchaSupport captchaSupport = getCaptchaSupport();
 
         Matcher matcher = getMatcherAgainstContent("img src='(.+?)' border='0'");
@@ -151,13 +150,13 @@ class BitRoadFileRunner extends AbstractRunner {
             logger.info("Captcha URL " + captchaSrc);
             String captcha;
 
-            if (captchaOCR) {
+            if (captchaOCRCounter <= 3) {
                 captcha = readCaptchaImage(captchaSrc);
             }
             else {
                 captcha = captchaSupport.getCaptcha(captchaSrc);
             }
-
+            
             if (captcha == null) {
                 throw new CaptchaEntryInputMismatchException();
             } else {

@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="titulky.com" version="1.0.0" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.titulky.TitulkyServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?titulky\.com/.+"/>
+        <attribute id="minver" value="0.849"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="titulky.com"/>
+        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
+        <attribute id="maxDownloads" value="9"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="titulky.com" path="/" type="code"/>
+    </runtime>
+</plugin>

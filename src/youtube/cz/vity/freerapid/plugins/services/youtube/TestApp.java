@@ -18,11 +18,11 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=IJdOcdk_J1E"));//normal
+            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=IJdOcdk_J1E"));//normal
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=DVFbA1AbEUw"));//rtmp
             //httpFile.setNewURL(new URL("http://www.youtube.com/user/HDstarcraft"));//user page
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=meCIER_s7Ng"));//transcript - subtitles
-            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=l3hTJOAG5lQ")); //age verification
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=l3hTJOAG5lQ")); //age verification
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=giHIJgJS2sE")); //age & controversy verification
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=UUv3nmgyia2M2FU2TAIRXSLw&feature=plcp")); //user uploaded video
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=PLE963AD215F0C4BE5")); //playlist

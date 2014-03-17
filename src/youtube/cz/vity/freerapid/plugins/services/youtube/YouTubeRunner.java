@@ -31,7 +31,6 @@ import java.util.regex.Matcher;
  * @author JPEXS
  * @author ntoskrnl
  * @author tong2shot
- *
  * @since 0.82
  */
 class YouTubeRunner extends AbstractRtmpRunner {
@@ -143,7 +142,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
         }
     }
 
-
+    //@TODO : implement https://developers.google.com/youtube/2.0/developers_guide_protocol_video_entries
+    //@TODO : https://gdata.youtube.com/feeds/api/videos/$videoid?v=2    , where $videoid = video id from url
     private void checkProblems() throws Exception {
         if (getContentAsString().contains("video you have requested is not available")
                 || getContentAsString().contains("video is no longer available")
@@ -152,8 +152,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 || getContentAsString().contains("page you requested cannot be found")
                 || getContentAsString().contains("blocked it in your country on copyright grounds")
                 || getContentAsString().contains("has not made this video available")
-                || getContentAsString().contains("account associated with this video has been terminated")
-                || getContentAsString().contains("This video is unavailable")) {
+                || getContentAsString().contains("account associated with this video has been terminated")) {
+            //|| getContentAsString().contains("This video is unavailable")) { //false positive
             throw new URLNotAvailableAnymoreException("File not found");
         }
         /* Causes false positives

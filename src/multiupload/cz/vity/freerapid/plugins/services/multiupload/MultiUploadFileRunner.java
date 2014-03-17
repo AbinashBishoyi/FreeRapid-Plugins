@@ -1,9 +1,11 @@
 package cz.vity.freerapid.plugins.services.multiupload;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
@@ -31,6 +33,10 @@ class MultiUploadFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        if (PlugUtils.find("/.._", fileURL)) {
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            return;
+        }
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -45,9 +51,27 @@ class MultiUploadFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (PlugUtils.find("/.._", fileURL)) {
+            makeRequest(getMethod);
+            if (getMethod.getStatusCode() / 100 != 3) {
+                throw new PluginImplementationException("Invalid redirect");
+            }
+            final Header locationHeader = getMethod.getResponseHeader("Location");
+            if (locationHeader == null) {
+                throw new PluginImplementationException("Invalid redirect");
+            }
+            final String s = locationHeader.getValue();
+            if (s.equals("http://www.multiupload.com/")) {
+                throw new URLNotAvailableAnymoreException("File not found");
+            }
+            this.httpFile.setNewURL(new URL(s));
+            this.httpFile.setPluginID("");
+            this.httpFile.setState(DownloadState.QUEUED);
+            return;
+        }
         setConfig();
         prepareErrorMessages();
-        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();

@@ -328,7 +328,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         if (content.contains("You can download files up to")) {
             throw new NotRecoverableDownloadException(PlugUtils.getStringBetween(content, "<div class=\"err\">", "<br>"));
         }
-        if (content.contains("have reached the download-limit")) {
+        if (content.contains("have reached the download limit")
+                || content.contains("have reached the download-limit")) {
             throw new YouHaveToWaitException("You have reached the download limit", 10 * 60);
         }
         if (content.contains("Error happened when generating Download Link")) {

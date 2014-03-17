@@ -124,8 +124,12 @@ public class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("The file is not avaliable now because of technical problems")) {
+        if (getContentAsString().contains("The file is not available now because of technical problems")) {
             throw new ServiceConnectionProblemException("The file is not available now because of technical problems");
+        }
+        if (getContentAsString().contains("From your IP range the limit of connections is reached")) {
+            final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "<span id='timeout'>", "</span>");
+            throw new YouHaveToWaitException("Download limit reached from your IP range", waitTime);
         }
     }
 

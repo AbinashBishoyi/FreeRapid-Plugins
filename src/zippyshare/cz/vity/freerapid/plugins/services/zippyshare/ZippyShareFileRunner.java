@@ -6,9 +6,9 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import org.apache.commons.httpclient.HttpMethod;
-
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.logging.Logger;
+
 
 /**
  * @author Vity+ntoskrnl+tonyk+CapCap

@@ -102,7 +102,10 @@ class FileFactoryRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span");
+        //PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span"); //truncated
+        String filename = PlugUtils.getStringBetween(content,"redirect\" value=\"","\"");
+        filename = PlugUtils.unescapeHtml(filename.substring(filename.lastIndexOf("/")+1).trim());
+        httpFile.setFileName(filename);
         PlugUtils.checkFileSize(httpFile, content, "<h2>", "file uploaded");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

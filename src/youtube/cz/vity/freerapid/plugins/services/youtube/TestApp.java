@@ -29,11 +29,18 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=FL2pmfLm7iq6Ov1UwYrWYkZA"));// favorite list
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=Phl57XmsPQ8"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=PM4kLnRr0ZI"));
-            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=Wlrys8HvBSc"));  //possible bug in quality
             //httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECA89DCFA6ADACE599")); //course list
             //httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECB24BC7956EE040CD"));
-            httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECD9DDFBDC338226CA"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECD9DDFBDC338226CA"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/user/HDstarcraft/videos?view=0"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECBD4C7FD29B0C6D0C")); //course list
+            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=Wlrys8HvBSc"));  //possible bug in quality, G3
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=VyTN-N_bRsQ&feature=relmfu")); //possible bug in quality
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=sQ8T9b-uGVE&amp"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=BvEwiyHsCLI&amp"));
+            //http://www.youtube.com/watch?v=BvEwiyHsCLI&amp //corrupt sorrensen park
+            //http://www.youtube.com/watch?v=_ALzsu2cTNA&amp //corrupt sorrensen park
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=RxDPvPqOmv0"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
@@ -41,8 +48,8 @@ public class TestApp extends PluginDevApplication {
             final YouTubeServiceImpl service = new YouTubeServiceImpl(); //instance of service - of our plugin
 
             YouTubeSettingsConfig config = new YouTubeSettingsConfig();
-            config.setQualitySetting(4);
-            config.setContainer(0);
+            config.setQualitySetting(2);
+            config.setContainer(1);
             config.setReversePlaylistOrder(false);
             config.setDownloadSubtitles(false);
             service.setConfig(config);

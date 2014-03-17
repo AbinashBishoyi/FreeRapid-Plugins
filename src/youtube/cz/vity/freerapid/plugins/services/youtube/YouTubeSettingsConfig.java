@@ -11,6 +11,7 @@ public class YouTubeSettingsConfig {
 
     public static final int MIN_WIDTH = -2;
     public static final int MAX_WIDTH = -1;
+    public static final int ANY_CONTAINER = 0;
 
     /**
      * This maps qualityIndex to resolution

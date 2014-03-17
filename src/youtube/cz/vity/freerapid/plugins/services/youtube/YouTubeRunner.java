@@ -72,10 +72,10 @@ class YouTubeRunner extends AbstractRtmpRunner {
             checkName();
 
             if (isUserPage()) {
-                parseUserPage();
+                parseUserPage(getUserFromUrl());
                 return;
             }
-            if (isPlaylistURL()) {
+            if (isPlaylist()) {
                 parsePlaylist();
                 return;
             }
@@ -126,7 +126,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
                         videoURL = videoURL + "&signature=" + matcher.group(1);
                     }
                 }
-                method = getGetMethod(URLDecoder.decode(URLDecoder.decode(videoURL, "UTF-8"), "UTF-8"));
+                method = getGetMethod(URLDecoder.decode(videoURL, "UTF-8"));
                 setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
@@ -145,7 +145,9 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 || getContentAsString().contains("video is no longer available")
                 || getContentAsString().contains("This channel is not available")
                 || getContentAsString().contains("video has been removed")
-                || getContentAsString().contains("page you requested cannot be found")) {
+                || getContentAsString().contains("page you requested cannot be found")
+                || getContentAsString().contains("blocked it in your country on copyright grounds")
+                || getContentAsString().contains("has not made this video available")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         /* Causes false positives
@@ -163,31 +165,25 @@ class YouTubeRunner extends AbstractRtmpRunner {
             PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- YouTube\n</title>");
         }
         String fileName = PlugUtils.unescapeHtml(PlugUtils.unescapeHtml(httpFile.getFileName()));
-        if (!isUserPage() && !isPlaylistURL() && !isCourseList()) {
+        if (!isUserPage() && !isPlaylist() && !isCourseList()) {
             fileName += fileExtension;
         }
         httpFile.setFileName(fileName);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private boolean isUserPage() {
-        return fileURL.contains("/user/");
-    }
-
     private void setConfig() throws Exception {
-        YouTubeServiceImpl service = (YouTubeServiceImpl) getPluginService();
+        final YouTubeServiceImpl service = (YouTubeServiceImpl) getPluginService();
         config = service.getConfig();
     }
 
     //deprecated per http://en.wikipedia.org/wiki/YouTube#ref_media_type_table_note_1 :
     //itag is an undocumented parameter used internally by YouTube to differentiate between quality profiles.
     //Until December 2010, there was also a URL parameter known as fmt that allowed a user to force a profile using itag codes.
-    private void checkFmtParameter() throws ErrorDuringDownloadingException {
+    private void checkFmtParameter() throws Exception {
         final Matcher matcher = PlugUtils.matcher("fmt=(\\d+)", fileURL.toLowerCase(Locale.ENGLISH));
-
         if (matcher.find()) {
             final String fmtCode = matcher.group(1);
-
             if (fmtCode.length() <= 2) {
                 fmt = Integer.parseInt(fmtCode);
                 fileExtension = getFileExtension(fmt);
@@ -198,7 +194,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private void processConfig() throws ErrorDuringDownloadingException {
-        String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "\"fmt_list\": \"", "\"").replace("\\/", "/");
+        final String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "\"fmt_list\": \"", "\"").replace("\\/", "/");
+        logger.info(fmt_map);
         //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
         final String[] formats = fmt_map.split(",");
         final String[][] formatParts = new String[formats.length][];
@@ -251,14 +248,13 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
         final int selectedWidth = Integer.parseInt(formatParts[qualityIndex][1].split("x")[1]); //the concrete one
         final int container = config.getContainer();
-        if (container != 0) { //the preferred container is not "Any container"
+        if (container != YouTubeSettingsConfig.ANY_CONTAINER) {
             final List<YouTubeContainer> ytcSet = new LinkedList<YouTubeContainer>();
             for (int f = 0; f < formatParts.length; f++) {
                 String[] wh = formatParts[f][1].split("x");
                 int h = Integer.parseInt(wh[1]);
                 if (h == selectedWidth) {
                     final YouTubeContainer ytc = new YouTubeContainer(Integer.parseInt(formatParts[f][0]), f);
-                    ytc.countWeight();
                     ytcSet.add(ytc);
                 }
             }
@@ -270,7 +266,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     //source : http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
-    private String getFileExtension(int fmtCode) {
+    private String getFileExtension(final int fmtCode) {
         switch (fmtCode) {
             case 13:
             case 17:
@@ -298,9 +294,16 @@ class YouTubeRunner extends AbstractRtmpRunner {
         }
     }
 
-    private LinkedList<URI> getURIList(final String _action, final String URIRegex) throws Exception {
+    private String getIdFromUrl() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("(?:[\\?&]v=|\\.be/)([^\\?&#]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error getting video id");
+        }
+        return matcher.group(1);
+    }
+
+    private LinkedList<URI> getURIList(String action, final String URIRegex) throws Exception {
         final LinkedList<URI> uriList = new LinkedList<URI>();
-        String action = _action;
         setFileStreamContentTypes(new String[0], new String[]{"application/atom+xml"});
         do {
             final HttpMethod method = getMethodBuilder()
@@ -331,83 +334,15 @@ class YouTubeRunner extends AbstractRtmpRunner {
         return uriList;
     }
 
-    private LinkedList<URI> getVideoURIList(final String _action) throws Exception {
-        return getURIList(_action, "<media:player url='(.+?)(?:&.+?)?'");
+    private LinkedList<URI> getVideoURIList(final String action) throws Exception {
+        return getURIList(action, "<media:player url='(.+?)(?:&.+?)?'");
     }
 
-    private LinkedList<URI> getLectureCourseMaterialURIList(final String _action) throws Exception {
-        return getURIList(_action, "<yt:material.*? url='(.+?)'");
+    private LinkedList<URI> getLectureCourseMaterialURIList(final String action) throws Exception {
+        return getURIList(action, "<yt:material.*? url='(.+?)'");
     }
 
-    //user uploaded video
-    //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#User_Uploaded_Videos
-    private void parseUserPage() throws Exception {
-        final String user = getUserFromUrl();
-        final String action = "http://gdata.youtube.com/feeds/api/users/" + user + "/uploads";
-        final List<URI> uriList = getVideoURIList(action);
-        // YouTube returns the videos in descending date order, which is a bit illogical.
-        // If the user wants them that way, don't reverse.
-        if (!config.isReversePlaylistOrder()) {
-            Collections.reverse(uriList);
-        }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        logger.info(uriList.size() + " videos added");
-        if (!uriList.isEmpty()) {
-            httpFile.getProperties().put("removeCompleted", true);
-        }
-    }
-
-    private String getUserFromUrl() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher(".+/([^\\?&#]+)", fileURL);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing file URL");
-        }
-        return matcher.group(1);
-    }
-
-    private String getIdFromUrl() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("(?:[\\?&]v=|\\.be/)([^\\?&#]+)", fileURL);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing file URL");
-        }
-        return matcher.group(1);
-    }
-
-    private boolean isPlaylistURL() {
-        return fileURL.contains("/playlist?");
-    }
-
-    //Favorite List and Playlist
-    //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#Favorite_Videos
-    //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#Retrieving_a_playlist
-    private void parsePlaylist() throws Exception {
-        Matcher matcher = PlugUtils.matcher(".+?/playlist\\?list=(?:PL|UU|FL)?([^\\?&#]+)", fileURL);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing file URL");
-        }
-
-        if (matcher.group(0).contains("list=UU")) { //user uploaded video
-            final String user = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"profile-thumb\" href=\"/user/", "\"");
-            final List<URI> list = new LinkedList<URI>();
-            try {
-                list.add(new URI(String.format("http://www.youtube.com/user/%s", user)));
-            } catch (final URISyntaxException e) {
-                LogUtils.processException(logger, e);
-            }
-            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
-            httpFile.getProperties().put("removeCompleted", true);
-            return;
-        }
-
-        String action;
-        if (matcher.group(0).contains("list=FL")) { //favorite list
-            final String user = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"profile-thumb\" href=\"/user/", "\"");
-            action = String.format("http://gdata.youtube.com/feeds/api/users/%s/favorites", user);
-        } else { //playlist
-            final String playlistId = matcher.group(1);
-            action = String.format("http://gdata.youtube.com/feeds/api/playlists/%s?v=2", playlistId);
-        }
-        final List<URI> uriList = getVideoURIList(action);
+    private void queueLinks(final List<URI> uriList) throws PluginImplementationException {
         if (uriList.isEmpty()) {
             throw new PluginImplementationException("No video links found");
         }
@@ -416,47 +351,114 @@ class YouTubeRunner extends AbstractRtmpRunner {
         logger.info(uriList.size() + " videos added");
     }
 
+    private boolean isUserPage() {
+        return fileURL.contains("/user/");
+    }
+
+    private String getUserFromUrl() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("/user/([^\\?&#/]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error getting user id");
+        }
+        return matcher.group(1);
+    }
+
+    //user uploaded video
+    //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#User_Uploaded_Videos
+    private void parseUserPage(final String user) throws Exception {
+        final String action = "http://gdata.youtube.com/feeds/api/users/" + user + "/uploads";
+        final List<URI> uriList = getVideoURIList(action);
+        // YouTube returns the videos in descending date order, which is a bit illogical.
+        // If the user wants them that way, don't reverse.
+        if (!config.isReversePlaylistOrder()) {
+            Collections.reverse(uriList);
+        }
+        queueLinks(uriList);
+    }
+
+    private boolean isPlaylist() {
+        return fileURL.contains("/playlist?");
+    }
+
+    private String getPlaylistIdFromUrl() throws PluginImplementationException {
+        final Matcher matcher = PlugUtils.matcher(".+?/playlist\\?list=(?:PL|UU|FL)?([^\\?&#/]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error getting playlist id");
+        }
+        return matcher.group(1);
+    }
+
+    private String getUserFromContent() throws PluginImplementationException {
+        return PlugUtils.getStringBetween(getContentAsString(), "<a class=\"profile-thumb\" href=\"/user/", "\"");
+    }
+
+    //Favorite List and Playlist
+    //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#Favorite_Videos
+    //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#Retrieving_a_playlist
+    private void parsePlaylist() throws Exception {
+        if (fileURL.contains("list=UU")) { //user uploaded video
+            final String user = getUserFromContent();
+            parseUserPage(user);
+        } else if (fileURL.contains("list=FL")) { //favorite list
+            final String user = getUserFromContent();
+            final String action = String.format("http://gdata.youtube.com/feeds/api/users/%s/favorites", user);
+            final List<URI> uriList = getVideoURIList(action);
+            queueLinks(uriList);
+        } else { //playlist
+            final String playlistId = getPlaylistIdFromUrl();
+            final String action = String.format("http://gdata.youtube.com/feeds/api/playlists/%s?v=2", playlistId);
+            final List<URI> uriList = getVideoURIList(action);
+            queueLinks(uriList);
+        }
+    }
+
     private boolean isCourseList() {
         return fileURL.contains("/course?list=");
+    }
+
+    private String getCourseIdFromUrl() throws PluginImplementationException {
+        final Matcher matcher = PlugUtils.matcher(".+?/course\\?list=(?:EC)?([^\\?&#/]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error getting course id");
+        }
+        return matcher.group(1);
     }
 
     //Course list contains video playlist, lecture materials, and course materials
     //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#Courses
     //reference : https://developers.google.com/youtube/2.0/developers_guide_protocol#Lectures
     private void parseCourseList() throws Exception {
-        Matcher matcher = PlugUtils.matcher(".+?/course\\?list=(?:EC)?([^\\?&#]+)", fileURL);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing file URL");
-        }
-
         //Step #1 queue video playlist related to the course
-        final String playlistId = matcher.group(1);
-        String action = String.format("http://gdata.youtube.com/feeds/api/playlists/%s?v=2", playlistId);
+        final String courseId = getCourseIdFromUrl();
+        String action = String.format("http://gdata.youtube.com/feeds/api/playlists/%s?v=2", courseId);
         List<URI> uriList = getVideoURIList(action);
         if (uriList.isEmpty()) {
-            logger.warning("No video links found");
+            logger.info("No video links found");
+        } else {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+            logger.info(uriList.size() + " videos added");
         }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        logger.info(uriList.size() + " videos added");
 
         //Step #2 queue lecture materials
-        action = String.format("https://stage.gdata.youtube.com/feeds/api/edu/lectures?course=%s", playlistId);
+        action = String.format("https://stage.gdata.youtube.com/feeds/api/edu/lectures?course=%s", courseId);
         uriList = getLectureCourseMaterialURIList(action);
         if (uriList.isEmpty()) {
-            logger.warning("No lecture material links found");
+            logger.info("No lecture material links found");
+        } else {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+            logger.info(uriList.size() + " lecture materials added");
         }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        logger.info(uriList.size() + " lecture materials added");
 
         //Step #3 queue course materials
-        action = String.format("http://gdata.youtube.com/feeds/api/edu/courses/%s?v=2", matcher.group(1));
+        action = String.format("http://gdata.youtube.com/feeds/api/edu/courses/%s?v=2", courseId);
         uriList = getLectureCourseMaterialURIList(action);
         if (uriList.isEmpty()) {
-            logger.warning("No course material links found");
+            logger.info("No course material links found");
+        } else {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+            logger.info(uriList.size() + " course materials added");
         }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
         httpFile.getProperties().put("removeCompleted", true);
-        logger.info(uriList.size() + " course materials added");
     }
 
     private boolean checkSubtitles() throws Exception {
@@ -533,30 +535,26 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private class YouTubeContainer implements Comparable<YouTubeContainer> {
-        private int fmt;
-        private int qualityIndex;
+        private final int fmt;
+        private final int qualityIndex;
         private int weight;
 
         public YouTubeContainer(final int fmt, final int qualityIndex) {
             this.fmt = fmt;
             this.qualityIndex = qualityIndex;
-        }
-
-        public int getFmt() {
-            return fmt;
+            calcWeight();
         }
 
         public int getQualityIndex() {
             return qualityIndex;
         }
 
-        public void countWeight() {
+        public void calcWeight() {
             weight = 0;
             final String fmtFileExtension = getFileExtension(fmt).toLowerCase();
             if (config.getContainerExtension().toLowerCase().equals(fmtFileExtension)) {
                 weight = 100;
-                //mp4 > flv > webm > 3gp
-            } else if (fmtFileExtension.equals(".mp4")) {
+            } else if (fmtFileExtension.equals(".mp4")) { //mp4 > flv > webm > 3gp
                 weight = 50;
             } else if (fmtFileExtension.equals(".flv")) {
                 weight = 49;

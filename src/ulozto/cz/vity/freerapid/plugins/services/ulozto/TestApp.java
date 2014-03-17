@@ -21,7 +21,8 @@ public class TestApp extends PluginDevApplication {
         try {
             //httpFile.setNewURL(new URL("http://www.uloz.to/x52oVtE/rihanna-feat-tonic-we-found-love-dj-elon-matana-mash-up-mp3"));
             //httpFile.setNewURL(new URL("http://www.ulozto.cz/xtSTrvJ/mother-daughter-exchange-club-19-dvdrip-2011-cd2-avi"));
-            httpFile.setNewURL(new URL("http://uloz.to/xf5ZyF7/london-2012-rar"));
+            //httpFile.setNewURL(new URL("http://uloz.to/xf5ZyF7/london-2012-rar"));
+            httpFile.setNewURL(new URL("http://www.ulozto.cz/xda1xMy/penthouse-sex-obsessed-xxx-dvdrip-xvid-qualitx-avi"));
             //httpFile.setNewURL(new URL("http://uloz.to/xrgawztg/sample-txt"));           //password: "1234"
             final ConnectionSettings settings = new ConnectionSettings();
             //settings.setProxy("localhost", 8081);

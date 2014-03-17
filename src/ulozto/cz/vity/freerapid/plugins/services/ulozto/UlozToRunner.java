@@ -26,12 +26,11 @@ class UlozToRunner extends AbstractRunner {
 
     private void ageCheck(String content) throws Exception {
         if (content.contains("confirmContent")) { //eroticky obsah vyzaduje potvruemo
-            final String confirmUrl = fileURL + "?do=askAgeForm-submit";
             final PostMethod confirmMethod = (PostMethod) getMethodBuilder()
-                    .setAction(confirmUrl)
-                    .setEncodePathAndQuery(true)
-                    .setAndEncodeParameter("agree", "Souhlasím")
-                    .toPostMethod();
+                    .setActionFromFormWhereActionContains("askAgeForm", true)
+                    .setBaseURL("http://uloz.to")
+                    .removeParameter("disagree")
+                    .setReferer(fileURL).toPostMethod();
             makeRedirectedRequest(confirmMethod);
             if (getContentAsString().contains("confirmContent")) {
                 throw new PluginImplementationException("Cannot confirm age");

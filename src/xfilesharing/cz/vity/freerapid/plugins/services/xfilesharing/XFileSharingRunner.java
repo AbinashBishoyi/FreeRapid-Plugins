@@ -107,10 +107,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         HttpMethod method = getGetMethod(fileURL);
         int httpStatus = client.makeRequest(method, false);
         if (httpStatus / 100 == 3) {
-            handleDirectDownload(method);
-            return;
-        }
-        if (httpStatus != 200) {
+            if (handleDirectDownload(method))
+                return;
+        } else if (httpStatus != 200) {
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -159,7 +158,14 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
     }
 
-    protected void handleDirectDownload(HttpMethod method) throws Exception {
+    /**
+     * Handle direct download
+     *
+     * @param method HttpMethod to be passed on to the next step
+     * @return If want to download the file/handle the direct download, return true. If don't want to download the file/redirected to another page, return false.
+     * @throws Exception
+     */
+    protected boolean handleDirectDownload(HttpMethod method) throws Exception {
         logger.info("Direct download");
         if (httpFile.getFileName() == null) {
             final Cookie[] cookies = client.getHTTPClient().getState().getCookies();
@@ -169,6 +175,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
         method = stepRedirectToFileLocation(method);
         doDownload(method);
+        return true;
     }
 
     protected String getCookieDomain() throws Exception {

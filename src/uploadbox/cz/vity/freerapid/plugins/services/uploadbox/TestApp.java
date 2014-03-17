@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://uploadbox.com/files/f5d1bba27a/"));
+            //httpFile.setNewURL(new URL("http://uploadbox.com/files/f5d1bba27a/"));
             httpFile.setNewURL(new URL("http://uploadbox.com/files/b3f7dffc90"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

@@ -48,8 +48,8 @@ class UploadBoxFileRunner extends AbstractRunner {
             httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("free", true).setBaseURL(SERVICE_WEB).toHttpMethod();
 
             if (makeRedirectedRequest(httpMethod)) {
-                if (getContentAsString().contains("Enter code here")) {
-                    while (getContentAsString().contains("Enter code here")) {
+                if (getContentAsString().contains("Enter CAPTCHA code here")) {
+                    while (getContentAsString().contains("Enter CAPTCHA code here")) {
                         httpMethod = stepCaptcha();
                         makeRedirectedRequest(httpMethod);
                     }

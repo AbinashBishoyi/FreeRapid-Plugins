@@ -88,6 +88,7 @@ class FileSonicFileRunner extends AbstractRunner {
                         logger.warning(getContentAsString());//log the info
                         throw new PluginImplementationException();//some unknown problem
                     }
+                    return;
                 } else {
                     checkProblems();
                     throw new PluginImplementationException();

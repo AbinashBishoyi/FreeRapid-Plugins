@@ -129,7 +129,7 @@ class FileFactoryFileRunner extends AbstractRunner {
     }
 
     private String getLink() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("(\\?hash=.+?)\"");
+        Matcher matcher = getMatcherAgainstContent("\"(\\?[a-z]+?=[0-9a-f]+?&.+?)\"");
         if (!matcher.find()) {
             throw new PluginImplementationException("JavaScript URL not found");
         }

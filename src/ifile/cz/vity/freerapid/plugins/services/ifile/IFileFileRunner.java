@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.ifile;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.ifile_login.recaptcha.ReCaptcha;
+import cz.vity.freerapid.plugins.services.ifile.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;

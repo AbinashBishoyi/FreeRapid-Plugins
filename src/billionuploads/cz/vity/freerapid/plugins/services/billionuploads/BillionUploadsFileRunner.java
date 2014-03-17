@@ -1,10 +1,8 @@
 package cz.vity.freerapid.plugins.services.billionuploads;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.captcha.ReCaptchaType;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -14,7 +12,6 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.LinkedList;
 import java.util.List;
@@ -100,36 +97,39 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
         }
         if (getContentAsString().contains("Access To Website Blocked"))
             throw new ServiceConnectionProblemException("FreeRapid detected as robot - Access To Website Blocked");
-        if (content.contains("META NAME=\"ROBOTS\"")) {
+        if (content.contains("META NAME=\"ROBOTS\"") || content.contains("META NAME=\"robots\"")) {
             Logger.getLogger(BillionUploadsFileRunner.class.getName()).info("FREERAPID DETECTED AS ROBOT");
-            final Matcher match = PlugUtils.matcher("<meta http-equiv=\"refresh\".+?url=(.+?)\"", content);
-            HttpMethod robotMethod;
-            if (match.find())
-                robotMethod = getGetMethod("http://billionuploads.com/" + match.group(1));
-            else
-                robotMethod = getGetMethod("http://billionuploads.com/distil_r_captcha.html");
-            try {
-                makeRedirectedRequest(robotMethod);
-            } catch (IOException e) {
-                throw new ServiceConnectionProblemException("R1");
-            }
-            while (getContentAsString().contains("recent suspicious activity from your computer")) {
-                MethodBuilder builder = getMethodBuilder().setActionFromFormWhereTagContains("captcha", true);
-                try {
-                    stepCaptcha(builder);
-                } catch (Exception e) {
-                    throw new ServiceConnectionProblemException("R2");
-                }
-            }
-            checkFileProblems();
-            try {
-                makeRedirectedRequest(getGetMethod(fileURL));
-            } catch (IOException e) {
-                throw new ServiceConnectionProblemException("R3");
-            }
-            checkFileProblems();
+            checkRobotDetectorProblem();
         }
         super.checkFileProblems();
+    }
+
+    private void checkRobotDetectorProblem() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("recaptcha/api")) {
+            final MethodBuilder builder = getMethodBuilder()
+                    .setActionFromFormWhereActionContains("Incapsula_Resource", true);
+            try {
+                new ReCaptchaType().handleCaptcha(builder, client, getCaptchaSupport());
+                if (!makeRedirectedRequest(builder.toPostMethod()))
+                    throw new ServiceConnectionProblemException();
+                if (getContentAsString().contains("window.parent.location.reload(true);")) {
+                    if (!makeRedirectedRequest(getGetMethod(fileURL)))
+                        throw new ServiceConnectionProblemException();
+                }
+            } catch (Exception e) {
+                throw new PluginImplementationException("Robot captcha processing error");
+            }
+        } else if (getContentAsString().contains("iframe src=\"")) {
+            try {
+                if (!makeRedirectedRequest(getMethodBuilder().setAction(PlugUtils.getStringBetween(getContentAsString(), "iframe src=\"", "\" ")).toGetMethod()))
+                    throw new ServiceConnectionProblemException();
+            } catch (Exception e) {
+                throw new PluginImplementationException("#$^%&?* BillionUploads !!!");
+            }
+        } else {
+            throw new YouHaveToWaitException("RobotDecection MUST DIE BillionUploads DIE", 5);
+        }
+        checkFileProblems();
     }
 
     @Override

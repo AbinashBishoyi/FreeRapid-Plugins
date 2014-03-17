@@ -26,13 +26,10 @@ class FastShareFileRunner extends AbstractRunner {
         super.runCheck();
         addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "cs", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
-            checkNameAndSize(getContentAsString());
-        } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
+        //site returning status code 404 when page loads correctly ??
+        makeRedirectedRequest(getMethod);
+        checkProblems();
+        checkNameAndSize(getContentAsString());
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
@@ -47,29 +44,26 @@ class FastShareFileRunner extends AbstractRunner {
         addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "cs", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
-            final String contentAsString = getContentAsString();
-            checkDownloadProblems();
-            checkNameAndSize(contentAsString);
-            final Matcher match = PlugUtils.matcher("<form.+?action=(/free[^>]+?)>", getContentAsString());
-            if (!match.find())
-                throw new PluginImplementationException("Download form not found");
-            HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(match.group(1))
-                    .setParameter("code", stepCaptcha())
-                    .toPostMethod();
+        //site returning status code 404 when page loads correctly ??
+        makeRedirectedRequest(method);
+        final String contentAsString = getContentAsString();
+        checkDownloadProblems();
+        checkNameAndSize(contentAsString);
+        final Matcher match = PlugUtils.matcher("<form.+?action=(/free[^>]+?)>", getContentAsString());
+        if (!match.find())
+            throw new PluginImplementationException("Download form not found");
+        HttpMethod httpMethod = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction(match.group(1))
+                .setParameter("code", stepCaptcha())
+                .toPostMethod();
 
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                if (getContentAsString().contains("Opište kód")) {
-                    throw new YouHaveToWaitException("Wrong captcha", 8);
-                }
-                checkDownloadProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+        if (!tryDownloadAndSaveFile(httpMethod)) {
+            if (getContentAsString().contains("Opište kód")) {
+                throw new YouHaveToWaitException("Wrong captcha", 8);
             }
-        } else {
             checkDownloadProblems();
-            throw new ServiceConnectionProblemException();
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 

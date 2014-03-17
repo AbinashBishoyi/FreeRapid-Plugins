@@ -36,14 +36,20 @@ public class H2PornFileRunner extends AbstractRunner {
 
     protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         try {
-            httpFile.setFileName(PlugUtils.getStringBetween(content, "<title>", "@ H2Porn</title>").trim() + getParam("postfix", content));
+            httpFile.setFileName(PlugUtils.getStringBetween(content, "<title>", "@ H2Porn</title>").trim());
         } catch (Exception e) {
-            httpFile.setFileName(PlugUtils.getStringBetween(content, "<title>", "</title>").trim() + getParam("postfix", content));
+            httpFile.setFileName(PlugUtils.getStringBetween(content, "<title>", "</title>").trim());
+        }
+        try {
+            httpFile.setFileName(httpFile.getFileName() + getParam("postfix", content));
+        } catch (Exception e) {
+            final String getExt = PlugUtils.getStringBetween(content, "flashvars['video_url']='", "/';");
+            httpFile.setFileName(httpFile.getFileName() + getExt.substring(getExt.lastIndexOf(".")));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private String getParam(final String param, final String content) throws ErrorDuringDownloadingException {
+    protected String getParam(final String param, final String content) throws ErrorDuringDownloadingException {
         final Matcher match = PlugUtils.matcher(param + "\\: (?:encodeURIComponent\\()?'(.+?)'\\)?,", content);
         if (!match.find())
             throw new PluginImplementationException("Parameter '" + param + "' not found");
@@ -59,7 +65,12 @@ public class H2PornFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);
-            final String vidUrl = getParam("video_url", contentAsString);
+            String vidUrl;
+            try {
+                vidUrl = getParam("video_url", contentAsString);
+            } catch (Exception e) {
+                vidUrl = PlugUtils.getStringBetween(contentAsString, "flashvars['video_url']='", "/';");
+            }
             final TubeDownloadBuilder tdBuilder = new TubeDownloadBuilder(fileURL);
             String playerSwf;
             try {
@@ -85,6 +96,7 @@ public class H2PornFileRunner extends AbstractRunner {
     protected void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Page Not Found") ||
+                contentAsString.contains("Page not found") ||
                 contentAsString.contains("this video has been deleted") ||
                 contentAsString.contains("<h2>Sorry, this video is no longer available")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD

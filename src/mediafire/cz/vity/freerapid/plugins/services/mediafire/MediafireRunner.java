@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.mediafire;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -26,16 +27,20 @@ class MediafireRunner extends AbstractRunner {
         super();
     }
 
+    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
-        } else
+        } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
+        }
     }
 
+    @Override
     public void run() throws Exception {
         super.run();
 
@@ -57,7 +62,7 @@ class MediafireRunner extends AbstractRunner {
                             .setAndEncodeParameter("downloadp", getPassword())
                             .toPostMethod();
                     if (!makeRedirectedRequest(postPwd)) {
-                        throw new PluginImplementationException("Some issue while posting password");
+                        throw new ServiceConnectionProblemException("Some issue while posting password");
                     }
                 }
             }
@@ -76,49 +81,53 @@ class MediafireRunner extends AbstractRunner {
                 String r = match.group(4);
                 String url = "http://www.mediafire.com/dynamic/download.php?qk=" + qk + "&pk=" + pk + "&r=" + r;
                 logger.info("Script target URL " + url);
-                client.setReferer("http://www.mediafire.com/?" +  qk);
+                client.setReferer("http://www.mediafire.com/?" + qk);
                 GetMethod method = getGetMethod(url);
 
                 int functionStart = getContentAsString().indexOf("function " + function);
                 String regToId = "getElementById\\('([^']*)'\\).innerHTML";
-               Matcher match2 =  getMatcherAgainstContent(regToId);
-                 if(!match2.find(functionStart)) {
-                     throw new PluginImplementationException();
-                  }
+                Matcher match2 = getMatcherAgainstContent(regToId);
+                if (!match2.find(functionStart)) {
+                    throw new PluginImplementationException();
+                }
                 String posID = match2.group(1);
 
                 if (makeRequest(method)) {
                     String rec = processUnescapeSection(getContentAsString());
 
                     if (!rec.contains("'download")) {
-                      throw new ServiceConnectionProblemException();
+                        throw new ServiceConnectionProblemException();
                     }
-                    String rawlink =  PlugUtils.getStringBetween(rec, posID + "').innerHTML = 'Your download is starting..';\" href=\"h", "\"> Click");
+
+                    String rawlink;
+                    try {
+                        rawlink = PlugUtils.getStringBetween(rec, posID + "').innerHTML = 'Your download is starting..';\" href=\"h", "\"> Click");
+                    } catch (PluginImplementationException e) {
+                        throw new ServiceConnectionProblemException(e);
+                    }
                     logger.info("raw URL " + rawlink);
                     String finalLink = parseLink("h" + rawlink);
                     logger.info("Final URL " + finalLink);
 
-                    client.setReferer("http://www.mediafire.com/?" +  qk);
+                    client.setReferer("http://www.mediafire.com/?" + qk);
                     GetMethod method2 = getGetMethod(finalLink);
                     client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                     downloadTask.sleep(5);
                     if (!tryDownloadAndSaveFile(method2)) {
                         checkProblems();
-                        logger.info(getContentAsString());
-                        throw new PluginImplementationException();
+                        logger.warning(getContentAsString());
+                        throw new ServiceConnectionProblemException("Error starting download");
                     }
 
                 } else {
                     checkProblems();
-                    throw new PluginImplementationException();
+                    throw new ServiceConnectionProblemException();
                 }
             } else {
                 checkProblems();
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException();
             }
-        } else
-
-        {
+        } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -151,14 +160,14 @@ class MediafireRunner extends AbstractRunner {
                 }
                 String new_cont = "";
                 esc = URLDecoder.decode(esc, "UTF-8");
-              //  toFor = Math.min(toFor,esc.length());
-                 toFor = esc.length();
+                //  toFor = Math.min(toFor,esc.length());
+                toFor = esc.length();
                 for (int i = 0; i < toFor; i++) {
                     //  System.out.println(esc.codePointAt(i));
                     new_cont = new_cont + ((char) (esc.codePointAt(i) ^ nax));
                 }
                 cont = cont + "\n" + new_cont.replace("\\", "");
-             //   logger.info(cont);
+                //   logger.info(cont);
             }
 
             tuReturn = tuReturn + "\n" + cont;
@@ -171,16 +180,15 @@ class MediafireRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws Exception {
         if (isList()) return;
-
         PlugUtils.checkFileSize(httpFile, content, "sharedtabsfileinfo1-fs\" value=\"", "\">");
         PlugUtils.checkName(httpFile, content, "sharedtabsfileinfo1-fn\" value=\"", "\">");
-
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("The key you provided for file download was invalid") || contentAsString.contains("How can MediaFire help you?")) {
-            throw new URLNotAvailableAnymoreException(String.format("File not found"));
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
@@ -199,13 +207,13 @@ class MediafireRunner extends AbstractRunner {
     }
 
 
-     String parseLink(String rawlink) throws Exception {
+    private String parseLink(String rawlink) throws Exception {
 
         String link = "";
 
         Matcher matcher = PlugUtils.matcher("([^'\"]*)(?:'|\")([^'\"]*)'", rawlink);
         while (matcher.find()) {
-             link = link + matcher.group(1);
+            link = link + matcher.group(1);
             Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(2));
             while (matcher1.find()) {
 
@@ -216,7 +224,7 @@ class MediafireRunner extends AbstractRunner {
         }
         matcher = PlugUtils.matcher("([^'\"]*)$", rawlink);
         if (matcher.find()) {
-           link = link + (matcher.group(1));
+            link = link + (matcher.group(1));
         }
 
         return link;
@@ -231,7 +239,7 @@ class MediafireRunner extends AbstractRunner {
         matcher = PlugUtils.matcher("var " + s + "\\s*=\\s*([0-9]+)", content);
         if (matcher.find()) {
             return matcher.group(1);
-         }
+        }
 
         throw new PluginImplementationException("Parameter " + s + " was not found");
     }

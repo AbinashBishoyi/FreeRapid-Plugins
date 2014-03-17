@@ -45,6 +45,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            bypassAgeVerification(method);
             checkProblems();
             checkName();
         } else {
@@ -523,13 +524,25 @@ class YouTubeRunner extends AbstractRtmpRunner {
     private void bypassAgeVerification(HttpMethod method) throws Exception {
         if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_age.*")
                 || getContentAsString().contains("watch7-player-age-gate-content")
-                || getContentAsString().contains("Sign in to confirm your age")) {
+                || getContentAsString().contains("Sign in to confirm your age")
+                || getContentAsString().contains("<script>window.location = \"https:\\/\\/www.youtube.com\\/verify_age")) {
             setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)");
             method = getGetMethod(fileURL);
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
-            if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_controversy.*") || getContentAsString().contains("verify_controversy?action_confirm=1")) {
+
+            //controversy
+            if (getContentAsString().contains("<script>window.location = \"http:\\/\\/www.youtube.com\\/verify_controversy")) {
+                method = getMethodBuilder()
+                        .setAction(PlugUtils.getStringBetween(getContentAsString(), "window.location = \"", "\"").replace("\\/", "/"))
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+            }
+            if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_controversy.*")
+                    || getContentAsString().contains("verify_controversy?action_confirm=1")) {
                 method = getMethodBuilder()
                         .setBaseURL("http://www.youtube.com")
                         .setActionFromFormWhereActionContains("verify_controversy", true)
@@ -546,7 +559,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
         }
         if (getContentAsString().contains("Sign in to view this video")
                 || getContentAsString().contains("Sign in to confirm your age")) {  //just in case they change age verification mechanism
-            throw new PluginImplementationException("YouTube account is not supported : Sign in to view this video");
+            throw new PluginImplementationException("Age verification is broken");
         }
     }
 

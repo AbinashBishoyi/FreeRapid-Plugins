@@ -23,7 +23,8 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/user/HDstarcraft"));//user page
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=meCIER_s7Ng"));//transcript - subtitles
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=l3hTJOAG5lQ")); //age verification
-            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=giHIJgJS2sE")); //age & controversy verification
+            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=giHIJgJS2sE")); //age & controversy verification
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=mdtwvmFlhz8")); //age verification
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=UUv3nmgyia2M2FU2TAIRXSLw&feature=plcp")); //user uploaded video
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=PLE963AD215F0C4BE5")); //playlist
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=FL2pmfLm7iq6Ov1UwYrWYkZA"));// favorite list
@@ -43,7 +44,7 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=RxDPvPqOmv0"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=ZiH6CDl5kII"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=ShVRP09NCO4"));
-            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=4ml6qwSALGY")); //sig decipher
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=4ml6qwSALGY")); //sig decipher
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

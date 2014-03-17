@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="storage.to" version="1.0" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.storage.StorageServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?storage\.to/.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="storage.to"/>
+        <attribute id="faviconImage" value="resources/favicon.gif"/>
+    </attributes>
+
+    <runtime>
+        <library id="storage.to" path="/" type="code"/>
+    </runtime>
+</plugin>

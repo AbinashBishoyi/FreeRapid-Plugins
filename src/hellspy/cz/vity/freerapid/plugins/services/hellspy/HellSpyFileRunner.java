@@ -145,9 +145,6 @@ class HellSpyFileRunner extends AbstractRunner {
 
                 if (getContentAsString().contains("Wrong user or password"))
                     throw new BadLoginException("Invalid HellSpy login information!");
-                for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
-                    logger.warning("Cookie: "+cookie.getName()+"="+cookie.getValue()+" domain:"+cookie.getDomain()+" path:"+cookie.getPath());
-                }
                 cookies=new ArrayList<Cookie>();
                 //There are 3 PHPSESSID cookies, save each of them...
                 for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {

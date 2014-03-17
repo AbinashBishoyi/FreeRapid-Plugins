@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="uploaded.to" version="1.0.0"
+        class="cz.vity.freerapid.plugins.services.uploadedto.UploadedToShareServiceImpl">
+    <runtime>
+        <library id="uploaded.to" path="/" type="code"/>
+    </runtime>
+</plugin>

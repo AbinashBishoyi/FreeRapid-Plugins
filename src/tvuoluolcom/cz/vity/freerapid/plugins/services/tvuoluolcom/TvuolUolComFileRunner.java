@@ -11,6 +11,8 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -76,18 +78,9 @@ class TvuolUolComFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
+            logger.info(getContentAsString());
 
-            final Matcher videoHDMatcher = getMatcherAgainstContent("(\"http://videohd1.+?\")");
-            final Matcher videoSDMatcher = getMatcherAgainstContent("(\"http://video\\d+.+?\")");
-            String videoURL;
-            if (videoHDMatcher.find()) { // HD as default
-                videoURL = videoHDMatcher.group(1).trim().replace("\"", "");
-            } else if (videoSDMatcher.find()) {
-                videoURL = videoSDMatcher.group(1).trim().replace("\"", "");
-            } else {
-                throw new PluginImplementationException("Video URL not found");
-            }
-
+            final String videoURL = getVideoURL();
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(videoURL)
@@ -104,6 +97,47 @@ class TvuolUolComFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private String getVideoURL() {
+        //2  : 640x360
+        //5  : 1280x720
+        //6  : 426x240
+        //7  : 1920x1080
+        //8  : 256x144
+        //9  : 568x320
+        final Matcher videoMatcher = getMatcherAgainstContent("\\{\"id\":(\\d+),\"url\":\"(.+?)\"\\}");
+        final SortedMap<Integer, String> videoMap = new TreeMap<Integer, String>();
+        while (videoMatcher.find()) {
+            final int formatId = Integer.parseInt(videoMatcher.group(1).trim());
+            switch (formatId) {
+                case 2:
+                    videoMap.put(360, videoMatcher.group(2).trim());
+                    break;
+                case 5:
+                    videoMap.put(720, videoMatcher.group(2).trim());
+                    break;
+                case 6:
+                    videoMap.put(240, videoMatcher.group(2).trim());
+                    break;
+                case 7:
+                    videoMap.put(1080, videoMatcher.group(2).trim());
+                    break;
+                case 8:
+                    videoMap.put(144, videoMatcher.group(2).trim());
+                    break;
+                case 9:
+                    videoMap.put(320, videoMatcher.group(2).trim());
+                    break;
+                default:
+                    videoMap.put(0, videoMatcher.group(2).trim()); //unknown video dimension
+                    break;
+            }
+        }
+        if (videoMap.lastKey() == 0) {
+            logger.warning("Unknown video dimension is selected : " + videoMap.get(videoMap.lastKey()));
+        }
+        return videoMap.get(videoMap.lastKey());
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

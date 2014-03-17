@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.ebooksshare.EbooksshareServiceImpl"
+        id="ebooks-share.net" vendor="Abinash Bishoyi" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?ebooks-share\.net/.+"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="ebooks-share.net"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="faviconImage" value="resources/logo.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="ebooks-share.net" path="/" type="code"/>
+    </runtime>
+</plugin>

@@ -91,20 +91,20 @@ class RapidShareRunner extends AbstractRunner {
         return chooser.getPreferredURL(getContentAsString());
     }
 
-    private void enterCheck() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException {
+    private void enterCheck() throws NotRecoverableDownloadException, InvalidURLOrServiceProblemException {
         Matcher matcher;
         if (!getContentAsString().contains("form id=\"ff\" action=")) {
 
-            matcher = getMatcherAgainstContent("class=\"klappbox\">((\\s|.)*?)</div>");
-            if (matcher.find()) {
-                final String error = matcher.group(1);
-                if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed") || error.contains("file is neither allocated to") || error.contains("limit is reached"))
-                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
-                if (error.contains("file could not be found"))
-                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
-                logger.warning(getContentAsString());
-                throw new InvalidURLOrServiceProblemException("<b>RapidShare error:</b><br>" + error);
-            }
+//            matcher = getMatcherAgainstContent("class=\"klappbox\">((\\s|.)*?)</div>");
+//            if (matcher.find()) {
+//                final String error = matcher.group(1);
+//                if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed") || error.contains("file is neither allocated to") || error.contains("limit is reached"))
+//                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
+//                if (error.contains("file could not be found"))
+//                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
+//                logger.warning(getContentAsString());
+//                throw new InvalidURLOrServiceProblemException("<b>RapidShare error:</b><br>" + error);
+//            }
             if (getContentAsString().contains("has removed file"))
                 throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>The uploader has removed this file from the server.");
             if (getContentAsString().contains("file could not be found"))
@@ -115,7 +115,9 @@ class RapidShareRunner extends AbstractRunner {
                 throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Due to a violation of our terms of use, the file has been removed from the server.");
             if (getContentAsString().contains("limit is reached"))
                 throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>To download this file, the uploader either needs to transfer this file into his/her Collector's Account, or upload the file again. The file can later be moved to a Collector's Account. The uploader just needs to click the delete link of the file to get further information.");
-
+            if (getContentAsString().contains("This file is larger than")) {
+                throw new NotRecoverableDownloadException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
+            }
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         matcher = getMatcherAgainstContent("\"downloadlink\">(.*?)<font");

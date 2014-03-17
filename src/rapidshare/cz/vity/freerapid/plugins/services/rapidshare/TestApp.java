@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://rs127.rapidshare.com/files/168210633/Silviya.part3.rar&s104857"));
+            httpFile.setNewURL(new URL("http://rapidshare.com/files/248831786/ARMA2_DEMO.part1.rar.html"));
             testRunCheck(new RapidShareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             LogUtils.processException(logger, e);

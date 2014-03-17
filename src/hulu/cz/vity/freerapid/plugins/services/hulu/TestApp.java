@@ -20,8 +20,8 @@ public class TestApp extends PluginDevApplication {
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.hulu.com/profiles/user/public_queue"));//user queue
-            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/137629#s-p1-so-i0"));
-            httpFile.setNewURL(new URL("http://www.hulu.com/watch/245224")); // non episode
+            httpFile.setNewURL(new URL("http://www.hulu.com/watch/137629#s-p1-so-i0"));
+            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/245224")); // non episode
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/280815")); //has subtitle
             //httpFile.setNewURL(new URL("http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1")); //subtitle
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/422886"));
@@ -33,9 +33,7 @@ public class TestApp extends PluginDevApplication {
             final HuluSettingsConfig config = new HuluSettingsConfig();
             //config.setUsername("***");
             //config.setPassword("***");
-            //config.setQualityHeightIndex(HuluSettingsConfig.MAX_HEIGHT_INDEX); //highest
-            config.setQualityHeightIndex(1); //240
-            config.setVideoFormatIndex(1); //h264
+            config.setVideoQuality(VideoQuality._360);
             service.setConfig(config);
 
             testRun(service, httpFile, connectionSettings);

@@ -2,20 +2,23 @@ package cz.vity.freerapid.plugins.services.ceskatelevize;
 
 /**
  * @author JPEXS
+ * @author tong2shot
  */
 public class CeskaTelevizeSettingsConfig {
-    private int qualitySetting;
+    private VideoQuality videoQuality = VideoQuality.Highest;
 
-    /**
-     * This maps qualityIndex to resolution
-     */
-
-    public void setQualitySetting(int qualitySetting) {
-        this.qualitySetting = qualitySetting;
+    public void setVideoQuality(VideoQuality videoQuality) {
+        this.videoQuality = videoQuality;
     }
 
-    public int getQualitySetting() {
-        return qualitySetting;
+    public VideoQuality getVideoQuality() {
+        return videoQuality;
     }
 
+    @Override
+    public String toString() {
+        return "CeskaTelevizeSettingsConfig{" +
+                "videoQuality=" + videoQuality +
+                '}';
+    }
 }

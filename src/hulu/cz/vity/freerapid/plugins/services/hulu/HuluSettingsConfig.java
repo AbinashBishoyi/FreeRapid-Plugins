@@ -7,24 +7,9 @@ public class HuluSettingsConfig {
 
     private String username = null;
     private String password = null;
-    private int qualityHeightIndex = MAX_HEIGHT_INDEX;
-    private int videoFormatIndex = ANY_VIDEO_FORMAT;
-    private int cdnIndex = 0;
-    private int portIndex = 0;
+    private VideoQuality videoQuality = VideoQuality._480;
     private boolean downloadSubtitles = false;
     private boolean tunlrEnabled = true;
-
-    public static final int MIN_HEIGHT = -2;
-    public static final int MAX_HEIGHT = -1;
-    public static final int MIN_HEIGHT_INDEX = 0;
-    public static final int MAX_HEIGHT_INDEX = 10;
-    public static final int ANY_VIDEO_FORMAT = 0;
-
-    private final int[] qualityHeightMap = {MIN_HEIGHT, 240, 360, 480, MAX_HEIGHT}; //map of qualityHeight
-    private final static int[] qualityHeightIndexMap = {MIN_HEIGHT_INDEX, 1, 2, 3, MAX_HEIGHT_INDEX}; //map of qualityHeightIndex, to anticipate higher quality (576,720,1080,2160,4320,etc) in the future
-    private final String[] videoFormatMap = {"Any", "h264", "vp6"};
-    private final String[] cdnMap = {"akamai", "limelight", "level3"};
-    private final int[] portMap = {1935, 80};
 
     public String getUsername() {
         return username;
@@ -42,56 +27,12 @@ public class HuluSettingsConfig {
         this.password = password;
     }
 
-    public int getQualityHeightIndex() {
-        return qualityHeightIndex;
+    public VideoQuality getVideoQuality() {
+        return videoQuality;
     }
 
-    public void setQualityHeightIndex(int qualityHeightIndex) {
-        this.qualityHeightIndex = qualityHeightIndex;
-    }
-
-    public int getVideoFormatIndex() {
-        return videoFormatIndex;
-    }
-
-    public void setVideoFormatIndex(int videoFormatIndex) {
-        this.videoFormatIndex = videoFormatIndex;
-    }
-
-    public int getPortIndex() {
-        return portIndex;
-    }
-
-    public void setPortIndex(int portIndex) {
-        this.portIndex = portIndex;
-    }
-
-    public int getCdnIndex() {
-        return cdnIndex;
-    }
-
-    public void setCdnIndex(int cdnIndex) {
-        this.cdnIndex = cdnIndex;
-    }
-
-    public int getQualityHeight() {
-        for (int i = 0; i < qualityHeightIndexMap.length; i++) {
-            if (qualityHeightIndexMap[i] == qualityHeightIndex)
-                return qualityHeightMap[i];
-        }
-        return MAX_HEIGHT; //default, the highest
-    }
-
-    public String getVideoFormat() {
-        return videoFormatMap[videoFormatIndex];
-    }
-
-    public String getCdn() {
-        return cdnMap[cdnIndex];
-    }
-
-    public int getPort() {
-        return portMap[portIndex];
+    public void setVideoQuality(VideoQuality videoQuality) {
+        this.videoQuality = videoQuality;
     }
 
     public boolean isDownloadSubtitles() {
@@ -108,5 +49,12 @@ public class HuluSettingsConfig {
 
     public void setTunlrEnabled(boolean tunlrEnabled) {
         this.tunlrEnabled = tunlrEnabled;
+    }
+
+    @Override
+    public String toString() {
+        return "HuluSettingsConfig{" +
+                "videoQuality=" + videoQuality +
+                '}';
     }
 }

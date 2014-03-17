@@ -13,11 +13,6 @@ import java.awt.event.FocusListener;
 public class HuluSettingsPanel extends JPanel {
 
     private HuluSettingsConfig config;
-    private final static String[] qualityStrings = {"Highest available", "480p", "360p", "240p", "Lowest available"};
-    private final static int[] qualityIndexMap = {HuluSettingsConfig.MAX_HEIGHT_INDEX, 3, 2, 1, HuluSettingsConfig.MIN_HEIGHT_INDEX}; //to anticipate higher quality (576,720,1080,2160,4320,etc) in the future
-    private final static String[] videoFormatStrings = {"Any video format", "H264", "VP6"};
-    private final static String[] cdnStrings = {"Akamai", "Limelight", "Level3"};
-    private final static String[] portStrings = {"1935", "80"};
 
     public HuluSettingsPanel(HuluServiceImpl service) throws Exception {
         super();
@@ -31,45 +26,24 @@ public class HuluSettingsPanel extends JPanel {
         final JLabel lblPassword = new JLabel("Password:");
         final JPasswordField pswdfldPassword = new JPasswordField(40);
         final JLabel lblQuality = new JLabel("Preferred quality level:");
-        final JComboBox<String> cbbQuality = new JComboBox<String>(qualityStrings);
-        final JLabel lblVideoFormat = new JLabel("Preferred video format:");
-        final JComboBox<String> cbbVideoFormat = new JComboBox<String>(videoFormatStrings);
-        final JLabel lblCdn = new JLabel("Preferred CDN:");
-        final JComboBox<String> cbbCdn = new JComboBox<String>(cdnStrings);
-        final JLabel lblPort = new JLabel("RTMP port:");
-        final JComboBox<String> cbbPort = new JComboBox<String>(portStrings);
+        final JComboBox<VideoQuality> cbbVideoQuality = new JComboBox<VideoQuality>(VideoQuality.getItems());
         final JCheckBox checkSubtitles = new JCheckBox("Download subtitles", config.isDownloadSubtitles());
         final JCheckBox checkTunlr = new JCheckBox("Enable Tunlr *)", config.isTunlrEnabled());
-        final JLabel lblTunlrDesc = new JLabel("*) Unless you are US user or using US proxy, you should enable Tunlr.");
+        final JLabel lblTunlrDesc = new JLabel("*) Unless you are in the US or using US proxy, you should enable Tunlr.");
 
         lblUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtfldUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
         pswdfldPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cbbQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lblVideoFormat.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cbbVideoFormat.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lblCdn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cbbCdn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lblPort.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cbbPort.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cbbVideoQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkSubtitles.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkTunlr.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblTunlrDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         txtfldUsername.setText(config.getUsername());
         pswdfldPassword.setText(config.getPassword());
-        int qs = config.getQualityHeightIndex();
-        for (int i = 0; i < qualityIndexMap.length; i++) {
-            if (qualityIndexMap[i] == qs) {
-                cbbQuality.setSelectedIndex(i);
-                break;
-            }
-        }
-        cbbVideoFormat.setSelectedIndex(config.getVideoFormatIndex());
-        cbbCdn.setSelectedIndex(config.getCdnIndex());
-        cbbPort.setSelectedIndex(config.getPortIndex());
+        cbbVideoQuality.setSelectedItem(config.getVideoQuality());
 
         txtfldUsername.addFocusListener(new FocusListener() {
             @Override
@@ -95,31 +69,10 @@ public class HuluSettingsPanel extends JPanel {
             }
         });
 
-        cbbQuality.addActionListener(new ActionListener() {
+        cbbVideoQuality.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                config.setQualityHeightIndex(qualityIndexMap[cbbQuality.getSelectedIndex()]);
-            }
-        });
-
-        cbbVideoFormat.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                config.setVideoFormatIndex(cbbVideoFormat.getSelectedIndex());
-            }
-        });
-
-        cbbCdn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                config.setCdnIndex(cbbCdn.getSelectedIndex());
-            }
-        });
-
-        cbbPort.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                config.setPortIndex(cbbPort.getSelectedIndex());
+                config.setVideoQuality((VideoQuality) cbbVideoQuality.getSelectedItem());
             }
         });
 
@@ -143,13 +96,7 @@ public class HuluSettingsPanel extends JPanel {
         add(lblPassword);
         add(pswdfldPassword);
         add(lblQuality);
-        add(cbbQuality);
-        add(lblVideoFormat);
-        add(cbbVideoFormat);
-        add(lblCdn);
-        add(cbbCdn);
-        add(lblPort);
-        add(cbbPort);
+        add(cbbVideoQuality);
         add(Box.createRigidArea(new Dimension(0, 5)));
         add(checkSubtitles);
         add(checkTunlr);

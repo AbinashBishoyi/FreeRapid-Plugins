@@ -18,14 +18,10 @@ public class YouTubeSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"Highest available", "1080p (HD)", "720p (HD)", "480p", "360p", "240p", "Lowest available"};
-        final int[] qualityIndexMap = {4, 6, 5, 3, 2, 1, 0}; //Due to quality settings in older versions, 4 is Highest available
-        final String[] containerStrings = {"Any container", "MP4", "FLV", "WebM", "3GP"};
-
-        final JLabel qualityLabel = new JLabel("Preferred quality level:");
-        final JComboBox<String> qualityList = new JComboBox<String>(qualityStrings);
+        final JLabel videoQualityLabel = new JLabel("Preferred quality level:");
+        final JComboBox<VideoQuality> videoQualityList = new JComboBox<VideoQuality>(VideoQuality.getItems());
         final JLabel containerLabel = new JLabel("Preferred container:");
-        final JComboBox<String> containerList = new JComboBox<String>(containerStrings);
+        final JComboBox<Container> containerList = new JComboBox<Container>(Container.getItems());
         final JLabel audioQualityLabel = new JLabel("Audio bitrate:");
         final JComboBox<AudioQuality> audioQualityList = new JComboBox<AudioQuality>(AudioQuality.getItems());
         final ButtonGroup buttonGroup = new ButtonGroup();
@@ -37,8 +33,8 @@ public class YouTubeSettingsPanel extends JPanel {
         final JPanel audioPanel = new JPanel();
         final JCheckBox orderCheckBox = new JCheckBox("Sort by newest first when adding links from user pages");
         final JCheckBox subtitlesCheckBox = new JCheckBox("Download subtitles whenever available");
-        qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         containerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         containerList.setAlignmentX(Component.LEFT_ALIGNMENT);
         audioQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -49,52 +45,47 @@ public class YouTubeSettingsPanel extends JPanel {
         audioRb.setActionCommand(audioStr);
         buttonGroup.add(videoRb);
         buttonGroup.add(audioRb);
-        int qs = config.getQualitySetting();
-        for (int i = 0; i < qualityIndexMap.length; i++) {
-            if (qualityIndexMap[i] == qs) {
-                qualityList.setSelectedIndex(i);
-                break;
-            }
-        }
-        containerList.setSelectedIndex(config.getContainer());
+
+        videoQualityList.setSelectedItem(config.getVideoQuality());
+        containerList.setSelectedItem(config.getContainer());
         orderCheckBox.setSelected(config.isReversePlaylistOrder());
         subtitlesCheckBox.setSelected(config.isDownloadSubtitles());
         videoRb.setSelected(!config.isConvertToAudio());
         audioRb.setSelected(config.isConvertToAudio());
         if (videoRb.isSelected()) {
-            qualityList.setEnabled(true);
+            videoQualityList.setEnabled(true);
             containerList.setEnabled(true);
             audioQualityList.setEnabled(false);
         } else {
             audioQualityList.setEnabled(true);
-            qualityList.setEnabled(false);
+            videoQualityList.setEnabled(false);
             containerList.setEnabled(false);
         }
         audioQualityList.setSelectedItem(config.getAudioQuality());
 
-        qualityList.addActionListener(new ActionListener() {
+        videoQualityList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                config.setQualitySetting(qualityIndexMap[qualityList.getSelectedIndex()]);
+                config.setVideoQuality((VideoQuality) videoQualityList.getSelectedItem());
             }
         });
         containerList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                config.setContainer(containerList.getSelectedIndex());
+                config.setContainer((Container) containerList.getSelectedItem());
             }
         });
         ActionListener rbListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (e.getActionCommand().equals(videoStr)) {
-                    qualityList.setEnabled(true);
+                    videoQualityList.setEnabled(true);
                     containerList.setEnabled(true);
                     audioQualityList.setEnabled(false);
                     config.setConvertToAudio(false);
                 } else {
                     audioQualityList.setEnabled(true);
-                    qualityList.setEnabled(false);
+                    videoQualityList.setEnabled(false);
                     containerList.setEnabled(false);
                     config.setConvertToAudio(true);
                 }
@@ -121,8 +112,8 @@ public class YouTubeSettingsPanel extends JPanel {
             }
         });
         videoPanel.setLayout(new BoxLayout(videoPanel, BoxLayout.Y_AXIS));
-        videoPanel.add(qualityLabel);
-        videoPanel.add(qualityList);
+        videoPanel.add(videoQualityLabel);
+        videoPanel.add(videoQualityList);
         videoPanel.add(containerLabel);
         videoPanel.add(containerList);
         audioPanel.setLayout(new BoxLayout(audioPanel, BoxLayout.Y_AXIS));

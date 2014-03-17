@@ -20,7 +20,7 @@ public class CeskaTelevizeServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return false;
+        return true;
     }
 
     @Override
@@ -41,12 +41,17 @@ public class CeskaTelevizeServiceImpl extends AbstractFileShareService {
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new CeskaTelevizeSettingsConfig();
-                config.setQualitySetting(-2); //highest available
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, CeskaTelevizeSettingsConfig.class);
             }
         }
         return config;
+    }
+
+    public void setConfig(final CeskaTelevizeSettingsConfig config) {
+        synchronized (CeskaTelevizeServiceImpl.class) {
+            this.config = config;
+        }
     }
 
 }

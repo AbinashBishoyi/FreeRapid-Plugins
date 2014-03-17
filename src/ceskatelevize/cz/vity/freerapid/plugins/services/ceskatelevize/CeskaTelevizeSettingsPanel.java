@@ -7,10 +7,10 @@ import java.awt.event.ActionListener;
 
 /**
  * @author JPEXS
+ * @author tong2shot
  */
 public class CeskaTelevizeSettingsPanel extends JPanel {
     private CeskaTelevizeSettingsConfig config;
-    private int qualityMapping[]=new int[]{-1,288,404,576,720,-2};
 
     public CeskaTelevizeSettingsPanel(CeskaTelevizeServiceImpl service) throws Exception {
         super();
@@ -19,23 +19,15 @@ public class CeskaTelevizeSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"Lowest available","288p","404p","576p","720p","Highest available"};
-
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
-        final JComboBox qualityList = new JComboBox(qualityStrings);
+        final JComboBox<VideoQuality> qualityList = new JComboBox<VideoQuality>(VideoQuality.getItems());
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
-        int qs = config.getQualitySetting();
-        for(int i=0;i<qualityMapping.length;i++){
-            if(qualityMapping[i]==qs){
-                qualityList.setSelectedIndex(i);
-                break;
-            }
-        }
+        qualityList.setSelectedItem(config.getVideoQuality());
         qualityList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                config.setQualitySetting(qualityMapping[qualityList.getSelectedIndex()]);
+                config.setVideoQuality((VideoQuality) qualityList.getSelectedItem());
             }
         });
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));

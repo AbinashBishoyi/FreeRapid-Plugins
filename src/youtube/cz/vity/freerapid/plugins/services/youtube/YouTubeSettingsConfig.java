@@ -6,33 +6,43 @@ package cz.vity.freerapid.plugins.services.youtube;
  * @author tong2shot
  */
 public class YouTubeSettingsConfig {
-    private int qualitySetting = 3; //480p
-    private boolean reversePlaylistOrder = false;
-    private boolean downloadSubtitles = false;
-    private int container = 0; //any
+    private VideoQuality videoQuality = VideoQuality._480;
+    private Container container = Container.mp4;
     private boolean convertToAudio = false;
     private AudioQuality audioQuality = AudioQuality._192;
+    private boolean reversePlaylistOrder = false;
+    private boolean downloadSubtitles = false;
 
-    public static final int MIN_WIDTH = -2;
-    public static final int MAX_WIDTH = -1;
-    public static final int ANY_CONTAINER = 0;
-
-    /**
-     * This maps qualityIndex to resolution
-     */
-    private final int[] videoResolutionMap = {MIN_WIDTH, 240, 360, 480, MAX_WIDTH, 720, 1080}; //Due to quality settings in older versions, 4 is Highest quality available
-    private final String[] containerExtensionMap = {"Any", ".mp4", ".flv", ".webm", ".3gp"};
-
-    public void setQualitySetting(int qualitySetting) {
-        this.qualitySetting = qualitySetting;
+    public void setVideoQuality(VideoQuality videoQuality) {
+        this.videoQuality = videoQuality;
     }
 
-    public int getQualitySetting() {
-        return qualitySetting;
+    public VideoQuality getVideoQuality() {
+        return this.videoQuality;
     }
 
-    public int getVideoResolution() {
-        return videoResolutionMap[qualitySetting];
+    public Container getContainer() {
+        return container;
+    }
+
+    public void setContainer(Container container) {
+        this.container = container;
+    }
+
+    public boolean isConvertToAudio() {
+        return convertToAudio;
+    }
+
+    public void setConvertToAudio(boolean convertToAudio) {
+        this.convertToAudio = convertToAudio;
+    }
+
+    public AudioQuality getAudioQuality() {
+        return audioQuality;
+    }
+
+    public void setAudioQuality(AudioQuality audioQuality) {
+        this.audioQuality = audioQuality;
     }
 
     public void setReversePlaylistOrder(boolean reversePlaylistOrder) {
@@ -51,31 +61,13 @@ public class YouTubeSettingsConfig {
         return downloadSubtitles;
     }
 
-    public int getContainer() {
-        return container;
-    }
-
-    public void setContainer(int container) {
-        this.container = container;
-    }
-
-    public String getContainerExtension() {
-        return containerExtensionMap[container];
-    }
-
-    public boolean isConvertToAudio() {
-        return convertToAudio;
-    }
-
-    public void setConvertToAudio(boolean convertToAudio) {
-        this.convertToAudio = convertToAudio;
-    }
-
-    public AudioQuality getAudioQuality() {
-        return audioQuality;
-    }
-
-    public void setAudioQuality(AudioQuality audioQuality) {
-        this.audioQuality = audioQuality;
+    @Override
+    public String toString() {
+        return "YouTubeSettingsConfig{" +
+                "convertToAudio=" + convertToAudio + (convertToAudio ?
+                ", audioQuality=" + audioQuality :
+                ", videoQuality=" + videoQuality +
+                        ", container='" + container + '\'') +
+                '}';
     }
 }

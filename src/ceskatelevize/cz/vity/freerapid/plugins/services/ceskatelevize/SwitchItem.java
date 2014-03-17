@@ -4,17 +4,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
  * @author JPEXS
+ * @author tong2shot
  */
-public class SwitchItem implements Comparable<SwitchItem>{
-    public String base="";
-    public double duration;
-    public List<Video> videos=new ArrayList<Video>();
+public class SwitchItem implements Comparable<SwitchItem> {
+    private final String base;
+    private final double duration;
+    private final List<Video> videos = new ArrayList<Video>();
+
+    public SwitchItem(String base, double duration) {
+        this.base = base;
+        this.duration = duration;
+    }
+
+    public String getBase() {
+        return base;
+    }
+
+    public double getDuration() {
+        return duration;
+    }
+
+    public List<Video> getVideos() {
+        return videos;
+    }
+
+    public void addVideo(Video video) {
+        videos.add(video);
+    }
 
     @Override
-    public int compareTo(SwitchItem o) {
-        return (o.duration-duration)<0?-1:0;
+    public String toString() {
+        return "SwitchItem{" +
+                "base='" + base + '\'' +
+                ", duration=" + duration +
+                ", videos=" + videos +
+                '}';
+    }
+
+    @Override
+    public int compareTo(SwitchItem that) {
+        return Double.valueOf(this.duration).compareTo(that.duration);
     }
 
 }

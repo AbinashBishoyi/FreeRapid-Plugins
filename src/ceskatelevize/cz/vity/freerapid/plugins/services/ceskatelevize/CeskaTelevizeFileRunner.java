@@ -14,9 +14,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.net.URLDecoder;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,10 +23,13 @@ import java.util.regex.Pattern;
  * Class which contains main code
  *
  * @author JPEXS
+ * @author tong2shot
  */
 class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(CeskaTelevizeFileRunner.class.getName());
     private CeskaTelevizeSettingsConfig config;
+    private SwitchItem selectedSwitchItem;
+    private Video selectedVideo;
 
     private void setConfig() throws Exception {
         CeskaTelevizeServiceImpl service = (CeskaTelevizeServiceImpl) getPluginService();
@@ -36,13 +37,24 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     }
 
     @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
+        checkName();
+    }
+
+    @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        checkName();
+        RtmpSession rtmpSession = new RtmpSession(selectedSwitchItem.getBase(), selectedVideo.getSrc());
+        rtmpSession.disablePauseWorkaround();
+        tryDownloadAndSaveFile(rtmpSession);
+    }
+
+    private void checkName() throws Exception {
         setConfig();
         final GetMethod method = getGetMethod(fileURL);
-        String videoSrc;
-        String base;
         if (makeRedirectedRequest(method)) {
             if (!getContentAsString().contains("callSOAP(")) {
                 HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromIFrameSrcWhereTagContains("iFramePlayer").toGetMethod();
@@ -90,7 +102,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 mb.setParameter(key, params.get(key));
             }
             final HttpMethod getPlayListMethod = mb.toPostMethod();
-            getPlayListMethod.setRequestHeader("X-Requested-With", "X-Requested-With");
+            getPlayListMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
             getPlayListMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
             getPlayListMethod.setRequestHeader("x-addr", "127.0.0.1");
             if (makeRequest(getPlayListMethod)) {
@@ -102,81 +114,10 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 if (!makeRedirectedRequest(playlistMethod)) {
                     throw new PluginImplementationException("Cannot connect to playlist");
                 }
-                final Matcher switchMatcher = Pattern.compile("<switchItem id=\"([^\"]+)\" base=\"([^\"]+)\" begin=\"([^\"]+)\" duration=\"([^\"]+)\" clipBegin=\"([^\"]+)\".*?>\\s*(<video[^>]*>\\s*)*</switchItem>", Pattern.MULTILINE + Pattern.DOTALL).matcher(getContentAsString());
+                selectedSwitchItem = getSelectedSwitchItem(getContentAsString());
+                selectedVideo = getSelectedVideo(selectedSwitchItem);
 
-                TreeSet<SwitchItem> body = new TreeSet<SwitchItem>();
-                while (switchMatcher.find()) {
-                    SwitchItem newItem = new SwitchItem();
-                    String swItemText = switchMatcher.group(0);
-                    newItem.base = PlugUtils.replaceEntities(switchMatcher.group(2));
-                    newItem.duration = Double.parseDouble(switchMatcher.group(4));
-                    Matcher videoMatcher = Pattern.compile("<video src=\"([^\"]+)\" system-bitrate=\"([0-9]+)\" label=\"([0-9]+)p\" enabled=\"true\" */>").matcher(swItemText);
-                    while (videoMatcher.find()) {
-                        newItem.videos.add(new Video(videoMatcher.group(1), videoMatcher.group(3)));
-                    }
-                    body.add(newItem);
-                }
-                if (body.isEmpty()) {
-                    throw new PluginImplementationException("No stream found.");
-                }
-                SwitchItem selectedSwitch = body.first();
-                base = selectedSwitch.base;
-
-                int preferredQualityInt = config.getQualitySetting();
-
-                videoSrc = null;
-                String nearestHigherSrc = null;
-                String nearestLowerSrc = null;
-                int nearestHigher = 0;
-                int nearestLower = 0;
-                int highestQuality = 0;
-                String highestQualitySrc = null;
-                int lowestQuality = 0;
-                String lowestQualitySrc = null;
-                for (Video video : selectedSwitch.videos) {
-                    int qualInt = Integer.parseInt(video.label);
-                    if (qualInt > highestQuality) {
-                        highestQuality = qualInt;
-                        highestQualitySrc = video.src;
-                    }
-                    if ((lowestQuality == 0) || (qualInt < lowestQuality)) {
-                        lowestQuality = qualInt;
-                        lowestQualitySrc = video.src;
-                    }
-                    if (preferredQualityInt > 0) {
-                        if (qualInt > preferredQualityInt) {
-                            if ((nearestHigher == 0) || (nearestHigher > qualInt)) {
-                                nearestHigher = qualInt;
-                                nearestHigherSrc = video.src;
-                            }
-                        }
-                        if (qualInt < preferredQualityInt) {
-                            if ((nearestLower == 0) || (nearestLower < qualInt)) {
-                                nearestLower = qualInt;
-                                nearestLowerSrc = video.src;
-                            }
-                        }
-                    }
-                    if (qualInt == preferredQualityInt) {
-                        videoSrc = video.src;
-                        break;
-                    }
-                }
-                if (preferredQualityInt == -1) {
-                    videoSrc = lowestQualitySrc;
-                } else if (preferredQualityInt == -2) {
-                    videoSrc = highestQualitySrc;
-                } else if (videoSrc == null) {
-                    if (nearestLower != 0) {
-                        videoSrc = nearestLowerSrc;
-                    } else if (nearestHigher != 0) {
-                        videoSrc = nearestHigherSrc;
-                    }
-                }
-                if (videoSrc == null) {
-                    throw new PluginImplementationException("Cannot select preferred quality");
-                }
-                Matcher filenameMatcher = Pattern.compile("/([^/]+)\\....$").matcher(videoSrc);
+                Matcher filenameMatcher = Pattern.compile("/([^/]+)\\....$").matcher(selectedVideo.getSrc());
                 if (filenameMatcher.find()) {
                     httpFile.setFileName(filenameMatcher.group(1) + ".flv");
                 }
@@ -186,10 +127,6 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         } else {
             throw new ServiceConnectionProblemException();
         }
-
-        RtmpSession rtmpSession = new RtmpSession(base, videoSrc);
-        rtmpSession.disablePauseWorkaround();
-        tryDownloadAndSaveFile(rtmpSession);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -202,4 +139,53 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         }
     }
 
+    private SwitchItem getSelectedSwitchItem(String playlistContent) throws PluginImplementationException {
+        final Matcher switchMatcher = Pattern.compile("<switchItem id=\"([^\"]+)\" base=\"([^\"]+)\" begin=\"([^\"]+)\" duration=\"([^\"]+)\" clipBegin=\"([^\"]+)\".*?>\\s*(<video[^>]*>\\s*)*</switchItem>", Pattern.MULTILINE + Pattern.DOTALL).matcher(playlistContent);
+        logger.info("Available switch items : ");
+        List<SwitchItem> switchItems = new ArrayList<SwitchItem>();
+        while (switchMatcher.find()) {
+            String swItemText = switchMatcher.group(0);
+            String base = PlugUtils.replaceEntities(switchMatcher.group(2));
+            double duration = Double.parseDouble(switchMatcher.group(4));
+            SwitchItem newItem = new SwitchItem(base, duration);
+            Matcher videoMatcher = Pattern.compile("<video src=\"([^\"]+)\" system-bitrate=\"([0-9]+)\" label=\"([0-9]+)p\" enabled=\"true\" */>").matcher(swItemText);
+            while (videoMatcher.find()) {
+                newItem.addVideo(new Video(videoMatcher.group(1), Integer.parseInt(videoMatcher.group(3))));
+            }
+            switchItems.add(newItem);
+            logger.info(newItem.toString());
+        }
+        if (switchItems.isEmpty()) {
+            throw new PluginImplementationException("No stream found.");
+        }
+        SwitchItem selectedSwitchItem = Collections.max(switchItems); //switch item with the longest duration
+        logger.info("Selected switch item : " + selectedSwitchItem);
+        return selectedSwitchItem;
+    }
+
+    private Video getSelectedVideo(SwitchItem switchItem) throws PluginImplementationException {
+        Video selectedVideo = null;
+        logger.info("Config settings : " + config);
+        if (config.getVideoQuality() == VideoQuality.Highest) {
+            selectedVideo = Collections.max(switchItem.getVideos());
+        } else if (config.getVideoQuality() == VideoQuality.Lowest) {
+            selectedVideo = Collections.min(switchItem.getVideos());
+        } else {
+            final int LOWER_QUALITY_PENALTY = 10;
+            int weight = Integer.MAX_VALUE;
+            for (Video video : switchItem.getVideos()) {
+                int deltaQ = video.getVideoQuality() - config.getVideoQuality().getQuality();
+                int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
+                if (tempWeight < weight) {
+                    weight = tempWeight;
+                    selectedVideo = video;
+                }
+            }
+        }
+        if (selectedVideo == null) {
+            throw new PluginImplementationException("Cannot select video");
+        }
+        logger.info("Video to be downloaded : " + selectedVideo);
+        return selectedVideo;
+    }
 }

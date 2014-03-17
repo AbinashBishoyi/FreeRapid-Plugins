@@ -34,7 +34,7 @@ import java.util.regex.Matcher;
  */
 class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:22.0) Gecko/20100101 Firefox/22.0";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:23.0) Gecko/20100101 Firefox/24.0";
 
     private YouTubeSettingsConfig config;
     private YouTubeMedia youTubeMedia = null;
@@ -87,11 +87,11 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 return;
             }
 
-            processConfig();
+            youTubeMedia = getSelectedYouTubeMedia();
             checkName();
 
             final String fmtStreamMap = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
-            logger.info(fmtStreamMap);
+            logger.info("fmtStreamMap : " + fmtStreamMap);
             int itagCode = youTubeMedia.getItagCode();
             Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + itagCode + "[^,]*|[^,]*itag=" + itagCode + "\\\\u0026[^,]*)", fmtStreamMap);
             if (!matcher.find()) {
@@ -99,6 +99,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
             final String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
             final String formatContent = matcher.group(1);
+            logger.info("Swf URL : " + swfUrl);
             if (formatContent.contains("rtmp")) {
                 matcher = PlugUtils.matcher("conn=(.+?)(?:\\\\u0026.+)?$", formatContent);
                 if (!matcher.find()) {
@@ -133,14 +134,14 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     } else {
                         matcher = PlugUtils.matcher("(?:\\\\u0026)?s=([A-Z0-9\\.]+?)(?:\\\\u0026|$)", formatContent);
                         if (matcher.find()) {
-                            logger.info(matcher.group(1));
+                            logger.info("Cipher signature : " + matcher.group(1));
                             InputStream is = client.makeRequestForFile(getGetMethod(swfUrl));
                             if (is == null) {
                                 throw new ServiceConnectionProblemException("Error downloading SWF");
                             }
                             final String signature = new YouTubeSigDecipher(is).decipher(matcher.group(1));
-                            logger.info(signature);
-                            videoURL = videoURL + "&signature=" + signature;
+                            logger.info("Deciphered signature : " + signature);
+                            videoURL += "&signature=" + signature;
                         }
                     }
                 }
@@ -150,7 +151,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 if (config.isConvertToAudio()) {
                     httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
                     final int bitrate = youTubeMedia.getAudioBitrate();
-                    final boolean mp4 = ".mp4".equalsIgnoreCase(youTubeMedia.getFileExtension());
+                    final boolean mp4 = ".mp4".equalsIgnoreCase(youTubeMedia.getContainer().getFileExt());
                     if (!tryDownloadAndSaveFile(method, bitrate, mp4)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
@@ -198,7 +199,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
         String fileName = PlugUtils.unescapeHtml(PlugUtils.unescapeHtml(httpFile.getFileName()));
         if (!isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles()) {
-            fileName += (youTubeMedia == null ? ".flv" : youTubeMedia.getFileExtension());
+            fileName += (youTubeMedia == null ? ".flv" : youTubeMedia.getContainer().getFileExt());
         }
         httpFile.setFileName(fileName);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -209,37 +210,40 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         config = service.getConfig();
     }
 
-    private void processConfig() throws ErrorDuringDownloadingException {
+    private YouTubeMedia getSelectedYouTubeMedia() throws ErrorDuringDownloadingException {
         final String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "\"fmt_list\": \"", "\"").replace("\\/", "/");
-        logger.info(fmt_map);
+        logger.info("fmt_map : " + fmt_map);
         //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
         final String[] formats = fmt_map.split(",");
-        final Map<Integer, YouTubeMedia> ytMediaMap = new LinkedHashMap<Integer, YouTubeMedia>();
+        final Map<Integer, YouTubeMedia> ytMediaMap = new LinkedHashMap<Integer, YouTubeMedia>(); // k=itagcode, v=YTMedia, preserve ordering
+        logger.info("Available YouTube media : ");
         for (String format : formats) {
             //Example: 37/1920x1080/9/0/115
             String formatParts[] = format.split("/");
             int itagCode = Integer.parseInt(formatParts[0]);
-            String fileExt = getFileExtension(itagCode);
-            String container = getContainer(fileExt);
             int videoResolution = Integer.parseInt(formatParts[1].split("x")[1]);
-            String audioEncoding = getAudioEncoding(itagCode);
-            int audioBitrate = getAudioBitrate(itagCode);
-            YouTubeMedia ytMedia = new YouTubeMedia(itagCode, container, fileExt, videoResolution, audioEncoding, audioBitrate);
+            YouTubeMedia ytMedia = new YouTubeMedia(itagCode, videoResolution);
             ytMediaMap.put(itagCode, ytMedia);
+            logger.info(ytMedia.toString());
+        }
+        if (ytMediaMap.isEmpty()) {
+            throw new PluginImplementationException("No available YouTube media");
         }
         int selectedItagCode = -1;
 
         if (config.isConvertToAudio()) { //convert to audio
             final int NOT_SUPPORTED_PENALTY = 10000;
+            final int LOWER_QUALITY_PENALTY = 5;
             int configAudioBitrate = config.getAudioQuality().getBitrate();
-            int weight = Integer.MAX_VALUE;
 
             //select audio bitrate
             int selectedAudioBitrate = -1;
+            int weight = Integer.MAX_VALUE;
             for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
                 YouTubeMedia ytMedia = ytMediaEntry.getValue();
                 int audioBitrate = ytMedia.getAudioBitrate();
-                int tempWeight = ((audioBitrate - configAudioBitrate) < 0) ? Math.abs(audioBitrate - configAudioBitrate) : audioBitrate - configAudioBitrate;
+                int deltaAudioBitrate = audioBitrate - configAudioBitrate;
+                int tempWeight = (deltaAudioBitrate < 0 ? Math.abs(deltaAudioBitrate) + LOWER_QUALITY_PENALTY : deltaAudioBitrate);
                 if (!isVid2AudSupported(ytMedia)) {
                     tempWeight += NOT_SUPPORTED_PENALTY;
                 }
@@ -248,22 +252,19 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     selectedAudioBitrate = audioBitrate;
                 }
             }
-            if (selectedAudioBitrate == -1) {
-                throw new PluginImplementationException("Cannot select audio bitrate");
-            }
 
-            //calc (the lowest) video res + penalty to get the fittest itagcode
+            //calc (the lowest) video quality + penalty to get the fittest itagcode  -> select video quality
             weight = Integer.MAX_VALUE;
             for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
                 YouTubeMedia ytMedia = ytMediaEntry.getValue();
                 if (ytMedia.getAudioBitrate() == selectedAudioBitrate) {
-                    int tempWeight = ytMedia.getVideoResolution();
+                    int tempWeight = ytMedia.getVideoQuality();
                     if (!isVid2AudSupported(ytMedia)) {
                         tempWeight += NOT_SUPPORTED_PENALTY;
                     }
                     if (tempWeight < weight) {
                         weight = tempWeight;
-                        selectedItagCode = ytMediaEntry.getKey();
+                        selectedItagCode = ytMedia.getItagCode();
                     }
                 }
             }
@@ -272,151 +273,68 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
 
         } else { //not converted to audio
-            //select video resolution
-            int configVideoResolution = config.getVideoResolution();
-            if (configVideoResolution == YouTubeSettingsConfig.MAX_WIDTH) {
-                logger.info("Selecting maximum quality");
+            //select video quality
+            VideoQuality configVideoQuality = config.getVideoQuality();
+            if (configVideoQuality == VideoQuality.Highest) {
                 selectedItagCode = ytMediaMap.keySet().iterator().next(); //first key
-            } else if (configVideoResolution == YouTubeSettingsConfig.MIN_WIDTH) {
-                logger.info("Selecting minimum quality");
+            } else if (configVideoQuality == VideoQuality.Lowest) {
                 for (Integer itagCode : ytMediaMap.keySet()) {
                     selectedItagCode = itagCode; //last key
                 }
             } else {
-                int nearestGreater = Integer.MAX_VALUE;
-                int nearestGreaterItagCode = -1;
-                int nearestLower = Integer.MIN_VALUE;
-                int nearestLowerItagCode = -1;
+                final int LOWER_QUALITY_PENALTY = 10;
+                int weight = Integer.MAX_VALUE;
                 for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
                     YouTubeMedia ytMedia = ytMediaEntry.getValue();
-                    int videoResolution = ytMedia.getVideoResolution();
-                    if (videoResolution == configVideoResolution) {
-                        selectedItagCode = ytMediaEntry.getKey();
-                        break;
-                    } else {
-                        if ((videoResolution > configVideoResolution) && (nearestGreater > videoResolution)) {
-                            nearestGreater = videoResolution;
-                            nearestGreaterItagCode = ytMediaEntry.getKey();
-                        }
-                        if ((videoResolution < configVideoResolution) && (nearestLower < videoResolution)) {
-                            nearestLower = videoResolution;
-                            nearestLowerItagCode = ytMediaEntry.getKey();
-                        }
+                    int deltaQ = ytMedia.getVideoQuality() - configVideoQuality.getQuality();
+                    int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
+                    if (tempWeight < weight) {
+                        weight = tempWeight;
+                        selectedItagCode = ytMedia.getItagCode();
                     }
                 }
-                if (selectedItagCode == -1) {
-                    if (nearestLowerItagCode != -1) {
-                        selectedItagCode = nearestLowerItagCode;
-                        logger.info("Selected quality not found, using nearest lower");
-                    } else {
-                        selectedItagCode = nearestGreaterItagCode;
-                        logger.info("Selected quality not found, using nearest better");
-                    }
-                }
-            }
-
-            if (selectedItagCode == -1) {
-                throw new PluginImplementationException("Cannot select quality");
             }
 
             //select container
-            final int selectedVideoResolution = ytMediaMap.get(selectedItagCode).getVideoResolution();
-            final int container = config.getContainer();
-            if (container != YouTubeSettingsConfig.ANY_CONTAINER) {
-                final List<YouTubeContainer> ytcSet = new LinkedList<YouTubeContainer>();
+            final Container configContainer = config.getContainer();
+            if (configContainer != Container.Any) {
+                final int selectedVideoQuality = ytMediaMap.get(selectedItagCode).getVideoQuality();
+                int weight = Integer.MIN_VALUE;
                 for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
                     YouTubeMedia ytMedia = ytMediaEntry.getValue();
-                    int videoResolution = ytMedia.getVideoResolution();
-                    if (videoResolution == selectedVideoResolution) {
-                        final YouTubeContainer ytc = new YouTubeContainer(ytMediaEntry.getKey());
-                        ytcSet.add(ytc);
+                    if (ytMedia.getVideoQuality() == selectedVideoQuality) {
+                        int tempWeight = 0;
+                        Container container = ytMedia.getContainer();
+                        if (config.getContainer() == container) {
+                            tempWeight = 100;
+                        } else if (container == Container.mp4) { //mp4 > flv > webm > 3gp
+                            tempWeight = 50;
+                        } else if (container == Container.flv) {
+                            tempWeight = 49;
+                        } else if (container == Container.webm) {
+                            tempWeight = 48;
+                        } else if (container == Container._3gp) {
+                            tempWeight = 47;
+                        }
+                        if (tempWeight > weight) {
+                            weight = tempWeight;
+                            selectedItagCode = ytMedia.getItagCode();
+                        }
                     }
                 }
-                selectedItagCode = Collections.max(ytcSet).itagCode;
             }
         }
-        youTubeMedia = ytMediaMap.get(selectedItagCode);
-        logger.info("Media to download : " + youTubeMedia);
+
+        YouTubeMedia youTubeMedia = ytMediaMap.get(selectedItagCode);
+        logger.info("Config setting : " + config);
+        logger.info("Media to be downloaded : " + youTubeMedia);
+        return youTubeMedia;
     }
 
     private boolean isVid2AudSupported(YouTubeMedia ytMedia) {
-        String container = ytMedia.getContainer().toUpperCase();
+        String container = ytMedia.getContainer().getName().toUpperCase();
         String audioEncoding = ytMedia.getAudioEncoding().toUpperCase();
         return ((container.equals("MP4") || container.equals("FLV")) && (audioEncoding.equals("MP3") || audioEncoding.equals("AAC")));
-    }
-
-    //source : http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
-    private String getFileExtension(final int itagCode) {
-        switch (itagCode) {
-            case 13:
-            case 17:
-            case 36:
-                return ".3gp";
-            case 18:
-            case 22:
-            case 37:
-            case 38:
-            case 82:
-            case 83:
-            case 84:
-            case 85:
-                return ".mp4";
-            case 43:
-            case 44:
-            case 45:
-            case 46:
-            case 100:
-            case 101:
-            case 102:
-                return ".webm";
-            default:
-                return ".flv";
-        }
-    }
-
-    private String getContainer(String fileExt) {
-        return fileExt.replace(".", "").toUpperCase();
-    }
-
-    private String getAudioEncoding(int itagCode) {
-        switch (itagCode) {
-            case 5:
-            case 6:
-                return "MP3";
-            case 43:
-            case 44:
-            case 45:
-            case 46:
-                return "Vorbis";
-            default:
-                return "AAC";
-        }
-    }
-
-    private int getAudioBitrate(int itagCode) {
-        switch (itagCode) {
-            case 17:
-                return 24;
-            case 36:
-                return 38;
-            case 5:
-            case 6:
-                return 64;
-            case 18:
-            case 82:
-            case 83:
-                return 96;
-            case 34:
-            case 35:
-            case 43:
-            case 44:
-                return 128;
-            case 84:
-            case 85:
-                return 152;
-            default:
-                return 192;
-        }
     }
 
     private String getIdFromUrl() throws ErrorDuringDownloadingException {
@@ -681,37 +599,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         if (getContentAsString().contains("Sign in to view this video")
                 || getContentAsString().contains("Sign in to confirm your age")) {  //just in case they change age verification mechanism
             throw new PluginImplementationException("Age verification is broken");
-        }
-    }
-
-    private class YouTubeContainer implements Comparable<YouTubeContainer> {
-        private final int itagCode;
-        private int weight;
-
-        public YouTubeContainer(final int itagCode) {
-            this.itagCode = itagCode;
-            calcWeight();
-        }
-
-        public void calcWeight() {
-            weight = 0;
-            final String fmtFileExtension = getFileExtension(itagCode).toLowerCase();
-            if (config.getContainerExtension().toLowerCase().equals(fmtFileExtension)) {
-                weight = 100;
-            } else if (fmtFileExtension.equals(".mp4")) { //mp4 > flv > webm > 3gp
-                weight = 50;
-            } else if (fmtFileExtension.equals(".flv")) {
-                weight = 49;
-            } else if (fmtFileExtension.equals(".webm")) {
-                weight = 48;
-            } else if (fmtFileExtension.equals(".3gp")) {
-                weight = 47;
-            }
-        }
-
-        @Override
-        public int compareTo(final YouTubeContainer that) {
-            return Integer.valueOf(this.weight).compareTo(that.weight);
         }
     }
 }

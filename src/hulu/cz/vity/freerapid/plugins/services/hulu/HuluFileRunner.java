@@ -46,7 +46,6 @@ class HuluFileRunner extends AbstractRtmpRunner {
     private final static String DECRYPT_IV = "27b9bedf75ccA2eC";
     private final static String SUBTITLE_DECRYPT_KEY = "4878b22e76379b55c962b18ddbc188d82299f8f52e3e698d0faf29a40ed64b21";
     private final static String SUBTITLE_DECRYPT_IV = "WA7hap7AGUkevuth";
-    private final static int LOWER_QUALITY_PENALTY = 1; //change this to 10 if prefer nearest higher
 
     private final String sessionId = getSessionId();
 
@@ -165,7 +164,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 throw e;
             }
 
-            final RtmpSession rtmpSession = getStream(content);
+            final RtmpSession rtmpSession = getSession(getStream(getStreamMap(content)));
             rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
             //helper.setSwfVerification(rtmpSession, client);
@@ -189,215 +188,128 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private RtmpSession getStream(final String content) throws ErrorDuringDownloadingException {
+    private RtmpSession getSession(final Stream stream) {
+        return new RtmpSession(stream.server, 1935, stream.app, stream.play, true);
+    }
+
+    private SortedMap<Integer, Stream> getStreamMap(String content) throws ErrorDuringDownloadingException {
         final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? height=\"(\\d+?)\".*? file-type=\"\\d+_(.+?)\".*? cdn=\"(.+?)\"", content);
-        final List<Stream> list = new LinkedList<Stream>();
+        final SortedMap<Integer, Stream> streamMap = new TreeMap<Integer, Stream>(); //k=video quality, v=stream, sorted by video quality ascending
+        logger.info("Available streams : ");
         while (matcher.find()) {
+            final String serverApp = matcher.group(1);
+            final String play = matcher.group(2); //stream as play
+            final String token = matcher.group(3);
+            Matcher serverAppMatcher = PlugUtils.matcher("://(.+?)/(.+)", serverApp);
+            if (!serverAppMatcher.find()) {
+                throw new PluginImplementationException("Error parsing stream server");
+            }
+            final String server = serverAppMatcher.group(1);
+            final String app = serverAppMatcher.group(2) + "?sessionid=" + sessionId + "&" + PlugUtils.replaceEntities(token);
+            final int bitrate = Integer.parseInt(matcher.group(4));
+            final int videoQuality = Integer.parseInt(matcher.group(5)); //height as video quality
+            final String videoFormat = matcher.group(6);
             final String cdn = matcher.group(7);
-            list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4)), Integer.parseInt(matcher.group(5)), matcher.group(6), cdn));
+            if (!cdn.equalsIgnoreCase("akamai") || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-h264
+                continue;
+            }
+            Stream stream = new Stream(server, app, play, bitrate, videoQuality, videoFormat, cdn);
+            logger.info(stream.toString());
+            streamMap.put(videoQuality, stream); //once we strip non-akamai, non-h264, it's safe to assume video quality as key
         }
-        if (list.isEmpty()) {
+        if (streamMap.isEmpty()) {
             throw new PluginImplementationException("No streams found");
         }
-        calcStreamWeight(list);
-        final Stream selectedStream = Collections.max(list);
-        logger.info("Selected stream : " + selectedStream);
-        return selectedStream.getSession();
+        return streamMap;
     }
 
-    private void calcStreamWeight(List<Stream> streamList) {
-        //get the concrete configHeight
-        int configHeightMin = Integer.MAX_VALUE;
-        int configHeightMax = Integer.MIN_VALUE;
-        for (Stream stream : streamList) {
-            if (stream.height < configHeightMin) configHeightMin = stream.height;
-            if (stream.height > configHeightMax) configHeightMax = stream.height;
-        }
-        final int configHeight;
-        if (config.getQualityHeight() == HuluSettingsConfig.MAX_HEIGHT) {
-            configHeight = configHeightMax;
-            logger.info("Config height : the highest available (" + configHeight + ")");
-        } else if (config.getQualityHeight() == HuluSettingsConfig.MIN_HEIGHT) {
-            configHeight = configHeightMin;
-            logger.info("Config height : the lowest available (" + configHeight + ")");
+    private Stream getStream(SortedMap<Integer, Stream> streamMap) {
+        final int LOWER_QUALITY_PENALTY = 10;
+        Stream selectedStream = null;
+        int weight = Integer.MAX_VALUE;
+        if (config.getVideoQuality() == VideoQuality.Highest) {
+            selectedStream = streamMap.get(streamMap.lastKey());
+        } else if (config.getVideoQuality() == VideoQuality.Lowest) {
+            selectedStream = streamMap.get(streamMap.firstKey());
         } else {
-            configHeight = config.getQualityHeight();
-            logger.info("Config height : " + configHeight);
-        }
-
-        //calc height weight
-        //if the same height (quality) doesn't exist, prefer the neareast one (higher or lower doesn't matter).
-        float heightWeightMax = Float.MIN_VALUE;
-        int selectedHeight = configHeight; //pick any value for initialization, will be changed right away anyway
-        for (Stream stream : streamList) {
-            final int heightDiff = stream.height - configHeight;
-            float heightWeight;
-            if (heightDiff == 0) //same height (quality)
-                heightWeight = 1.0f;
-            else if (heightDiff < 0) //lower
-                heightWeight = (1.0f / (Math.abs(heightDiff) * LOWER_QUALITY_PENALTY));
-            else //higher
-                heightWeight = (1.0f / heightDiff);
-            heightWeight *= 100000;
-            stream.heightWeight = heightWeight;
-            if (heightWeight > heightWeightMax) {
-                heightWeightMax = heightWeight;
-                selectedHeight = stream.height;
-            }
-        }
-        logger.info("Selected height : " + selectedHeight);
-
-        //calc video format weight
-        logger.info("Config video format : " + config.getVideoFormat());
-        if (config.getVideoFormatIndex() != HuluSettingsConfig.ANY_VIDEO_FORMAT) {
-            for (Stream stream : streamList) {
-                float videoFormatWeight = 0f;
-                if (stream.height == selectedHeight) {
-                    //same video format > h264 > vp6
-                    if (stream.videoFormat.equals(config.getVideoFormat()))
-                        videoFormatWeight = 50f;
-                    else if (stream.videoFormat.equals("h264"))
-                        videoFormatWeight = 10f;
-                    else if (stream.videoFormat.equals("vp6"))
-                        videoFormatWeight = 5f;
+            for (Map.Entry<Integer, Stream> streamEntry : streamMap.entrySet()) {
+                Stream stream = streamEntry.getValue();
+                int deltaQ = stream.videoQuality - config.getVideoQuality().getQuality();
+                int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
+                if (tempWeight < weight) {
+                    weight = tempWeight;
+                    selectedStream = stream;
                 }
-                stream.videoFormatWeight = videoFormatWeight;
             }
         }
 
-        //calc cdn weight and total weight
-        logger.info("Config cdn : " + config.getCdn());
-        for (Stream stream : streamList) {
-            float cdnWeight = 0f;
-            if (stream.height == selectedHeight) {
-                //same cdn > akamai > limelight > level3
-                if (stream.cdn.equals(config.getCdn()))
-                    cdnWeight = 15f;
-                else if (stream.cdn.equals("akamai"))
-                    cdnWeight = 10f;
-                else if (stream.cdn.equals("limelight"))
-                    cdnWeight = 5f;
-                else if (stream.cdn.equals("level3"))
-                    cdnWeight = 2f;
-            }
-            stream.cdnWeight = cdnWeight;
-            stream.calcWeight();
-            logger.info(stream.toString());
-        }
+        logger.info("Config settings : " + config);
+        logger.info("Selected stream : " + selectedStream);
+        return selectedStream;
     }
 
-    private class Stream implements Comparable<Stream> {
+    private class Stream {
         private final String server;
         private final String play;
         private final String app;
         private final int bitrate;
-        private final int height;
+        private final int videoQuality; //height as video quality
         private final String videoFormat; // Example : vp6, h264
-        private final String cdn;
-        private float heightWeight, videoFormatWeight, cdnWeight, weight;
+        private final String cdn; //Example : akamai, limelight, level3
 
-        public Stream(String server, String stream, String token, int bitrate, int height, String videoFormat, String cdn) throws ErrorDuringDownloadingException {
-            Matcher matcher = PlugUtils.matcher("://(.+?)/(.+)", server);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing stream server");
-            }
-            server = matcher.group(1);
-            token = matcher.group(2) + "?sessionid=" + sessionId + "&" + PlugUtils.replaceEntities(token);
+        public Stream(String server, String app, String play, int bitrate, int videoQuality, String videoFormat, String cdn) throws ErrorDuringDownloadingException {
             this.server = server;
-            this.play = stream;
-            this.app = token;
+            this.app = app;
+            this.play = play;
             this.bitrate = bitrate;
-            this.height = height;
+            this.videoQuality = videoQuality;
             this.videoFormat = videoFormat;
             this.cdn = cdn;
-            logger.info("Found stream: " + this);
-        }
-
-        public RtmpSession getSession() {
-            final int port = config.getPort();
-            logger.info("Config port : " + port);
-            logger.info("Downloading stream: " + this);
-            return new RtmpSession(server, port, app, play, true);
-        }
-
-        public void calcWeight() {
-            weight = (10 * heightWeight) + (5 * videoFormatWeight) + cdnWeight;
-        }
-
-        @Override
-        public int compareTo(Stream that) {
-            return Float.valueOf(this.weight).compareTo(that.weight);
         }
 
         @Override
         public String toString() {
             return "Stream{" +
                     "server='" + server + '\'' +
-                    ", play='" + play + '\'' +
                     ", app='" + app + '\'' +
+                    ", play='" + play + '\'' +
                     ", bitrate=" + bitrate +
-                    ", height=" + height +
+                    ", videoQuality=" + videoQuality + 'p' +
                     ", videoformat=" + videoFormat +
                     ", cdn='" + cdn + '\'' +
-                    ", heightweight=" + heightWeight +
-                    ", videoformatweight=" + videoFormatWeight +
-                    ", cdnweight=" + cdnWeight +
-                    ", weight=" + weight +
                     '}';
         }
     }
 
     private static String getContentSelectUrl(final String cid) throws Exception {
-        final Parameters parameters = new Parameters()
-                .add("video_id", cid)
-                .add("v", V_PARAM)
-                .add("ts", String.valueOf(System.currentTimeMillis()))
-                .add("np", "1")
-                .add("vp", "1")
-                .add("pp", "hulu")
-                .add("dp_id", "hulu")
-                .add("region", "US")
-                .add("language", "en");
+        final Map<String, String> parameters = new LinkedHashMap<String, String>(); //preserve ordering
+        parameters.put("video_id", cid);
+        parameters.put("v", V_PARAM);
+        parameters.put("ts", String.valueOf(System.currentTimeMillis()));
+        parameters.put("np", "1");
+        parameters.put("vp", "1");
+        parameters.put("pp", "hulu");
+        parameters.put("dp_id", "hulu");
+        parameters.put("region", "US");
+        parameters.put("language", "en");
+
         final StringBuilder sb = new StringBuilder("http://s.hulu.com/select?");
-        for (final Map.Entry<String, String> e : parameters) {
+        for (final Map.Entry<String, String> e : parameters.entrySet()) {
             sb.append(e.getKey()).append('=').append(e.getValue()).append('&');
         }
         sb.append("bcs=").append(getBcs(parameters));
         return sb.toString();
     }
 
-    private static String getBcs(final Parameters parameters) throws Exception {
-        parameters.sort();
+    private static String getBcs(final Map<String, String> parameters) throws Exception {
+        final SortedMap<String, String> sortedParameters = new TreeMap<String, String>(parameters); //sorted by key
         final StringBuilder sb = new StringBuilder();
-        for (final Map.Entry<String, String> e : parameters) {
+        for (final Map.Entry<String, String> e : sortedParameters.entrySet()) {
             sb.append(e.getKey()).append(e.getValue());
         }
         final Mac mac = Mac.getInstance("HmacMD5");
         mac.init(new SecretKeySpec(HMAC_KEY.getBytes("UTF-8"), "HmacMD5"));
         return Hex.encodeHexString(mac.doFinal(sb.toString().getBytes("UTF-8")));
-    }
-
-    private static class Parameters implements Iterable<Map.Entry<String, String>> {
-        private final List<Map.Entry<String, String>> parameters = new LinkedList<Map.Entry<String, String>>();
-
-        public Parameters add(final String key, final String value) {
-            parameters.add(new AbstractMap.SimpleImmutableEntry<String, String>(key, value));
-            return this;
-        }
-
-        public void sort() {
-            Collections.sort(parameters, new Comparator<Map.Entry<String, String>>() {
-                @Override
-                public int compare(final Map.Entry<String, String> o1, final Map.Entry<String, String> o2) {
-                    return o1.getKey().compareTo(o2.getKey());
-                }
-            });
-        }
-
-        @Override
-        public Iterator<Map.Entry<String, String>> iterator() {
-            return parameters.iterator();
-        }
     }
 
     private static String decryptContentSelect(final String toDecrypt) throws Exception {

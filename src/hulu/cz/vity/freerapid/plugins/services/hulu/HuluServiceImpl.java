@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.hulu;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
@@ -44,19 +43,7 @@ public class HuluServiceImpl extends AbstractFileShareService {
                 if (!storage.configFileExists(PLUGIN_CONFIG_FILE)) {
                     config = new HuluSettingsConfig();
                 } else {
-                    try {
-                        config = storage.loadConfigFromFile(PLUGIN_CONFIG_FILE, HuluSettingsConfig.class);
-                    } catch (java.lang.ClassCastException e) {
-                        //old config conversion
-                        final PremiumAccount pa = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
-                        config = new HuluSettingsConfig();
-                        config.setUsername(pa.getUsername());
-                        config.setPassword(pa.getPassword());
-                        config.setQualityHeightIndex(HuluSettingsConfig.MAX_HEIGHT_INDEX); //highest
-                        config.setVideoFormatIndex(HuluSettingsConfig.ANY_VIDEO_FORMAT); //any
-                        config.setCdnIndex(0); //akamai
-                        config.setPortIndex(0); //1935
-                    }
+                    config = storage.loadConfigFromFile(PLUGIN_CONFIG_FILE, HuluSettingsConfig.class);
                 }
             }
             return config;

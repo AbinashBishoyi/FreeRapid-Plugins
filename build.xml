@@ -129,6 +129,7 @@
         <ant dir="${src.dir}/sdilej/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/fileupload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/o2musicstream/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/przeklej/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

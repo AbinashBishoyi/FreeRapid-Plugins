@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.hotfile;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.hotfile.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -13,7 +14,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Kajda & Arthur Gunawan
+ * @author Kajda & Arthur Gunawan & JPEXS
  * @since 0.82
  */
 class HotfileFileRunner extends AbstractRunner {
@@ -115,15 +116,15 @@ class HotfileFileRunner extends AbstractRunner {
         }
     }
 
-    private void downloadFile() throws Exception {
-
-        if (getContentAsString().contains("Enter word above:")) {
+    private void downloadFile() throws Exception {        
+        if (getContentAsString().contains("api.recaptcha.net")) {
             stepCaptcha();
             if (getContentAsString().contains("var timerend=0;")) {
                 processDownloadWithForm();
                 return;
             }
         }
+        
         HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -135,21 +136,22 @@ class HotfileFileRunner extends AbstractRunner {
 
     private void stepCaptcha() throws Exception {
 
+        Matcher m=getMatcherAgainstContent("api.recaptcha.net/noscript\\?k=([^\"]+)\"");
+        if(!m.find()) throw new PluginImplementationException("ReCaptcha key is missing");
+        String reCaptchaKey=m.group(1);
+        String content=getContentAsString();
+        ReCaptcha r=new ReCaptcha(reCaptchaKey,client);
         CaptchaSupport captchaSupport = getCaptchaSupport();
-        String host = "http://" + httpFile.getFileUrl().getHost();
-        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
-        s = host + s;
-        logger.info("Captcha URL " + s);
-        String captcha = captchaSupport.getCaptcha(s);
+        String captchaURL = r.getImageURL();
+        logger.info("Captcha URL " + captchaURL);
+        String captcha = captchaSupport.getCaptcha(captchaURL);
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            final HttpMethod postMethod = getMethodBuilder().setBaseURL(SERVICE_WEB).setActionFromFormWhereTagContains("method=\"post\"", true).
-                    setParameter("captcha", captcha).toPostMethod();
-
-            if (!makeRedirectedRequest(postMethod)) {
-
-                throw new ServiceConnectionProblemException();
+            r.setRecognized(captcha);
+            HttpMethod method=r.modifyResponseMethod(getMethodBuilder(content).setBaseURL(SERVICE_WEB).setActionFromFormWhereActionContains("/dl/", true)).toHttpMethod();
+            if(!makeRequest(method)){
+                throw new PluginImplementationException("Cannot send captcha to server");
             }
         }
 

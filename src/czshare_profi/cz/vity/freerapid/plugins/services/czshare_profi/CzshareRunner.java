@@ -90,7 +90,7 @@ class CzshareRunner extends AbstractRunner {
                         matcher = PlugUtils.matcher("<form action=\'([^\']+)\' method=\'POST\'>", content);
                         if (matcher.find()) {
                             String delURL = "http://czshare.com/profi/" + matcher.group(1);
-                            matcher = PlugUtils.matcher("<a href=\"" + downURL + "\" title=\"" + Pattern.quote(httpFile.getFileName()) + "\">" + Pattern.quote(httpFile.getFileName()) + "</a></td><td><input type=\'checkbox\' name=\'[^\']+\' value=\'([^\']+)\'></td>", content);
+                            matcher = PlugUtils.matcher("<a href=\"" + downURL + "\" title=\"[^\"]+\">([^<]*(<br ?/?>)?[^<]*)</a></td><td><input type=\'checkbox\' name=\'[^\']+\' value=\'([^\']+)\'></td>", content);
                             if (matcher.find()) {
                                 String delFile = matcher.group(1);
                                 PostMethod postMethod = getPostMethod(delURL);
@@ -156,7 +156,7 @@ class CzshareRunner extends AbstractRunner {
             final PostMethod postmethod = getPostMethod(postURL);
 
             PlugUtils.addParameters(postmethod, getContentAsString(), new String[]{"id", "file", "step", "prihlasit"});
-            postmethod.addParameter("jmeno", pa.getUsername());
+            postmethod.addParameter("jmeno2", pa.getUsername());
             postmethod.addParameter("heslo", pa.getPassword());
 
             if (makeRedirectedRequest(postmethod)) {
@@ -189,7 +189,7 @@ class CzshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Bohu�el je vy�erp�na maxim�ln� kapacita FREE download�", WAIT_TIME);
+            throw new YouHaveToWaitException("Bohužel je vyčerpána maximální kapacita FREE downloadů", WAIT_TIME);
         }
         if (badConfig || getContentAsString().equals("")) {
             throw new NotRecoverableDownloadException("Bad CZshare profi account login information!");

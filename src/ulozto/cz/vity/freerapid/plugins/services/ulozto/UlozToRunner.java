@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.ulozto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.ulozto.captcha.SoundReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -11,13 +12,16 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, JPEXS (captcha)
  */
 class UlozToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UlozToRunner.class.getName());
-
+    private int captchaCount=0;
+    private static SoundReader captchaReader=null;
     public UlozToRunner() {
         super();
     }
@@ -39,6 +43,7 @@ class UlozToRunner extends AbstractRunner {
             if (getContentAsString().contains("id=\"captcha\"")) {
                 checkNameAndSize(getContentAsString());
                 boolean saved = false;
+                captchaCount=0;
                 while (getContentAsString().contains("id=\"captcha\"")) {
 
                     setClientParameter(HttpClientParams.MAX_REDIRECTS, 8);
@@ -46,7 +51,7 @@ class UlozToRunner extends AbstractRunner {
 
                     if (saved = tryDownloadAndSaveFile(method)) break;
                     if (method.getURI().toString().contains("full=y"))
-                        throw new ServiceConnectionProblemException("Doèasné omezení FREE stahování, zkuste to pozdìji");
+                        throw new ServiceConnectionProblemException("Doï¿½asnï¿½ omezenï¿½ FREE stahovï¿½nï¿½, zkuste to pozdï¿½ji");
 
                 }
                 if (!saved) {
@@ -74,18 +79,32 @@ class UlozToRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (getContentAsString().contains("soubor nebyl nalezen")) {
-            throw new URLNotAvailableAnymoreException("Požadovaný soubor nebyl nalezen");
+            throw new URLNotAvailableAnymoreException("Poï¿½adovanï¿½ soubor nebyl nalezen");
         }
         PlugUtils.checkName(httpFile, content, "|", "|");
         PlugUtils.checkFileSize(httpFile, content, "Velikost souboru je <b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private HttpMethod stepCaptcha(String contentAsString) throws Exception {
+    private HttpMethod stepCaptcha(String contentAsString) throws Exception {        
         if (contentAsString.contains("id=\"captcha\"")) {
             CaptchaSupport captchaSupport = getCaptchaSupport();
             MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
-            String captcha = captchaSupport.getCaptcha(captchaMethod.getAction());
+            String captcha = "";
+            if(captchaCount++<3){
+                logger.warning("captcha url:"+captchaMethod.getAction());
+                Matcher m=Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
+                if(m.find()){
+                    String number=m.group(1);
+                    if(captchaReader==null){
+                        captchaReader=new SoundReader();
+                    }
+                    HttpMethod methodSound=getMethodBuilder().setAction("http://img.uloz.to/captcha/sound/"+number+".mp3").toGetMethod();
+                    captcha=captchaReader.parse(client.makeRequestForFile(methodSound));
+                }
+            }else{
+                captcha=captchaSupport.getCaptcha(captchaMethod.getAction());
+            }
             if (captcha == null) {
                 throw new CaptchaEntryInputMismatchException();
             } else {
@@ -103,10 +122,10 @@ class UlozToRunner extends AbstractRunner {
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
         if (content.contains("soubor nebyl nalezen")) {
-            throw new URLNotAvailableAnymoreException("Požadovaný soubor nebyl nalezen");
+            throw new URLNotAvailableAnymoreException("Poï¿½adovanï¿½ soubor nebyl nalezen");
         }
         if (content.contains("stahovat pouze jeden soubor")) {
-            throw new ServiceConnectionProblemException("Mùžete stahovat pouze jeden soubor naráz");
+            throw new ServiceConnectionProblemException("Mï¿½ete stahovat pouze jeden soubor narï¿½z");
 
         }
 

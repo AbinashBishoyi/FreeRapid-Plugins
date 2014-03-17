@@ -1,0 +1,130 @@
+package cz.vity.freerapid.plugins.services.ulozto.captcha;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javazoom.jl.decoder.Bitstream;
+import javazoom.jl.decoder.Decoder;
+import javazoom.jl.decoder.Header;
+import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.decoder.SampleBuffer;
+
+/**
+ * Class for reading Uloz.to sound captcha
+ * @author JPEXS
+ */
+
+public class SoundReader {
+
+    private DataOutputStream dos;
+    private ByteArrayOutputStream bos;
+    private int pozice=-1;
+    private boolean nuly=true;
+    private long pocetNul=0;
+    private String word="";
+    private Classifier classifier=null;
+
+    
+    public SoundReader() {
+        classifier=new Classifier();
+        classifier.load("/resources/captcha.bin");
+    }
+
+
+
+
+    public String parse(InputStream stream) throws JavaLayerException {        
+        Bitstream bitstream = new Bitstream(stream);
+        Decoder decoder = new Decoder();
+
+        boolean ret = true;
+        int frames=Integer.MAX_VALUE;
+
+        dos=null;
+        bos=null;
+        word="";
+        pozice=-1;
+        while (frames-- > 0 && ret) {
+            ret = decodeFrame(bitstream,decoder);
+        }
+        if(dos!=null){
+            try {
+                dos.close();
+                bos.close();
+                word += classifier.ctiStream(new ByteArrayInputStream(bos.toByteArray()));
+            } catch (IOException ex) {
+
+            }
+                                        }
+        nuly=true;
+        pocetNul=0;
+        return word;
+    }
+
+ 
+
+
+    protected boolean decodeFrame(Bitstream bitstream,Decoder decoder) throws JavaLayerException {
+        try {
+
+            Header h = bitstream.readFrame();
+
+            if (h == null) {
+                return false;
+            }
+
+            SampleBuffer output = (SampleBuffer) decoder.decodeFrame(h, bitstream);
+
+                    short[] buf = output.getBuffer();
+                    int len = output.getBufferLength();
+                    for (int p = 0; p < len; p++) {                        
+                        if(nuly){
+                            if(buf[p]!=0){
+                                nuly=false;
+                                if(pocetNul>1000){
+                                    pozice++;
+                                    if(pozice>3){
+                                        return false;
+                                    }
+                                    try {
+                                        if(dos!=null){
+                                         dos.flush();
+                                         word+=classifier.ctiStream(new ByteArrayInputStream(bos.toByteArray()));
+                                         dos.close();
+                                         bos.close();
+                                        }
+                                        bos=new ByteArrayOutputStream();
+                                        dos = new DataOutputStream(bos);
+                                    } catch (IOException ex) {
+
+                                    }
+                                }
+                                pocetNul=0;
+                            }else{
+                                pocetNul++;
+                            }
+                        }else{
+                            if(buf[p]==0){
+                                nuly=true;
+                                pocetNul++;
+                            }
+                        }
+                        try {
+                            if(dos!=null)
+                              dos.writeShort(buf[p]);
+                        } catch (IOException ex) {
+
+                        }
+                    }
+                
+            
+
+            bitstream.closeFrame();
+        } catch (RuntimeException ex) {
+            throw new JavaLayerException("Exception decoding audio frame", ex);
+        }
+        return true;
+    }
+}

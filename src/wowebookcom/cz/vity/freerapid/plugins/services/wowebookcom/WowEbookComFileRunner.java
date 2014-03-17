@@ -1,19 +1,13 @@
 package cz.vity.freerapid.plugins.services.wowebookcom;
 
-import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.logging.Logger;
 
@@ -43,48 +37,18 @@ class WowEbookComFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
 
-        // handle direct download links (like redirected from adf.ly
-        if (fileURL.contains("/download/")) {
-            httpFile.setNewURL(new URL(getRedirectedLink(fileURL)));
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            String directURL = PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\"  title=\"Download");
+            directURL = directURL.replaceFirst("http://adf.ly/\\d+/", "");
+
+            httpFile.setNewURL(new URL(directURL));
             httpFile.setPluginID("");
             httpFile.setState(DownloadState.QUEUED);
-        } else { // normal link, extract direct link from page
-            if (makeRedirectedRequest(method)) {
-                checkProblems();
-
-                final String code = PlugUtils.getStringBetween(getContentAsString(), "download/", "\"");
-                final String directURL = "http://www.wowebook.be/download/" + code;
-
-                httpFile.setNewURL(new URL(getRedirectedLink(directURL)));
-                httpFile.setPluginID("");
-                httpFile.setState(DownloadState.QUEUED);
-            } else {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
-    }
-
-    private String getRedirectedLink(String link) throws BuildMethodException, IOException, ServiceConnectionProblemException {
-        final MethodBuilder methodBuilder = getMethodBuilder().setBaseURL(link);
-        final HttpMethod get = methodBuilder.toHttpMethod();
-        int code = client.makeRequest(get, false);
-
-        logger.info("Response: " + code);
-
-        if (code != HttpStatus.SC_MOVED_TEMPORARILY) {
-            throw new ServiceConnectionProblemException("Error following link");
-        }
-
-        final Header hLocation = get.getResponseHeader("Location");
-
-        if (hLocation == null) {
-            throw new ServiceConnectionProblemException("Error following link");
-        }
-
-        final String location = hLocation.getValue();
-        logger.info("Location: " + location);
-        return location;
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

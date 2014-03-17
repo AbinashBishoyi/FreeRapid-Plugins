@@ -14,7 +14,7 @@ public class NetloadInShareServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 2;
+        return 1;
     }
 
 

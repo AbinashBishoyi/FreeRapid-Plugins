@@ -120,6 +120,13 @@ class RapidShareRunner {
             }
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Currently a lot of users are downloading files."));
         }
+        if (contentAsString.indexOf("You have reached the") >= 0) {
+            matcher = Pattern.compile("try again in ([0-9]*) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
+            if (matcher.find()) {
+                throw new YouHaveToWaitException("You have reached the download-limit for free-users.", Integer.parseInt(matcher.group(1)) * 60 + 10);
+            }
+            throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>You have reached the download-limit for free-users."));
+        }
     }
 
 }

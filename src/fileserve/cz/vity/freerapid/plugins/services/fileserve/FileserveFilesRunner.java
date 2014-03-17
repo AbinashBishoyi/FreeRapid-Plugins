@@ -120,7 +120,7 @@ class FileserveFilesRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("The file could not be found") || getContentAsString().contains("Page not found")) {
+        if (getContentAsString().contains("The file could not be found") || getContentAsString().contains("Page not found") || getContentAsString().contains("File not available")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (getContentAsString().contains("/error.php")) {

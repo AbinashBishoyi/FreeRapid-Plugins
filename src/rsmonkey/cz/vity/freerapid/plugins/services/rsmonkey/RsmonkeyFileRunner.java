@@ -31,7 +31,7 @@ class RsmonkeyFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             try {
                 //Find forwarded URL in the content
-                String s = PlugUtils.getStringBetween(contentAsString, "<iframe name=\"pagetext\" height=\"100%\" frameborder=\"no\" width=\"100%\" src=\"", "\"></iframe>");
+                String s = PlugUtils.getStringBetween(contentAsString, "frameborder=\"no\" width=\"100%\" src=\"", "\"></iframe>");
                 final String escapedURI = getMethodBuilder().setAction(s).toHttpMethod().getURI().getEscapedURI();
                 logger.info("New Link : " + escapedURI);     //Debug purpose, show the new found link
                 this.httpFile.setNewURL(new URL(escapedURI));  //Set New URL for the link

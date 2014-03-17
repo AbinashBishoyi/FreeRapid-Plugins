@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.iprima.iPrimaServiceImpl"
+        id="iprima.cz" vendor="JPEXS" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://play\.iprima\.cz/.+"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="iprima.cz"/>
+        <attribute id="hasOptions" value="true"/>        
+        <!-- TODO max count of parallel downloads -->
+        <attribute id="maxDownloads" value="1"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.1" reverse-lookup="false"/>
+    </requires>
+    <runtime>
+        <library id="iprima.cz" path="/" type="code"/>
+    </runtime>
+</plugin>

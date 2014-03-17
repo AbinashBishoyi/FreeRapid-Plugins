@@ -55,7 +55,7 @@ public final class Tunlr {
     private static String lookup(final String host) throws Exception {
         final Hashtable<String, String> env = new Hashtable<String, String>();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory");
-        env.put(Context.PROVIDER_URL, "dns://142.54.177.158 dns://198.147.22.212");
+        env.put(Context.PROVIDER_URL, "dns://192.95.16.109 dns://142.54.177.158");
         final DirContext context = new InitialDirContext(env);
         final Attributes attributes = context.getAttributes(host, new String[]{"A"});
         return (String) attributes.getAll().next().get();

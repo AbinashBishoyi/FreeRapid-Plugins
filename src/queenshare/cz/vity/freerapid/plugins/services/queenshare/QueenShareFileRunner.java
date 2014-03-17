@@ -20,26 +20,11 @@ class QueenShareFileRunner extends XFileSharingRunner {
 
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        final MethodBuilder methodBuilder;
-        if (getContentAsString().contains("fname")) {
-            methodBuilder = getMethodBuilder()
-                    .setReferer(fileURL).setAction(fileURL)
-                    .setParameter("op", PlugUtils.getStringBetween(getContentAsString(), "name=\"op\" value=\"", "\">"))
-                    .setParameter("id", PlugUtils.getStringBetween(getContentAsString(), "name=\"id\" value=\"", "\">"))
-                    .setParameter("fname", PlugUtils.getStringBetween(getContentAsString(), "name=\"fname\" value=\"", "\">"))
-                    .setParameter("method_free", PlugUtils.getStringBetween(getContentAsString(), "name=\"method_free\" value=\"", "\">"))
-                    .setParameter("method_premium", "");
-        } else {
-            methodBuilder = getMethodBuilder()
-                    .setReferer(fileURL).setAction(fileURL)
-                    .setParameter("op", PlugUtils.getStringBetween(getContentAsString(), "name=\"op\" value=\"", "\">"))
-                    .setParameter("id", PlugUtils.getStringBetween(getContentAsString(), "name=\"id\" value=\"", "\">"))
-                    .setParameter("rand", PlugUtils.getStringBetween(getContentAsString(), "name=\"rand\" value=\"", "\">"))
-                    .setParameter("method_free", PlugUtils.getStringBetween(getContentAsString(), "name=\"method_free\" value=\"", "\">"))
-                    .setParameter("method_premium", "")
-                    .setParameter("down_direct", PlugUtils.getStringBetween(getContentAsString(), "name=\"down_direct\" value=\"", "\">"));
-        }
-        if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
+        final MethodBuilder methodBuilder = getMethodBuilder(getContentAsString() + "</Form>")        //# missing end form tag
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("method_", true)
+                .setAction(fileURL);
+        if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
             methodBuilder.removeParameter("method_premium");
         }
         return methodBuilder;
@@ -55,7 +40,7 @@ class QueenShareFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add("<!-- <a href\\s*=\\s*\"(.*)\">");
+        downloadLinkRegexes.add(0, "<a href\\s*=\\s*\"(?:http://adf\\.ly.+?)?(http://.*)\">.+?alt=\"Get File\".+?</a>");
         return downloadLinkRegexes;
     }
 

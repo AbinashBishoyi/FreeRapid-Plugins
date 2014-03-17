@@ -55,7 +55,7 @@ class Go4upFileRunner extends AbstractRunner {
             if (fileURL.contains("/rd/"))   // single redirect url link
                 processLink(fileURL, list);
             else {   // get multiple redirect url links
-                final Matcher matcher = getMatcherAgainstContent("href=\"(http://go4up.com/rd/[^/]+?/\\w\\w?\\w?\\w?)\"");
+                final Matcher matcher = getMatcherAgainstContent("href=\"(http://go4up.com/rd/[^/]+?/\\w{1,5})\"");
                 while (matcher.find()) {
                     processLink(matcher.group(1), list);
                 }
@@ -77,8 +77,11 @@ class Go4upFileRunner extends AbstractRunner {
             listing.add(new URI(Go4Up_rd_Link.trim()));
         } else {
             try {//process redirection link to get final url
-                final GetMethod submethod = getGetMethod(Go4Up_rd_Link); //create GET request
-                if (makeRedirectedRequest(submethod)) { //we make the main request
+                final GetMethod submethod = getGetMethod(Go4Up_rd_Link);
+                int httpStatus = client.makeRequest(submethod, false);
+                if (httpStatus / 100 == 3) {
+                    listing.add(new URI(submethod.getURI().getURI()));
+                } else if (httpStatus == 200) {
                     String subContent = getContentAsString().replace("\n", "").replace("\r", "");
                     if (subContent.contains("content=\"0;url=")) {
                         String strNewUrl = PlugUtils.getStringBetween(subContent, "content=\"0;url=", "\">");

@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Ladislav Vitasek
+ * @author Alex
  */
 public class SaveFileShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "savefile.com";

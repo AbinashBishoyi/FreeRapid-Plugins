@@ -10,7 +10,7 @@ import java.net.URL;
 /**
  * Test application for savefile.com
  *
- * @author Ladislav Vitasek
+ * @author Alex
  */
 public class TestApp extends PluginDevApplication {
     @Override

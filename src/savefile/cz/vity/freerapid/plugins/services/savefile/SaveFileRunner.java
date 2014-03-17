@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek
+ * @author Alex
  */
 class SaveFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SaveFileRunner.class.getName());
@@ -34,8 +34,9 @@ class SaveFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethoda = getGetMethod(fileURL);
-        getMethoda.setFollowRedirects(true);
-        if (makeRequest(getMethoda)) {
+        //getMethoda.setFollowRedirects(true);
+        //you can now use makeRedirectedRequest() for working with redirects
+        if (makeRedirectedRequest(getMethoda)) {
             final String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
 
@@ -45,20 +46,24 @@ class SaveFileRunner extends AbstractRunner {
                 String MyPHP = "http://www.savefile.com" + matcher.group(1);
                 final GetMethod getPHP = getGetMethod(MyPHP);
                 //getPHP.setFollowRedirects(true);
-                final String PHPString = getContentAsString();
-                //If it does not, try	<a href="http://dl4u.savefile.com/a75b81f7d82cd659974e50fa7527acdf/sfdrvrem.zip">Download file now</a>
-                //matcher = PlugUtils.matcher("href=\"([^\"]*)\">Download file now", PHPString);
-                matcher = PlugUtils.matcher("(Download file now)", PHPString);
-                if (matcher.find()) {
-                    String s = matcher.group(1);
-                    logger.info("Found File URL - " + s);
-                    final GetMethod getMethod = getGetMethod(s);
-                    if (!tryDownloadAndSaveFile(getMethod)) {
-                        checkProblems();
-                        logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty.");
-                    }
-                } else throw new InvalidURLOrServiceProblemException("Cant find download link - " + MyPHP);
+
+                //go on the next webpage (no redirection is being used)
+                if (makeRequest(getPHP)) {
+                    final String PHPString = getContentAsString();//read its content
+                    //If it does not, try	<a href="http://dl4u.savefile.com/a75b81f7d82cd659974e50fa7527acdf/sfdrvrem.zip">Download file now</a>
+                    matcher = PlugUtils.matcher("href=\"([^\"]*)\">Download file now", PHPString); //parses it
+                    //matcher = PlugUtils.matcher("(Download file now)", PHPString);
+                    if (matcher.find()) {
+                        String s = matcher.group(1);
+                        logger.info("Found File URL - " + s);
+                        final GetMethod getMethod = getGetMethod(s);
+                        if (!tryDownloadAndSaveFile(getMethod)) {
+                            checkProblems();
+                            logger.warning(getContentAsString());//something was really wrong, we will explore it from the logs :-)
+                            throw new IOException("File input stream is empty.");
+                        }
+                    } else throw new PluginImplementationException();//something is wrong with plugin
+                } else throw new InvalidURLOrServiceProblemException("Cant find download link - " + getPHP);
             } else throw new InvalidURLOrServiceProblemException("Cant find php download link");
         } else throw new InvalidURLOrServiceProblemException("Cant get main URL");
     }
@@ -83,7 +88,7 @@ class SaveFileRunner extends AbstractRunner {
 
         xmatcher = PlugUtils.matcher("Filename: ([^<]*)", content);
         if (xmatcher.find()) {
-            final String fileName = xmatcher.group(1);
+            final String fileName = xmatcher.group(1).trim(); //method trim removes white characters from both sides of string
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 

@@ -17,9 +17,10 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.pinterest.com/pin/275423333434060623/"));  // pin
-            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/inspiration/"));  // board  <25
-            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/old/"));  // board  >25
-            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/bikes/"));  // board  >>25
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/inspiration/"));    // board  <25
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/freetattoo/lion-tattoo/"));  // board  =25
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/old/"));            // board  >25
+            //httpFile.setNewURL(new URL("http://www.pinterest.com/carlrice/bikes/"));          // board  >>25
             httpFile.setNewURL(new URL("http://www.pinterest.com/rmkmj2/i-lift-things-up-and-put-them-down/"));  // board >>>>>25
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

@@ -74,7 +74,7 @@ class PinterestFileRunner extends AbstractRunner {
                 }
             } else {
                 List<URI> list = new LinkedList<URI>();
-                final Matcher matchPin = PlugUtils.matcher("<a href=\"(.+?)\" class=\"pinImageWrapper", content);
+                final Matcher matchPin = PlugUtils.matcher("<a href=\"(/pin/[^\"]+?)\" class=\"pinImageWrapper", content);
                 while (matchPin.find())
                     list.add(new URI("http://www.pinterest.com" + matchPin.group(1)));
                 int maxSize = 25;
@@ -107,14 +107,14 @@ class PinterestFileRunner extends AbstractRunner {
                             checkProblems();
                             throw new ServiceConnectionProblemException();
                         }
-                        final Matcher matchP2 = PlugUtils.matcher("<a href=\\\\\"(/pin/.+?)\\\\\" class=\\\\\"pinImageWrapper", getContentAsString());
+                        final Matcher matchP2 = PlugUtils.matcher("<a href=\\\\\"(/pin/[^\"]+?)\\\\\" class=\\\\\"pinImageWrapper", getContentAsString());
                         while (matchP2.find())
                             list.add(new URI("http://www.pinterest.com" + matchP2.group(1)));
                         final Matcher matchB = PlugUtils.matcher("bookmarks\": \\[\"(.+?)\"\\]", getContentAsString());
                         if (!matchB.find()) throw new PluginImplementationException("Error B");
 
                         final String d1 = data.substring(0, data.indexOf("bookmarks\":[\"") + ("bookmarks\":[\"").length());
-                        final String d2 = data.substring(data.indexOf("\"]}"));
+                        final String d2 = data.substring(data.indexOf("\"]"));
                         data = d1 + matchB.group(1) + d2;
                     }
                 }

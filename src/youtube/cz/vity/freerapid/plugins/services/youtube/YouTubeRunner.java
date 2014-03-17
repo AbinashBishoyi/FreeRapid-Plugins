@@ -19,7 +19,10 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -95,6 +98,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
             if (!matcher.find()) {
                 throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
             }
+            final String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
             final String formatContent = matcher.group(1);
             if (formatContent.contains("rtmp")) {
                 matcher = PlugUtils.matcher("conn=(.+?)(?:\\\\u0026.+)?$", formatContent);
@@ -107,7 +111,6 @@ class YouTubeRunner extends AbstractRtmpRunner {
                     throw new PluginImplementationException("Cannot find stream params");
                 }
                 final String sparams = URLDecoder.decode(matcher.group(1), "UTF-8");
-                final String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
                 final RtmpSession rtmpSession = new RtmpSession(conn, sparams);
                 rtmpSession.getConnectParams().put("swfUrl", swfUrl);
                 rtmpSession.getConnectParams().put("pageUrl", fileURL);
@@ -132,7 +135,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
                         matcher = PlugUtils.matcher("(?:\\\\u0026)?s=([A-Z0-9\\.]+?)(?:\\\\u0026|$)", formatContent);
                         if (matcher.find()) {
                             logger.info(matcher.group(1));
-                            videoURL = videoURL + "&signature=" + new YouTubeSigDecipher().decipher(matcher.group(1));
+                            final String signature = new YouTubeSigDecipher(client).decipher(getGetMethod(swfUrl), matcher.group(1));
+                            videoURL = videoURL + "&signature=" + signature;
                         }
                     }
                 }
@@ -148,7 +152,6 @@ class YouTubeRunner extends AbstractRtmpRunner {
             throw new ServiceConnectionProblemException();
         }
     }
-
 
     //@TODO : implement https://developers.google.com/youtube/2.0/developers_guide_protocol_video_entries
     //@TODO : https://gdata.youtube.com/feeds/api/videos/$videoid?v=2    , where $videoid = video id from url
@@ -562,35 +565,6 @@ class YouTubeRunner extends AbstractRtmpRunner {
         if (getContentAsString().contains("Sign in to view this video")
                 || getContentAsString().contains("Sign in to confirm your age")) {  //just in case they change age verification mechanism
             throw new PluginImplementationException("Age verification is broken");
-        }
-    }
-
-    private class YouTubeSigDecipher {
-        private List<String> swap(List<String> lstSig, int pos) {
-            String head = lstSig.get(0);
-            String headSwapTo = lstSig.get(pos % lstSig.size());
-            lstSig.set(0, headSwapTo);
-            lstSig.set(pos, head);
-            return lstSig;
-        }
-
-        private List<String> clone(List<String> lst, int from) {
-            return lst.subList(from, lst.size());
-        }
-
-        public String decipher(String sig) {
-            List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
-            lstSig.remove(0); //remove empty char at head
-            lstSig = swap(lstSig, 24);
-            lstSig = swap(lstSig, 53);
-            lstSig = clone(lstSig, 2);
-            lstSig = swap(lstSig, 31);
-            lstSig = swap(lstSig, 4);
-            StringBuilder sb = new StringBuilder();
-            for (String s : lstSig) {
-                sb.append(s);
-            }
-            return sb.toString();
         }
     }
 

@@ -55,12 +55,16 @@ class IFolderFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("\u0441\u044E\u0434\u0430").toHttpMethod();
+            Matcher matcher=getMatcherAgainstContent("(http://ints.ifolder.ru/ints/\\?ifolder.ru/[0-9]+\\?ints_code=)");
+            if(!matcher.find()){
+                throw new PluginImplementationException("Cannot find link on first page");
+            }
+            final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
             if (makeRedirectedRequest(method2)) {
                 contentAsString = getContentAsString();
-                Matcher matcher = PlugUtils.matcher("<a href=(http\\:\\/\\/s\\.agava\\.ru[^>]*)>", contentAsString);
+                matcher = PlugUtils.matcher("<a href=(http\\:\\/\\/s\\.agava\\.ru[^>]*)>", contentAsString);
                 if (!matcher.find()) {
-                    throw new PluginImplementationException();
+                    throw new PluginImplementationException("Cannot find ads link on second page");
                 }
                 String nextAction = matcher.group(1);
                 final HttpMethod method3 = getMethodBuilder().setReferer("").setAction(nextAction).toHttpMethod();

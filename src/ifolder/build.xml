@@ -2,7 +2,7 @@
 <project name="IFolder plugin" default="all" basedir=".">
     <property name="application" value="ifolder"/>
 
-    <property name="version" value="1.0"/>
+    <property name="version" value="1.0.1"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="ifolder.jar"/>

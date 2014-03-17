@@ -71,6 +71,7 @@ class EnteruploadRunner extends AbstractRunner {
                 if (makeRequest(getlinkMethod)) {
                     final String value = PlugUtils.getStringBetween(getContentAsString(), "7px;\">", "</a>");
                     final HttpMethod finalMethod = getMethodBuilder(value + "</a>").setActionFromAHrefWhereATagContains("enterupload").toHttpMethod();
+                    //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "countdown\">", "</span"));
                     if (!tryDownloadAndSaveFile(finalMethod)) {
                         checkProblems();
                         if (getContentAsString().contains("Wrong captcha")) continue;
@@ -106,7 +107,7 @@ class EnteruploadRunner extends AbstractRunner {
 
         }
 
-        downloadTask.sleep(40);//extract sleep time from the website :-)
+        downloadTask.sleep(60);//extract sleep time from the website :-)
 
         final HttpMethod method = getMethodBuilder(contentAsString).
                 setActionFromFormByName("F1", true).
@@ -130,10 +131,13 @@ class EnteruploadRunner extends AbstractRunner {
 
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, YouHaveToWaitException {
+    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, YouHaveToWaitException, PluginImplementationException {
         if (getContentAsString().contains("File not found") || getContentAsString().contains("File Not Found") || getContentAsString().contains("No such file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
 
+        }
+        if (getContentAsString().contains("Skipped countdown")) {
+            throw new PluginImplementationException("Skipped countdown");
         }
         if (getContentAsString().contains("reached the download-limit")) {
             int timeToWait = 0;

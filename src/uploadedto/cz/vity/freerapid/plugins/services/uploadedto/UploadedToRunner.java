@@ -33,6 +33,7 @@ class UploadedToRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             final String contentAsString = getContentAsString();
             checkSizeAndName(contentAsString);
 
@@ -116,8 +117,14 @@ class UploadedToRunner extends AbstractRunner {
         if (getContentAsString().contains("already downloading")) {
             throw new ServiceConnectionProblemException(String.format("<b>Uploaded.to Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
         }
+        if (getContentAsString().contains("The internal connection has failed")) {
+            throw new ServiceConnectionProblemException(String.format("<b>Uploaded.to Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
+        }
         if (getContentAsString().contains("Currently a lot of users")) {
             throw new ServiceConnectionProblemException(String.format("<b>Uploaded to Error:</b><br>Currently a lot of users are downloading files."));
+        }
+        if (getContentAsString().contains("can only be queried by premium users")) {
+            throw new ServiceConnectionProblemException(String.format("The file status can only be queried by premium users"));
         }
     }
 

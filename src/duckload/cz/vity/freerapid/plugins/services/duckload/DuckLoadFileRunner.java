@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -19,9 +20,9 @@ import java.util.regex.Matcher;
  */
 class DuckLoadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DuckLoadFileRunner.class.getName());
-    private final static String SERVICE_WEB = "http://www.duckload.com";
+    private final static Random random = new Random();
     private static CaptchaRecognizer captchaRecognizer;
-    private final static int CAPTCHA_MAX = 10;
+    private final static int CAPTCHA_MAX = 5;
     private int captchaCounter = 1;
 
     @Override
@@ -55,8 +56,7 @@ class DuckLoadFileRunner extends AbstractRunner {
             checkNameAndSize();
 
             while (true) {
-                //waiting is not necessary
-                //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var t_time=", ";") + 1);
+                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var t_time=", ";") + 1);
 
                 if (!tryDownloadAndSaveFile(stepCaptcha())) {
                     checkProblems();
@@ -65,7 +65,6 @@ class DuckLoadFileRunner extends AbstractRunner {
                         if (!makeRedirectedRequest(method)) throw new ServiceConnectionProblemException();
                         continue;
                     }
-                    logger.warning(content);
                     throw new ServiceConnectionProblemException("Error starting download");
                 } else break;
             }
@@ -84,7 +83,7 @@ class DuckLoadFileRunner extends AbstractRunner {
 
     private HttpMethod stepCaptcha() throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = SERVICE_WEB + getMethodBuilder().setActionFromImgSrcWhereTagContains("Captcha").getAction();
+        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("Captcha").getEscapedURI();
         logger.info("Captcha URL " + captchaSrc);
 
         final String captcha;
@@ -106,10 +105,17 @@ class DuckLoadFileRunner extends AbstractRunner {
 
         return getMethodBuilder()
                 .setReferer(fileURL)
-                .setBaseURL(SERVICE_WEB)
                 .setActionFromFormWhereTagContains("Captcha", true)
-                .setParameter("humpf", captcha)
+                .removeParameter("_____download")
+                .setParameter("cap", captcha)
+                .setParameter("_____download.x", String.valueOf(random.nextInt(100)))
+                .setParameter("_____download.y", String.valueOf(random.nextInt(100)))
                 .toPostMethod();
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://www.duckload.com";
     }
 
 }

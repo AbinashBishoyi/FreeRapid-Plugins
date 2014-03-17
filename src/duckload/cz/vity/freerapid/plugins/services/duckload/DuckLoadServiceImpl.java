@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class DuckLoadServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "duckload.com";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 4;
     }

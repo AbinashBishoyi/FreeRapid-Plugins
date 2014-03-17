@@ -87,7 +87,7 @@ class ForSharedRunner extends AbstractRunner {
         } else {
             PlugUtils.checkName(httpFile, getContentAsString(), "<title> ", " - 4shared");
 
-            final Matcher size = getMatcherAgainstContent("Size:</b></td>\\s+?<td class=\"finforight\">([^<>]+?)</td>");
+            final Matcher size = getMatcherAgainstContent("Size:</b></td>\\s+?<td[^<>]*?>([^<>]+?)</td>");
             if (!size.find()) throw new PluginImplementationException("File size not found");
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1).replace(",", "")));
         }

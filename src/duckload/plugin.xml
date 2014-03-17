@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="duckload.com" version="1.0.1" vendor="ntoskrnl"
+<plugin id="duckload.com" version="1.0.2" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.services.duckload.DuckLoadServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?duckload\.com/download/.+"/>

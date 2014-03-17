@@ -1,40 +1,29 @@
 package cz.vity.freerapid.plugins.services.filefactory;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Vity
  */
-class FileFactoryRunner {
+class FileFactoryRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileFactoryRunner.class.getName());
-    private HttpDownloadClient client;
-    private HttpFileDownloader downloader;
     private static final String HTTP_FILEFACTORY_COM = "http://www.filefactory.com";
-
     private int deep;
-    private HttpFile httpFile;
     private String iframeContent;
     private static final String VERIFICATION_WAS_INCORRECT = "the verification code you entered was incorrect";
-
 
     private enum Step {
         INIT, FRAME, DOWNLOAD, FINISHED
     }
-
 
     private Step step;
     private String initURL;
@@ -42,15 +31,25 @@ class FileFactoryRunner {
     private String finalDownloadURL;
 
     FileFactoryRunner() {
+        super();
         deep = 2;
     }
 
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
+
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            checkSize(client.getContentAsString());
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+
     public void run(HttpFileDownloader downloader) throws Exception {
-        this.downloader = downloader;
-        httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
+        super.run(downloader);
         step = Step.INIT;
-        initURL = httpFile.getFileUrl().toString();
+        initURL = fileURL;
         logger.info("Starting download in TASK " + initURL);
         iframeContent = iframeURL = "";
         httpFile.setState(DownloadState.GETTING);
@@ -91,7 +90,7 @@ class FileFactoryRunner {
 
     private boolean checkDownload(String iframeContent) {
         if (iframeContent.contains("Click here to begin your")) {
-            Matcher matcher = Pattern.compile("top\" href=\"(.*?)\"><img src", Pattern.MULTILINE).matcher(iframeContent);
+            Matcher matcher = PlugUtils.matcher("top\" href=\"(.*?)\"><img src", iframeContent);
             if (matcher.find()) {
                 this.finalDownloadURL = matcher.group(1);
                 step = Step.DOWNLOAD;
@@ -101,32 +100,20 @@ class FileFactoryRunner {
         return false;
     }
 
-    private void mainStep(String fileURL) throws Exception {
+    private void mainStep(String stepURL) throws Exception {
         if (--deep <= 0) {
             logger.warning(client.getContentAsString());
             throw new InvalidURLOrServiceProblemException("Captcha input timeout");
         }
-        final GetMethod getMethod = client.getGetMethod(fileURL);
+        final GetMethod getMethod = client.getGetMethod(stepURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
             String contentAsString = client.getContentAsString();
-            Matcher matcher = Pattern.compile("Size: ([0-9-\\.]*) (.)B", Pattern.MULTILINE).matcher(contentAsString);
-            if (!matcher.find()) {
-                if (contentAsString.contains("file has been deleted") || contentAsString.contains("file is no longer available")) {
-                    throw new URLNotAvailableAnymoreException("This file has been deleted.");
-                } else {
-                    if (contentAsString.contains("no free download slots")) {
-                        throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server.", 120);
-                    }
-                    throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-                }
-            }
-            String s = matcher.group(1);
-            int factor = 1024;
-            if (matcher.group(2).contains("M")) factor = 1024 * 1024;
-            httpFile.setFileSize((long) Float.parseFloat(s) * factor);
+            checkSize(contentAsString);
+            Matcher matcher;
+            String s;
             //href="/dlf/f/a3f880/b/2/h/dd8f6f6df8ec3d79aef99536de9aab06/j/0/n/KOW_-_Monica_divx_002" id="basicLink"
-            matcher = Pattern.compile("href=\"(.*?)\" id=\"basicLink\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = PlugUtils.matcher("href=\"(.*?)\" id=\"basicLink\"", client.getContentAsString());
             if (matcher.find()) {
                 s = matcher.group(1);
                 logger.info("Found File URL - " + s);
@@ -134,16 +121,16 @@ class FileFactoryRunner {
                     throw new InterruptedException();
                 final String basicLinkURL = HTTP_FILEFACTORY_COM + s;
                 GetMethod method = client.getGetMethod(basicLinkURL);
-                if (client.makeRequest(method) == HttpStatus.SC_OK) {
+                if (makeRequest(method)) {
                     contentAsString = client.getContentAsString();
                     logger.info(contentAsString);
-                    matcher = Pattern.compile("<iframe src=\"(.*?)\"", Pattern.MULTILINE).matcher(contentAsString);
+                    matcher = PlugUtils.matcher("<iframe src=\"(.*?)\"", contentAsString);
                     if (matcher.find()) {
                         client.setReferer(basicLinkURL);
                         s = matcher.group(1);
                         iframeURL = replaceEntities(s);
                         method = client.getGetMethod(HTTP_FILEFACTORY_COM + iframeURL);
-                        if (client.makeRequest(method) != HttpStatus.SC_OK)
+                        if (!makeRequest(method))
                             throw new PluginImplementationException("IFrame with captcha not found");
                         iframeContent = client.getContentAsString();//iframes content
                         step = Step.FRAME;
@@ -155,6 +142,23 @@ class FileFactoryRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
+    private void checkSize(String contentAsString) throws URLNotAvailableAnymoreException, YouHaveToWaitException, InvalidURLOrServiceProblemException {
+        Matcher matcher = PlugUtils.matcher("Size: ([0-9-\\.]* .B)", contentAsString);
+        if (!matcher.find()) {
+            if (contentAsString.contains("file has been deleted") || contentAsString.contains("file is no longer available")) {
+                throw new URLNotAvailableAnymoreException("This file has been deleted.");
+            } else {
+                if (contentAsString.contains("no free download slots")) {
+                    throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server.", 120);
+                }
+                throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+            }
+        }
+        String s = matcher.group(1);
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(s));
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
     private String replaceEntities(String s) {
         s = s.replaceAll("\\&amp;", "&");
         return s;
@@ -163,17 +167,17 @@ class FileFactoryRunner {
     private boolean stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("Please enter the following code") || contentAsString.contains(VERIFICATION_WAS_INCORRECT)) {
             //src="/securimage/securimage_show.php?f=a3f880&amp;h=eda55e0920a7371c4983ec8e19f3de88"
-            Matcher matcher = Pattern.compile("src=\"(/securi[^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = PlugUtils.matcher("src=\"(/securi[^\"]*)\"", contentAsString);
             if (matcher.find()) {
                 String s = replaceEntities(matcher.group(1));
-                final String captcha = downloader.getCaptcha(HTTP_FILEFACTORY_COM + s);
+                final String captcha = getCaptchaSupport().getCaptcha(HTTP_FILEFACTORY_COM + s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
                     client.setReferer(this.iframeURL);
-                    String f = getParameter("f", contentAsString);
-                    String h = getParameter("h", contentAsString);
-                    String b = getParameter("b", contentAsString);
+                    String f = PlugUtils.getParameter("f", contentAsString);
+                    String h = PlugUtils.getParameter("h", contentAsString);
+                    String b = PlugUtils.getParameter("b", contentAsString);
 
                     final PostMethod postMethod = client.getPostMethod(HTTP_FILEFACTORY_COM + "/check/?" + "f=" + f + "&b=" + b + "&h=" + h);
                     postMethod.addParameter("f", f);
@@ -193,33 +197,25 @@ class FileFactoryRunner {
 
     private void saveFileOnURL(String finalFileURL) throws Exception {
         HttpMethod getMethod = client.getGetMethod(finalFileURL);
-        try {
-            getMethod.setFollowRedirects(true);
-            final InputStream inputStream = client.makeFinalRequestForFile(getMethod, downloader.getDownloadFile());
-            if (inputStream != null) {
-                downloader.saveToFile(inputStream);
-                step = Step.FINISHED;
-            } else {
-                if (checkLimit(client.getContentAsString())) {
-                    return;
-                }
-                if (checkRestart(client.getContentAsString())) return;
-                logger.warning(client.getContentAsString());
-                throw new IOException("File input stream is empty.");
+        if (tryDownload(getMethod)) {
+            step = Step.FINISHED;
+        } else {
+            if (checkLimit(client.getContentAsString())) {
+                return;
             }
-        } finally {
-            getMethod.abort();
-            getMethod.releaseConnection();
+            if (checkRestart(client.getContentAsString())) return;
+            logger.warning(client.getContentAsString());
+            throw new IOException("File input stream is empty.");
         }
     }
 
     private boolean checkLimit(String contentAsString) throws YouHaveToWaitException {
         if (contentAsString.contains("for free users.  Please wait")) {
-            Matcher matcher = Pattern.compile("for free users.  Please wait ([0-9]+?) minutes", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = PlugUtils.matcher("for free users.  Please wait ([0-9]+?) minutes", contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Limit for free users reached", Integer.parseInt(matcher.group(1)) * 60);
             }
-            matcher = Pattern.compile("for free users.  Please wait ([0-9]+?) seconds", Pattern.MULTILINE).matcher(contentAsString);
+            matcher = PlugUtils.matcher("for free users.  Please wait ([0-9]+?) seconds", contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Limit for free users reached", Integer.parseInt(matcher.group(1)) + 1);
             }
@@ -236,7 +232,7 @@ class FileFactoryRunner {
 
     private boolean checkRestart(String contentAsString) throws Exception {
         if (contentAsString.contains("the allowed time to enter a code")) {
-            Matcher matcher = Pattern.compile("href=\"([^\"]*)\" target=\"_top\">restart", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = PlugUtils.matcher("href=\"([^\"]*)\" target=\"_top\">restart", contentAsString);
             if (!matcher.find())
                 throw new PluginImplementationException("Couldn't find restart URL");
             step = Step.INIT;
@@ -245,14 +241,5 @@ class FileFactoryRunner {
         }
         return false;
     }
-
-    private String getParameter(String s, String contentAsString) throws PluginImplementationException {
-        Matcher matcher = Pattern.compile("name=\"" + s + "\" value=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else
-            throw new PluginImplementationException("Parameter " + s + " was not found");
-    }
-
 
 }

@@ -1,20 +1,21 @@
-package cz.vity.freerapid.plugins.services.filefactory;
+package cz.vity.freerapid.plugins.services.onefichier_premium;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Kajda
+ * Class that provides basic info about plugin
+ *
+ * @author birchie
  */
-public class FileFactoryServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "filefactory.com";
-    private static final String PLUGIN_CONFIG_FILE = "plugin_FileFactory.xml";
+public class OneFichierServiceImpl extends AbstractFileShareService {
+    private static final String PLUGIN_CONFIG_FILE = "plugin_1FichierPremium.xml";
     private volatile PremiumAccount config;
 
     @Override
     public String getName() {
-        return SERVICE_NAME;
+        return "1fichier.com_premium";
     }
 
     @Override
@@ -24,7 +25,7 @@ public class FileFactoryServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new FileFactoryRunner();
+        return new OneFichierFileRunner();
     }
 
     @Override
@@ -33,21 +34,21 @@ public class FileFactoryServiceImpl extends AbstractFileShareService {
         if (pa != null) config = pa;
     }
 
-    public PremiumAccount showConfigDialog() throws Exception {
-        return showAccountDialog(getConfig(), "FileFactory", PLUGIN_CONFIG_FILE);
+    PremiumAccount showConfigDialog() throws Exception {
+        return showAccountDialog(getConfig(), "1Fichier", PLUGIN_CONFIG_FILE);
     }
 
     PremiumAccount getConfig() throws Exception {
-        if (config == null) {
-            synchronized (FileFactoryServiceImpl.class) {
+        synchronized (OneFichierServiceImpl.class) {
+            if (config == null) {
                 config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
             }
         }
-
         return config;
     }
 
-    public void setConfig(PremiumAccount config) {
+    void setConfig(final PremiumAccount config) {
         this.config = config;
     }
+
 }

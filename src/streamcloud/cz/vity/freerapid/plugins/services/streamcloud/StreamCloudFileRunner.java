@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.vodlocker;
+package cz.vity.freerapid.plugins.services.streamcloud;
 
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
@@ -6,13 +6,14 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandl
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
 import java.util.List;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
  * @author birchie
  */
-class VoDLockerFileRunner extends XFileSharingRunner {
+class StreamCloudFileRunner extends XFileSharingRunner {
     @Override
     protected List<FileSizeHandler> getFileSizeHandlers() {
         final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
@@ -36,6 +37,15 @@ class VoDLockerFileRunner extends XFileSharingRunner {
     }
 
     @Override
+    protected int getWaitTime() throws Exception {
+        final Matcher matcher = getMatcherAgainstContent("count.*?=.*?(\\d+);");
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1)) + 1;
+        }
+        return 0;
+    }
+
+    @Override
     protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
         final MethodBuilder methodBuilder = getMethodBuilder(content)
                 .setReferer(fileURL)
@@ -47,5 +57,4 @@ class VoDLockerFileRunner extends XFileSharingRunner {
         }
         return methodBuilder;
     }
-
 }

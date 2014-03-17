@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.vodlocker;
+package cz.vity.freerapid.plugins.services.played;
 
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
@@ -12,7 +12,8 @@ import java.util.List;
  *
  * @author birchie
  */
-class VoDLockerFileRunner extends XFileSharingRunner {
+class PlayedFileRunner extends XFileSharingRunner {
+
     @Override
     protected List<FileSizeHandler> getFileSizeHandlers() {
         final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
@@ -47,5 +48,4 @@ class VoDLockerFileRunner extends XFileSharingRunner {
         }
         return methodBuilder;
     }
-
 }

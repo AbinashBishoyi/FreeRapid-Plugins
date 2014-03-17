@@ -1,5 +1,7 @@
 package cz.vity.freerapid.plugins.services.fileparadox;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 
 import java.util.regex.Matcher;
@@ -25,6 +27,15 @@ class FileParadoxFileRunner extends XFileSharingRunner {
             return Integer.parseInt(matcher.group(1)) + 1;
         }
         return 0;
+    }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("No such file with this filename")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        super.checkFileProblems();
     }
 
 }

@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.filefactory;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -36,7 +37,7 @@ class FileFactoryRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
-
+        login();
         if (makeRedirectedRequest(getMethod)) {
             checkAllProblems();
             checkNameAndSize(getContentAsString());
@@ -153,6 +154,29 @@ class FileFactoryRunner extends AbstractRunner {
                 }
             }
             throw new YouHaveToWaitException(String.format("You have exceeded the download limit for free users"), waitSeconds);
+        }
+    }
+
+
+    private void login() throws Exception {
+        synchronized (FileFactoryRunner.class) {
+            final FileFactoryServiceImpl service = (FileFactoryServiceImpl) getPluginService();
+            final PremiumAccount pa = service.getConfig();
+            if (pa.isSet()) {
+                final HttpMethod httpMethod = getMethodBuilder()
+                        .setBaseURL("http://www.filefactory.com")
+                        .setAction("/member/signin.php")
+                        .setParameter("loginEmail", pa.getUsername())
+                        .setParameter("loginPassword", pa.getPassword())
+                        .setParameter("Submit", "Sign In")
+                        .toPostMethod();
+                if (!makeRedirectedRequest(httpMethod))
+                    throw new ServiceConnectionProblemException("Error posting login info");
+
+                if (getContentAsString().contains("The Email Address submitted was invalid") ||
+                        getContentAsString().contains("Sign In Failed"))
+                    throw new BadLoginException("Invalid FileFactory account login information!");
+            }
         }
     }
 

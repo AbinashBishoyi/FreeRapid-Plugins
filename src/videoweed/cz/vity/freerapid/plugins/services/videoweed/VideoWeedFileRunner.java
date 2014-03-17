@@ -53,7 +53,10 @@ class VideoWeedFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String content = findParameterContent();
+            String content = getContentAsString();
+            if (!content.contains(".filekey=\"")) {
+                content = findParameterContent();
+            }
             final String file = PlugUtils.getStringBetween(content, ".file=\"", "\";");
             final String key = PlugUtils.getStringBetween(content, ".filekey=\"", "\";");
             method = getMethodBuilder()

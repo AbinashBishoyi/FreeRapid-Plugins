@@ -54,10 +54,10 @@ class RapidLibraryFileRunner extends AbstractRunner {
 
         String nameBefore, nameAfter, sizeBefore, sizeAfter;
         if (HTTP_SITE.equals("http://rapidlibrary.com")) {
-            nameBefore = "<b>";
-            nameAfter = "</b></span><br>";
-            sizeBefore = "&nbsp;<b>";
-            sizeAfter = "&nbsp;Mb</b></span>";
+            nameBefore = "<h1>";
+            nameAfter = "</h1>";
+            sizeBefore = "Size: <b>";
+            sizeAfter = "&nbsp;Mb</b>";
         } else if (HTTP_SITE.equals("http://4megaupload.com")) {
             nameBefore = "dwn_text_fullname\">";
             nameAfter = "</td>";
@@ -83,22 +83,17 @@ class RapidLibraryFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            if (getContentAsString().contains("name=\"c_code\"")) {
-                while (getContentAsString().contains("name=\"c_code\"")) {
-                    if (!makeRedirectedRequest(stepCaptcha())) {
-                        throw new ServiceConnectionProblemException();
-                    }
+            while (getContentAsString().contains("name=\"c_code\"")) {
+                if (!makeRedirectedRequest(stepCaptcha())) {
+                    throw new ServiceConnectionProblemException();
                 }
-            } else {
-                throw new PluginImplementationException("Captcha not found");
             }
-            logger.info("Captcha OK");
 
             checkProblems();
 
             String newUrl;
             if (HTTP_SITE.equals("http://rapidlibrary.com")) {
-                newUrl = getMethodBuilder().setActionFromAHrefWhereATagContains("Download from rapidshare").getAction();
+                newUrl = getMethodBuilder().setActionFromTextBetween("class=\"down_link\" href=\"", "\"").getAction();
             } else if (HTTP_SITE.equals("http://4megaupload.com")) {
                 //newUrl = getMethodBuilder().setActionFromAHrefWhereATagContains("File Download").getAction();//doesn't work because of no quotes around link, method expects them
                 newUrl = getMethodBuilder().setActionFromTextBetween("download_link_dwn><a href=", "target=\"_blank\" rel=\"nofollow\">File Download").getAction().replace(" ", "");
@@ -119,6 +114,9 @@ class RapidLibraryFileRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("file not found") || content.contains("<H1>Not Found</H1>") || content.contains("last200big.png")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("This file has been deleted")) {
+            throw new URLNotAvailableAnymoreException("This file has been deleted from RapidShare");
         }
     }
 

@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL -- just some random links, I don't guarantee anything
-            httpFile.setNewURL(new URL("http://rapidlibrary.com/download_file_i.php?file=9882792&desc=FreeRapid+downloader+.txt"));
+            httpFile.setNewURL(new URL("http://rapidlibrary.com/download_file_i.php?file=14370257&desc=readme+.txt"));
             //httpFile.setNewURL(new URL("http://4megaupload.com/download/serial-txt-4326200.html"));
 
             //the way we connect to the internet

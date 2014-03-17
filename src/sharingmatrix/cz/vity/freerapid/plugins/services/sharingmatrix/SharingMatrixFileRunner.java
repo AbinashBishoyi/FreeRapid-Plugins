@@ -158,12 +158,20 @@ class SharingMatrixFileRunner extends AbstractRunner {
         try {
             PlugUtils.checkName(httpFile, contentAsString, "Filename:</th>\n<td>", "<");
         } catch(PluginImplementationException e) {
-            PlugUtils.checkName(httpFile, contentAsString, "<div id=\"fname\">", "</div>");
+            try {
+                PlugUtils.checkName(httpFile, contentAsString, "Filename: <strong>", "</strong>");
+            } catch(PluginImplementationException e2) {
+                PlugUtils.checkName(httpFile, contentAsString, "<div id=\"fname\">", "</div>");
+            }
         }
         try {
             PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</th>\n<td>", "<");
         } catch(Exception e) {
-            PlugUtils.checkFileSize(httpFile, contentAsString, "<div id=\"fsize_div\">", "</div>");
+            try {
+                PlugUtils.checkFileSize(httpFile, contentAsString, "File size: <strong>", "</strong>");
+            } catch(Exception e2) {
+                PlugUtils.checkFileSize(httpFile, contentAsString, "<div id=\"fsize_div\">", "</div>");
+            }
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

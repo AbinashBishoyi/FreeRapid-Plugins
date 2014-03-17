@@ -6,6 +6,8 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.Arrays;
@@ -28,10 +30,18 @@ class TurboBitFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod httpMethod = getMethodBuilder().setReferer(LANG_REF).setAction(fileURL).toGetMethod();
-        if (makeRedirectedRequest(httpMethod)) {
-            checkProblems();
-            checkNameAndSize();
+        final HttpMethod httpMethodLang = getMethodBuilder().setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(httpMethodLang)) {
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
+            if (makeRedirectedRequest(httpMethod)) {
+                for(Cookie c : this.client.getHTTPClient().getState().getCookies() )
+                    System.out.println( c.getName() + "->" + c.getValue() );
+                checkProblems();
+                checkNameAndSize();
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -45,7 +55,9 @@ class TurboBitFileRunner extends AbstractRunner {
      * @return next text after parameter
      */
     private String findNextTextAfter(String text) {
+        System.out.println( getContentAsString() );
         String contentWithOutHTML[] = getContentAsString().replaceAll("&[^;]{4,4};", "").split("<[^>]*>");
+        System.out.println(Arrays.toString(contentWithOutHTML));
         boolean found = false;
         for(String x : contentWithOutHTML) {
             if( !found && x.toLowerCase().contains(text.toLowerCase()) ) {

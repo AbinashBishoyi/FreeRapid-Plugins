@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 import java.util.regex.Matcher;
 
-public class CosmoBoxFileSizeHandler implements FileSizeHandler {
+public class CosmoBoxFileSizeHandlerA implements FileSizeHandler {
     @Override
     public void checkFileSize(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
         final Matcher match = PlugUtils.matcher("<span.*?>Download File:(.+?)</span>", content);

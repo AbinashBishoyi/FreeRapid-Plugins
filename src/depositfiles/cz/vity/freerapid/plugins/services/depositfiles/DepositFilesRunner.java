@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.depositfiles;
 
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.HttpFile;
@@ -41,79 +38,80 @@ class DepositFilesRunner {
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
 
-            Matcher matcher = Pattern.compile("form action=\\\"([^l\\\"]*[^o\\\"]*[^g\\\"]*)\\\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = Pattern.compile("Free downloading mode", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (!matcher.find()) {
-                checkProblems();
-                logger.warning(client.getContentAsString());
-                throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-            }
-            String s = matcher.group(1);
-            matcher = Pattern.compile("<b>(.*?)&nbsp;MB</b>", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                logger.info("File size " + matcher.group(1));
-                Double a = new Double(matcher.group(1).replaceAll(" ", ""));
-                a = (a * 1024 * 1024);
-                httpFile.setFileSize(a.longValue());
-            }
-            matcher = Pattern.compile("class\\=\"info[^=]*\\=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                final String fn = matcher.group(1);
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-            } else logger.warning("File name was not found" + client.getContentAsString());
 
-            logger.info("Submit form to - " + s);
-            client.setReferer(fileURL);
-            final PostMethod postMethod = client.getPostMethod(HTTP_DEPOSITFILES + s);
-            postMethod.addParameter("gateway_result", "1");
-
-            if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
-
-                //        <span id="download_waiter_remain">60</span>
-                matcher = Pattern.compile("download_waiter_remain\">([0-9]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+                matcher = Pattern.compile("form action=\\\"([^l\\\"]*[^o\\\"]*[^g\\\"]*)\\\"", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (!matcher.find()) {
                     checkProblems();
-                    throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+                    logger.warning(client.getContentAsString());
+                    throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
                 }
-                s = matcher.group(1);
-                int seconds = new Integer(s);
-                logger.info("wait - " + s);
-
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
-
-
-                matcher = Pattern.compile("form action=\"([^\"]*)\" method=\"get\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+                String s = matcher.group(1);
+                matcher = Pattern.compile("<b>(.*?)&nbsp;MB</b>", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (matcher.find()) {
-                    s = matcher.group(1);
-                    logger.info("Download URL: " + s);
-                    downloader.sleep(seconds + 1);
-                    if (downloader.isTerminated())
-                        throw new InterruptedException();
-                    httpFile.setState(DownloadState.GETTING);
-                    final GetMethod method = client.getGetMethod(s);
+                    logger.info("File size " + matcher.group(1));
+                    Double a = new Double(matcher.group(1).replaceAll(" ", ""));
+                    a = (a * 1024 * 1024);
+                    httpFile.setFileSize(a.longValue());
+                }
+                matcher = Pattern.compile("class\\=\"info[^=]*\\=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+                if (matcher.find()) {
+                    final String fn = matcher.group(1);
+                    logger.info("File name " + fn);
+                    httpFile.setFileName(fn);
+                } else logger.warning("File name was not found" + client.getContentAsString());
 
-                    try {
-                        final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                        if (inputStream != null) {
-                            downloader.saveToFile(inputStream);
-                        } else {
-                            checkProblems();
-                            throw new IOException("File input stream is empty.");
-                        }
+                logger.info("Submit form to - " + s);
+                client.setReferer(fileURL);
+                final PostMethod postMethod = client.getPostMethod(HTTP_DEPOSITFILES + s);
+                postMethod.addParameter("gateway_result", "1");
 
-                    } finally {
-                        method.abort();
-                        method.releaseConnection();
-                    }
-                } else {
-                    checkProblems();
+                if (client.makeRequest(postMethod) != HttpStatus.SC_OK) {
                     logger.info(client.getContentAsString());
                     throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                 }
 
-            } else {
+            }
+            //        <span id="download_waiter_remain">60</span>
+            matcher = Pattern.compile("download_waiter_remain\">([0-9]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (!matcher.find()) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+            }
+            String t = matcher.group(1);
+            int seconds = new Integer(t);
+            logger.info("wait - " + t);
 
+            if (downloader.isTerminated())
+                throw new InterruptedException();
+
+
+            matcher = Pattern.compile("form action=\"([^\"]*)\" method=\"get\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (matcher.find()) {
+                t = matcher.group(1);
+                logger.info("Download URL: " + t);
+                downloader.sleep(seconds + 1);
+                if (downloader.isTerminated())
+                    throw new InterruptedException();
+                httpFile.setState(DownloadState.GETTING);
+                final GetMethod method = client.getGetMethod(t);
+
+                try {
+                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
+                    if (inputStream != null) {
+                        downloader.saveToFile(inputStream);
+                    } else {
+                        checkProblems();
+                        throw new IOException("File input stream is empty.");
+                    }
+
+                } finally {
+                    method.abort();
+                    method.releaseConnection();
+                }
+            } else {
+                checkProblems();
                 logger.info(client.getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
             }
@@ -127,7 +125,7 @@ class DepositFilesRunner {
 
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
         matcher = Pattern.compile("already downloading", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {
@@ -145,7 +143,7 @@ class DepositFilesRunner {
         }
         matcher = Pattern.compile("file does not exist", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {
-            throw new ServiceConnectionProblemException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
 
         }
 

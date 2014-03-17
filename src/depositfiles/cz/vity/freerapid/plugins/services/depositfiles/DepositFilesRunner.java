@@ -248,7 +248,8 @@ class DepositFilesRunner extends AbstractRunner {
         addCookie(new Cookie(".depositfiles.com", "__utma", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".depositfiles.com", "__utmc", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".depositfiles.com", "__utmb", String.valueOf(random.nextLong()), "/", 86400, false));
-
+        //Force English
+        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
     }
 
 }

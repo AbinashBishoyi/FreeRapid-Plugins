@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -35,7 +36,7 @@ class DiscoveryFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws Exception {
         final String program = PlugUtils.getStringBetween(getContentAsString(), "\"programTitle\": \"", "\"");
         final String episode = PlugUtils.getStringBetween(getContentAsString(), "\"episodeTitle\": \"", "\"");
-        httpFile.setFileName(program + " - " + episode + ".mp4");
+        httpFile.setFileName(program + " - " + episode + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -61,6 +62,8 @@ class DiscoveryFileRunner extends AbstractRunner {
                     .setReferer(SWF_URL)
                     .setAction("http://discidevflash-f.akamaihd.net/" + video)
                     .toGetMethod();
+            //they always send Content-Length: 2147483647
+            setClientParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

@@ -35,7 +35,7 @@ class TitulkyFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             checkProblems();//check problems
-            final String number = PlugUtils.getStringBetween(getContentAsString(), "penDownload('", "'");
+            final String number = PlugUtils.getStringBetween(getContentAsString(), "//OpenDownload('", "','");
             client.getHTTPClient().getParams().setParameter("considerAsStream", "archive/zip");
             HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction("http://www.titulky.com/idown.php?R=65456454545454545454654654466415454&titulky=" + number + "&zip=z&histstamp=").toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {

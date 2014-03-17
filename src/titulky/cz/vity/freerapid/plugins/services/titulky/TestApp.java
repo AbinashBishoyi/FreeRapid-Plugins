@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://www.titulky.com/Futurama-S06E05-158081.htm"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            // connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final TitulkyServiceImpl service = new TitulkyServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

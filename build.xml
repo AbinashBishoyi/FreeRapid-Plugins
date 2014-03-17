@@ -100,7 +100,7 @@
     </target>
 
     <target name="clean" description="clean up">
-        <delete dir="${dist.dir}"/>
+        <delete dir="${dist.dir}" failonerror="false"/>
     </target>
 
     <target name="all" depends="clean,init,build" description="build all">

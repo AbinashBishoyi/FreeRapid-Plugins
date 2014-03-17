@@ -19,8 +19,10 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.megaupload.com/es/?d=1YXV4MP0"));
-            testRunCheck(new MegauploadShareServiceImpl(), httpFile, new ConnectionSettings());
+            httpFile.setNewURL(new URL("http://www.megaupload.com/?d=ZM3SNZGW"));
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
+            connectionSettings.setProxy("localhost", 8081);
+            testRun(new MegauploadShareServiceImpl(), httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();
         }

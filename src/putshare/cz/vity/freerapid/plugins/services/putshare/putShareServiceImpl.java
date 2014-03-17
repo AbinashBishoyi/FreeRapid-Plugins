@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.putshare;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class putShareServiceImpl extends AbstractFileShareService {
+public class putShareServiceImpl extends XFileSharingServiceImpl {
+
+    @Override
+    public String getServiceTitle() {
+        return "putShare";
+    }
 
     @Override
     public String getName() {
         return "putshare.com";
-    }
-
-    @Override
-    public boolean supportsRunCheck() {
-        return true;
     }
 
     @Override

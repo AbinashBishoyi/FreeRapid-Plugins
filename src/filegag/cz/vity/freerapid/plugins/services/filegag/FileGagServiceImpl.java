@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.filegag;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class FileGagServiceImpl extends AbstractFileShareService {
+public class FileGagServiceImpl extends XFileSharingServiceImpl {
+
+    @Override
+    public String getServiceTitle() {
+        return "FileGag";
+    }
 
     @Override
     public String getName() {
         return "filegag.com";
-    }
-
-    @Override
-    public boolean supportsRunCheck() {
-        return true;
     }
 
     @Override

@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.hipfile;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class HipFileServiceImpl extends AbstractFileShareService {
+public class HipFileServiceImpl extends XFileSharingServiceImpl {
+
+    @Override
+    public String getServiceTitle() {
+        return "HipFile";
+    }
 
     @Override
     public String getName() {
         return "hipfile.com";
-    }
-
-    @Override
-    public boolean supportsRunCheck() {
-        return true;
     }
 
     @Override

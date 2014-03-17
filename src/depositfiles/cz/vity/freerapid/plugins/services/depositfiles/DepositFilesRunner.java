@@ -46,7 +46,7 @@ class DepositFilesRunner extends AbstractRunner {
 
             if (!getContentAsString().contains("Free downloading mode")) {
 
-                matcher = getMatcherAgainstContent("form action=\\\"([^h\\\"][^t\\\"][^t\\\"][^p\\\"][^\\\"]*)\\\"");
+                matcher = getMatcherAgainstContent("form action=\"(/.+)\" method");
                 if (!matcher.find()) {
                     checkProblems();
                     logger.warning(getContentAsString());

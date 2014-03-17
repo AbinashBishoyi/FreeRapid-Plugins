@@ -228,6 +228,9 @@ class FileFactoryRunner {
         if (contentAsString.contains("no free download slots")) {
             throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server.", 120);
         }
+        if (contentAsString.contains("too many files at once")) {
+            throw new YouHaveToWaitException("You are currently downloading too many files at once.Someone else on the same IP?", 60);
+        }
         return false;
     }
 

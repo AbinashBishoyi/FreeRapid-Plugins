@@ -17,6 +17,7 @@
 package cz.vity.freerapid.plugins.services.rtmp;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.apache.mina.common.IoSession;
 
 import javax.crypto.Cipher;
@@ -50,12 +51,14 @@ public class RtmpSession {
     private String playName;
     private int playStart;
     private int playDuration = -2;
+    private int streamDuration;
     private OutputWriter outputWriter;
     private DecoderOutput decoderOutput;
     private String host;
     private int port;
     private InvokeResultHandler invokeResultHandler = new DefaultInvokeResultHandler();
     private boolean encrypted;
+    private boolean type8;
     private KeyAgreement keyAgreement;
     private byte[] clientPublicKey;
     private Cipher cipherIn;
@@ -66,7 +69,7 @@ public class RtmpSession {
     private byte[] clientDigest;
     private byte[] serverDigest;
     private byte[] serverResponse;
-    private StreamInfo streamInfo = new StreamInfo();
+    private HttpFile httpFile;
 
     public RtmpSession() {
     }
@@ -120,11 +123,11 @@ public class RtmpSession {
         connectParams.put("flashVer", "WIN 10,1,53,64");
         connectParams.put("fpad", false);
         connectParams.put("tcUrl", tcUrl);
-        connectParams.put("audioCodecs", 1639);
+        connectParams.put("audioCodecs", 3191);
         connectParams.put("videoFunction", 1);
-        connectParams.put("capabilities", 15);
+        connectParams.put("capabilities", 239);
         connectParams.put("videoCodecs", 252);
-        this.outputWriter = new FlvStreamWriter(playStart, streamInfo);
+        this.outputWriter = new FlvStreamWriter(playStart, this);
     }
 
     public static RtmpSession getFrom(IoSession ioSession) {
@@ -267,6 +270,18 @@ public class RtmpSession {
         return encrypted;
     }
 
+    public void setEncrypted(boolean encrypted) {
+        this.encrypted = encrypted;
+    }
+
+    public boolean isType8() {
+        return type8;
+    }
+
+    public void setType8(boolean type8) {
+        this.type8 = type8;
+    }
+
     public InvokeResultHandler getInvokeResultHandler() {
         return invokeResultHandler;
     }
@@ -371,8 +386,20 @@ public class RtmpSession {
         this.chunkSize = chunkSize;
     }
 
-    public StreamInfo getStreamInfo() {
-        return this.streamInfo;
+    public int getStreamDuration() {
+        return streamDuration;
+    }
+
+    public void setStreamDuration(int streamDuration) {
+        this.streamDuration = streamDuration;
+    }
+
+    public HttpFile getHttpFile() {
+        return httpFile;
+    }
+
+    public void setHttpFile(HttpFile httpFile) {
+        this.httpFile = httpFile;
     }
 
 }

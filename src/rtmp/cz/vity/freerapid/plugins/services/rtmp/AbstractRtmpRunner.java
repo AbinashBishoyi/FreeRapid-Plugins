@@ -43,26 +43,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
 
         client.getHTTPClient().getParams().setBooleanParameter("noContentLengthAvailable", true);
 
-        final Thread sizeEstimator = new Thread("RtmpFileSizeEstimator") {
-            @Override
-            public void run() {
-                while (!isInterrupted()) {
-                    final int time = rtmpSession.getStreamInfo().getTime();
-                    final int duration = rtmpSession.getStreamInfo().getDuration();
-                    if (duration > 0 && time > 0) {
-                        final long size = (long) ((double) httpFile.getRealDownload() / ((double) time / (double) duration));
-                        if (size > 0) {
-                            httpFile.setFileSize(size);
-                        }
-                    }
-                    try {
-                        sleep(1000);
-                    } catch (InterruptedException e) {
-                        return;
-                    }
-                }
-            }
-        };
+        rtmpSession.setHttpFile(httpFile);//for size estimation
 
         RtmpClient rtmpClient = null;
         try {
@@ -73,7 +54,6 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
 
             if (in != null) {
                 logger.info("Saving to file");
-                sizeEstimator.start();
                 downloadTask.saveToFile(in);
                 return true;
             } else {
@@ -86,12 +66,13 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             //ignore
         } catch (Throwable e) {
             LogUtils.processException(logger, e);
-            throw new PluginImplementationException("RTMP error - " + e.toString());
+            while (e.getCause() != null) {
+                e = e.getCause();
+            }
+            throw new PluginImplementationException("RTMP error - " + getThrowableDescription(e));
         } finally {
-            sizeEstimator.interrupt();
             if (rtmpClient != null) {
                 try {
-                    //no need to specifically close any streams, this method handles that too
                     rtmpClient.disconnect();
                 } catch (Exception e) {
                     LogUtils.processException(logger, e);
@@ -99,6 +80,16 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             }
         }
         return true;
+    }
+
+    private static String getThrowableDescription(Throwable t) {
+        final String s = t.getClass().getSimpleName();
+        final String l = t.getLocalizedMessage();
+        if (l == null) {
+            return s;
+        } else {
+            return s + ": " + l;
+        }
     }
 
 }

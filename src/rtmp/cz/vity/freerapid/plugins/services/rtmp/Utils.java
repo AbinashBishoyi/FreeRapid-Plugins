@@ -38,22 +38,20 @@ public class Utils {
         return val;
     }
 
+    @SuppressWarnings("PointlessBitwiseExpression")
     public static void writeInt24(ByteBuffer out, int value) {
         out.put((byte) (0xFF & (value >> 16)));
         out.put((byte) (0xFF & (value >> 8)));
         out.put((byte) (0xFF & (value >> 0)));
     }
 
+    @SuppressWarnings("PointlessBitwiseExpression")
     public static int readInt32Reverse(ByteBuffer in) {
-        final byte a = in.get();
-        final byte b = in.get();
-        final byte c = in.get();
-        final byte d = in.get();
         int val = 0;
-        val += d << 24;
-        val += c << 16;
-        val += b << 8;
-        val += a;
+        val += (in.get() & 0xFF) << 0;
+        val += (in.get() & 0xFF) << 8;
+        val += (in.get() & 0xFF) << 16;
+        val += (in.get() & 0xFF) << 24;
         return val;
     }
 

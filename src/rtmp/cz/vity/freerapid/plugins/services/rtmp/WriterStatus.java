@@ -28,13 +28,13 @@ public class WriterStatus {
 
     private Map<Integer, Integer> channelTimeMap = new ConcurrentHashMap<Integer, Integer>();
     private int videoChannel = -1;
-    private double lastLoggedSeconds;
+    private double lastUpdateTime;
     private int seekTime;
-    private StreamInfo streamInfo;
+    private RtmpSession session;
 
-    public WriterStatus(int seekTime, StreamInfo streamInfo) {
+    public WriterStatus(int seekTime, RtmpSession session) {
         this.seekTime = seekTime;
-        this.streamInfo = streamInfo;
+        this.session = session;
     }
 
     public void logFinalVideoDuration() {
@@ -78,14 +78,18 @@ public class WriterStatus {
     }
 
     private void logVideoProgress(int time) {
-        streamInfo.setTime(time);
         if (RtmpSession.DEBUG) {
             logger.finest("time: " + time + ", seek: " + seekTime);
         }
-        double seconds = (time - seekTime) / 1000;
-        if (seconds >= lastLoggedSeconds + 10) {
-            logger.fine("video write progress: " + seconds + " seconds");
-            lastLoggedSeconds = seconds;
+        if (session.getHttpFile() != null && time >= lastUpdateTime + 1000) {
+            int duration = session.getStreamDuration();
+            if (duration > 0 && time > 0) {
+                long size = (long) ((double) session.getHttpFile().getRealDownload() / ((double) time / (double) duration));
+                if (size > 0) {
+                    session.getHttpFile().setFileSize(size);
+                }
+            }
+            lastUpdateTime = time;
         }
     }
 

@@ -11,7 +11,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import plugin-id="rtmp" plugin-version="1.0.5" match="greater-or-equal"/>
+        <import plugin-id="rtmp" plugin-version="1.0.7" match="greater-or-equal"/>
         <import plugin-id="cryptography" plugin-version="1.0" match="greater-or-equal"/>
     </requires>
     <runtime>

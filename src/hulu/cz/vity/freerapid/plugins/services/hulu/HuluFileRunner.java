@@ -10,15 +10,17 @@ import cz.vity.freerapid.plugins.services.cryptography.Mode;
 import cz.vity.freerapid.plugins.services.cryptography.Padding;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -26,14 +28,13 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Class which contains main code
  *
  * @author ntoskrnl
  */
-class HuluFileRunner extends AbstractRtmpRunner {
+class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer {
     private final static Logger logger = Logger.getLogger(HuluFileRunner.class.getName());
 
     private final static String CID_KEY = "48555bbbe9f41981df49895f44c83993a09334d02d17e7a76b237d04c084e342";
@@ -58,8 +59,10 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        //PlugUtils.checkName(httpFile, content, "FileNameLEFT", "FileNameRIGHT");//TODO
-        //PlugUtils.checkFileSize(httpFile, content, "FileSizeLEFT", "FileSizeRIGHT");//TODO
+        final Matcher matcher = getMatcherAgainstContent("<title>Hulu - (.+?) - Watch");
+        if (!matcher.find()) throw new PluginImplementationException("File name not found");
+        final String name = matcher.group(1).replace(": ", " - ");
+        httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -67,35 +70,37 @@ class HuluFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
             final String cid = PlugUtils.getStringBetween(getContentAsString(), "\"content_id\", \"", "\"");
             final String eidUrl = "http://r.hulu.com/videos?eid=" + cidToEid(parseContentId(getContentId(cid)));
             logger.info("eidUrl = " + eidUrl);
             method = getGetMethod(eidUrl);
-            if (client.getHTTPClient().executeMethod(method) == 200) {
-                String content = forcedGetContentAsString(method);
-                final String pid = Security.decrypt(PlugUtils.getStringBetween(content, "<pid>", "</pid>"));
+            if (makeRedirectedRequest(method)) {
+                final String pid = Security.decrypt(PlugUtils.getStringBetween(getContentAsString(), "<pid>", "</pid>"));
                 logger.info("pid = " + pid);
                 final String contentSelectUrl = getContentSelectUrl(pid);
                 logger.info("contentSelectUrl = " + contentSelectUrl);
                 method = getGetMethod(contentSelectUrl);
-                if (client.getHTTPClient().executeMethod(method) == 200) {
-                    content = decryptContentSelect(forcedGetContentAsString(method));
+                if (makeRedirectedRequest(method)) {
+                    final String content = decryptContentSelect(getContentAsString());
                     logger.info("Content select:\n" + content);
-                    PlugUtils.checkName(httpFile, content, "<ref title=\"", "\"");
-                    final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"", content);
-                    final List<Video> list = new ArrayList<Video>();
+                    final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\" .+? cdn=\"akamai\"", content);
+                    final List<Stream> list = new ArrayList<Stream>();
                     while (matcher.find()) {
-                        list.add(new Video(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
+                        list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
                     }
-                    if (list.isEmpty()) throw new PluginImplementationException("No stream URLs found");
+                    if (list.isEmpty()) throw new PluginImplementationException("No streams found");
                     Collections.sort(list);
-                    final Video video = list.get(0);
-                    final RtmpSession rtmpSession = new RtmpSession(video.getServer(), 80, video.getToken(), video.getStream(), true);
-                    //rtmpSession.initSwfVerification("C:\\Users\\Administrator\\Desktop\\player.swf");//TODO
+                    final Stream stream = list.get(0);
+                    final RtmpSession rtmpSession = new RtmpSession(stream.getServer(), 80, stream.getApp(), stream.getPlay(), true);
+                    rtmpSession.getConnectParams().put("pageUrl", fileURL);
+                    rtmpSession.getConnectParams().put("swfUrl", "http://www.hulu.com/site-player/playback.swf");
+                    //SWF verification is not necessary at the moment
+                    //rtmpSession.initSwfVerification("C:\\Users\\Administrator\\Desktop\\playback.swf");
                     tryDownloadAndSaveFile(rtmpSession);
                 } else {
                     checkProblems();
@@ -112,76 +117,57 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {//TODO
+        final String content = getContentAsString();
+        if (content.contains("The page you were looking for doesn't exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
-    private class Video implements Comparable<Video> {
+    @Override
+    public boolean isStream(HttpMethod method, boolean showWarnings) {
+        final Header h = method.getResponseHeader("Content-Type");
+        if (h == null) return false;
+        final String contentType = h.getValue().toLowerCase(Locale.ENGLISH);
+        return (!contentType.startsWith("text/") && !contentType.contains("xml"));
+    }
+
+    private class Stream implements Comparable<Stream> {
         private final String server;
-        private final String stream;
-        private final String token;
+        private final String play;
+        private final String app;
         private final int bitrate;
 
-        public Video(String server, String stream, String token, int bitrate) throws Exception {
+        public Stream(String server, String stream, String token, int bitrate) throws Exception {
             Matcher matcher = PlugUtils.matcher("://(.+?)/(.+)", server);
             if (!matcher.find()) throw new PluginImplementationException("Error parsing stream server");
             server = matcher.group(1);
-            if (stream.startsWith("mp4:")) stream = stream.substring(4);
             token = matcher.group(2) + "?sessionid=" + sessionId + "&" + PlugUtils.replaceEntities(token);
             this.server = server;
-            this.stream = stream;
-            this.token = token;
+            this.play = stream;
+            this.app = token;
             this.bitrate = bitrate;
             logger.info("server = " + this.server);
-            logger.info("stream = " + this.stream);
-            logger.info("token = " + this.token);
+            logger.info("play = " + this.play);
+            logger.info("app = " + this.app);
+            logger.info("bitrate = " + this.bitrate);
         }
 
         public String getServer() {
             return server;
         }
 
-        public String getStream() {
-            return stream;
+        public String getPlay() {
+            return play;
         }
 
-        public String getToken() {
-            return token;
+        public String getApp() {
+            return app;
         }
 
         @Override
-        public int compareTo(Video that) {
+        public int compareTo(Stream that) {
             return Integer.valueOf(that.bitrate).compareTo(this.bitrate);
         }
-    }
-
-    private static String forcedGetContentAsString(HttpMethod method) {
-        StringBuilder sb = new StringBuilder();
-        InputStream is = null;
-        try {
-            is = method.getResponseBodyAsStream();
-            if (is != null) {
-                is = new GZIPInputStream(is, 1024);
-                byte[] b = new byte[1024];
-                int i;
-                while ((i = is.read(b)) > -1) {
-                    sb.append(new String(b, 0, i, "UTF-8"));
-                }
-            }
-        } catch (Exception ex) {
-            //ignore
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (Exception ex) {
-                    //ignore
-                }
-            }
-        }
-        return sb.toString();
     }
 
     private static byte[] md5(final String data) {

@@ -21,6 +21,7 @@ import org.apache.mina.common.IoSession;
 import org.apache.mina.filter.codec.CumulativeProtocolDecoder;
 import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 public class RtmpDecoder extends CumulativeProtocolDecoder {
@@ -109,9 +110,25 @@ public class RtmpDecoder extends CumulativeProtocolDecoder {
                     logger.fine("notify is 'onMetadata', writing metadata");
                     data.rewind();
                     session.getOutputWriter().write(packet);
-                    double duration = (Double) ((AmfObject) notify.getProperties().get(1).getValue()).getProperty("duration").getValue();
-                    logger.fine("Stream duration: " + duration + " seconds");
-                    session.getStreamInfo().setDuration((int) (duration * 1000));
+
+                    List<AmfProperty> properties = notify.getProperties();
+                    if (properties != null && properties.size() >= 2) {
+                        AmfProperty property = properties.get(1);
+                        if (property != null) {
+                            Object value = property.getValue();
+                            if (value != null && value instanceof AmfObject) {
+                                AmfProperty pDuration = ((AmfObject) value).getProperty("duration");
+                                if (pDuration != null) {
+                                    Object oDuration = pDuration.getValue();
+                                    if (oDuration != null && oDuration instanceof Double) {
+                                        double duration = (Double) oDuration;
+                                        logger.fine("Stream duration: " + duration + " seconds");
+                                        session.setStreamDuration((int) (duration * 1000));
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 break;
             case INVOKE:

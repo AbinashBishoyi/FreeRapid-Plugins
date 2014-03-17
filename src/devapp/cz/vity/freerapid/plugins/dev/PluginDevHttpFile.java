@@ -118,6 +118,7 @@ class PluginDevHttpFile implements HttpFile {
     @Override
     public void setFileName(String fileName) {
         this.fileName = fileName;
+        logger.info("Setting new file name to " + fileName);
     }
 
     /**

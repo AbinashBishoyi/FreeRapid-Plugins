@@ -71,7 +71,7 @@ class UlozToRunner extends AbstractRunner {
                         }
                         if (nextUrl.contains("full=y"))
                             throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
-                        downloadTask.sleep(new Random().nextInt(6) + 1);
+                        downloadTask.sleep(new Random().nextInt(15) + new Random().nextInt(3));
                         if (saved = tryDownloadAndSaveFile(method)) break;
                     }
                     checkProblems();

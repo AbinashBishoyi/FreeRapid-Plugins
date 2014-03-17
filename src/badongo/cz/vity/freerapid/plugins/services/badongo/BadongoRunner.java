@@ -29,11 +29,10 @@ class BadongoFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         fileURL = checkFileURL(fileURL);
-
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -44,16 +43,14 @@ class BadongoFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         fileURL = checkFileURL(fileURL);
-
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
-
-            URI fURI = new URI(fileURL);
-            final String[] filePath = fURI.getPath().split("/");
+            URI fileURI = new URI(fileURL);
+            final String[] filePath = fileURI.getPath().split("/");
 
             if (getContentAsString().contains("This file has been split into") && filePath.length <= 4) { // More files
                 processCaptchaForm();
@@ -61,14 +58,14 @@ class BadongoFileRunner extends AbstractRunner {
                 httpFile.getProperties().put("removeCompleted", true);
             } else { // One file
                 Matcher matcher;
-                
+
                 if (filePath[1].equals("pic")) {
                     if (makeRedirectedRequest(getGetMethod(fileURL + "?size=original"))) {
                         matcher = getMatcherAgainstContent("<img src=\"(.+?)\" border=\"0\">");
 
                         if (matcher.find()) {
+                            client.setReferer(fileURL);
                             final String finalURL = matcher.group(1);
-                            client.setReferer(finalURL);
                             downloadFile(getGetMethod(finalURL));
                         } else {
                             throw new PluginImplementationException("Picture link was not found");
@@ -99,7 +96,7 @@ class BadongoFileRunner extends AbstractRunner {
         return fileURL;
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("This file has been deleted")) {
@@ -109,6 +106,11 @@ class BadongoFileRunner extends AbstractRunner {
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
+        final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("FREE MEMBER WAITING PERIOD")) {
             throw new YouHaveToWaitException("You are receiving this message because you are a FREE member and you are limited to 1 concurrent download and a 35 second waiting period between downloading Files", 35);
@@ -151,9 +153,9 @@ class BadongoFileRunner extends AbstractRunner {
         Matcher matcher = getMatcherAgainstContent("req\\.open\\(\"GET\", \"(.+?)/status\"");
 
         if (matcher.find()) {
-            final String finalURL = matcher.group(1) + "/loc?pr=1";
-            client.setReferer(finalURL);
-            final GetMethod getMethod = getGetMethod(finalURL);
+            final String finalURL = matcher.group(1);
+            client.setReferer(finalURL + "/ifr?pr=1&zenc=");
+            final GetMethod getMethod = getGetMethod(finalURL + "/loc?pr=1");
 
             matcher = getMatcherAgainstContent("var check_n = (.+?);");
 
@@ -167,8 +169,8 @@ class BadongoFileRunner extends AbstractRunner {
 
     private void processCaptchaForm() throws Exception {
         while (!getContentAsString().contains("doDownload")) {
+            client.setReferer(fileURL);
             final String redirectURL = fileURL + "?rs=displayCaptcha";
-            client.setReferer(redirectURL);
             final GetMethod getMethod = getGetMethod(redirectURL);
 
             if (makeRedirectedRequest(getMethod)) {
@@ -177,7 +179,7 @@ class BadongoFileRunner extends AbstractRunner {
                 if (contentAsString.contains("name=\"downForm\"")) {
                     final MethodBuilder builder = new MethodBuilder(contentAsString, client);
                     builder.setActionFromFormByName("downForm", true);
-                    final HttpMethod httpMethod = builder.setReferer(builder.getAction()).setParameter("user_code", stepCaptcha(contentAsString)).toHttpMethod();
+                    final HttpMethod httpMethod = builder.setReferer(fileURL).setParameter("user_code", stepCaptcha(contentAsString)).toHttpMethod();
 
                     if (!makeRedirectedRequest(httpMethod)) {
                         throw new ServiceConnectionProblemException();
@@ -193,7 +195,7 @@ class BadongoFileRunner extends AbstractRunner {
 
     private void downloadFile(HttpMethod httpMethod) throws Exception {
         if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkProblems();
+            checkAllProblems();
             logger.warning(getContentAsString());
             throw new IOException("File input stream is empty");
         }
@@ -219,7 +221,7 @@ class BadongoFileRunner extends AbstractRunner {
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
 
-    private String stepCaptcha(String contenAsString) throws Exception {
+    private String stepCaptcha(String contenAsString) throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
 
         final Matcher matcher = PlugUtils.matcher("img src=\"(.+?)\"", contenAsString);

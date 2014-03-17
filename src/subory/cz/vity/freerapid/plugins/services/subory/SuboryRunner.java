@@ -23,9 +23,9 @@ class SuboryRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        
+
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -39,21 +39,21 @@ class SuboryRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
 
             if (getContentAsString().contains("captcha")) {
                 client.setReferer(fileURL);
                 //client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                 PostMethod postMethod = new PostMethod();
-                
+
                 while (getContentAsString().contains("captcha")) {
                     postMethod = stepCaptcha();
                     makeRequest(postMethod);
                 }
-                
+
                 if (!tryDownloadAndSaveFile(postMethod)) {
-                    checkProblems();
+                    checkAllProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
@@ -65,12 +65,16 @@ class SuboryRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("Neplatn. odkaz");
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("Neplatn. odkaz");
 
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("Neplatný odkaz");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
@@ -82,7 +86,7 @@ class SuboryRunner extends AbstractRunner {
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("Ve.kos. s.boru:</strong></td><td\\s*class=desc>(.+?)<");
-            
+
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
                 logger.info("File size " + fileSize);
@@ -98,16 +102,16 @@ class SuboryRunner extends AbstractRunner {
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-    
-    private PostMethod stepCaptcha() throws Exception {
-        CaptchaSupport captchaSupport = getCaptchaSupport();
 
-        Matcher matcher = getMatcherAgainstContent("class=captcha src=\"(.+?)\"");
+    private PostMethod stepCaptcha() throws ErrorDuringDownloadingException {
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+
+        final Matcher matcher = getMatcherAgainstContent("class=captcha src=\"(.+?)\"");
 
         if (matcher.find()) {
-            String captchaSrc = matcher.group(1);
+            final String captchaSrc = matcher.group(1);
             logger.info("Captcha URL " + captchaSrc);
-            String captcha = captchaSupport.getCaptcha(SERVICE_WEB + captchaSrc);
+            final String captcha = captchaSupport.getCaptcha(SERVICE_WEB + captchaSrc);
 
             if (captcha == null) {
                 throw new CaptchaEntryInputMismatchException();

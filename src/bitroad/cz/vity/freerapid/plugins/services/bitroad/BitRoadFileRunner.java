@@ -25,28 +25,28 @@ class BitRoadFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
 
-   @Override
+    @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
 
             Matcher matcher = getMatcherAgainstContent("form action=\"(.+?)\"");
 
             if (matcher.find()) {
+                client.setReferer(fileURL);
                 final String redirectURL = matcher.group(1);
-                client.setReferer(redirectURL);
                 PostMethod postMethod = getPostMethod(redirectURL);
 
                 matcher = getMatcherAgainstContent("name=\"uid\" value=\"(.+?)\"");
@@ -67,34 +67,29 @@ class BitRoadFileRunner extends AbstractRunner {
                             matcher = getMatcherAgainstContent("href='(.+?)' title='Your link to download file'");
 
                             if (matcher.find()) {
+                                client.setReferer(redirectURL);
                                 final String finalURL = matcher.group(1);
-                                client.setReferer(finalURL);
                                 getMethod = getGetMethod(finalURL);
                                 downloadTask.sleep(4);
 
                                 if (!tryDownloadAndSaveFile(getMethod)) {
-                                    checkProblems();
+                                    checkAllProblems();
                                     logger.warning(getContentAsString());
                                     throw new IOException("File input stream is empty");
                                 }
-                            }
-                            else {
+                            } else {
                                 throw new PluginImplementationException("Download link was not found");
                             }
-                        }
-                        else {
+                        } else {
                             throw new PluginImplementationException("Captcha form was not found");
                         }
-                    }
-                    else {
+                    } else {
                         throw new ServiceConnectionProblemException();
                     }
-                }
-                else {
+                } else {
                     throw new PluginImplementationException("Parameter 'uid' was not found");
                 }
-            }
-            else {
+            } else {
                 throw new PluginImplementationException("Redirect link was not found");
             }
         } else {
@@ -102,14 +97,16 @@ class BitRoadFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        //final String contentAsString = getContentAsString();
-
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final Matcher matcher = getMatcherAgainstContent("class=\"style7\">File <b>(.+?)</b> not found<");
 
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("File %s not found", matcher.group(1)));
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
@@ -137,8 +134,8 @@ class BitRoadFileRunner extends AbstractRunner {
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-    
-    private PostMethod stepCaptcha(String redirectURL, String paramUid, int captchaOCRCounter) throws Exception {
+
+    private PostMethod stepCaptcha(String redirectURL, String paramUid, int captchaOCRCounter) throws ErrorDuringDownloadingException {
         CaptchaSupport captchaSupport = getCaptchaSupport();
 
         Matcher matcher = getMatcherAgainstContent("img src='(.+?)' border='0'");
@@ -150,11 +147,10 @@ class BitRoadFileRunner extends AbstractRunner {
 
             if (captchaOCRCounter <= 3) {
                 captcha = readCaptchaImage(captchaSrc);
-            }
-            else {
+            } else {
                 captcha = captchaSupport.getCaptcha(captchaSrc);
             }
-            
+
             if (captcha == null) {
                 throw new CaptchaEntryInputMismatchException();
             } else {
@@ -169,20 +165,19 @@ class BitRoadFileRunner extends AbstractRunner {
         }
     }
 
-    private String readCaptchaImage(String captchaSrc) throws Exception {
+    private String readCaptchaImage(String captchaSrc) throws ErrorDuringDownloadingException {
         final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaSrc);
         final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2, captchaImage.getHeight() - 2);
         String captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
 
         if (captcha != null) {
             logger.info("Captcha - OCR recognized " + captcha);
-        }
-        else {
+        } else {
             captcha = "";
         }
 
         captchaImage.flush();
-        
+
         return captcha;
     }
 }

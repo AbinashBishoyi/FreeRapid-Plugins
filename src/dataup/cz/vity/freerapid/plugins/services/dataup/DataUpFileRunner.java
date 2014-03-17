@@ -24,7 +24,7 @@ class DataUpFileRunner extends AbstractRunner {
         final HttpMethod httpMethod = builder.setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -39,15 +39,14 @@ class DataUpFileRunner extends AbstractRunner {
         HttpMethod httpMethod = builder.setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
-
             builder = getMethodBuilder();
             builder.setActionFromFormByName("dl_load", true);
-            httpMethod = builder.setReferer(builder.getAction()).toHttpMethod();
+            httpMethod = builder.setReferer(fileURL).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
+                checkAllProblems();
                 logger.warning(getContentAsString());
                 throw new IOException("File input stream is empty");
             }
@@ -56,7 +55,7 @@ class DataUpFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("Datei nicht gefunden")) {
@@ -66,6 +65,10 @@ class DataUpFileRunner extends AbstractRunner {
         if (contentAsString.contains("Es wurde kein Download unter diesem Link gefunden")) {
             throw new URLNotAvailableAnymoreException("Es wurde kein Download unter diesem Link gefunden");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
 
         final Matcher matcher = getMatcherAgainstContent("Der Download Link ist aus Sicherheitsgr.nden nur 5 Minuten Aktiv");
 

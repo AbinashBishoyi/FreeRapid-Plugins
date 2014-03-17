@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="Subory.sk" default="all" basedir=".">
     <property name="application" value="subory"/>
-    <property name="version" value="0.5.1"/>
+    <property name="version" value="0.6"/>
     <property name="version.name" value="${application}"/>
 
 

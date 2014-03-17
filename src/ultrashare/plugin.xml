@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="ultrashare.net" version="0.5.2" vendor="Kajda"
+<plugin id="ultrashare.net" version="0.6" vendor="Kajda"
         class="cz.vity.freerapid.plugins.services.ultrashare.UltraShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?ultrashare\.net/hosting/\w{2}/.+"/>

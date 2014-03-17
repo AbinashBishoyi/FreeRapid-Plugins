@@ -26,28 +26,28 @@ class FileFactoryFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
 
-   @Override
+    @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
 
             Matcher matcher = getMatcherAgainstContent("class=\"download\" href=\"(.+?)\"");
 
             if (matcher.find()) {
+                client.setReferer(fileURL);
                 String redirectURL = SERVICE_WEB + matcher.group(1);
-                client.setReferer(redirectURL);
                 getMethod = getGetMethod(redirectURL);
 
                 if (makeRedirectedRequest(getMethod)) {
@@ -59,34 +59,30 @@ class FileFactoryFileRunner extends AbstractRunner {
                             makeRedirectedRequest(postMethod);
                         }
 
-                        checkProblems();
+                        checkAllProblems();
 
                         matcher = getMatcherAgainstContent("href=\"(.+?)\" class=\"download\">CLICK HERE");
 
                         if (matcher.find()) {
+                            client.setReferer(redirectURL);
                             final String finalURL = matcher.group(1);
-                            client.setReferer(finalURL);
                             getMethod = getGetMethod(finalURL);
 
                             if (!tryDownloadAndSaveFile(getMethod)) {
-                                checkProblems();
+                                checkAllProblems();
                                 logger.warning(getContentAsString());
                                 throw new IOException("File input stream is empty");
                             }
-                        }
-                        else {
+                        } else {
                             throw new PluginImplementationException("Download link was not found");
                         }
-                    }
-                    else {
+                    } else {
                         throw new PluginImplementationException("Captcha form was not found");
                     }
-                }
-                else {
+                } else {
                     throw new ServiceConnectionProblemException();
                 }
-            }
-            else {
+            } else {
                 throw new PluginImplementationException("Redirect link was not found");
             }
         } else {
@@ -94,13 +90,18 @@ class FileFactoryFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        Matcher matcher;
 
         if (contentAsString.contains("Sorry, this file is no longer available")) {
             throw new URLNotAvailableAnymoreException("Sorry, this file is no longer available. It may have been deleted by the uploader, or has expired");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
+        final String contentAsString = getContentAsString();
+        Matcher matcher;
 
         if (contentAsString.contains("Sorry, your time to enter the code has expired")) {
             throw new YouHaveToWaitException("Sorry, your time to enter the code has expired. Please try again", 60);
@@ -126,8 +127,7 @@ class FileFactoryFileRunner extends AbstractRunner {
             if (matcher.find()) {
                 if (matcher.group(2).equals("minutes")) {
                     waitSeconds = 60 * Integer.parseInt(matcher.group(1));
-                }
-                else {
+                } else {
                     waitSeconds = Integer.parseInt(matcher.group(1));
                 }
             }
@@ -162,10 +162,10 @@ class FileFactoryFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private PostMethod stepCaptcha(String redirectURL, int captchaOCRCounter) throws Exception {
-        CaptchaSupport captchaSupport = getCaptchaSupport();
+    private PostMethod stepCaptcha(String redirectURL, int captchaOCRCounter) throws ErrorDuringDownloadingException {
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
 
-        Matcher matcher = getMatcherAgainstContent("class=\"captchaImage\" src=\"(.+?)\"");
+        final Matcher matcher = getMatcherAgainstContent("class=\"captchaImage\" src=\"(.+?)\"");
 
         if (matcher.find()) {
             final String captchaSrc = SERVICE_WEB + matcher.group(1);
@@ -174,8 +174,7 @@ class FileFactoryFileRunner extends AbstractRunner {
 
             if (captchaOCRCounter <= 0) { // TODO
                 captcha = readCaptchaImage(captchaSrc);
-            }
-            else {
+            } else {
                 captcha = captchaSupport.getCaptcha(captchaSrc);
             }
 
@@ -192,15 +191,14 @@ class FileFactoryFileRunner extends AbstractRunner {
         }
     }
 
-    private String readCaptchaImage(String captchaSrc) throws Exception {
+    private String readCaptchaImage(String captchaSrc) throws ErrorDuringDownloadingException {
         final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaSrc);
         final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2, captchaImage.getHeight() - 2);
         String captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
 
         if (captcha != null) {
             logger.info("Captcha - OCR recognized " + captcha);
-        }
-        else {
+        } else {
             captcha = "";
         }
 

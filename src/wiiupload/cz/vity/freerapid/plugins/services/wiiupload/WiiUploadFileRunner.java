@@ -24,14 +24,14 @@ class WiiUploadFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(encodeURL(fileURL));
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
 
-   @Override
+    @Override
     public void run() throws Exception {
         super.run();
         fileURL = encodeURL(fileURL);
@@ -39,36 +39,35 @@ class WiiUploadFileRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
 
             Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Download This File");
 
             if (matcher.find()) {
-                final String URL = matcher.group(1);
-                client.setReferer(URL);
-                getMethod = getGetMethod(encodeURL(matcher.group(1)));
+                client.setReferer(fileURL);
+                final String redirectURL = matcher.group(1);
+                getMethod = getGetMethod(encodeURL(redirectURL));
 
                 if (!makeRedirectedRequest(getMethod)) {
                     throw new ServiceConnectionProblemException();
                 }
 
-                checkProblems();
+                checkAllProblems();
 
                 matcher = getMatcherAgainstContent("href=\"(.+?)\" class=\"download_url\">click here");
 
                 if (matcher.find()) {
-                    String finalURL = matcher.group(1);
-                    client.setReferer(finalURL);
+                    client.setReferer(redirectURL);
+                    final String finalURL = matcher.group(1);
                     getMethod = getGetMethod(finalURL);
 
                     if (!tryDownloadAndSaveFile(getMethod)) {
-                        checkProblems();
+                        checkAllProblems();
                         logger.warning(getContentAsString());
                         throw new IOException("File input stream is empty");
                     }
-                }
-                else {
+                } else {
                     throw new PluginImplementationException("Download link was not found");
                 }
             } else {
@@ -79,12 +78,17 @@ class WiiUploadFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("This file doesn't exist or has been removed")) {
             throw new URLNotAvailableAnymoreException("This file doesn't exist or has been removed");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
+        final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("All downloading slots are currently filled")) {
             throw new YouHaveToWaitException("All downloading slots are currently filled", 60);
@@ -116,9 +120,9 @@ class WiiUploadFileRunner extends AbstractRunner {
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-    
+
     private String encodeURL(String string) throws UnsupportedEncodingException {
-        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", string);
+        final Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", string);
 
         if (matcher.find()) {
             return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");

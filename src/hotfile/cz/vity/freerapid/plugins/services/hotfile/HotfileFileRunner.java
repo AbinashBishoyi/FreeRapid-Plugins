@@ -25,7 +25,7 @@ class HotfileFileRunner extends AbstractRunner {
         final HttpMethod httpMethod = builder.setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -40,7 +40,7 @@ class HotfileFileRunner extends AbstractRunner {
         HttpMethod httpMethod = builder.setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
 
             if (getContentAsString().contains("var timerend=0;")) {
@@ -53,7 +53,7 @@ class HotfileFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.isEmpty()) {
@@ -63,6 +63,11 @@ class HotfileFileRunner extends AbstractRunner {
         if (contentAsString.contains("404 - Not Found")) {
             throw new URLNotAvailableAnymoreException("File was not found");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
+        final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("Your download expired")) {
             throw new YouHaveToWaitException("Your download expired", 60);
@@ -118,7 +123,7 @@ class HotfileFileRunner extends AbstractRunner {
         }
     }
 
-    private int getWaitTime() throws Exception {
+    private int getWaitTime() throws ErrorDuringDownloadingException {
         final Matcher matcher = getMatcherAgainstContent("([0-9]+?);\\s*document.getElementById\\('dwltxt");
 
         if (matcher.find()) {
@@ -137,7 +142,7 @@ class HotfileFileRunner extends AbstractRunner {
             final HttpMethod httpMethod = builder.setReferer(fileURL).setAction(finalURL).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
+                checkAllProblems();
                 logger.warning(getContentAsString());
                 throw new IOException("File input stream is empty");
             }

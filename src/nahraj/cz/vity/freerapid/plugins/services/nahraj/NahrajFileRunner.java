@@ -15,40 +15,40 @@ import java.io.IOException;
  */
 class NahrajFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NahrajFileRunner.class.getName());
-    
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        
+
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
-    
+
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
-        
+
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
-            
+
             Matcher matcher = getMatcherAgainstContent("enctype=\"multipart/form-data\" action=\"(.+?)\"");
-            
+
             if (matcher.find()) {
+                client.setReferer(fileURL);
                 final String finalURL = matcher.group(1);
-                client.setReferer(finalURL);
                 //client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                 getMethod = getGetMethod(finalURL);
-                
+
                 if (!tryDownloadAndSaveFile(getMethod)) {
-                    checkProblems();
+                    checkAllProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
@@ -60,30 +60,34 @@ class NahrajFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         Matcher matcher = getMatcherAgainstContent("Neznam. soubor");
-        
+
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("Neznamý soubor");
         }
 
-        matcher = getMatcherAgainstContent("V.cen.sobn. download");
+        matcher = getMatcherAgainstContent("V.cen.sobn. download"); // TODO
 
         if (matcher.find()) {
             throw new YouHaveToWaitException("Vícenásobný download", 60);
         }
     }
 
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
+    }
+
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         Matcher matcher = getMatcherAgainstContent("class=\"title\">(.+?)<");
-        
+
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
-            
+
             matcher = getMatcherAgainstContent("class=\"size\">(.+?)<");
-            
+
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
                 logger.info("File size " + fileSize);
@@ -96,7 +100,7 @@ class NahrajFileRunner extends AbstractRunner {
             logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
-        
+
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 }

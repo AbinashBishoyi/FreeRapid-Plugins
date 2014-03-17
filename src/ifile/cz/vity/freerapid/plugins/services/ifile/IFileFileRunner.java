@@ -9,7 +9,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 
 /**
  * @author Kajda
@@ -23,39 +23,37 @@ class IFileFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
 
-   @Override
+    @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
+            final URI fileURI = new URI(fileURL);
+            final String[] filePath = fileURI.getPath().split("/");
 
-            final URL fURL = new URL(fileURL);
-            final String[] filePath = fURL.getPath().split("/");
-            
             if (filePath.length > 1) {
+                client.setReferer(fileURL);
                 String redirectURL = "http://ifile.it/download:dl_request?is=" + filePath[1] + ",type=simple,message=ok";
-                client.setReferer(redirectURL);
                 getMethod = getGetMethod(redirectURL);
 
                 if (!makeRedirectedRequest(getMethod)) {
                     throw new ServiceConnectionProblemException();
                 }
 
-                checkProblems();
-
-                redirectURL = "http://ifile.it/dl";
+                checkAllProblems();
                 client.setReferer(redirectURL);
+                redirectURL = "http://ifile.it/dl";
                 getMethod = getGetMethod(redirectURL);
 
                 if (!makeRedirectedRequest(getMethod)) {
@@ -65,21 +63,19 @@ class IFileFileRunner extends AbstractRunner {
                 final Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Download<");
 
                 if (matcher.find()) {
+                    client.setReferer(redirectURL);
                     final String finalURL = matcher.group(1);
-                    client.setReferer(finalURL);
                     getMethod = getGetMethod(finalURL);
 
                     if (!tryDownloadAndSaveFile(getMethod)) {
-                        checkProblems();
+                        checkAllProblems();
                         logger.warning(getContentAsString());
                         throw new IOException("File input stream is empty");
                     }
-                }
-                else {
+                } else {
                     throw new PluginImplementationException("Download link was not found");
                 }
-            }
-            else {
+            } else {
                 throw new PluginImplementationException("File key was not found");
             }
         } else {
@@ -87,12 +83,16 @@ class IFileFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("file removed")) {
             throw new URLNotAvailableAnymoreException("file removed, complaints received from copyright owners");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {

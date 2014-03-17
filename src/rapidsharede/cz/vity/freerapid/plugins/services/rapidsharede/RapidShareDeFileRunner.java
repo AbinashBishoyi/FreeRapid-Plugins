@@ -25,19 +25,16 @@ class RapidShareDeFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
-
-            final String requestURL = "http://rapidshare.de/";
-            client.setReferer(requestURL);
-            final PostMethod postMethod = getPostMethod(requestURL);
-            PlugUtils.addParameters(postMethod, getContentAsString(), new String[] {"uri"});
+            checkSeriousProblems();
+            client.setReferer(fileURL);
+            final String redirectURL = "http://rapidshare.de/";
+            final PostMethod postMethod = getPostMethod(redirectURL);
+            PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"uri"});
             postMethod.addParameter("dl.start", "Free");
 
             if (makeRedirectedRequest(postMethod)) {
-                checkProblems();
                 checkNameAndSize();
-            }
-            else {
+            } else {
                 throw new ServiceConnectionProblemException();
             }
         } else {
@@ -45,23 +42,22 @@ class RapidShareDeFileRunner extends AbstractRunner {
         }
     }
 
-   @Override
+    @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
-
-            final String requestURL = "http://rapidshare.de/";
-            client.setReferer(requestURL);
-            PostMethod postMethod = getPostMethod(requestURL);
-            PlugUtils.addParameters(postMethod, getContentAsString(), new String[] {"uri"});
+            checkAllProblems();
+            client.setReferer(fileURL);
+            final String redirectURL = "http://rapidshare.de/";
+            PostMethod postMethod = getPostMethod(redirectURL);
+            PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"uri"});
             postMethod.addParameter("dl.start", "Free");
 
             if (makeRedirectedRequest(postMethod)) {
-                checkProblems();
+                checkAllProblems();
                 checkNameAndSize();
 
                 Matcher matcher = getMatcherAgainstContent("unescape\\(\'(.+?)\'\\)");
@@ -74,24 +70,21 @@ class RapidShareDeFileRunner extends AbstractRunner {
                     if (matcher.find()) {
                         int waitSeconds = Integer.parseInt(matcher.group(1));
                         downloadTask.sleep(waitSeconds);
-
+                        client.setReferer(redirectURL);
                         postMethod = stepCaptcha(downloadForm);
 
                         if (!tryDownloadAndSaveFile(postMethod)) {
-                            checkProblems();
+                            checkAllProblems();
                             logger.warning(getContentAsString());
                             throw new IOException("File input stream is empty");
                         }
-                    }
-                    else {
+                    } else {
                         throw new PluginImplementationException();
                     }
-                }
-                else {
+                } else {
                     throw new PluginImplementationException();
                 }
-            }
-            else {
+            } else {
                 throw new ServiceConnectionProblemException();
             }
         } else {
@@ -99,9 +92,8 @@ class RapidShareDeFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        Matcher matcher;
 
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
@@ -110,6 +102,12 @@ class RapidShareDeFileRunner extends AbstractRunner {
         if (contentAsString.contains("This file has been deleted")) {
             throw new URLNotAvailableAnymoreException("This file has been deleted");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
+        final String contentAsString = getContentAsString();
+        Matcher matcher;
 
         if (contentAsString.contains("Access-code wrong")) {
             throw new ServiceConnectionProblemException("Access-code wrong");
@@ -126,10 +124,6 @@ class RapidShareDeFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             throw new ServiceConnectionProblemException(String.format("Your IP-address %s is already downloading a file. You have to wait until it is finished", matcher.group(1)));
-        }
-        
-        if (contentAsString.contains("Download-session invalid")) {
-            throw new ServiceConnectionProblemException("Download-session invalid");
         }
 
         if (contentAsString.contains("Download-session invalid")) {
@@ -167,7 +161,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private PostMethod stepCaptcha(String downloadForm) throws Exception {
+    private PostMethod stepCaptcha(String downloadForm) throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
 
         Matcher matcher = PlugUtils.matcher("img src=\"(.+?)\"", downloadForm);
@@ -188,8 +182,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
                     postMethod.addParameter("captcha", captcha);
 
                     return postMethod;
-                }
-                else {
+                } else {
                     throw new PluginImplementationException("Download link was not found");
                 }
             }

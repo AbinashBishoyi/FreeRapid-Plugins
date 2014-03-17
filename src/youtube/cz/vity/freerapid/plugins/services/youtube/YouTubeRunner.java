@@ -25,8 +25,7 @@ class YouTubeFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkFmtParameter();
-            checkProblems();
+            checkSeriousProblems();
             checkName();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -40,8 +39,8 @@ class YouTubeFileRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
+            checkAllProblems();
             checkFmtParameter();
-            checkProblems();
             checkName();
 
             Matcher matcher = getMatcherAgainstContent("var fullscreenUrl = '(.+?)'");
@@ -52,13 +51,12 @@ class YouTubeFileRunner extends AbstractRunner {
                 matcher = PlugUtils.matcher("video_id=(.+?)&.+&t=(.+?)&", matcherAsString);
 
                 if (matcher.find()) {
-                    final String finalURL = SERVICE_WEB + "/get_video.php?video_id=" + matcher.group(1) + "&t=" + matcher.group(2) + fmtParameter;
-                    client.setReferer(finalURL);
                     client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
+                    final String finalURL = SERVICE_WEB + "/get_video.php?video_id=" + matcher.group(1) + "&t=" + matcher.group(2) + fmtParameter;
                     getMethod = getGetMethod(finalURL);
 
                     if (!tryDownloadAndSaveFile(getMethod)) {
-                        checkProblems();
+                        checkAllProblems();
                         logger.warning(getContentAsString());
                         throw new IOException("File input stream is empty");
                     }
@@ -73,12 +71,16 @@ class YouTubeFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final Matcher matcher = getMatcherAgainstContent("class=\"errorBox\">((?:.|\\s)+?)</div");
 
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(matcher.group(1));
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
     }
 
     private void checkName() throws ErrorDuringDownloadingException {

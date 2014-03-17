@@ -2,7 +2,7 @@
 <project name="RapidShare.de" default="all" basedir=".">
     <property name="application" value="rapidsharede"/>
 
-    <property name="version" value="0.5"/>
+    <property name="version" value="0.6"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="rapidsharede.jar"/>

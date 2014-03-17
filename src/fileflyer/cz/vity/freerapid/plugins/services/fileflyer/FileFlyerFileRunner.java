@@ -22,37 +22,36 @@ class FileFlyerFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
 
-   @Override
+    @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
 
             final Matcher matcher = getMatcherAgainstContent("class=\"handlink\" href=\"(.+?)\"");
 
             if (matcher.find()) {
+                client.setReferer(fileURL);
                 final String finalURL = matcher.group(1);
-                client.setReferer(finalURL);
                 getMethod = getGetMethod(finalURL);
 
                 if (!tryDownloadAndSaveFile(getMethod)) {
-                    checkProblems();
+                    checkAllProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
-            }
-            else {
+            } else {
                 throw new PluginImplementationException("Download link was not found");
             }
         } else {
@@ -60,7 +59,7 @@ class FileFlyerFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("To report a bug")) {
@@ -70,6 +69,11 @@ class FileFlyerFileRunner extends AbstractRunner {
         if (contentAsString.contains("Expired")) {
             throw new URLNotAvailableAnymoreException("Expired");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
+        final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("Please try again later")) {
             throw new YouHaveToWaitException("Due to FileFlyer server loads in your area, access to the service may be unavailable for a while. Please try again later", 60);

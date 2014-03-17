@@ -24,37 +24,36 @@ class UppITFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
 
-   @Override
+    @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkAllProblems();
             checkNameAndSize();
 
             final Matcher matcher = getMatcherAgainstContent("href=\\\\'(.+?)\\\\'\"><h1>Download File");
 
             if (matcher.find()) {
+                client.setReferer(fileURL);
                 final String finalURL = encodeURL(matcher.group(1));
-                client.setReferer(finalURL);
                 getMethod = getGetMethod(finalURL);
 
                 if (!tryDownloadAndSaveFile(getMethod)) {
-                    checkProblems();
+                    checkAllProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
-            }
-            else {
+            } else {
                 throw new PluginImplementationException("Download link was not found");
             }
         } else {
@@ -62,12 +61,16 @@ class UppITFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("Invalid download link")) {
             throw new URLNotAvailableAnymoreException("Invalid download link");
         }
+    }
+
+    private void checkAllProblems() throws ErrorDuringDownloadingException {
+        checkSeriousProblems();
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
@@ -95,9 +98,9 @@ class UppITFileRunner extends AbstractRunner {
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-    
+
     private String encodeURL(String string) throws UnsupportedEncodingException {
-        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", string);
+        final Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", string);
 
         if (matcher.find()) {
             return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");

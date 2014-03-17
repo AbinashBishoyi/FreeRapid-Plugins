@@ -33,9 +33,14 @@ class BbcFileRunner extends AbstractRtmpRunner {
     private final static String SWF_URL = "http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
+    private void checkUrl() {
+        fileURL = fileURL.replace("/programmes/", "/iplayer/episode/");
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -71,6 +76,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {

@@ -147,6 +147,10 @@
         <ant dir="${src.dir}/co/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/gametrailers/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/usershare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/picasa/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/xun6/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/quickshare_premium/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/uploadspace/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

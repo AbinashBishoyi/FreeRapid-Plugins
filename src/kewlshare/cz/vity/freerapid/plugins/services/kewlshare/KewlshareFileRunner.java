@@ -159,7 +159,7 @@ class KewlshareFileRunner extends AbstractRunner {
         }
         if (content.contains("http://img.kewlshare.com/dl/images/dlnow.png")) {
             result = 8;
-            String newURL = "http://face." + PlugUtils.getStringBetween(getContentAsString(), "http://face.", "\"");
+            String newURL = PlugUtils.getStringBetween(getContentAsString(), "form action=\"", "\" method=\"get\" name=\"post\"");
 
             logger.info("Final URL: " + newURL);
 

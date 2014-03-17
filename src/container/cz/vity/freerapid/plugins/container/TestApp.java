@@ -17,8 +17,8 @@ import java.util.logging.Logger;
 public final class TestApp extends PluginDevApplication {
     private final static Logger logger = Logger.getLogger(TestApp.class.getName());
 
-    private final static String FILE = "E:\\Apps\\CryptLoad\\settings\\load.cdd";
-    private final static String FILE2 = "C:\\Users\\Administrator\\Desktop\\test2.jdc";
+    private final static String FILE = "C:\\Users\\Administrator\\Desktop\\1.ccf";
+    private final static String FILE2 = "C:\\Users\\Administrator\\Desktop\\2.rsdf";
 
     @Override
     protected void startup() {
@@ -28,17 +28,22 @@ public final class TestApp extends PluginDevApplication {
             plugin.setDialogSupport(new DevDialogSupport(getContext()));
 
             List<FileInfo> list = plugin.read(new FileInputStream(FILE), FILE);
-            for (final FileInfo file : list) {
-                logger.info(file.getFileUrl().toString());
-            }
-            /*plugin.write(list, new FileOutputStream(FILE2), FILE2);
-            list = plugin.read(new FileInputStream(FILE2), FILE2);
-            for (final FileInfo file : list) {
-                logger.info(file.getFileUrl().toString());
-            }*/
-        } catch (Exception e) {
+            logList(list);
+
+            //plugin.write(list, new FileOutputStream(FILE2), FILE2);
+            //list = plugin.read(new FileInputStream(FILE2), FILE2);
+            //logList(list);
+        } catch (final Exception e) {
             LogUtils.processException(logger, e);
         }
+    }
+
+    private void logList(final List<FileInfo> list) {
+        final StringBuilder sb = new StringBuilder("URLs in list:");
+        for (final FileInfo info : list) {
+            sb.append('\n').append(info.getFileUrl().toString());
+        }
+        logger.info(sb.toString());
     }
 
     private void prepareList(final List<FileInfo> list) throws Exception {

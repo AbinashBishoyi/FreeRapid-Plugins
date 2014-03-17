@@ -1,6 +1,8 @@
 package cz.vity.freerapid.plugins.container;
 
 import cz.vity.freerapid.plugins.container.impl.*;
+import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.interfaces.DialogSupport;
 import cz.vity.freerapid.utilities.LogUtils;
 
 import java.io.BufferedInputStream;
@@ -30,6 +32,13 @@ public final class ContainerPluginImpl extends ContainerPlugin {
         SUPPORTED_FILES_LIST = new ArrayList<String[]>(SUPPORTED_FILES.keySet());
     }
 
+    public static ContainerPlugin getInstanceForPlugin(final ConnectionSettings connectionSettings, final DialogSupport dialogSupport) {
+        final ContainerPlugin plugin = new ContainerPluginImpl();
+        plugin.setConnectionSettings(connectionSettings);
+        plugin.setDialogSupport(dialogSupport);
+        return plugin;
+    }
+
     @Override
     public List<String[]> getSupportedFiles() {
         return SUPPORTED_FILES_LIST;
@@ -49,7 +58,7 @@ public final class ContainerPluginImpl extends ContainerPlugin {
         } finally {
             try {
                 is.close();
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 LogUtils.processException(logger, e);
             }
         }
@@ -69,7 +78,7 @@ public final class ContainerPluginImpl extends ContainerPlugin {
         } finally {
             try {
                 os.close();
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 LogUtils.processException(logger, e);
             }
         }
@@ -85,7 +94,7 @@ public final class ContainerPluginImpl extends ContainerPlugin {
                 if (s.equals(format)) {
                     try {
                         return entry.getValue().getConstructor(ContainerPlugin.class).newInstance(this);
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                         LogUtils.processException(logger, e);
                     }
                 }

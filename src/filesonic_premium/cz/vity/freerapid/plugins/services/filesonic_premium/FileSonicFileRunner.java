@@ -83,11 +83,17 @@ class FileSonicFileRunner extends AbstractRunner {
             if (!pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
-                    throw new NotRecoverableDownloadException("No FileSonic Premium account login information!");
+                    throw new BadLoginException("No FileSonic Premium account login information!");
                 }
             }
         }
-        final HttpMethod method = getMethodBuilder()
+        //Sometimes redirected to a country specific domain. Login using that instead of .com.
+        HttpMethod method = getGetMethod("http://www.filesonic.com");
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException();
+        }
+        method = getMethodBuilder()
+                .setBaseURL(method.getURI().toString())
                 .setAction("/user/login")
                 .setParameter("email", pa.getUsername())
                 .setParameter("redirect", "/")
@@ -98,16 +104,10 @@ class FileSonicFileRunner extends AbstractRunner {
         method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
         if (!makeRedirectedRequest(method)) {
-            logger.warning("Request URL: " + method.getURI());
-            logger.warning("Response status line: " + method.getStatusLine());
-            logger.warning("Response content: " + getContentAsString());
             throw new ServiceConnectionProblemException("Error posting login info");
         }
         if (!getContentAsString().contains("\"status\":\"success\"")) {
-            logger.warning("Request URL: " + method.getURI());
-            logger.warning("Response status line: " + method.getStatusLine());
-            logger.warning("Response content: " + getContentAsString());
-            throw new NotRecoverableDownloadException("Invalid FileSonic Premium account login information!");
+            throw new BadLoginException("Invalid FileSonic Premium account login information!");
         }
     }
 

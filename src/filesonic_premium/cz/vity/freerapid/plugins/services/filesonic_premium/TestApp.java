@@ -18,13 +18,13 @@ public class TestApp extends PluginDevApplication {
         try {
             httpFile.setNewURL(new URL("http://www.filesonic.com/file/1557504161/Richard.Hammonds.Journey.To.The.S01E02.Bottom.Of.The.Ocean.480p.HDTV.x264-mSD.part1.rar"));
             final FileSonicServiceImpl service = new FileSonicServiceImpl();
-
             PremiumAccount config = new PremiumAccount();
             config.setUsername("***");
             config.setPassword("***");
             service.setConfig(config);
-
-            testRun(service, httpFile, new ConnectionSettings());
+            final ConnectionSettings settings = new ConnectionSettings();
+            //settings.setProxy("localhost", 8118);
+            testRun(service, httpFile, settings);
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console
         }

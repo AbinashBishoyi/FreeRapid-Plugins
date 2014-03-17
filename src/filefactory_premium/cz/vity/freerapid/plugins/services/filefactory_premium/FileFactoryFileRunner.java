@@ -73,7 +73,7 @@ class FileFactoryFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span");
-        PlugUtils.checkFileSize(httpFile, content, "<span>", "file uploaded");
+        PlugUtils.checkFileSize(httpFile, content, "<h2>", "file uploaded");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

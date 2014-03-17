@@ -46,7 +46,10 @@ class FileFactoryRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
 
             if (getContentAsString().contains("Download with FileFactory TrafficShare")) {
-                HttpMethod finalMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download with FileFactory TrafficShare").toGetMethod();
+                HttpMethod finalMethod = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setActionFromAHrefWhereATagContains("Download with FileFactory TrafficShare")
+                        .toGetMethod();
                 if (tryDownloadAndSaveFile(finalMethod)) {
                     return;
                 }
@@ -57,13 +60,20 @@ class FileFactoryRunner extends AbstractRunner {
                 if (!makeRedirectedRequest(stepCaptcha())) {
                     throw new ServiceConnectionProblemException();
                 }
-            } while (!getContentAsString().contains("status:\"ok\""));
+            } while (!getContentAsString().contains("\"status\":\"ok\""));
 
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("path:\"", "\"").toGetMethod();
+            final String action = PlugUtils.getStringBetween(getContentAsString(), "\"path\":\"", "\"").replace("\\/", "/");
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(action)
+                    .toGetMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 checkAllProblems();
 
-                final HttpMethod finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("download.start.jpg").toGetMethod();
+                final HttpMethod finalMethod = getMethodBuilder()
+                        .setReferer(httpMethod.getURI().toString())
+                        .setActionFromAHrefWhereATagContains("Click here to download now")
+                        .toGetMethod();
 
                 downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
 
@@ -83,7 +93,7 @@ class FileFactoryRunner extends AbstractRunner {
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span");
-        PlugUtils.checkFileSize(httpFile, content, "<span>", "file uploaded");
+        PlugUtils.checkFileSize(httpFile, content, "<h2>", "file uploaded");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -130,10 +140,20 @@ class FileFactoryRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha() throws Exception {
-        if (reCaptchaKey == null)
-            reCaptchaKey = PlugUtils.getStringBetween(getContentAsString(), "Recaptcha.create(\"", "\"");
-        if (captchaCheck == null)
-            captchaCheck = PlugUtils.getStringBetween(getContentAsString(), "check:'", "'");
+        if (reCaptchaKey == null) {
+            final Matcher matcher = getMatcherAgainstContent("Recaptcha\\.create\\(\\s*?\"(.+?)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("ReCaptcha key not found");
+            }
+            reCaptchaKey = matcher.group(1);
+        }
+        if (captchaCheck == null) {
+            final Matcher matcher = getMatcherAgainstContent("check\\s*?:\\s*?'(.+?)'");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Captcha check not found");
+            }
+            captchaCheck = matcher.group(1);
+        }
         final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
         final CaptchaSupport captchaSupport = getCaptchaSupport();
 

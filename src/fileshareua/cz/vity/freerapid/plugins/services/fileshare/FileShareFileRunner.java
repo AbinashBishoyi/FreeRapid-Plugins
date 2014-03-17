@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 /**
  * Class which contains main code
  *
- * @author Vity
+ * @author Saikek
  */
 class FileShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileShareFileRunner.class.getName());
@@ -55,13 +55,14 @@ class FileShareFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod)) {
                 throw new ServiceConnectionProblemException();
             }
+            String url_to_download = PlugUtils.getStringBetween(getContentAsString(),  "href=\"", "\" id=\"dl_link");
+            httpMethod = getMethodBuilder().setAction(url_to_download).toGetMethod();//getMethod.getPath() + "?fr").toGetMethod();
 
-            httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromIFrameSrcWhereTagContains(getMethod.getPath() + "?fr").toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                throw new ServiceConnectionProblemException();
-            }
+//            if (!makeRedirectedRequest(httpMethod)) {
+//                throw new ServiceConnectionProblemException();
+//            }
 
-            httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Скачать файл").toGetMethod();
+//            httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Скачать файл").toGetMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 logger.warning(getContentAsString());

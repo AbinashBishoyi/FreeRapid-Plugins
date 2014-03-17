@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="fileshare.in.ua" version="0.0.5" vendor="Saikek"
+<plugin id="fileshare.in.ua" version="0.0.6" vendor="Saikek"
         class="cz.vity.freerapid.plugins.services.fileshare.FileShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?fileshare\.in\.ua/.+"/>

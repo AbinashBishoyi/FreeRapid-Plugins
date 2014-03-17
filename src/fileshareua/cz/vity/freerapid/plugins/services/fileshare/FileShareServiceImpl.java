@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Vity
+ * @author Saikek
  *         Class that provides basic info about plugin
  */
 public class FileShareServiceImpl extends AbstractFileShareService {
@@ -15,12 +15,12 @@ public class FileShareServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 8;//TODO - check!!!
+        return 1;
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//TODO - check!!!
+        return true;
     }
 
     @Override

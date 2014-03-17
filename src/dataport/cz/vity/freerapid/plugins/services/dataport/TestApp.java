@@ -16,9 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://dataport.cz/file/240783/Chuck.S04E15.HDTV.XviD-LOL.avi"));
-
-            httpFile.setNewURL(new URL("http://dataport.cz/file/241370/The_Fighter_2010_DVDRip.XviD_°°Moatas°°.avi"));
+            httpFile.setNewURL(new URL("http://dataport.cz/file/merlin-2008-s01e03-dvdrip-xvid-haggis-rar"));
 
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

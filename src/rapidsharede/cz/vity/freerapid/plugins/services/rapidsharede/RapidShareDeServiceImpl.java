@@ -28,7 +28,7 @@ public class RapidShareDeServiceImpl extends AbstractFileShareService {
 
 
     public int getMaxDownloadsFromOneIP() {
-        return 9;
+        return 1;
     }
 
     @Override
@@ -40,13 +40,10 @@ public class RapidShareDeServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new RapidShareDeFileRunner();
     }
-
-
+    
     private static void trustAllCerts() throws Exception {
-        ProtocolSocketFactory sf = new
-                EasySSLProtocolSocketFactory();
+        ProtocolSocketFactory sf = new EasySSLProtocolSocketFactory();
         Protocol p = new Protocol("https", sf, 443);
         Protocol.registerProtocol("https", p);
     }
-
 }

@@ -57,7 +57,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
             final String requestURL = "http://rapidshare.de/";
             client.setReferer(requestURL);
             PostMethod postMethod = getPostMethod(requestURL);
-            PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"uri"});
+            PlugUtils.addParameters(postMethod, getContentAsString(), new String[] {"uri"});
             postMethod.addParameter("dl.start", "Free");
 
             if (makeRedirectedRequest(postMethod)) {
@@ -72,7 +72,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
                     matcher = getMatcherAgainstContent("var c = (.+?);");
 
                     if (matcher.find()) {
-                        int waitSeconds = new Integer(matcher.group(1));
+                        int waitSeconds = Integer.parseInt(matcher.group(1));
                         downloadTask.sleep(waitSeconds);
 
                         postMethod = stepCaptcha(downloadForm);
@@ -101,6 +101,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
+        Matcher matcher;
 
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
@@ -110,20 +111,34 @@ class RapidShareDeFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("This file has been deleted");
         }
 
-        if (contentAsString.contains("Download-session invalid")) {
-            throw new ServiceConnectionProblemException("Download-session invalid");
-        }
-
         if (contentAsString.contains("Access-code wrong")) {
             throw new ServiceConnectionProblemException("Access-code wrong");
         }
 
-        if (contentAsString.contains("Download-Ticket nicht bereit")) {
-            throw new ServiceConnectionProblemException("Download-Ticket nicht bereit");
+        if (contentAsString.contains("You have reached the download limit for free users")) {
+            matcher = getMatcherAgainstContent("\\(Or wait (.+?) minute.?\\)");
+
+            int waitMinutes = (matcher.find()) ? Integer.parseInt(matcher.group(1)) : 2;
+
+            throw new YouHaveToWaitException("You have reached the download limit for free users", 60 * waitMinutes);
         }
 
-        if (contentAsString.contains("You have reached the download limit for free users")) {
-            throw new YouHaveToWaitException("You have reached the download limit for free users", 2 * 60);
+        matcher = getMatcherAgainstContent("Your IP-address (.+?) is already downloading a file");
+
+        if (matcher.find()) {
+            throw new ServiceConnectionProblemException(String.format("Your IP-address %s is already downloading a file. You have to wait until it is finished", matcher.group(1)));
+        }
+        
+        if (contentAsString.contains("Download-session invalid")) {
+            throw new ServiceConnectionProblemException("Download-session invalid");
+        }
+
+        if (contentAsString.contains("Download-session invalid")) {
+            throw new ServiceConnectionProblemException("Download-session invalid");
+        }
+
+        if (contentAsString.contains("Download-Ticket nicht bereit")) {
+            throw new ServiceConnectionProblemException("Download-Ticket nicht bereit");
         }
     }
 

@@ -37,8 +37,11 @@ class DizzCloudFileRunner extends AbstractRunner {
         Matcher match = PlugUtils.matcher("file-name\">(.+?)\\[(.+?)\\]</div>", content);
         if (!match.find()) {
             match = PlugUtils.matcher("File: </div>(.+?)<span.*?>\\[(.+?)\\]<span>", content);
-            if (!match.find())
-                throw new PluginImplementationException("File name/size not found");
+            if (!match.find()) {
+                match = PlugUtils.matcher("<div class=\"name\">(.+?)</div>\\s+?<div id=\"file-size\">(.+?)</div>", content);
+                if (!match.find())
+                    throw new PluginImplementationException("File name/size not found");
+            }
         }
         httpFile.setFileName(match.group(1).trim());
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(2)));

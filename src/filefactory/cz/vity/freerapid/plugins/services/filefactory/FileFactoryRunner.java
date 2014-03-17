@@ -70,6 +70,16 @@ class FileFactoryRunner extends AbstractRunner {
             if (makeRedirectedRequest(httpMethod)) {
                 checkAllProblems();
 
+                final Matcher match = PlugUtils.matcher("<a href=\"(.+?" + httpFile.getFileName() + ")\">", getContentAsString());
+                if (!match.find())
+                    throw new PluginImplementationException("Problem finding final page");
+                getMethod = getGetMethod(match.group(1));
+                if (!makeRedirectedRequest(getMethod)) {
+                    checkAllProblems();
+                    throw new PluginImplementationException("Problem loading final page");
+                }
+                checkAllProblems();
+
                 final HttpMethod finalMethod = getMethodBuilder()
                         .setReferer(httpMethod.getURI().toString())
                         .setActionFromAHrefWhereATagContains("Click here to download now")
@@ -99,8 +109,11 @@ class FileFactoryRunner extends AbstractRunner {
 
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Sorry, this file is no longer available")) {
+        if (contentAsString.contains("Sorry, this file is no longer available") || contentAsString.contains("This file has been deleted")) {
             throw new URLNotAvailableAnymoreException("Sorry, this file is no longer available. It may have been deleted by the uploader, or has expired");
+        }
+        if (contentAsString.contains("This file is forbidden to be shared")) {
+            throw new URLNotAvailableAnymoreException("File is forbidden to be shared");
         }
         if (contentAsString.contains("What is FileFactory?")) {
             throw new URLNotAvailableAnymoreException("Page not found");

@@ -51,7 +51,7 @@ class ShareflareRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
         checkNameAndSize();
-
+        checkProblems();
         final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dvifree", true).toPostMethod();
         if (!makeRedirectedRequest(httpMethod2)) {
             checkProblems();

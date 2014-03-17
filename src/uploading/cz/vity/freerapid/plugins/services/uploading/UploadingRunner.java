@@ -47,28 +47,47 @@ class UploadingRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")") + 1);
-            method = getMethodBuilder()
+
+            method = getMethodBuilder()     // get wait time, which also sets a cookie 4 the download
+                    .setReferer(fileURL)
+                    .setAction("http://uploading.com/files/get/?ajax")
+                    .setParameter("action", "second_page")
+                    .setParameter("code", PlugUtils.getStringBetween(fileURL + "/", "get/", "/"))
+                    .toPostMethod();
+            method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error getting wait time");
+            }
+            checkProblems();
+            Matcher matcher = getMatcherAgainstContent("\"wait_time\"\\s*:\\s*\"(\\d+)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Wait time not found");
+            }
+            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
+
+            method = getMethodBuilder()       // get download link
                     .setReferer(fileURL)
                     .setAction("http://uploading.com/files/get/?ajax")
                     .setParameter("action", "get_link")
                     .setParameter("code", PlugUtils.getStringBetween(fileURL + "/", "get/", "/"))
                     .setParameter("pass", "false")
                     .toPostMethod();
-            if (makeRedirectedRequest(method)) {
+            method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+            if (!makeRedirectedRequest(method)) {
                 checkProblems();
-                final Matcher matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Download link not found");
-                }
-                method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1).replace("\\/", "/")).toGetMethod();
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
-                }
-            } else {
+                throw new ServiceConnectionProblemException("Error getting download link");
+            }
+            checkProblems();
+            matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download link not found");
+            }
+            method = getGetMethod((matcher.group(1).replace("\\/", "/")));
+
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
-                throw new ServiceConnectionProblemException();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();

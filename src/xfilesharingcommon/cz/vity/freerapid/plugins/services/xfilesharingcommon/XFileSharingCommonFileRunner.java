@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
@@ -13,7 +12,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.awt.image.BufferedImage;
-import java.lang.reflect.Method;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -25,106 +23,35 @@ import java.util.regex.Pattern;
  *
  * @author tong2shot
  */
-//public abstract class XFileSharingCommonFileRunner extends AbstractRunner {
 public class XFileSharingCommonFileRunner extends AbstractRunner {
     protected final static Logger logger = Logger.getLogger(XFileSharingCommonFileRunner.class.getName());
-    private final int captchaMax = 8;
-    private int captchaCounter = 0;
-    /*
-    protected abstract void checkNameAndSize(String content) throws ErrorDuringDownloadingException;
+    private final int captchaMax = 8; //used in stepCaptchas()
+    private int captchaCounter = 0; //used in stepCaptchas()
+    protected String cookieDomain; //ex : ".ryushare.com"
+    protected String serviceTitle; //ex : "RyuShare"
 
-    protected abstract String getCookieDomain();
+    //value should be 1 or 2
+    //mostly there are 2 pages that contains 'method_free' in FORM tag,
+    //but some sites only show 1 page that contains 'method_free' in FORM tag
+    protected int numberOfPages = 2;
 
-    protected abstract String getServiceTitle();
-
-    protected abstract boolean isRegisteredUserImplemented();
-
-    //protected abstract Class getRunnerClass();
-
-    //protected abstract Class getImplClass();
-    */
-
-    //private void checkPrerequisites() throws PluginImplementationException {
-
-    //check the prerequisites
+    protected RegisteredUser registeredUser;
+    protected CustomCaptcha customCaptcha;
+    protected CustomRun customRun;
 
     protected void checkPrerequisites() throws PluginImplementationException {
-        if (getCookieDomain() == null)
-            throw new PluginImplementationException("getCookieDomain return value cannot be null.");
-        if (getServiceTitle() == null)
-            throw new PluginImplementationException("getServiceTitle return value cannot be null.");
-        if (isRegisteredUserImplemented()) {
-            if (getLoginActionURL() == null)
-                throw new PluginImplementationException("getLoginActionURL return value cannot be null.");
-            if (getLoginURL() == null)
-                throw new PluginImplementationException("getLoginURL return value cannot be null.");
-            if (getRunnerClass() == null)
-                throw new PluginImplementationException("getRunnerClass return value cannot be null.");
-            if (getImplClass() == null)
-                throw new PluginImplementationException("getImplClass return value cannot be null.");
-        }
-        if ((getNumberOfPages() < 1) || (getNumberOfPages() > 2))
+        if (cookieDomain == null)
+            throw new PluginImplementationException("cookieDomain cannot be null.");
+        if (serviceTitle == null)
+            throw new PluginImplementationException("serviceTitle cannot be null.");
+        if ((numberOfPages < 1) || (numberOfPages > 2))
             throw new PluginImplementationException("Number of pages should be 1 or 2.");
-        if (useCustomCaptcha()) {
-            if (getCustomCaptchaRegex() == null)
-                throw new PluginImplementationException("getCustomCaptchaRegex return value cannot be null");
-        }
     }
 
     //should be overrided.
     //if filename and size doesn't need to be checked, simply type : httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         throw new PluginImplementationException("checkNameAndSize should be overrided");
-    }
-
-    //used to set language and in login related cookie
-    //return value should not be null
-    //return value ex : ".ryushare.com"
-    protected String getCookieDomain() {
-        return null;
-    }
-
-    //return value should not be null. used in password entry and login exception
-    //return value ex : "RyuShare"
-    protected String getServiceTitle() {
-        return null;
-    }
-
-    //flag for registered user support
-    protected boolean isRegisteredUserImplemented() {
-        return false;
-    }
-
-    //return value should not be null, if registered user is supported
-    //return value ex : RyuShareFileRunner.class;
-    protected Class getRunnerClass() {
-        return null;
-    }
-
-    //return value should not be null, if registered user is supported
-    //return value ex : RyuShareServiceImpl.class;
-    protected Class getImplClass() {
-        return null;
-    }
-
-    //return value should be 1 or 2
-    //mostly there are 2 pages that contains 'method_free' in FORM tag,
-    //but some sites only show 1 page that contains 'method_free' in FORM tag 
-    protected byte getNumberOfPages() {
-        return 2;
-    }
-
-    //return value should not be null, if registered user is supported
-    //return value ex : "http://www.ryushare.com/login.python
-    //                  "http://www.ddlstorage.com/login.html
-    protected String getLoginURL() {
-        return null;
-    }
-
-    //return value should not be null, if registered user is supported
-    //return value ex : "http://www.ryushare.com"
-    protected String getLoginActionURL() {
-        return null;
     }
 
     protected String getWaitTimeRegex() {
@@ -146,7 +73,7 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
 
     protected boolean isCaptchaExistInContent(String content) {
         String captchaRegex = "(" + getReCaptchaRegex() + "|" + getFourTokensCaptchaRegex() + "|" + Pattern.quote(getCaptchasImgTagContains());
-        if (useCustomCaptcha()) captchaRegex = captchaRegex + "|" + getCustomCaptchaRegex();
+        if (customCaptcha != null) captchaRegex = captchaRegex + "|" + customCaptcha.getRegex();
         captchaRegex = captchaRegex + ")";
         return PlugUtils.find(captchaRegex, content);
     }
@@ -169,26 +96,6 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         return true;
     }
 
-    //if return value = true, custom captcha regex (getCustomCaptchaRegex()) will be checked, if found : stepCustomCaptcha() will be executed
-    protected boolean useCustomCaptcha() {
-        return false;
-    }
-
-    //return value should not be null, if custom captcha is supported
-    protected String getCustomCaptchaRegex() {
-        return null;
-    }
-
-    //if return value = true, customRun() will be executed
-    protected boolean useCustomRun() {
-        return false;
-    }
-
-    //set language cookie, checkPrerequisites(), and login() (if needed) are already handled by run()
-    protected void customRun() throws Exception {
-        throw new PluginImplementationException("customRun should be overrided");
-    }
-
     //if return value = true, doWaitTime() will be executed for every captcha retry
     protected boolean waitTimeCaptchaRetry() {
         return false;
@@ -201,41 +108,11 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         }
     }
 
-    protected boolean login() throws Exception {
-        if (!isRegisteredUserImplemented()) //registered user support flag check
-            throw new PluginImplementationException("isRegisteredUserImplemented return value should be TRUE");
-        synchronized (getRunnerClass()) {
-            Method getConfig = getImplClass().getMethod("getConfig");
-            PremiumAccount pa = (PremiumAccount) getConfig.invoke(getPluginService());
-
-            if (pa == null || !pa.isSet()) {
-                logger.info("No account data set, skipping login");
-                return false;
-            }
-            final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(getLoginURL())
-                    .setAction(getLoginActionURL())
-                    .setParameter("op", "login")
-                    .setParameter("redirect", "")
-                    .setParameter("login", pa.getUsername())
-                    .setParameter("password", pa.getPassword())
-                    .setParameter("submit", "")
-                    .toPostMethod();
-            addCookie(new Cookie(getCookieDomain(), "login", pa.getUsername(), "/", null, false));
-            addCookie(new Cookie(getCookieDomain(), "xfss", "", "/", null, false));
-            if (!makeRedirectedRequest(httpMethod))
-                throw new ServiceConnectionProblemException("Error posting login info");
-            if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new BadLoginException("Invalid " + getServiceTitle() + " registered account login information!");
-            return true;
-        }
-    }
-
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         checkPrerequisites();
-        addCookie(new Cookie(getCookieDomain(), "lang", "english", "/", 86400, false));
+        addCookie(new Cookie(cookieDomain, "lang", "english", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
@@ -251,10 +128,10 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         checkPrerequisites();
-        addCookie(new Cookie(getCookieDomain(), "lang", "english", "/", 86400, false));
-        if (isRegisteredUserImplemented()) login();
-        if (useCustomRun()) {
-            customRun();
+        addCookie(new Cookie(cookieDomain, "lang", "english", "/", 86400, false));
+        if (registeredUser != null) registeredUser.login();
+        if (customRun != null) {
+            customRun.customRun();
             return;
         }
         logger.info("Starting download in TASK " + fileURL);
@@ -267,7 +144,7 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         checkNameAndSize(getContentAsString());
 
         HttpMethod httpMethod;
-        if (getNumberOfPages() == 2) {
+        if (numberOfPages == 2) {
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("method_free", true)
@@ -284,7 +161,7 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         doWaitTime();
         String password = null;
         if (isPassworded(getContentAsString())) {
-            password = getDialogSupport().askForPassword(getServiceTitle());
+            password = getDialogSupport().askForPassword(serviceTitle);
             if (password == null) {
                 throw new NotRecoverableDownloadException("This file is secured with a password");
             }
@@ -308,8 +185,8 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
             } else if (getContentAsString().contains(getCaptchasImgTagContains())) {
                 methodBuilder.setParameter("code", stepCaptchas());
                 httpMethod = methodBuilder.toPostMethod();
-            } else if (useCustomCaptcha() && PlugUtils.find(getCustomCaptchaRegex(), getContentAsString())) {
-                httpMethod = stepCustomCaptcha(methodBuilder);
+            } else if ((customCaptcha != null) && PlugUtils.find(customCaptcha.getRegex(), getContentAsString())) {
+                httpMethod = customCaptcha.stepCaptcha(methodBuilder);
             } else { //no captcha found
                 httpMethod = methodBuilder.toPostMethod();
             }
@@ -407,14 +284,9 @@ public class XFileSharingCommonFileRunner extends AbstractRunner {
         return captcha;
     }
 
-    //@TODO : captchaMax and captchaCounter
-    protected HttpMethod stepCustomCaptcha(MethodBuilder methodBuilder) throws Exception {
-        throw new PluginImplementationException("stepCustomCaptcha should be overrided");
-    }
-
     protected void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed")) {
+        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed") || contentAsString.contains("file has been removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("server is in maintenance mode")) {

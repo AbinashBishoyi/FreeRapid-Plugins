@@ -3,7 +3,8 @@ package cz.vity.freerapid.plugins.services.movzap;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonFileRunner;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.CustomRun;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.RegisteredUserRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
@@ -21,7 +22,7 @@ import java.util.regex.Matcher;
  *
  * @author tong2shot
  */
-class MovZapFileRunner extends XFileSharingCommonFileRunner {
+class MovZapFileRunner extends RegisteredUserRunner implements CustomRun {
     private final static Logger logger = Logger.getLogger(MovZapFileRunner.class.getName());
     private final static String SERVICE_TITLE = "MovZap";
     private final static String SERVICE_COOKIE_DOMAIN = ".movzap.com";
@@ -29,49 +30,13 @@ class MovZapFileRunner extends XFileSharingCommonFileRunner {
     private final static String SERVICE_LOGIN_ACTION = "http://www.movzap.com";
     private final static byte[] SECRET_KEY = "N%66=]H6".getBytes(Charset.forName("UTF-8"));
 
-    @Override
-    protected String getCookieDomain() {
-        return SERVICE_COOKIE_DOMAIN;
+    public MovZapFileRunner() {
+        super(SERVICE_COOKIE_DOMAIN, SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, MovZapFileRunner.class, MovZapServiceImpl.class);
+        customRun = this;
     }
 
     @Override
-    protected String getServiceTitle() {
-        return SERVICE_TITLE;
-    }
-
-    @Override
-    protected boolean isRegisteredUserImplemented() {
-        return true;
-    }
-
-    @Override
-    protected Class getRunnerClass() {
-        return MovZapFileRunner.class;
-    }
-
-    @Override
-    protected Class getImplClass() {
-        return MovZapServiceImpl.class;
-    }
-
-
-    @Override
-    protected String getLoginURL() {
-        return SERVICE_LOGIN_URL;
-    }
-
-    @Override
-    protected String getLoginActionURL() {
-        return SERVICE_LOGIN_ACTION;
-    }
-
-    @Override
-    protected boolean useCustomRun() {
-        return true;
-    }
-
-    @Override
-    protected void customRun() throws Exception {
+    public void customRun() throws Exception {
         logger.info("Starting download in TASK " + fileURL);
         GetMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {

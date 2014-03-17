@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.movzap;
 
-import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonServiceImpl;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.AccountServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,9 +8,13 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class MovZapServiceImpl extends XFileSharingCommonServiceImpl {
+public class MovZapServiceImpl extends AccountServiceImpl {
     private final static String PLUGIN_CONFIG_FILE = "plugin_MovZap.xml";
     private final static String SERVICE_TITLE = "MovZap";
+
+    public MovZapServiceImpl() {
+        super(PLUGIN_CONFIG_FILE, SERVICE_TITLE, MovZapServiceImpl.class);
+    }
 
     @Override
     public String getName() {
@@ -27,18 +31,4 @@ public class MovZapServiceImpl extends XFileSharingCommonServiceImpl {
         return new MovZapFileRunner();
     }
 
-    @Override
-    protected String getPluginConfigFile() {
-        return PLUGIN_CONFIG_FILE;
-    }
-
-    @Override
-    protected String getPluginServiceTitle() {
-        return SERVICE_TITLE;
-    }
-
-    @Override
-    protected Class getImplClass() {
-        return MovZapServiceImpl.class;
-    }
 }

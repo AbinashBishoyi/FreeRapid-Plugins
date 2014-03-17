@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.cosmobox;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonFileRunner;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.RegisteredUserRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
@@ -12,46 +12,15 @@ import java.util.logging.Logger;
  *
  * @author tong2shot
  */
-class CosmoBoxFileRunner extends XFileSharingCommonFileRunner {
+class CosmoBoxFileRunner extends RegisteredUserRunner {
     private final static Logger logger = Logger.getLogger(CosmoBoxFileRunner.class.getName());
     private final static String SERVICE_TITLE = "CosmoBox";
     private final static String SERVICE_COOKIE_DOMAIN = ".cosmobox.org";
     private final static String SERVICE_LOGIN_URL = "http://www.cosmobox.org/login.html";
     private final static String SERVICE_LOGIN_ACTION = "http://www.cosmobox.org/";
 
-    @Override
-    protected String getCookieDomain() {
-        return SERVICE_COOKIE_DOMAIN;
-    }
-
-    @Override
-    protected String getServiceTitle() {
-        return SERVICE_TITLE;
-    }
-
-    @Override
-    protected boolean isRegisteredUserImplemented() {
-        return true;
-    }
-
-    @Override
-    protected Class getRunnerClass() {
-        return CosmoBoxFileRunner.class;
-    }
-
-    @Override
-    protected Class getImplClass() {
-        return CosmoBoxServiceImpl.class;
-    }
-
-    @Override
-    protected String getLoginURL() {
-        return SERVICE_LOGIN_URL;
-    }
-
-    @Override
-    protected String getLoginActionURL() {
-        return SERVICE_LOGIN_ACTION;
+    public CosmoBoxFileRunner() {
+        super(SERVICE_COOKIE_DOMAIN, SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, CosmoBoxFileRunner.class, CosmoBoxServiceImpl.class);
     }
 
     @Override

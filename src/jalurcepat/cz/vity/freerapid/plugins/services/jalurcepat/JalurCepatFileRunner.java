@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.jalurcepat;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonFileRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -20,19 +19,10 @@ class JalurCepatFileRunner extends XFileSharingCommonFileRunner {
     private static final String SERVICE_TITLE = "JalurCepat";
     private static final String SERVICE_COOKIE_DOMAIN = ".jalurcepat.com";
 
-    @Override
-    public String getCookieDomain() {
-        return SERVICE_COOKIE_DOMAIN;
-    }
-
-    @Override
-    public String getServiceTitle() {
-        return SERVICE_TITLE;
-    }
-
-    @Override
-    protected byte getNumberOfPages() {
-        return 1;
+    public JalurCepatFileRunner() {
+        this.serviceTitle = SERVICE_TITLE;
+        this.cookieDomain = SERVICE_COOKIE_DOMAIN;
+        this.numberOfPages=1;
     }
 
     @Override
@@ -64,9 +54,6 @@ class JalurCepatFileRunner extends XFileSharingCommonFileRunner {
     @Override
     protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Wrong captcha")) {
-            throw new YouHaveToWaitException("Wrong captcha", 1);
-        }
         if (contentAsString.contains("this file reached max downloads limit")) {
             throw new PluginImplementationException("Sorry but this file reached max downloads limit");
         }

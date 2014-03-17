@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.asixfiles;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -25,12 +24,13 @@ public class TestApp extends PluginDevApplication {
             final AsixFilesServiceImpl service = new AsixFilesServiceImpl(); //instance of service - of our plugin
 
             //for testing purpose
-
+            /*
             final PremiumAccount config = new PremiumAccount();
             config.setUsername("freerapid");
             config.setPassword("freerapid");
             service.setConfig(config);
-            
+            */
+
 
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

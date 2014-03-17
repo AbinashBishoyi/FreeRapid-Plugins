@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.oneclickmoviez;
+package cz.vity.freerapid.plugins.services.nosvideo;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,13 +16,19 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //    httpFile.setNewURL(new URL("http://oneclickmoviez.com/dws/TURBOBIT/53050/7")); // Single link
-            httpFile.setNewURL(new URL("http://oneclickmoviez.com/bigfoots-wild-weekend-2012-unrated-webrip-xvid-ac3-feel-free/")); // Multiple Links
+            httpFile.setNewURL(new URL("http://nosvideo.com/?v=8rpcezmqpj8p"));
+            //httpFile.setNewURL(new URL("http://nosupload.com/?d=8rpcezmqpj8p"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final OneClickMoviezServiceImpl service = new OneClickMoviezServiceImpl(); //instance of service - of our plugin
+            final NosVideOServiceImpl service = new NosVideOServiceImpl(); //instance of service - of our plugin
+
+            //we set premium account details
+            //final PremiumAccount config = new PremiumAccount();
+            //config.setUsername("****");
+            //config.setPassword("****");
+            //service.setConfig(config);
+
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

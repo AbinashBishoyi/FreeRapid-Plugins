@@ -27,7 +27,7 @@ class ForSharedRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     @Override
@@ -67,7 +67,7 @@ class ForSharedRunner extends AbstractRunner {
                                 throw new IOException("File input stream is empty.");
                             } //else throw new InvalidURLOrServiceProblemException("Can't find Page 3 Action");
 
-                        }
+                        } else throw new InvalidURLOrServiceProblemException("Delay time not found");
 
                     } else throw new InvalidURLOrServiceProblemException("Can't find download link");
 
@@ -122,10 +122,10 @@ class ForSharedRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException {
         if (getContentAsString().contains("already downloading")) {
-            throw new ServiceConnectionProblemException(String.format("<b>4Shared Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
+            throw new ServiceConnectionProblemException("<b>4Shared Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed.");
         }
         if (getContentAsString().contains("Currently a lot of users")) {
-            throw new ServiceConnectionProblemException(String.format("<b>4Shared Error:</b><br>Currently a lot of users are downloading files."));
+            throw new ServiceConnectionProblemException("<b>4Shared Error:</b><br>Currently a lot of users are downloading files.");
         }
     }
 

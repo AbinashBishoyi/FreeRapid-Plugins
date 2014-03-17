@@ -1,14 +1,17 @@
 package cz.vity.freerapid.plugins.services.file4go;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
 import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -83,7 +86,12 @@ class File4GoFileRunner extends AbstractRunner {
             }
             final String content = getContentAsString().trim();
             //return getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
-            return getMethodBuilder().setActionFromTextBetween("<span id=\"boton_download\" ><a href=\"", "\" class=\"ddda\"").toGetMethod();
+            try {
+                return getMethodBuilder().setActionFromTextBetween("<span id=\"boton_download\" ><a href=\"", "\" class=\"ddda\"").toGetMethod();
+            } catch(BuildMethodException bme) {
+                //var time = 1180 -- then wait
+                throw new YouHaveToWaitException("Wait", 180 );
+            }
             /*
             if (content.contains("error_free_download_blocked")) {
                 throw new ErrorDuringDownloadingException("You have reached the daily download limit");

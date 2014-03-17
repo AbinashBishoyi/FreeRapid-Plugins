@@ -27,7 +27,8 @@ class RapidShareRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
-        } else throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+        } else
+            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     public void run() throws Exception {
@@ -75,8 +76,10 @@ class RapidShareRunner extends AbstractRunner {
                     logger.info(getContentAsString());
                     throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                 }
-            } else throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
-        } else throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+            } else
+                throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+        } else
+            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     private String getPrefferedMirror() throws Exception {
@@ -125,7 +128,7 @@ class RapidShareRunner extends AbstractRunner {
 
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         if (getContentAsString().contains("You have reached the")) {
             matcher = getMatcherAgainstContent("try again in about ([0-9]+) minute");
@@ -145,6 +148,9 @@ class RapidShareRunner extends AbstractRunner {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);
             }
             throw new ServiceConnectionProblemException("<b>RapidShare error:</b><br>Currently a lot of users are downloading files.");
+        }
+        if (getContentAsString().contains("you either need a Premium Account")) {
+            throw new URLNotAvailableAnymoreException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
         }
     }
 

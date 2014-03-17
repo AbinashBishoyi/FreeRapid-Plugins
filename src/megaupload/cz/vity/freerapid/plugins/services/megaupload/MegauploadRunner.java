@@ -61,14 +61,12 @@ class MegauploadRunner extends AbstractRunner {
                 }
 
                 String downloadURL = matcher.group(1);
-                logger.info("XXXX========" + downloadURL);
                 final int i = downloadURL.lastIndexOf('/');
                 if (i > 0) {
                     final String toEncode = downloadURL.substring(i + 1);
                     httpFile.setFileName(toEncode);
                     downloadURL = downloadURL.substring(0, i + 1) + encodeURL(toEncode);
                 }
-                logger.info("YYYYYYYY========" + downloadURL);
                 final GetMethod method = getGetMethod(downloadURL);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
@@ -166,7 +164,7 @@ class MegauploadRunner extends AbstractRunner {
                     throw new CaptchaEntryInputMismatchException();
 
                 final PostMethod postMethod = getPostMethod(fileURL);
-                PlugUtils.addParameters(postMethod, contentAsString, new String[]{"megavar"});
+//                PlugUtils.addParameters(postMethod, contentAsString, new String[]{"megavar"});
 
                 PlugUtils.addParameters(postMethod, contentAsString, new String[]{"captchacode", "megavar"});
 

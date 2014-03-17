@@ -116,7 +116,7 @@ class NickFileRunner extends AbstractRtmpRunner {
             final List<URI> list = new LinkedList<URI>();
             for (int i = 0; i < nodeList.getLength(); i++) {
                 final String url = nodeList.item(i).getTextContent();
-                if (!url.contains("embed-bumper-generic")) {
+                if (!url.contains("embed-bumper-generic") && !url.contains("endplate-embedded-player")) {
                     try {
                         list.add(new URI(url));
                     } catch (final URISyntaxException e) {

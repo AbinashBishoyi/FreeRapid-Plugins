@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.filecloudio;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -17,15 +16,15 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://ifile.it/abp6k05"));
-            httpFile.setNewURL(new URL("http://filecloud.io/dixcamyj"));
+            httpFile.setNewURL(new URL("http://filecloud.io/9xvgrid5"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final FileCloudIoServiceImpl service = new FileCloudIoServiceImpl();
             //we set premium account details
-            final PremiumAccount config = new PremiumAccount();
-            config.setUsername("freerapid");
-            config.setPassword("freerapid01");
-            service.setConfig(config);
+            //final PremiumAccount config = new PremiumAccount();
+            //config.setUsername("freerapid");
+            //config.setPassword("freerapid01");
+            //service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

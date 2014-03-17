@@ -41,7 +41,7 @@ class FileCloudIoFileRunner extends AbstractRunner {
             final String ukey = PlugUtils.getStringBetween(getContentAsString(), "'ukey'", ",").replace(":", "").replace("'", "").trim();
             final String ab1 = getVar("__ab1");
             httpMethod = getMethodBuilder()
-                    .setReferer(downloadURL)
+                    .setReferer(currentURL)
                     .setAction(requestUrl)
                     .setParameter("ukey", ukey)
                     .setParameter("__ab1", ab1)
@@ -54,6 +54,7 @@ class FileCloudIoFileRunner extends AbstractRunner {
                 while (getContentAsString().contains("\"captcha\":1")) {
                     stepCaptcha(recaptchaKey, requestUrl, ukey, ab1);
                 }
+                checkDownloadProblems();
                 httpMethod = getMethodBuilder()
                         .setReferer(downloadURL)
                         .setAction(downloadURL)
@@ -62,6 +63,7 @@ class FileCloudIoFileRunner extends AbstractRunner {
                     checkDownloadProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                checkDownloadProblems();
                 httpMethod = getMethodBuilder()
                         .setReferer(downloadURL)
                         .setActionFromAHrefWhereATagContains("download")

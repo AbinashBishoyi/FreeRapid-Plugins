@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.filecloudio.FileCloudIoServiceImpl"
-        id="filecloud.io" vendor="tong2shot" version="1.0.2">
+        id="filecloud.io" vendor="tong2shot" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(filecloud\.io|ifile\.it)/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="filecloud.io ifile.it"/>
         <attribute id="maxDownloads" value="2"/>

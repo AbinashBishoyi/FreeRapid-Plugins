@@ -34,7 +34,7 @@ class InstagramFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("display_src\":\".+?/([^/]+?)\",", content);
+        final Matcher match = PlugUtils.matcher("display_src\":\".+?/([^/]+?)\"", content);
         if (!match.find())
             throw new PluginImplementationException("File name not found");
         httpFile.setFileName(match.group(1).trim());
@@ -49,7 +49,7 @@ class InstagramFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) { //we make the main request
             checkProblems();//check problems
             checkNameAndSize(getContentAsString());//extract file name and size from the page
-            if (!tryDownloadAndSaveFile(getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "display_src\":\"", "\",").replaceAll("\\\\/", "/")))) {
+            if (!tryDownloadAndSaveFile(getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "display_src\":\"", "\"").replaceAll("\\\\/", "/")))) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }

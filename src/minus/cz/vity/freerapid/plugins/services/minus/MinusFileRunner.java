@@ -71,7 +71,7 @@ class MinusFileRunner extends AbstractRunner {
                 httpFile.setState(DownloadState.COMPLETED);
                 httpFile.getProperties().put("removeCompleted", true);
             } else {
-                final Matcher matcher = getMatcherAgainstContent("href=\"(http://i\\.minus\\.com/.+?)\"");
+                final Matcher matcher = getMatcherAgainstContent("href=\"(http://i(?:\\d+)?\\.minus\\.com/.+?)\"");
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Download link not found");
                 }

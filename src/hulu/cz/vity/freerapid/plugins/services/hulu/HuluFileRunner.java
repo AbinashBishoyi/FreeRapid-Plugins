@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.codec.binary.Hex;
@@ -134,7 +135,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             return;
         }
 
-        if (hasSubtitle) {
+        if (config.isDownloadSubtitles() && hasSubtitle) {
             //add filename to URL's tail so we can extract the filename later
             //http://www.hulu.com/captions.xml?content_id=40039219 -> original caption url
             //http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1 -> filename added at url's tail
@@ -493,7 +494,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
         final String captionUrl = matcher.group(1);
         final String extension = captionUrl.substring(captionUrl.lastIndexOf("."));
-        httpFile.setFileName(httpFile.getFileName() + extension);
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(httpFile.getFileName() + extension, "_"));
         method = getGetMethod(captionUrl);
         setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
         if (extension.equals(".smi")) {

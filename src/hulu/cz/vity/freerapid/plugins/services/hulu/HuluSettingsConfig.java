@@ -4,12 +4,14 @@ package cz.vity.freerapid.plugins.services.hulu;
  * @author tong2shot
  */
 public class HuluSettingsConfig {
+
     private String username;
     private String password;
     private int qualityHeightIndex;
     private int videoFormatIndex;
     private int cdnIndex;
     private int portIndex;
+    private boolean downloadSubtitles;
 
     public static final int MIN_HEIGHT = -2;
     public static final int MAX_HEIGHT = -1;
@@ -89,6 +91,14 @@ public class HuluSettingsConfig {
 
     public int getPort() {
         return portMap[portIndex];
+    }
+
+    public boolean isDownloadSubtitles() {
+        return downloadSubtitles;
+    }
+
+    public void setDownloadSubtitles(boolean downloadSubtitles) {
+        this.downloadSubtitles = downloadSubtitles;
     }
 
 }

@@ -53,7 +53,7 @@ class SpeedyShareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            final Matcher matcher = getMatcherAgainstContent("href=\"(http://www\\.speedyshare\\.com/data/\\d+?/(\\d+?)/\\d+?/([^/]+?))\">");
+            final Matcher matcher = getMatcherAgainstContent("href=\"(/files/(\\d+?)/download/([^/<>\"]+?))\">");
             if (!matcher.find()) throw new PluginImplementationException("Download link not found");
 
             if (matcher.find(matcher.end())) { //multiple files
@@ -74,11 +74,11 @@ class SpeedyShareFileRunner extends AbstractRunner {
 
             } else { //single file
                 matcher.find(0);
-                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
+                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction("http://www.speedyshare.com" + matcher.group(1)).toGetMethod();
 
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
-                    throw new PluginImplementationException();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
         } else {
@@ -89,7 +89,7 @@ class SpeedyShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Not Found") || content.contains("Not valid anymore") || content.contains("The file has been deleted") || !content.contains("<font class=resultlink>")) {
+        if (content.contains("Not Found") || content.contains("Not valid anymore") || content.contains("The file has been deleted") || !content.contains("<span class=resultlink>")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("The one-hour limit")) {

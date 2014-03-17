@@ -12,6 +12,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -82,8 +83,15 @@ class MegaUploadFileRunner extends AbstractRunner {
 
             final Matcher matcher = getMatcherAgainstContent("\"(http://www\\d+?\\.mega(?:upload|porn)\\.com/files/[^\"]+?)\"");
             if (!matcher.find()) throw new PluginImplementationException("Download link not found");
+            final String url = matcher.group(1);
 
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
+            final int index = url.lastIndexOf('/');
+            if (index > 0) {
+                final String name = url.substring(index + 1);
+                httpFile.setFileName(URLDecoder.decode(name, "UTF-8"));
+            }
+
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 logger.warning(getContentAsString());

@@ -69,10 +69,8 @@ class RapidGatorFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-
             final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "var secs =", ";", TimeUnit.SECONDS);
             final String fileId = PlugUtils.getStringBetween(contentAsString, "var fid =", ";");
-
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://rapidgator.net/download/AjaxStartTimer")
@@ -86,8 +84,7 @@ class RapidGatorFileRunner extends AbstractRunner {
             checkProblems();
             contentAsString = getContentAsString();
             final String sid = PlugUtils.getStringBetween(contentAsString, "\"sid\":\"", "\"}");
-            downloadTask.sleep(waitTime);
-
+            downloadTask.sleep(waitTime + 1);
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://rapidgator.net/download/AjaxGetDownloadLink")
@@ -99,7 +96,6 @@ class RapidGatorFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
-
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://rapidgator.net/download/captcha")
@@ -108,11 +104,10 @@ class RapidGatorFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-
             int captchaCounter = 0;
             while (getContentAsString().contains("/download/captcha")) {
                 if (captchaCounter++ > 8) {
-                    throw new PluginImplementationException("Unable to solve captcha");  //highly unlikely :p
+                    throw new PluginImplementationException("Unable to solve captcha");
                 }
                 httpMethod = stepCaptcha();
                 if (!makeRedirectedRequest(httpMethod)) {
@@ -124,9 +119,9 @@ class RapidGatorFileRunner extends AbstractRunner {
             httpMethod = getMethodBuilder()
                     .setAction(PlugUtils.getStringBetween(getContentAsString(), "location.href = '", "';"))
                     .toGetMethod();
-
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
+                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
@@ -145,30 +140,25 @@ class RapidGatorFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
-
             final Matcher codeMatcher = PlugUtils.matcher("<td\\s*class=\"code\">(.+)</td>", getContentAsString());
             if (!codeMatcher.find()) {
                 throw new PluginImplementationException("Captcha code not found");
             }
             final String codeTxt = codeMatcher.group(1);
-
             final Matcher challengeMatcher = PlugUtils.matcher("img\\s*src=\"(.+)\"\\s*width", getContentAsString());
             if (!challengeMatcher.find()) {
                 throw new PluginImplementationException("Captcha challenge not found");
             }
             final String challengeImg = challengeMatcher.group(1);
-
             final CaptchaSupport captchaSupport = getCaptchaSupport();
             final String captchaTxt = captchaSupport.getCaptcha(challengeImg);
             if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
-
             MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://rapidgator.net/download/captcha")
                     .setParameter("adscaptcha_challenge_field", codeTxt)
                     .setParameter("adscaptcha_response_field", captchaTxt)
                     .setParameter("DownloadCaptchaForm[captcha]", "");
-
             return methodBuilder.toPostMethod();
         } else if (getContentAsString().contains("papi/challenge.noscript")) {
             logger.info("Captcha Type 2");
@@ -177,7 +167,6 @@ class RapidGatorFileRunner extends AbstractRunner {
                 throw new PluginImplementationException("Captcha not found");
             }
             final String captchaKey = captchaKeyMatcher.group(1);
-
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer("http://rapidgator.net/download/captcha")
                     .setAction("http://api.solvemedia.com/papi/challenge.script")
@@ -186,12 +175,11 @@ class RapidGatorFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod)) {
                 throw new ServiceConnectionProblemException();
             }
-
             String mediaType;
             int mediaTypeCounter = 0;
             do {
                 final String captchaAction = "http://api.solvemedia.com/papi/_challenge.js" +
-                        "?k=" + captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/opera,ua/opera11,os/nt,os/nt5.1,jslib/jquery;ts=1336764790;th=white;r=" + Math.random();
+                        "?k=" + captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/opera,ua/opera11,os/nt,os/nt6.1,jslib/jquery;ts=1336764790;th=white;r=" + Math.random();
                 httpMethod = getMethodBuilder()
                         .setReferer("http://rapidgator.net/download/captcha")
                         .setAction(captchaAction)
@@ -206,56 +194,34 @@ class RapidGatorFileRunner extends AbstractRunner {
                 mediaType = mediaTypeMatcher.group(1);
                 logger.info("ATTEMPT " + mediaTypeCounter + ", mediaType = " + mediaType);
             }
-            while (!mediaType.equals("html") && (mediaTypeCounter++ < 1));            // < 10  if 'html' type captcha recognition is fixed below
+            while (!mediaType.equals("img") && (mediaTypeCounter++ < 10)); // 'html' type captcha is broken, show 'img' type captcha instead
 
             final Matcher chidMatcher = getMatcherAgainstContent("\"chid\"\\s*:\\s*\"(.+?)\",");
             if (!chidMatcher.find()) {
                 throw new PluginImplementationException("Captcha challenge ID not found");
             }
             final String chid = chidMatcher.group(1);
-
             String captchaTxt;
             final String challengeImg = "http://api.solvemedia.com/papi/media?c=" + chid + ";w=300;h=150;fg=000000;bg=f8f8f8";
-
-            if (mediaType.equals("html") && (2 == 3)) {       // 'html' type captcha recognition Not Working - skip 4 now
-                httpMethod = getMethodBuilder()
-                        .setReferer("http://rapidgator.net/download/captcha")
-                        .setAction(challengeImg)
-                        .toGetMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
-                    throw new ServiceConnectionProblemException();
-                }
-                // slog & secr DO NOT exist in the 'html' captcha image ????????????
-                final String slog = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "var slog = '", "';"));
-                final String secr = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "var secr = '", "';"));
-                int cn = 0;
-                char[] captchaResponse = new char[slog.length()];
-                for (int i = 0; i < slog.length(); i++) {
-                    char x = (char) ((secr.charAt(i) ^ (cn | 1) ^ (((cn++ & 1) != 0) ? i : 0) ^ 0x55) ^ (slog.charAt(i) ^ (cn | 1) ^ (((cn++ & 1) != 0) ? i : 0) ^ 0x55));
-                    captchaResponse[i] = x;
-                }
-                // above section to be fixed
-                captchaTxt = new String(captchaResponse);
-            } else {
+            if (mediaType.equals("img")) {
                 final CaptchaSupport captchaSupport = getCaptchaSupport();
                 captchaTxt = captchaSupport.getCaptcha(challengeImg);
                 if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
+            } else {
+                throw new ServiceConnectionProblemException("Captcha media type 'img' not found");
             }
-
             MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://rapidgator.net/download/captcha")
                     .setParameter("adcopy_challenge", chid)
                     .setParameter("adcopy_response", captchaTxt)
                     .setParameter("DownloadCaptchaForm[captcha]", "");
-
             return methodBuilder.toPostMethod();
         } else {
             logger.info("Captcha Error");
             throw new PluginImplementationException("Captcha not found");
         }
     }
-
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();

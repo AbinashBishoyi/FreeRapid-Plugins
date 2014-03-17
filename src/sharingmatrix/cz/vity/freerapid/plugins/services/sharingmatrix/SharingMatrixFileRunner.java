@@ -10,8 +10,10 @@ import org.apache.commons.httpclient.HttpMethod;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Kajda, JPEXS
@@ -57,18 +59,43 @@ class SharingMatrixFileRunner extends AbstractRunner {
                     dlID = PlugUtils.getStringBetween(getContentAsString(), "showLink(", ", '');");
                     httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/_get2.php?link_id=" + linkId + "&link_name=" + linkName + "&dl_id=" + dlID + "&password=").toHttpMethod();
                 } else {
-                    httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/include/crypt/cryptographp.php?cfg=0&").toHttpMethod();
-                    httpMethod.setFollowRedirects(true);
-                    InputStream is = client.makeRequestForFile(httpMethod);
-
-                    if (is == null) {
-                        throw new PluginImplementationException();
-                    }
-
+                    boolean refreshCaptcha = false;
+                    InputStream is;
+                    BufferedImage captchaImage = null;
                     CaptchaSupport captchaSupport = getCaptchaSupport();
-                    BufferedImage captchaImage = captchaSupport.loadCaptcha(is);
+                    if( getContentAsString().contains("check_timer.php") ) {
+                        httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/check_timer.php?tmp=" + (new Random()).nextInt() ).toGetMethod();
+                        if(!makeRequest(httpMethod)) {
+                            throw new PluginImplementationException();
+                        }
+                        //Matcher matcher = getMatcherAgainstContent("img:([^$]*)");
+                        refreshCaptcha = true;
+                    } else {
+                        httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/include/crypt/cryptographp.php?cfg=0&").toHttpMethod();
+                        httpMethod.setFollowRedirects(true);
+                        is = client.makeRequestForFile(httpMethod);
+
+                        if (is == null) {
+                            throw new PluginImplementationException();
+                        }
+
+                        captchaImage = captchaSupport.loadCaptcha(is);
+                    }
+                    String captchaR = null;
                     do {
-                        String captchaR = captchaSupport.askForCaptcha(captchaImage);
+                        if( refreshCaptcha ) {
+                            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/reload_captcha.php").toHttpMethod();
+                            if(!makeRequest(httpMethod)) {
+                                throw new PluginImplementationException();
+                            }
+                            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/images/captcha/"+getContentAsString().trim()+".jpg").toHttpMethod();
+                            is = client.makeRequestForFile(httpMethod);
+                            if (is == null) {
+                                throw new PluginImplementationException(httpMethod.getURI().toString());
+                            }
+                            captchaImage = captchaSupport.loadCaptcha(is);
+                        }
+                        captchaR = captchaSupport.askForCaptcha(captchaImage);
                         if (captchaR == null) {
                             throw new CaptchaEntryInputMismatchException();
                         }
@@ -77,6 +104,7 @@ class SharingMatrixFileRunner extends AbstractRunner {
                         if (!makeRedirectedRequest(httpMethod)) {
                             throw new ServiceConnectionProblemException();
                         }
+
                     } while (!getContentAsString().trim().equals("1"));
                     httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/dl.php").toHttpMethod();
                     if (makeRedirectedRequest(httpMethod)) {

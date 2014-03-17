@@ -105,11 +105,10 @@ class FileFactoryRunner extends AbstractRunner {
         if (contentAsString.contains("What is FileFactory?")) {
             throw new URLNotAvailableAnymoreException("Page not found");
         }
-        if (contentAsString.contains("Sorry, there are currently no free download slots available on this server")) {
-            throw new ServiceConnectionProblemException("Sorry, there are currently no free download slots available on this server");
-        }
-        if (contentAsString.contains("All of the available ")) {
-            throw new ServiceConnectionProblemException("All of the available free download slots on this server are in use");
+        if (contentAsString.contains("Sorry, there are currently no free download slots available on this server")
+                || contentAsString.contains("All of the available ")
+                || contentAsString.contains("All free download slots are in use")) {
+            throw new ServiceConnectionProblemException("All free download slots are in use");
         }
     }
 

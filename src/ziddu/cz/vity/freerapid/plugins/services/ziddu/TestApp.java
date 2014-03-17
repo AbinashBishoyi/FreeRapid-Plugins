@@ -8,9 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * Test application for ziddu.com
- *
- * @author Ladislav Vitasek
+ * @author Kajda
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -18,17 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //http://www.ziddu.com/download.php?uid=a6uelpmnaLKZlOKnZ6qhkZSoZKqfm5So7
-
-            //httpFile.setNewURL(new URL("http://www.ziddu.com/download/2876715/mkvtoolnix-unicode-2.4.0-setup.exe.html"));
-            //http://www.ziddu.com/download.php?uid=a6yalZmnZbOanJmnaviblJStX6qekZelZg%3D%3D2
-            //httpFile.setNewURL(new URL("http://www.ziddu.com/downloadlink.php?uid=aqqblpWtbqygnOKnaKqhkZSqZayclZuo8"));
-            httpFile.setNewURL(new URL("http://www.ziddu.com/downloadlink.php?uid=aqqblpWtbqygnOKnaKqhkZSqZayclZuo8"));
+            httpFile.setNewURL(new URL("http://www.ziddu.com/download/4173360/esktest.zip.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final ZidduShareServiceImpl service = new ZidduShareServiceImpl(); //instance of service - of our plugin
+            final ZidduServiceImpl service = new ZidduServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

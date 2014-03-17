@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="Ziddu Plugin" default="all" basedir=".">
+<project name="Ziddu.com" default="all" basedir=".">
     <property name="application" value="ziddu"/>
-    <property name="version" value="1.1"/>
+
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
+    <property name="mainjar.file" value="ziddu.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -45,6 +47,7 @@
 
     <path id="dist-jars">
         <fileset dir="${build.dir}/${lib.dir}" includes="**/*.jar"/>
+        <fileset dir="${build.dir}" includes="${mainjar.file}"/>
     </path>
 
     <pathconvert property="lib.prefix" pathsep=" ">

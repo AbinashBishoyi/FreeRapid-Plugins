@@ -3,27 +3,19 @@ package cz.vity.freerapid.plugins.services.ziddu;
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
-
 /**
- * @author Ladislav Vitasek
+ * @author Kajda
  */
-public class ZidduShareServiceImpl extends AbstractFileShareService {
+public class ZidduServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "ziddu.com";
-    //private ServicePluginContext context = new ServicePluginContext();
 
     public String getName() {
         return SERVICE_NAME;
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 1;
+        return 9;
     }
-    /*
-    public void run() throws Exception {
-        super.run();
-        new ZidduRunner().run(downloadTask, context);
-    }
-    */
 
     @Override
     public boolean supportsRunCheck() {
@@ -32,6 +24,6 @@ public class ZidduShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new ZidduRunner();
+        return new ZidduFileRunner();
     }
 }

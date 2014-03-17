@@ -3,7 +3,7 @@
 <plugin class="cz.vity.freerapid.plugins.services.cloudzer.CloudZerServiceImpl"
         id="cloudzer.net" vendor="birchie" version="1.0.1">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(cloudzer\.net/|clz\.to).+"/>
+        <attribute id="urlRegex" value="http://(www\.)?(cloudzer\.net|clz\.to)/.+"/>
         <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="cloudzer.net"/>

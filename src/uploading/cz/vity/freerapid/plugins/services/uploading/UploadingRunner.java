@@ -8,8 +8,8 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.Calendar;
-import java.util.logging.Logger;
 import java.util.Random;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
@@ -47,13 +47,9 @@ class UploadingRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-
             method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("downloadform", true).toPostMethod();
-
             if (makeRedirectedRequest(method)) {
                 checkProblems();
-
-                //      final String fileId = PlugUtils.getParameter("file_id", getContentAsString());
                 if (getContentAsString().contains("timeadform")) {
                     method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("timeadform", true).toPostMethod();
                     int wait;
@@ -75,12 +71,11 @@ class UploadingRunner extends AbstractRunner {
                 }
                 method = getMethodBuilder()
                         .setReferer(fileURL)
-                        .setAction("http://uploading.com/files/get/?JsHttpRequest=" + System.currentTimeMillis() + "-xml")
-                                //.setParameter("file_id", fileId)
+                        .setAction("http://uploading.com/files/get/?ajax")
                         .setParameter("pass", "")
-                        .setParameter("code", PlugUtils.getStringBetween(fileURL+"/", "get/", "/", 1))  //this can cause problems if the url
-                        .setParameter("action", "get_link")                                      // doesn't end in a /, which many dont
-                        .toGetMethod();                                                           //([a-zA-Z0-9]{0,}/{0,2}$) should work
+                        .setParameter("code", PlugUtils.getStringBetween(fileURL + "/", "get/", "/"))
+                        .setParameter("action", "get_link")
+                        .toGetMethod();
                 if (makeRedirectedRequest(method)) {
                     checkProblems();
                     final Matcher matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
@@ -114,7 +109,7 @@ class UploadingRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span>File size:", "</span>");
-        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download", " for");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<title>Download", "for");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -140,7 +135,6 @@ class UploadingRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("Service Not Available")) {
             throw new YouHaveToWaitException("Service Not Available For Now", random.nextInt(10));
-            //  throw new ServiceConnectionProblemException("Service Not Available");
         }
         if (getContentAsString().contains("Download Limit")) {
             Matcher matcher = getMatcherAgainstContent("Sorry[\\D]*(\\d)* minutes");

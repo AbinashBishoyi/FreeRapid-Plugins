@@ -9,14 +9,15 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class NetloadInShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "netload.in";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }
-
 
     @Override
     public boolean supportsRunCheck() {

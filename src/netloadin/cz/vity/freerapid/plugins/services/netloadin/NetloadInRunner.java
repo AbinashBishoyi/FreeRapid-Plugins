@@ -9,7 +9,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -33,21 +32,18 @@ class NetloadInRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            if (!getContentAsString().contains("Netload")) {
-                logger.warning(getContentAsString());
-                throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-            }
             Matcher matcher = getMatcherAgainstContent("we don't host the requested file");
             if (matcher.find()) {
-                throw new URLNotAvailableAnymoreException(String.format("<b>Requested file isn't hosted. Probably was deleted.</b>"));
+                throw new URLNotAvailableAnymoreException("<b>Requested file isn't hosted. Probably was deleted.</b>");
             }
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
         }
     }
 
+    @Override
     public void run() throws Exception {
         super.run();
         checkURL(fileURL);
@@ -59,9 +55,7 @@ class NetloadInRunner extends AbstractRunner {
             do {
                 stepEnterPage(getContentAsString());
                 if (!getContentAsString().contains("Please enter the Securitycode")) {
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException("No captcha.\nCannot find requested page content");
-
+                    throw new PluginImplementationException("Captcha not found");
                 }
                 stepCaptcha(getContentAsString());
                 captchaCount++;
@@ -69,15 +63,11 @@ class NetloadInRunner extends AbstractRunner {
 
             Matcher matcher = getMatcherAgainstContent(">([0-9.]+ .B)</div>");
             if (matcher.find()) {
-                logger.info("File size " + matcher.group(1));
                 httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
             }
-            // download: JFC107.part1.rar
             matcher = getMatcherAgainstContent("download:\\s*([^<]*)");
             if (matcher.find()) {
-                final String fn = matcher.group(1);
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
+                httpFile.setFileName(matcher.group(1));
             } else logger.warning("File name was not found" + getContentAsString());
 
             matcher = getMatcherAgainstContent("please wait.*countdown\\(([0-9]+)");
@@ -92,16 +82,15 @@ class NetloadInRunner extends AbstractRunner {
                 final GetMethod method = getGetMethod(s);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
-                    throw new IOException("File input stream is empty.");
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             } else {
-                checkProblems();
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
+                throw new PluginImplementationException("Download link not found");
             }
-
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private boolean stepEnterPage(String contentAsString) throws Exception {
@@ -110,10 +99,8 @@ class NetloadInRunner extends AbstractRunner {
             contentAsString = getContentAsString();
         }
         Matcher matcher = PlugUtils.matcher("class=\"Free_dl\">(.|\\W)*?<a href=\"([^\"]*)\"", contentAsString);
-        //logger.info(contentAsString);       
         if (!matcher.find()) {
-            checkProblems();
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+            throw new PluginImplementationException("Download link not found");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         String s = "/" + PlugUtils.replaceEntities(matcher.group(2));
@@ -125,7 +112,8 @@ class NetloadInRunner extends AbstractRunner {
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
 
         if (!makeRedirectedRequest(method1)) {
-            throw new PluginImplementationException();
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
 
         return true;
@@ -135,7 +123,7 @@ class NetloadInRunner extends AbstractRunner {
     private boolean stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("Please enter the Securitycode")) {
 
-            Matcher matcher = PlugUtils.matcher("src=\"(share\\/includes\\/captcha.*?)\"", contentAsString);
+            Matcher matcher = PlugUtils.matcher("src=\"(share/includes/captcha.*?)\"", contentAsString);
             if (matcher.find()) {
                 String s = "/" + PlugUtils.replaceEntities(matcher.group(1));
                 String captcha = "";
@@ -175,7 +163,7 @@ class NetloadInRunner extends AbstractRunner {
                 } else {
 
                     String file_id = PlugUtils.getParameter("file_id", contentAsString);
-                    matcher = PlugUtils.matcher("form method\\=\"post\" action\\=\"([^\"]*)\"", contentAsString);
+                    matcher = PlugUtils.matcher("form method=\"post\" action=\"([^\"]*)\"", contentAsString);
                     if (!matcher.find()) {
                         throw new PluginImplementationException("Captcha form action was not found");
                     }
@@ -192,7 +180,6 @@ class NetloadInRunner extends AbstractRunner {
                     }
                 }
             } else {
-                logger.warning(contentAsString);
                 throw new PluginImplementationException("Captcha picture was not found");
             }
 
@@ -206,28 +193,26 @@ class NetloadInRunner extends AbstractRunner {
 
     private void stepPasswordPage() throws Exception {
         while (getContentAsString().contains("This file is secured with a password")) {
-
             Matcher matcher = getMatcherAgainstContent("name=\"form\" method=\"post\" action=\"([^\"]*)\"");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Invalid URL or unindentified service");
+                throw new PluginImplementationException("Password form not found");
             }
             String tar = HTTP_NETLOAD + "/" + matcher.group(1);
             logger.info("Post url to - " + tar);
             PostMethod post1 = getPostMethod(tar);
             matcher = getMatcherAgainstContent("value=\"([^\"]*)\" name=\"file_id\"");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Invalid URL or unindentified service");
+                throw new PluginImplementationException("Password form problem");
             }
             String file_id = matcher.group(1);
             post1.addParameter("file_id", file_id);
             post1.addParameter("password", getPassword());
 
             if (!makeRedirectedRequest(post1)) {
-                throw new PluginImplementationException();
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
-
         }
-
     }
 
     private String getPassword() throws Exception {
@@ -249,16 +234,16 @@ class NetloadInRunner extends AbstractRunner {
             throw new YouHaveToWaitException(String.format("<b> You could download your next file in %s minutes", time), time * 60);
         }
         if (getContentAsString().contains("Sorry, we don't host the requested file")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Requested file isn't hosted. Probably was deleted.</b>"));
+            throw new URLNotAvailableAnymoreException("<b>Requested file isn't hosted. Probably was deleted.</b>");
         }
         if (getContentAsString().contains("unknown_file_data")) {
             throw new URLNotAvailableAnymoreException("Unknown file data");
         }
         if (getContentAsString().contains("currently in maintenance work")) {
-            throw new ServiceConnectionProblemException("This Server is currently in maintenance work. Please try it in a few hours again.");
+            throw new ServiceConnectionProblemException("This Server is currently in maintenance work. Please try again in a few hours.");
         }
         if (getContentAsString().contains("This file was damaged")) {
-            throw new URLNotAvailableAnymoreException("This file was damaged by a hard-disc crash.");
+            throw new URLNotAvailableAnymoreException("This file was damaged by a hard disc crash.");
         }
     }
 

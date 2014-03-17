@@ -37,11 +37,11 @@ class MediafireRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         if (!isFolder()) {
-            final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('[^']+?','([^']+?)','(\\d+?)'");
+            final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('.+?','(.+?)','(\\d+?)'");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File name/size not found");
             }
-            httpFile.setFileName(matcher.group(1));
+            httpFile.setFileName(matcher.group(1).replace("\\'", "'"));
             httpFile.setFileSize(Long.parseLong(matcher.group(2)));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

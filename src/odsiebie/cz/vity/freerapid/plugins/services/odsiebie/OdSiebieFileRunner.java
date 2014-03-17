@@ -95,25 +95,19 @@ class OdSiebieFileRunner extends AbstractRunner {
     private boolean login() throws Exception {
         String URL = "http://odsiebie.com";
         GetMethod gMethod = getGetMethod(URL);
-        logger.info("1");
         if (makeRedirectedRequest(gMethod)) {
-            logger.info("2");
             PostMethod pMethod = getPostMethod("http://odsiebie.com/?login");
             pMethod.addParameter("luser", "frd@mailinator.com");
             pMethod.addParameter("lpass", "frdodsiebieplug");
             if (makeRedirectedRequest(pMethod)) {
-                logger.info("3");
                 if (getContentAsString().contains("Zalogowany jako")) {
-                    logger.info("4");
                     return true;
                 } else {
-                    logger.info("5");
                     return false;
                 }
             }
 
         }
-        logger.info("6");
         return false;
     }
 

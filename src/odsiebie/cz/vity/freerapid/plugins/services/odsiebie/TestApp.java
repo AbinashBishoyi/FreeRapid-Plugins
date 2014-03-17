@@ -16,8 +16,9 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://odsiebie.com/pokaz/2896083---cde8.html"));
+            //httpFile.setNewURL(new URL("http://odsiebie.com/pokaz/2896083---cde8.html"));
             //httpFile.setNewURL(new URL("http://odsiebie.com/pokaz/1438066---f707.html"));
+            httpFile.setNewURL(new URL("http://odsiebie.com/pokaz/1436711---985b.html")); //Java heap error - No Content-Length in header
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

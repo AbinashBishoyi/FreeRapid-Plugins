@@ -12,7 +12,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 public abstract class XFileSharingServiceImpl extends AbstractFileShareService {
 
     private final String configFile = "plugin_" + getServiceTitle() + ".xml";
-    private volatile PremiumAccount config;
+    private PremiumAccount config;
 
     public abstract String getServiceTitle();
 
@@ -34,12 +34,12 @@ public abstract class XFileSharingServiceImpl extends AbstractFileShareService {
     }
 
     public PremiumAccount getConfig() throws Exception {
-        if (config == null) {
-            synchronized (getClass()) {
+        synchronized (getClass()) {
+            if (config == null) {
                 config = getAccountConfigFromFile(configFile);
             }
+            return config;
         }
-        return config;
     }
 
     public void setConfig(final PremiumAccount config) {

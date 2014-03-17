@@ -18,6 +18,8 @@ import org.apache.commons.httpclient.HttpMethod;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +32,8 @@ import java.util.regex.Pattern;
  */
 public abstract class XFileSharingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XFileSharingRunner.class.getName());
+
+    private final static Map<Class<?>, LoginData> LOGIN_CACHE = new WeakHashMap<Class<?>, LoginData>(2);
 
     private final List<CaptchaType> captchaTypes = getCaptchaTypes();
 
@@ -140,6 +144,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             checkDownloadProblems();
         }
         setFileStreamContentTypes("text/plain");
+        //some servers prefer to GZIP certain downloads, which we don't want
+        method.removeRequestHeader("Accept-Encoding");
         if (!tryDownloadAndSaveFile(method)) {
             checkDownloadProblems();
             throw new ServiceConnectionProblemException("Error starting download");
@@ -320,30 +326,76 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     }
 
     protected boolean login() throws Exception {
-        final PremiumAccount pa = ((XFileSharingServiceImpl) getPluginService()).getConfig();
-        if (pa == null || !pa.isSet()) {
-            logger.info("No account data set, skipping login");
-            return false;
+        synchronized (getClass()) {
+            final PremiumAccount pa = ((XFileSharingServiceImpl) getPluginService()).getConfig();
+            if (pa == null || !pa.isSet()) {
+                LOGIN_CACHE.remove(getClass());
+                logger.info("No account data set, skipping login");
+                return false;
+            }
+            final LoginData loginData = LOGIN_CACHE.get(getClass());
+            if (loginData == null || !pa.equals(loginData.getPa()) || loginData.isStale()) {
+                logger.info("Logging in");
+                doLogin(pa);
+                final Cookie xfss = getCookieByName("xfss");
+                if (xfss == null) {
+                    throw new PluginImplementationException("Login cookie not found");
+                }
+                LOGIN_CACHE.put(getClass(), new LoginData(pa, xfss.getValue()));
+            } else {
+                logger.info("Login data cache hit");
+                addCookie(new Cookie(getCookieDomain(), "xfss", loginData.getXfss(), "/", 86400, false));
+            }
+            return true;
         }
-        final HttpMethod method = getMethodBuilder()
+    }
+
+    protected void doLogin(final PremiumAccount pa) throws Exception {
+        HttpMethod method = getMethodBuilder()
+                .setReferer(getBaseURL())
+                .setAction(getBaseURL() + "/login.html")
+                .toGetMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException();
+        }
+        method = getMethodBuilder()
                 .setReferer(getBaseURL() + "/login.html")
                 .setAction(getBaseURL())
-                .setParameter("op", "login")
-                .setParameter("redirect", "")
+                .setActionFromFormByName("FL", true)
                 .setParameter("login", pa.getUsername())
                 .setParameter("password", pa.getPassword())
-                .setParameter("submit", "")
                 .toPostMethod();
-        final String cookieDomain = getCookieDomain();
-        addCookie(new Cookie(cookieDomain, "login", pa.getUsername(), "/", null, false));
-        addCookie(new Cookie(cookieDomain, "xfss", "", "/", null, false));
         if (!makeRedirectedRequest(method)) {
-            throw new ServiceConnectionProblemException("Error posting login info");
+            throw new ServiceConnectionProblemException();
         }
         if (getContentAsString().contains("Incorrect Login or Password")) {
             throw new BadLoginException("Invalid account login information");
         }
-        return true;
+    }
+
+    private static class LoginData {
+        private final static long MAX_AGE = 86400000;//1 day
+        private final long created;
+        private final PremiumAccount pa;
+        private final String xfss;
+
+        public LoginData(final PremiumAccount pa, final String xfss) {
+            this.created = System.currentTimeMillis();
+            this.pa = pa;
+            this.xfss = xfss;
+        }
+
+        public boolean isStale() {
+            return System.currentTimeMillis() - created > MAX_AGE;
+        }
+
+        public PremiumAccount getPa() {
+            return pa;
+        }
+
+        public String getXfss() {
+            return xfss;
+        }
     }
 
 }

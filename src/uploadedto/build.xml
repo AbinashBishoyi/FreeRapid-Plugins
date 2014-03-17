@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="FileFactory Plugin" default="all" basedir=".">
+<project name="Uploaded To Plugin" default="all" basedir=".">
     <property name="application" value="uploadedto"/>
 
     <buildnumber file="build.txt"/>

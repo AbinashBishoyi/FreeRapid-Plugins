@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.uploadedto;
 
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.HttpFile;
@@ -44,6 +41,8 @@ class UploadedToRunner {
                         throw new YouHaveToWaitException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!", (waitMinutes * 60));
                     }
                     throw new InvalidURLOrServiceProblemException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!");
+                } else if (contentAsString.contains("File doesn")) {
+                    throw new URLNotAvailableAnymoreException("<b>Uploaded.to error:</b><br>File doesn't exist");
                 }
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
             }

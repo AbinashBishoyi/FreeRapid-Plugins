@@ -10,6 +10,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -46,6 +47,9 @@ class SharingMatrixFileRunner extends AbstractRunner {
             final String linkId = PlugUtils.getStringBetween(contentAsString, "link_id = '", "'");
             final String linkName = PlugUtils.getStringBetween(contentAsString, "link_name = '", "'");
 
+             /*
+            //NOTE: Captcha disabled on pages
+
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/include/crypt/cryptographp.php?cfg=0&").toHttpMethod();
             httpMethod.setFollowRedirects(true);
             InputStream is = client.makeRequestForFile(httpMethod);
@@ -53,7 +57,7 @@ class SharingMatrixFileRunner extends AbstractRunner {
             if (is == null)
                 throw new PluginImplementationException();
 
-            CaptchaSupport captchaSupport = getCaptchaSupport();
+           CaptchaSupport captchaSupport = getCaptchaSupport();
             BufferedImage captchaImage = captchaSupport.loadCaptcha(is);
             do {
                 String captchaR = captchaSupport.askForCaptcha(captchaImage);
@@ -65,16 +69,14 @@ class SharingMatrixFileRunner extends AbstractRunner {
                 if (!makeRedirectedRequest(httpMethod)) {
                     throw new ServiceConnectionProblemException();
                 }
-            } while (!getContentAsString().trim().equals("1"));
+            } while (!getContentAsString().trim().equals("1"));*/
 
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/dl.php").toHttpMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/download.php?type_membership=free&link_id="+linkId).toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {
-                final String dlID = getContentAsString();
-                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/_get.php?link_id=" + linkId + "&link_name=" + linkName + "&dl_id=" + dlID + "&password=").toHttpMethod();
-
-                HttpMethod httpUpdateMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/update_dl.php?id=" + dlID).toHttpMethod();
-                makeRedirectedRequest(httpUpdateMethod);
-
+                final String dlID = PlugUtils.getStringBetween(getContentAsString(),"showLink(",", '');");
+                int ctjv = PlugUtils.getWaitTimeBetween(getContentAsString(),"ctjv = '","';",TimeUnit.SECONDS);
+                downloadTask.sleep(ctjv);
+                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/_get2.php?link_id=" + linkId + "&link_name=" + linkName + "&dl_id=" + dlID + "&password=").toHttpMethod();
                 if (makeRedirectedRequest(httpMethod)) {
                     contentAsString = getContentAsString();
                     httpMethod = getMethodBuilder().setReferer(fileURL).setAction("/download/" + PlugUtils.getStringBetween(contentAsString, "hash:\"", "\"") + "/" + dlID + "/").setBaseURL(PlugUtils.getStringBetween(contentAsString, "{serv:\"", "\"")).toHttpMethod();

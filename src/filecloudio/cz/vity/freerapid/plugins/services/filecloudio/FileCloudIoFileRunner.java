@@ -78,7 +78,7 @@ class FileCloudIoFileRunner extends AbstractRunner {
         final String content = getContentAsString();
         final String vError = getVar("__error");
         if (vError.equals("1")) {
-            final String vErrorMsg = getVar("__error_msg");
+            final String vErrorMsg = getVar("__error_msg").replace("l10n.", "");
             final String errorMsg = PlugUtils.getStringBetween(content, "\"" + vErrorMsg + "\":\"", "\"");
             if (errorMsg.contains("file removed") || errorMsg.contains("no such file") || errorMsg.contains("file expired")) {
                 throw new URLNotAvailableAnymoreException("File not found");

@@ -16,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://ifile.it/abp6k05"));
-            httpFile.setNewURL(new URL("http://filecloud.io/dixcamyj"));
+            //httpFile.setNewURL(new URL("http://filecloud.io/dixcamyj"));
+            httpFile.setNewURL(new URL("http://ifile.it/k9s2qwu"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final FileCloudIoServiceImpl service = new FileCloudIoServiceImpl();

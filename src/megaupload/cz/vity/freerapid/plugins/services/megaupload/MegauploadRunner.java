@@ -42,6 +42,7 @@ class MegauploadRunner extends AbstractRunner {
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
+        fileURL = checkURL(fileURL); 
         logger.info("Starting download in TASK " + fileURL);
 
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -208,6 +209,9 @@ class MegauploadRunner extends AbstractRunner {
             return (ps.getPassword());
         } else throw new NotRecoverableDownloadException("This file is secured with a password!");
 
+    }
+        private String checkURL(String URL) {
+        return URL.replaceFirst("com/[^?]+\\?", "com/?");    // http://www.megaupload.com/it/?d=VUPXY6B4 -> http://www.megaupload.com/?d=VUPXY6B4
     }
 
 }

@@ -1,16 +1,12 @@
 package cz.vity.freerapid.plugins.services.enterupload;
 
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -20,60 +16,33 @@ import java.util.regex.Matcher;
 
 class EnteruploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(EnteruploadRunner.class.getName());
-    private String baseURL;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
 
         //http://www.enterupload.com/meybvc1ty6am/Website.Layout.Maker.Ultra.Edition.v2.4.rar.html
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
-        baseURL = fileURL;
-
-        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
     }
 
     private void checkNameandSize(String contentAsString) throws Exception {
 //<META NAME="description" CONTENT="Download Website.Layout.Maker.Ultra.Edition.v2.4.rar">
+        if (contentAsString.contains("File not found") || getContentAsString().contains("No such file")) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
+        }
+
         if (!contentAsString.contains("Download File")) {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-
-        if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-
-        }
         //Matcher matcher = PlugUtils.matcher("Download ([^,]+), upload", contentAsString);
-        if (contentAsString.contains("CONTENT=\"Download")) {
-            Matcher matcher = PlugUtils.matcher("CONTENT=\"Download ([^\"]+)", contentAsString);
-            if (matcher.find()) {
-                String fn = matcher.group(1);
-                httpFile.setFileName(fn);
-                logger.info("File name " + fn);
-            } else logger.warning("File name was not found" + contentAsString);
-
-            matcher = PlugUtils.matcher("small>(([^)]+ bytes))", contentAsString);
-            if (matcher.find()) {
-                String s = matcher.group(1) + " " + "b";
-                s = s.substring(1);
-
-
-                long a = PlugUtils.getFileSizeFromString(s);
-                logger.info("File size " + a);
-                httpFile.setFileSize(a);
-                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-
-
-            } else logger.warning("File size was not found" + contentAsString);
-
-
-        } else logger.warning("File data was not found" + contentAsString);
-
+        PlugUtils.checkName(httpFile, getContentAsString(), "Download File", "</h2>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "> (", ")</font>");
 
     }
 
@@ -81,105 +50,91 @@ class EnteruploadRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
-
-        baseURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
 
-        GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
+            stepEnterPage();
 
-//(http://www\.enterupload\.com/captchas/[^\"]+)
-            Matcher matcher = PlugUtils.matcher("captchas", contentAsString);
-            if (matcher.find()) {
-
-
-                String result = "error";
-                int count = 0;
-
-                while ((result.equals("error")) && count < 3) {
-                    result = stepCaptcha(contentAsString);
-
-                    if (result.equals("success") || result.equals("Cancel")) {
-                        count = 4;
-
-                    }
-
-                    makeRequest(getMethod);
-                    contentAsString = getContentAsString();
-
-
-                    count++;
+            while (true) {           //(http://www\.enterupload\.com/captchas/[^\"]+)
+                if (!getContentAsString().contains("captchas")) {
+                    checkProblems();
+                    throw new PluginImplementationException("Captcha not found");
                 }
 
-
-            } else throw new PluginImplementationException("captchas not found");
-
-
-        } else
-            throw new PluginImplementationException();
-    }
-
-    private String stepCaptcha(String contentAsString) throws Exception {
-
-        Matcher matcher = PlugUtils.matcher("(http://www.enterupload.com/captchas/[^\"]+)", contentAsString);
-        if (matcher.find()) {
-            String s = matcher.group(1);
-            client.setReferer(baseURL);
-            String code = getCaptchaSupport().getCaptcha(s); //returns "" when user pressed OK with no input
-
-            if (code == null) {
-                //throw new CaptchaEntryInputMismatchException();
-                return "cancel";
-
-
-            } else {
-                downloadTask.sleep(15);//extract sleep time from the website :-)
-                //String spost = "http://www.enterupload.com/";
-                client.setReferer(fileURL);//referer
-                final PostMethod method = getPostMethod(fileURL);//file url
-
-                String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_premium", "down_script"}; //array of parameter names for parsing
-                PlugUtils.addParameters(method, contentAsString, parameters);
-                //method.addParameter("Keyword", "Ok"); //it always sends 'Ok'
-                method.addParameter("code", code); //it does not work without captcha
-
-                client.getHTTPClient().getParams().setBooleanParameter("noContentTypeInHeader", true);
-
-                if (!tryDownloadAndSaveFile(method)) {
+                HttpMethod finalMethod = stepCaptcha(getContentAsString());
+                if (!tryDownloadAndSaveFile(finalMethod)) {
                     checkProblems();
-                    //if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))
-                    //   return false;
+                    if (getContentAsString().contains("Wrong captcha")) continue;
                     logger.warning(getContentAsString());
-                    //logger.warning("Wrong captcha");
-                    return "error";
-                    //throw new IOException("File input stream is empty.");
+                    throw new IOException("File input stream is empty.");
 
-
-                } else return "success";
-
-                //} else throw new InvalidURLOrServiceProblemException("Cant find action - " + contentAsString);
-
-
+                } else break;
             }
 
 
-        }
-        return "error";
+        } else throw new ServiceConnectionProblemException();
+    }
 
+    private HttpMethod stepCaptcha(String contentAsString) throws Exception {
+
+
+        String s = getMethodBuilder(contentAsString).
+                setActionFromImgSrcWhereTagContains("captchas").getAction();
+        client.setReferer(fileURL);
+        String code = getCaptchaSupport().getCaptcha(s); //returns "" when user pressed OK with no input
+
+        if (code == null) {
+            throw new CaptchaEntryInputMismatchException();
+
+        }
+
+        downloadTask.sleep(40);//extract sleep time from the website :-)
+
+        final HttpMethod method = getMethodBuilder(contentAsString).
+                setActionFromFormByName("F1", true).
+                setParameter("code", code).setReferer(fileURL).
+                setAction(fileURL).toPostMethod();
+        setClientParameter("noContentTypeInHeader", true);
+
+        return method;
+
+        //} else throw new InvalidURLOrServiceProblemException("Cant find action - " + contentAsString);
 
     }
 
+    private void stepEnterPage() throws Exception {
+        if (getContentAsString().contains("Free Download")) {
+            HttpMethod postMethod = getMethodBuilder().setActionFromFormByIndex(1, true).setAction(fileURL).removeParameter("method_premium").setParameter("method_free", "Free+Download").toPostMethod();
+            if (!makeRequest(postMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+        }
 
-    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
-        if (getContentAsString().contains("File not found")) {
+    }
+
+    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, YouHaveToWaitException {
+        if (getContentAsString().contains("File not found") || getContentAsString().contains("No such file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
 
         }
+        if (getContentAsString().contains("reached the download-limit")) {
+            int timeToWait = 0;
+            Matcher minute = PlugUtils.matcher("([0-9]+)//s*minute", getContentAsString());
+            Matcher second = PlugUtils.matcher("([0-9]+)//s*second", getContentAsString());
+            if (minute.find()) {
+                timeToWait = Integer.parseInt(minute.group(1));
+            }
+            if (second.find()) {
+                timeToWait += Integer.parseInt(second.group(1));
+            }
+            if (timeToWait == 0) timeToWait = 5 * 60;
+            throw new YouHaveToWaitException("You have reached the download-limit for free-users.", timeToWait+1);
+        }
+
 
     }
 

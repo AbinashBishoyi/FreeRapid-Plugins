@@ -65,7 +65,12 @@ class FileFactoryFileRunner extends AbstractRunner {
                 checkAllProblems();
                 final String content = getContentAsString();
 
-                HttpMethod finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Download with ").toGetMethod();
+                HttpMethod finalMethod;
+                try {
+                    finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Download with ").toGetMethod();
+                } catch(BuildMethodException bme) {
+                    finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("download.start.jpg").toGetMethod();
+                }
 
                 downloadTask.sleep(PlugUtils.getWaitTimeBetween(content, "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
 

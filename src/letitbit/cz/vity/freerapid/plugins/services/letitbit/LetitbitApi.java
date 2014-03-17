@@ -1,6 +1,5 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import org.apache.commons.codec.binary.Hex;
@@ -16,8 +15,13 @@ import java.util.logging.Logger;
 class LetitbitApi {
 
     private static final Logger logger = Logger.getLogger(LetitbitApi.class.getName());
-    private static final String VERSION = "1.77";
+
+    private static final String VERSION = "1.78";
+    private static final int MAX_APPID_USES = 20;
+
     private static String appId;
+    private static int appIdUses;
+
     private final HttpDownloadClient client;
 
     public LetitbitApi(final HttpDownloadClient client) {
@@ -25,7 +29,7 @@ class LetitbitApi {
     }
 
     public String getDownloadUrl(final String fileURL) throws Exception {
-        checkInit();
+        final String appId = getAppId();
         final HttpMethod method = new MethodBuilder(client)
                 .setAction("http://api.letitbit.net/internal/index2.php")
                 .setParameter("action", "LINK_GET_DIRECT")
@@ -50,12 +54,15 @@ class LetitbitApi {
         return client.makeRequest(method, true) == HttpStatus.SC_OK;
     }
 
-    private void checkInit() throws Exception {
+    private String getAppId() throws Exception {
         synchronized (LetitbitApi.class) {
-            if (appId == null) {
+            if (appId == null || appIdUses >= MAX_APPID_USES) {
+                appIdUses = 0;
                 appId = createRandomAppId();
                 activateAppId();
             }
+            appIdUses++;
+            return appId;
         }
     }
 
@@ -68,9 +75,7 @@ class LetitbitApi {
                 .setParameter("app_id", appId)
                 .setParameter("app_version", VERSION)
                 .toPostMethod();
-        if (!makeRedirectedRequest(method)) {
-            throw new ServiceConnectionProblemException();
-        }
+        makeRedirectedRequest(method);
         logger.info("Activation response: " + client.getContentAsString());
     }
 

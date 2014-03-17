@@ -2,11 +2,16 @@ package cz.vity.freerapid.plugins.services.mediafire;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
+import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -27,11 +32,16 @@ class MediafireRunner extends AbstractRunner {
         if (result == HttpStatus.SC_OK || result == HttpStatus.SC_NOT_FOUND) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
     }
 
     public void run() throws Exception {
         super.run();
+
+        if (fileURL.contains("?sharekey=")) {
+            runList();
+            return;
+        }
 
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
@@ -70,16 +80,29 @@ class MediafireRunner extends AbstractRunner {
                     }
 
 
-                } else {
-                    checkProblems();
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
-                }
+                } else throw new ServiceConnectionProblemException();
 
-
+            } else {
+                checkProblems();
+                logger.info(getContentAsString());
+                throw new PluginImplementationException();
             }
         } else
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
+    }
+
+    private void runList() throws Exception {
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+
+        if (makeRedirectedRequest(getMethod)) {
+            final Matcher matcher = getMatcherAgainstContent("src=\"(/js/myfiles.php[^\"]+?)\"");
+            if (!matcher.find()) throw new PluginImplementationException("URL to list not found");
+            HttpMethod listMethod = getMethodBuilder().setBaseURL("http://www.mediafire.com").setAction(matcher.group(1)).toHttpMethod();
+
+            if (makeRedirectedRequest(listMethod)) parseList();
+            else throw new ServiceConnectionProblemException();
+
+        } else throw new ServiceConnectionProblemException();
     }
 
 
@@ -93,21 +116,8 @@ class MediafireRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException(String.format("<b>The file was removed.</b><br>"));
         }
 
-        Matcher matcher = PlugUtils.matcher("You requested: ([^ ]+) \\(([0-9.]+ .B)\\)", content);
-        // odebiram jmeno
-        String fn;
-        if (matcher.find()) {
-            fn = matcher.group(1);
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(2));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-
-        }
-
-        // konec odebirani jmena
+        PlugUtils.checkFileSize(httpFile, content, "sharedtabsfileinfo1-fs\" value=\"", "\">");
+        PlugUtils.checkName(httpFile, content, "sharedtabsfileinfo1-fn\" value=\"", "\">");
 
     }
 
@@ -157,6 +167,22 @@ class MediafireRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException(String.format("<b>The file was removed</b><br>"));
         }
 
+    }
+
+    private void parseList() {
+        final Matcher matcher = getMatcherAgainstContent("oe\\[[0-9]+\\]=Array\\('([^']+?)'");
+        int start = 0;
+        final List<URI> uriList = new LinkedList<URI>();
+        while (matcher.find(start)) {
+            final String link = "http://www.mediafire.com/download.php?" + matcher.group(1);
+            try {
+                uriList.add(new URI(link));
+            } catch (URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+            start = matcher.end();
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
 
 }

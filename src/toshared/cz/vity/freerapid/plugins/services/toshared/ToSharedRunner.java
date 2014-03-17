@@ -41,9 +41,9 @@ class ToSharedRunner extends AbstractRunner {
             String url = PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',");
             String l2surl = url.substring(url.length() - 32);
             if (l2surl.charAt(0) % 2 == 1) {
-                l2surl = l2surl.charAt(0) + l2surl.substring(17);
+                l2surl = l2surl.charAt(0) + l2surl.charAt(1) + l2surl.substring(18);
             } else {
-                l2surl = l2surl.substring(0, 15) + l2surl.charAt(l2surl.length() - 1);
+                l2surl = l2surl.substring(0, 14) + l2surl.charAt(l2surl.length() - 2) + l2surl.charAt(l2surl.length() - 1);
             }
             url = url.substring(0, url.indexOf("id=") + 3) + l2surl;
             method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setAction(url).toGetMethod();

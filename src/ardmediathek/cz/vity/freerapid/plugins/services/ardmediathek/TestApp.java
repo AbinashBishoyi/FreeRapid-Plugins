@@ -16,8 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.ardmediathek.de/ard/servlet/content/3517136?documentId=5365774"));//rtmp
-            //httpFile.setNewURL(new URL("http://www.ardmediathek.de/ard/servlet/content/3517136?documentId=5366686"));//http
+            httpFile.setNewURL(new URL("http://www.ardmediathek.de/das-erste/reportage-dokumentation/de-gaulle-und-adenauer-eine-deutsch-franzoesische?documentId=13126446"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

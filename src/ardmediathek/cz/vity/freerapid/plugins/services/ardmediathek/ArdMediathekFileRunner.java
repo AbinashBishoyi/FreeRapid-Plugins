@@ -57,7 +57,7 @@ class ArdMediathekFileRunner extends AbstractRtmpRunner {
             // second number: quality; higher is better
             // first string: server
             // second string: stream
-            final Matcher matcher = getMatcherAgainstContent("mediaCollection.addMediaStream\\(0, (\\d+), \"(.*?)\", \"(.*?)\"\\);");
+            final Matcher matcher = getMatcherAgainstContent("mediaCollection.addMediaStream\\(0, (\\d+), \"(.*?)\", \"(.*?)\"");
             final List<Stream> list = new ArrayList<Stream>();
             while (matcher.find()) {
                 list.add(new Stream(matcher.group(2), matcher.group(3), matcher.group(1)));

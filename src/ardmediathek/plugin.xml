@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.ardmediathek.ArdMediathekServiceImpl" id="ardmediathek.de" vendor="ntoskrnl" version="1.0.4">
+<plugin class="cz.vity.freerapid.plugins.services.ardmediathek.ArdMediathekServiceImpl"
+        id="ardmediathek.de" vendor="ntoskrnl" version="1.0.5">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?ardmediathek\.de/ard/servlet/content/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="urlRegex" value="http://(www\.)?ardmediathek\.de/.+"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="ardmediathek.de"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.7" reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.7"
+                reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="ardmediathek.de" path="/" type="code"/>

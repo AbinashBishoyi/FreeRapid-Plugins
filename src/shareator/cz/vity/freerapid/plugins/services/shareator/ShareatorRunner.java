@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.shareator;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -38,7 +38,7 @@ class ShareatorRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             if (getContentAsString().contains("btn_download")) {
                 checkNameAndSize(getContentAsString());
-                downloader.sleep(5);
+                downloadTask.sleep(5);
                 String id = PlugUtils.getParameter("id", getContentAsString());
                 String rand = PlugUtils.getParameter("rand", getContentAsString());
 
@@ -60,7 +60,7 @@ class ShareatorRunner extends AbstractRunner {
                     final String fn = encodeURL(matcher.group(matcher.groupCount()));
                     logger.info("Found file URL " + fn);
                     final GetMethod method = getGetMethod(fn);
-                    if (!tryDownload(method)) {
+                    if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         logger.info(getContentAsString());
                         throw new IOException("File input stream is empty.");

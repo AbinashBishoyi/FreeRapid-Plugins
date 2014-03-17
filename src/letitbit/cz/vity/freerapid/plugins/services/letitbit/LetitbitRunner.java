@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -89,12 +89,12 @@ class LetitbitRunner extends AbstractRunner {
             if (matcher.find()) {
                 String t = matcher.group(2);
                 logger.info("Download URL: " + t);
-                downloader.sleep(4);
+                downloadTask.sleep(4);
                 httpFile.setState(DownloadState.GETTING);
                 client.setReferer(matcher.group(1) + "?link=" + t);
                 final GetMethod method = getGetMethod(t);
                 method.setFollowRedirects(true);
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     logger.info(getContentAsString());
                     throw new IOException("File input stream is empty.");

@@ -5,7 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpStatus;
@@ -34,14 +34,14 @@ class RapidShareRunner extends AbstractRunner {
     public void run() throws Exception {
 
         configProvider = RapidShareConfigProvider.getInstance();
-        logger.info("Starting download in TASK " + downloader.getDownloadFile().getFileUrl());
-        client = downloader.getClient();
+        logger.info("Starting download in TASK " + downloadTask.getDownloadFile().getFileUrl());
+        client = downloadTask.getClient();
 
         int i = 0;
         do {
             try {
                 i++;
-                tryDownload(downloader);
+                tryDownloadAndSaveFile(downloadTask);
                 break;
             } catch (BadLoginException ex) {
                 configProvider.clear();
@@ -53,8 +53,8 @@ class RapidShareRunner extends AbstractRunner {
         } while (true);
     }
 
-    private void tryDownload(HttpFileDownloader downloader) throws Exception {
-        HttpFile httpFile = downloader.getDownloadFile();
+    private void tryDownloadAndSaveFile(HttpFileDownloadTask downloadTask) throws Exception {
+        HttpFile httpFile = downloadTask.getDownloadFile();
         final String fileURL = httpFile.getFileUrl().toString();
         final GetMethod getMethod = client.getGetMethod(fileURL);
 
@@ -71,7 +71,7 @@ class RapidShareRunner extends AbstractRunner {
                 newUri = header.getValue();
             }
             if (newUri != null) {
-                finalDownload(newUri, downloader);
+                finalDownload(newUri, downloadTask);
             }
         } else if (getMethod.getStatusCode() == HttpStatus.SC_OK) {
 
@@ -102,7 +102,7 @@ class RapidShareRunner extends AbstractRunner {
                     if (matcher.find()) {
                         s = matcher.group(1);
                         ok = true;
-                        finalDownload(s, downloader);
+                        finalDownload(s, downloadTask);
                     } else {
                         checkProblems();
                         logger.info(client.getContentAsString());
@@ -178,20 +178,20 @@ class RapidShareRunner extends AbstractRunner {
         }
     }
 
-    private void finalDownload(String url, HttpFileDownloader downloader) throws Exception {
+    private void finalDownload(String url, HttpFileDownloadTask downloadTask) throws Exception {
         logger.info("Download URL: " + url);
-        downloader.sleep(0);
-        if (downloader.isTerminated()) {
+        downloadTask.sleep(0);
+        if (downloadTask.isTerminated()) {
             throw new InterruptedException();
         }
-        HttpFile httpFile = downloader.getDownloadFile();
+        HttpFile httpFile = downloadTask.getDownloadFile();
         httpFile.setState(DownloadState.GETTING);
         final PostMethod method = client.getPostMethod(url);
         method.addParameter("mirror", "on");
         try {
             final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
             if (inputStream != null) {
-                downloader.saveToFile(inputStream);
+                downloadTask.saveToFile(inputStream);
             } else {
                 checkProblems();
                 throw new IOException("File input stream is empty.");

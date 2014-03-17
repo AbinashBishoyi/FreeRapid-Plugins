@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.xtraupload;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -50,7 +50,7 @@ class XtrauploadRunner extends AbstractRunner {
                 logger.info("Found File URL - " + s);
 
                 final GetMethod method = getGetMethod(s);
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     throw new IOException("File input stream is empty.");
                 }

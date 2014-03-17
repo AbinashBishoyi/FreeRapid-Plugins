@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -48,11 +48,11 @@ class HellshareRunner extends AbstractRunner {
             if (makeRequest(postmethod)) {
                 PostMethod method = stepCaptcha();
                 httpFile.setState(DownloadState.GETTING);
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     boolean finish = false;
                     while (!finish) {
                         method = stepCaptcha();
-                        finish = tryDownload(method);
+                        finish = tryDownloadAndSaveFile(method);
                     }
                 }
             } else {

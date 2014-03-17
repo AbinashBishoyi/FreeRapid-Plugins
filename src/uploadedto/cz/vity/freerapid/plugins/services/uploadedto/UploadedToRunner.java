@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.uploadedto;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -54,7 +54,7 @@ class UploadedToRunner extends AbstractRunner {
             }
             String s = matcher.group(1);
             int seconds = new Integer(s);
-            downloader.sleep(seconds + 1);
+            downloadTask.sleep(seconds + 1);
 
             matcher = PlugUtils.matcher("action=\"([^\"]*)\"", getContentAsString());
             if (matcher.find()) {
@@ -63,7 +63,7 @@ class UploadedToRunner extends AbstractRunner {
 
                 final GetMethod method = getGetMethod(s);
                 //method.addParameter("mirror", "on");
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");

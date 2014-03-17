@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.megaupload;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -72,9 +72,9 @@ class MegauploadRunner extends AbstractRunner {
                     httpFile.setFileName(filename);
 
                 }
-                downloader.sleep(seconds + 1);
+                downloadTask.sleep(seconds + 1);
                 final GetMethod method = getGetMethod(encodeURL(s));
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");

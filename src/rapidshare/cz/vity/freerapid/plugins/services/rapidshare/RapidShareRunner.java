@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.rapidshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -53,10 +53,10 @@ class RapidShareRunner extends AbstractRunner {
                 if (matcher.find()) {
                     s = matcher.group(1);
                     logger.info("Download URL: " + s);
-                    downloader.sleep(seconds + 1);
+                    downloadTask.sleep(seconds + 1);
                     final PostMethod method = getPostMethod(s);
                     method.addParameter("mirror", "on");
-                    if (!tryDownload(method)) {
+                    if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new IOException("File input stream is empty.");
                     }

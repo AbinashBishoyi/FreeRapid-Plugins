@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.iskladka;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -29,19 +29,19 @@ class IskladkaRunner extends AbstractRunner {
 
             checkName(getContentAsString());
             GetMethod method = parseMethod(getContentAsString());
-            downloader.sleep(getTimeToWait(getContentAsString()));
+            downloadTask.sleep(getTimeToWait(getContentAsString()));
             httpFile.setState(DownloadState.GETTING);
 
-            if (!tryDownload(method)) {
+            if (!tryDownloadAndSaveFile(method)) {
                 boolean finish = false;
                 int steps = 0;
                 while (!finish && steps < 20 && getContentAsString().contains("ekejte!")) {
                     Matcher matcher = getMatcherAgainstContent("DL je ([0-9]+)");
                     if (matcher.find()) logger.info("Request wasnt final, length of queue is " + matcher.group(1));
                     GetMethod method2 = parseMethod(getContentAsString());
-                    downloader.sleep(10 * getTimeToWait(getContentAsString()));
+                    downloadTask.sleep(10 * getTimeToWait(getContentAsString()));
                     httpFile.setState(DownloadState.GETTING);
-                    finish = tryDownload(method2);
+                    finish = tryDownloadAndSaveFile(method2);
                     steps++;
                 }
                 if (!finish) {

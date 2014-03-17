@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.quickshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -34,7 +34,7 @@ class QuickshareRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             if (getContentAsString().contains("var server")) {
                 checkNameAndSize(getContentAsString());
-                downloader.sleep(5);
+                downloadTask.sleep(5);
                 String server = getVar("server", getContentAsString());
                 String id1 = getVar("ID1", getContentAsString());
                 String id2 = getVar("ID2", getContentAsString());
@@ -51,7 +51,7 @@ class QuickshareRunner extends AbstractRunner {
                 method.addParameter("ID3", id3);
                 method.addParameter("ID4", id4);
 
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     logger.info(getContentAsString());
                     throw new ServiceConnectionProblemException("Všechny volné sloty jsou obsazeny nebo se z této IP již stahuje");

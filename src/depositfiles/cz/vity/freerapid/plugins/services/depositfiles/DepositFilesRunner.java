@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -79,10 +79,10 @@ class DepositFilesRunner extends AbstractRunner {
             if (matcher.find()) {
                 t = matcher.group(1);
                 logger.info("Download URL: " + t);
-                downloader.sleep(seconds + 1);
+                downloadTask.sleep(seconds + 1);
                 httpFile.setState(DownloadState.GETTING);
                 final GetMethod method = getGetMethod(t);
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     throw new IOException("File input stream is empty.");
                 }

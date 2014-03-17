@@ -21,7 +21,7 @@ public class EgoshareShareServiceImpl extends AbstractFileShareService {
     /*
     public void run() throws Exception {
         super.run();
-        new EgoshareRunner().run(downloader, context);
+        new EgoshareRunner().run(downloadTask, context);
     }
     */
 

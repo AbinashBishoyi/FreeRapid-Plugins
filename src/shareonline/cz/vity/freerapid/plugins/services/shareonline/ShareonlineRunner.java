@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.shareonline;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -38,7 +38,7 @@ class ShareonlineRunner extends AbstractRunner {
 
     public void run() throws Exception {
         super.run();
-        client = downloader.getClient();
+        client = downloadTask.getClient();
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -64,7 +64,7 @@ class ShareonlineRunner extends AbstractRunner {
 
                 final GetMethod method = getGetMethod(s);
                 Date newDate = new Date();
-                if (tryDownload(method)) setTicket(newDate);
+                if (tryDownloadAndSaveFile(method)) setTicket(newDate);
                 else {
                     checkProblems();
                     throw new IOException("File input stream is empty.");

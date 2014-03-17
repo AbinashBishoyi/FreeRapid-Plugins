@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -193,7 +193,7 @@ class FileFactoryRunner extends AbstractRunner {
 
     private void saveFileOnURL(String finalFileURL) throws Exception {
         HttpMethod getMethod = getGetMethod(finalFileURL);
-        if (tryDownload(getMethod)) {
+        if (tryDownloadAndSaveFile(getMethod)) {
             step = Step.FINISHED;
         } else {
             if (checkLimit(getContentAsString())) {

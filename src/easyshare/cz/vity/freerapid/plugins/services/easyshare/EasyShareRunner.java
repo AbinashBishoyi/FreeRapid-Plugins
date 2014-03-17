@@ -2,11 +2,10 @@ package cz.vity.freerapid.plugins.services.easyshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -74,7 +73,7 @@ class EasyShareRunner extends AbstractRunner {
                 if (getContentAsString().contains("w=")) {
                     matcher = getMatcherAgainstContent("w='([0-9]+?)';");
                     if (matcher.find()) {
-                        downloader.sleep(Integer.parseInt(matcher.group(1)));
+                        downloadTask.sleep(Integer.parseInt(matcher.group(1)));
                     } else {
                         logger.warning(getContentAsString());
                         throw new PluginImplementationException("Plugin implementation problem");
@@ -143,10 +142,9 @@ class EasyShareRunner extends AbstractRunner {
                         logger.info(s);
 
                         final PostMethod method = getPostMethod(s);
-                        client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
                         method.addParameter("id", id);
                         method.addParameter("captcha", captcha);
-                        if (tryDownload(method)) return true;
+                        if (tryDownloadAndSaveFile(method)) return true;
                         else {
                             checkProblems();
                             if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))

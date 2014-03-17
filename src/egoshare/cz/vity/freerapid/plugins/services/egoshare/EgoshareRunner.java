@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -66,7 +66,7 @@ class EgoshareRunner extends AbstractRunner {
                 httpFile.setState(DownloadState.GETTING);
                 final GetMethod method = getGetMethod(s);
                 Date newDate = new Date();
-                if (tryDownload(method)) setTicket(newDate);
+                if (tryDownloadAndSaveFile(method)) setTicket(newDate);
                 else {
                     checkProblems();
                     throw new IOException("File input stream is empty.");

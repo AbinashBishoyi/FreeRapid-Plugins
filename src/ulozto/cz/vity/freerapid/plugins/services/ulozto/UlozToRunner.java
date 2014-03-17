@@ -3,8 +3,8 @@ package cz.vity.freerapid.plugins.services.ulozto;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -42,7 +42,7 @@ class UlozToRunner extends AbstractRunner {
                 while (getContentAsString().contains("id=\"captcha\"")) {
                     PostMethod method = stepCaptcha(getContentAsString());
                     //    method.setFollowRedirects(true);
-                    if (tryDownload(method)) break;
+                    if (tryDownloadAndSaveFile(method)) break;
                 }
             } else {
                 checkProblems();

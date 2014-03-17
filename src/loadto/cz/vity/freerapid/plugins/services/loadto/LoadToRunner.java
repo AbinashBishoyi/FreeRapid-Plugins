@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.loadto;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -37,14 +37,14 @@ class LoadToRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            downloader.sleep(5);
+            downloadTask.sleep(5);
             Matcher matcher = PlugUtils.matcher("<form method=\"post\" action=\"(http[^\"]*)\"", getContentAsString());
             if (!matcher.find()) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
             }
             final PostMethod method = getPostMethod(matcher.group(1));
-            if (!tryDownload(method)) {
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 logger.info(getContentAsString());
                 throw new IOException("File input stream is empty.");

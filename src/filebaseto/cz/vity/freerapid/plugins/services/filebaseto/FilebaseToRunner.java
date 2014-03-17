@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -66,7 +66,7 @@ class FilebaseToRunner extends AbstractRunner {
                     String s = matcher.group(1);
                     int seconds = new Integer(s);
                     logger.info("wait - " + s);
-                    downloader.sleep(seconds + 1);
+                    downloadTask.sleep(seconds + 1);
                 }
 
                 client.setReferer(fileURL);
@@ -85,7 +85,7 @@ class FilebaseToRunner extends AbstractRunner {
                 method.addParameter("usermd5", usermd5);
                 method.addParameter("wait", ("Download " + httpFile.getFileName()));
 
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     throw new IOException("File input stream is empty.");
                 }

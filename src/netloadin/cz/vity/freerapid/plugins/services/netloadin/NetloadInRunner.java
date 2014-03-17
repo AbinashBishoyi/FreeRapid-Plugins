@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.netloadin;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -76,14 +76,14 @@ class NetloadInRunner extends AbstractRunner {
             matcher = getMatcherAgainstContent("please wait.*countdown\\(([0-9]+)");
             if (matcher.find()) {
                 int time = Integer.parseInt(matcher.group(1)) / 100;
-                downloader.sleep(time + 1);
+                downloadTask.sleep(time + 1);
             }
             matcher = PlugUtils.matcher("href=\"([^\"]*)\" >Click here for the download", getContentAsString());
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info("Found File URL - " + s);
                 final GetMethod method = getGetMethod(s);
-                if (!tryDownload(method)) {
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     throw new IOException("File input stream is empty.");
                 }

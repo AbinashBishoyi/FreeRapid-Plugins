@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.slingfile;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -73,6 +74,8 @@ class SlingFileFileRunner extends AbstractRunner {
         if (content.contains("The file you requested cannot be found") || content.contains("<h1>Not Found</h1>") || content.contains("The file you have requested was not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (content.contains("Resume feature is not allowed for Free/Anonymous users"))
+            throw new NotRecoverableDownloadException("Resume feature is not allowed for Free/Anonymous users");
     }
 
 }

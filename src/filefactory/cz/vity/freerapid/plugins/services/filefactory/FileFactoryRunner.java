@@ -139,7 +139,8 @@ class FileFactoryRunner extends AbstractRunner {
         if (contentAsString.contains("Sorry, the server hosting the file you are requesting is currently down for maintenance")) {
             throw new YouHaveToWaitException("File's server currently down for maintenance", 30 * 60);
         }
-        if (contentAsString.contains("this file can only be downloaded by FileFactory Premium")
+        if (contentAsString.contains("Sorry, this file can only be downloaded by Premium members")
+                || contentAsString.contains("this file can only be downloaded by FileFactory Premium")
                 || contentAsString.contains("This file is only available to Premium Members")) {
             throw new NotRecoverableDownloadException("This file is only for Premium members");
         }

@@ -32,7 +32,7 @@ class RapidGatorFileRunner extends AbstractRunner {
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkFileProblems();
             checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
@@ -116,9 +116,12 @@ class RapidGatorFileRunner extends AbstractRunner {
                 }
             }
             checkProblems();
-            final Matcher match = PlugUtils.matcher("else \\{\\s+?location.href = '(.+?)';", getContentAsString());
-            if (!match.find())
-                throw new NotRecoverableDownloadException("Download link not found");
+            Matcher match = PlugUtils.matcher("location.href = '(.+?)';", getContentAsString());  //skip download manager
+            do {
+                if (!match.find())
+                    throw new PluginImplementationException("Download link not found");
+            } while (match.group(1).contains("rapidgatordownloader"));
+
             httpMethod = getMethodBuilder()
                     .setAction(match.group(1))
                     .toGetMethod();
@@ -184,27 +187,32 @@ class RapidGatorFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        checkFileProblems();
+        final String contentAsString = getContentAsString();
         if (contentAsString.contains("Delay between downloads must be not less than")) {
             final String waitTime = PlugUtils.getStringBetween(contentAsString, "must be not less than", "min");
-            throw new YouHaveToWaitException("Delay between downloads must be not less than " + waitTime + " minutes", 300);
+            throw new YouHaveToWaitException("Delay between downloads must be not less than " + waitTime + " minutes", 900);
         }
         if (contentAsString.contains("You have reached your daily downloads limit")) {
-            throw new PluginImplementationException("You have reached your daily downloads limit");
+            throw new NotRecoverableDownloadException("You have reached your daily downloads limit");
         }
         if (contentAsString.contains("You have reached your hourly downloads limit")) {
             throw new YouHaveToWaitException("You have reached your hourly downloads limit", 15 * 60);
         }
         final Matcher uptoMatcher = getMatcherAgainstContent("You can download files up to (.+?) in free mode");
         if (uptoMatcher.find()) {
-            throw new PluginImplementationException("You can download files up to " + uptoMatcher.group(1) + " in free mode");
+            throw new NotRecoverableDownloadException("You can download files up to " + uptoMatcher.group(1) + " in free mode");
         }
         if (contentAsString.contains("You can`t download not more than")) {
-            throw new PluginImplementationException("You can`t download not more than 1 file at a time in free mode");
+            throw new NotRecoverableDownloadException("You can`t download not more than 1 file at a time in free mode");
         }
         if (contentAsString.contains("Captcha expired")) {
             throw new YouHaveToWaitException("Captcha expired. Try again in 15 minutes", 300);

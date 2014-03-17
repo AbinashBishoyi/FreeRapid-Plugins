@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.rdio;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
@@ -63,6 +64,9 @@ class RdioFileRunner extends AbstractRunner {
                 .setParameter("method", "getPlaybackInfo")
                 .setParameter("_authorization_key", authorizationKey)
                 .toPostMethod();
+        if (!client.getSettings().isProxySet()) {
+            Tunlr.setupMethod(method);
+        }
         if (!makeRedirectedRequest(method)) {
             checkProblems();
             throw new ServiceConnectionProblemException();

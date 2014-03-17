@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             httpFile.setNewURL(new URL("http://www.rdio.com/artist/Armin_van_Buuren/album/A_State_Of_Trance_Year_Mix_2012_(Mixed_By_Armin_van_Buuren)/"));
-            httpFile.setNewURL(new URL("http://www.rdio.com/artist/Armin_van_Buuren/album/A_State_Of_Trance_Year_Mix_2012_(Mixed_By_Armin_van_Buuren)/track/The_Year_Of_Two_(Mix_Cut)_(A_State_Of_Trance_Year_Mix_2012_Intro)/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Armin_van_Buuren/album/A_State_Of_Trance_Year_Mix_2012_(Mixed_By_Armin_van_Buuren)/track/The_Year_Of_Two_(Mix_Cut)_(A_State_Of_Trance_Year_Mix_2012_Intro)/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

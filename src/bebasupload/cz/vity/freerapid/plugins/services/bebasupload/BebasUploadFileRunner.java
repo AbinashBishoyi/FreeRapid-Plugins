@@ -11,6 +11,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -33,12 +34,13 @@ class BebasUploadFileRunner extends AbstractRunner {
     }
 
     private void Login() throws Exception {
-        PostMethod postMethod = getPostMethod("http://bebasupload.com/login.html");
+        PostMethod postMethod = getPostMethod("http://bebasupload.com/");
 
         postMethod.addParameter("op", "login");
         postMethod.addParameter("redirect", "");
         postMethod.addParameter("login", "freerapid");
         postMethod.addParameter("password", "freerapid");
+        postMethod.addParameter("submit", "");
 
 
         addCookie(new Cookie(".bebasupload.com", "login", "freerapid", "/", null, false));
@@ -62,41 +64,61 @@ class BebasUploadFileRunner extends AbstractRunner {
 
         logger.info("Starting download in TASK " + fileURL);
         Login();
+        String content = getContentAsString();
 
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setBaseURL(fileURL).setReferer(fileURL).setActionFromFormByIndex(1, true).removeParameter("method_premium").setParameter("method_free", "Free Download").toHttpMethod();//TODO
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
-            }
-            httpMethod = getMethodBuilder().setAction(fileURL).setBaseURL(fileURL).setReferer(fileURL).setActionFromFormByIndex(1, true).removeParameter("method_premium").setParameter("method_free", "Free Download").toHttpMethod();//TODO
-            String stringWait = PlugUtils.getStringBetween(getContentAsString(), "<span id=\"countdown\">", "</span>");
-            int wait = new Integer(stringWait);
-            downloadTask.sleep(wait);
 
-             HttpMethod finalMethod = stepCaptcha();
-            //httpMethod = getMethodBuilder().setAction(fileURL).setBaseURL(fileURL).setReferer(fileURL).setActionFromFormByName("F1", true).removeParameter("method_premium").setParameter("method_free", "Free Download").toHttpMethod();//TODO
-            //here is the download link extraction
-            if (!tryDownloadAndSaveFile(finalMethod)) {
-                checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
-            }
-        } else {
+        GetMethod method = getGetMethod(fileURL); //create GET request
+        if (!makeRedirectedRequest(method)) { //we make the main request
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+
+        content = getContentAsString();
+
+
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setBaseURL(fileURL).setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).removeParameter("method_premium").toHttpMethod();//TODO
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();//if downloading failed
+            logger.warning(getContentAsString());//log the info
+            throw new PluginImplementationException();//some unknown problem
+        }
+        content = getContentAsString();
+
+        checkProblems();
+
+        if (content.contains("Wait <span id=\"countdown\">")) {
+            String stringWait = PlugUtils.getStringBetween(content, "Wait <span id=\"countdown\">", "</span>");
+            int wait = new Integer(stringWait);
+            downloadTask.sleep(wait);
+        }
+        if (content.contains("captcha")) {
+            logger.info("CAPTCHA INPUT!!!");
+
+            httpMethod = stepCaptcha();
+
+        } else {
+            httpMethod = getMethodBuilder().setAction(fileURL).setBaseURL(fileURL).setReferer(fileURL).setActionFromFormByName("F1", true).removeParameter("method_premium").toHttpMethod();//TODO
+
+        }
+
+        if (!tryDownloadAndSaveFile(httpMethod)) {
+            checkProblems();//if downloading failed
+            logger.warning(getContentAsString());//log the info
+            throw new PluginImplementationException();//some unknown problem
+        }
+        content = getContentAsString();
+        logger.info(content);
+        checkProblems();
+
     }
 
     private HttpMethod stepCaptcha() throws Exception {
 
         CaptchaSupport captchaSupport = getCaptchaSupport();
         String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("captchas").getAction();
+        checkProblems();
+
+
         logger.info("Captcha URL " + s);
         String captcha = captchaSupport.getCaptcha(s);
         if (captcha == null) {
@@ -110,14 +132,43 @@ class BebasUploadFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
+        int xMinutes = 0;
+        int xSeconds = 0;
+        int waittime;
+
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Not Found")) {//TODO
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         //Wrong captcha
-         if (contentAsString.contains("Wrong captcha")) {//TODO
-            throw new YouHaveToWaitException("Wrong captcha",1); //let to know user in FRD
+        if (contentAsString.contains("Wrong captcha")) {//TODO
+            throw new YouHaveToWaitException("Wrong captcha", 1); //let to know user in FRD
+        }
+
+        if (contentAsString.contains("You can download files up to")) {//TODO
+            throw new NotRecoverableDownloadException("Need premium account for files bigger than 500 Mb"); //let to know user in FRD
+        }
+
+
+        if (contentAsString.contains("You have to wait")) {//TODO
+
+            if (contentAsString.contains("minute")) {
+                logger.info("Minutes WAIT!!!");
+
+                Matcher matcher = PlugUtils.matcher("You have to wait ([0-9]+) minute(s)?, ([0-9]+) seconds", contentAsString);
+                if (matcher.find()) {
+                    xMinutes = new Integer(matcher.group(1));
+                    xSeconds = new Integer(matcher.group(2));
+                }
+            } else {
+                Matcher matcher = PlugUtils.matcher("You have to wait ([0-9]+) seconds", contentAsString);
+                if (matcher.find()) xSeconds = new Integer(matcher.group(1));
+            }
+            waittime = xMinutes * 60 + xSeconds;
+            throw new YouHaveToWaitException("You have to wait " + waittime + " seconds", waittime); //let to know user in FRD
+
         }
     }
-
 }
+
+

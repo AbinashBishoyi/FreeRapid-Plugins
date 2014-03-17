@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.luckyshare_premium.LuckyShareServiceImpl"
+        id="luckyshare.net_premium" vendor="tong2shot" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?luckyshare\.net/.+"/>
+        <attribute id="minver" value="0.852"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="luckyshare.net"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="luckyshare.net_premium" path="/" type="code"/>
+    </runtime>
+</plugin>

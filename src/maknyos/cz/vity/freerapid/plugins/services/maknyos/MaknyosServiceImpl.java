@@ -15,12 +15,7 @@ public class MaknyosServiceImpl extends AbstractFileShareService {
     public String getName() {
         return SERVICE_NAME;
     }
-    /*
-    public int getMaxDownloadsFromOneIP() {
-        //don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 10;
-    }
-    */
+   
     @Override
     public boolean supportsRunCheck() {
         return true;

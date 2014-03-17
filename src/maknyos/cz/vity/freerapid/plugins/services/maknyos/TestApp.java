@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.maknyos;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -19,18 +18,15 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.maknyos.com/lrqmmufhllvm/A_LITTLE_THING_CALLED_LOVE-maknyos.com.srt.html"));
-            httpFile.setNewURL(new URL("http://www.maknyos.com/s205fpjohm8m/indicator2-maknyos.com.gif.html"));
-
+            //httpFile.setNewURL(new URL("http://www.maknyos.com/weye04z6iran/Pics_Print_3.22.1.423.by_msmobo-maknyos.com.rar.html"));
+            httpFile.setNewURL(new URL("http://www.maknyos.com/n6odko4e5bdl/A_Perfect_World_1993_hdtv_720p_x264-CHD.EN-maknyos.com.mkv.html"));
+            //httpFile.setNewURL(new URL("http://www.maknyos.com/6eam3biispzx/indofiles.brscrw.2011.duasatu.com.mkv-maknyos.com.001.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final MaknyosServiceImpl service = new MaknyosServiceImpl(); //instance of service - of our plugin
-            final PremiumAccount config = new PremiumAccount();
-            config.setUsername("zzz123");
-            config.setPassword("123456");
-            service.setConfig(config);
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception
@@ -38,6 +34,7 @@ public class TestApp extends PluginDevApplication {
         }
         this.exit();//exit application
     }
+
 
     /**
      * Main start method for running this application

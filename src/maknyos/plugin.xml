@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="maknyos.com" version="1.1" vendor="zid"
+<plugin id="maknyos.com" version="1.2" vendor="zid+tong2shot"
         class="cz.vity.freerapid.plugins.services.maknyos.MaknyosServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?maknyos\.com/.+"/>
-        <attribute id="minver" value="0.83"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="maknyos.com"/>
         <attribute id="maxDownloads" value="10"/>

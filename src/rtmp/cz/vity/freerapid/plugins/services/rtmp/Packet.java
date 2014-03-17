@@ -79,7 +79,7 @@ public class Packet {
     public static Packet bytesRead(long value) {
         Header header = new Header(MEDIUM, 2, Type.BYTES_READ);
         IoBuffer body = IoBuffer.allocate(4);
-        body.putInt((int) value);
+        body.putInt((int) (value & 0xfffffffL)); // 2^28 - 1
         return new Packet(header, body);
     }
 

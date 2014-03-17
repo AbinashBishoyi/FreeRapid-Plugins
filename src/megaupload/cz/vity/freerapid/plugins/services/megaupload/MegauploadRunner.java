@@ -90,7 +90,6 @@ class MegauploadRunner extends AbstractRunner {
             }
 
             method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
-            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "count=", ";") + 1);
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -123,6 +122,9 @@ class MegauploadRunner extends AbstractRunner {
             } else {
                 throw new PluginImplementationException("Download limit exceeded, but waiting time was not found");
             }
+        }
+        if (content.contains("Download limit exceeded")) {
+            throw new ServiceConnectionProblemException("Download limit exceeded");
         }
         if (content.contains("All download slots")) {
             throw new ServiceConnectionProblemException("No free slot for your country.");

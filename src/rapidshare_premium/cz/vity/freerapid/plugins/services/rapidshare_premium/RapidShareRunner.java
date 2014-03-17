@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 2712 2010-10-09 17:28:40Z ATom $
+ * $Id: RapidShareRunner.java 3165 2011-08-22 14:35:00Z ntoskrnl $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -26,8 +26,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -35,7 +33,9 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -93,11 +93,12 @@ class RapidShareRunner extends AbstractRunner {
      * This method will be use RapidShare API to check file
      *
      * @throws ErrorDuringDownloadingException
+     *
      * @throws UnsupportedEncodingException
      * @throws IOException
      */
     private void chechFile() throws ErrorDuringDownloadingException, UnsupportedEncodingException, IOException {
-        // http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles_v1&files=145378634&filenames=DSCF5628.JPG&incmd5=1
+        // http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles&files=145378634&filenames=DSCF5628.JPG&incmd5=1
         Matcher matcher = PlugUtils.matcher("files/(\\d+)/(.*)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Parse URL failed");
@@ -106,7 +107,7 @@ class RapidShareRunner extends AbstractRunner {
         final String fileName = matcher.group(2); //.replace(".html", "").replace(".htm", "");
 
         PostMethod method = getPostMethod("http://api.rapidshare.com/cgi-bin/rsapi.cgi");
-        method.addParameter("sub", "checkfiles_v1");
+        method.addParameter("sub", "checkfiles");
         method.addParameter("files", fileId);
         method.addParameter("filenames", URLEncoder.encode(fileName, "UTF-8"));
 
@@ -213,7 +214,7 @@ class RapidShareRunner extends AbstractRunner {
             return RapidShareRunner.cookie;
         }
         final PostMethod pm = getPostMethod("https://api.rapidshare.com/cgi-bin/rsapi.cgi");
-        pm.addParameter("sub", "getaccountdetails_v1");
+        pm.addParameter("sub", "getaccountdetails");
         pm.addParameter("withcookie", "1");
         pm.addParameter("type", "prem");
         pm.addParameter("login", login);
@@ -246,6 +247,7 @@ class RapidShareRunner extends AbstractRunner {
     private void setBadConfig() {
         badConfig = true;
     }
+
     private boolean badConfig = false;
     private static String cookie = null;
 }

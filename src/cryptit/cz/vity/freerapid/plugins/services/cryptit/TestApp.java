@@ -16,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://crypt-it.com/s/HDB2ZD"));
+            httpFile.setNewURL(new URL("http://crypt-it.com/s/823AGB"));    //RapidShare
+            //httpFile.setNewURL(new URL("http://crypt-it.com/s/HDB2ZD"));  //lix.in
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //then we tries to download

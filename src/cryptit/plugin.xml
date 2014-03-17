@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="cryptit.com" version="0.1" vendor="RickCL"
+<plugin id="cryptit.com" version="1.0" vendor="RickCL"
         class="cz.vity.freerapid.plugins.services.cryptit.CryptItServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="(?:http|ccf)://[.]*crypt-it.com/[s|e|d|c|a]/([a-zA-Z0-9]+)"/>

@@ -38,6 +38,8 @@ public class YouTubeSettingsPanel extends JPanel {
         }
 
         orderCheckBox.setSelected(config.isReversePlaylistOrder());
+        subtitlesCheckBox.setSelected(config.isDownloadSubtitles());
+
         qualityList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

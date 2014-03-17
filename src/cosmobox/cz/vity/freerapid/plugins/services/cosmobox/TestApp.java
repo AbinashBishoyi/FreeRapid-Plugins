@@ -17,12 +17,12 @@ public class TestApp extends PluginDevApplication {
         try {
             httpFile.setNewURL(new URL("http://www.cosmobox.org/2clo97ovdz2d"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("182.48.191.116", 8080); //eg we can use local proxy to sniff HTTP communication
             final CosmoBoxServiceImpl service = new CosmoBoxServiceImpl();
             /*
             final PremiumAccount config = new PremiumAccount();
-            config.setUsername("freerapid");
-            config.setPassword("freerapid");
+            config.setUsername("***");
+            config.setPassword("***");
             service.setConfig(config);
             */
             testRun(service, httpFile, connectionSettings);

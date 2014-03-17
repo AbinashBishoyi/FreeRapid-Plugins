@@ -14,6 +14,13 @@ import java.util.List;
 class CosmoBoxFileRunner extends XFileSharingRunner {
 
     @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add(0, "Your download is ready");
+        return downloadPageMarkers;
+    }
+
+    @Override
     protected List<FileSizeHandler> getFileSizeHandlers() {
         final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
         fileSizeHandlers.add(0, new CosmoBoxFileSizeHandlerA());
@@ -24,7 +31,7 @@ class CosmoBoxFileRunner extends XFileSharingRunner {
     @Override
     protected List<FileNameHandler> getFileNameHandlers() {
         final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
-        fileNameHandlers.add(0, fileNameHandlers.remove(2)); //swap fnhA and fnhC position
+        fileNameHandlers.add(0, fileNameHandlers.remove(2));
         return fileNameHandlers;
     }
 }

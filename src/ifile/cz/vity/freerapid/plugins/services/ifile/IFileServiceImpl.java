@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Kajda
  */
 public class IFileServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "ifile.it";
+    private final static String SERVICE_NAME = "ifile.it";
 
     public String getName() {
         return SERVICE_NAME;

@@ -6,7 +6,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
 import java.net.URI;
@@ -18,14 +17,15 @@ import java.util.regex.Matcher;
  * @since 0.82
  */
 class IFileFileRunner extends AbstractRunner {
-    private static final Logger logger = Logger.getLogger(IFileFileRunner.class.getName());
+    private final static Logger logger = Logger.getLogger(IFileFileRunner.class.getName());
+    private final static String REDIRECT_URL = "http://ifile.it/dl";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setEncodePathAndQuery(true).toHttpMethod();
 
-        if (makeRedirectedRequest(getMethod)) {
+        if (makeRedirectedRequest(httpMethod)) {
             checkSeriousProblems();
             checkNameAndSize();
         } else {
@@ -37,17 +37,18 @@ class IFileFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod getMethod = getGetMethod(fileURL);
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setEncodePathAndQuery(true).toHttpMethod();
 
-        if (makeRedirectedRequest(getMethod)) {
+        if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
             final URI fileURI = new URI(fileURL);
             final String[] filePath = fileURI.getPath().split("/");
 
             if (filePath.length > 1) {
-                String redirectURL = PlugUtils.getStringBetween(getContentAsString(), "var url = '", "'") + filePath[1] + ",type=simple,captcha=";
-                HttpMethod httpMethod = stepCaptcha(redirectURL);
+                final String contentAsString = getContentAsString();
+                final String redirectURL = PlugUtils.getStringBetween(contentAsString, "var url = '", "'") + filePath[1] + ",type=simple," + PlugUtils.getStringBetween(contentAsString, "esn='+__esn+',", "' + c;");
+                httpMethod = getMethodBuilder().setReferer(REDIRECT_URL).setAction(redirectURL).toHttpMethod();
 
                 if (makeRedirectedRequest(httpMethod)) {
                     while (getContentAsString().contains("\"message\":\"show_captcha\"")) {
@@ -59,25 +60,15 @@ class IFileFileRunner extends AbstractRunner {
                     }
 
                     checkAllProblems();
-                    client.setReferer(redirectURL);
-                    redirectURL = "http://ifile.it/dl";
-                    getMethod = getGetMethod(redirectURL);
+                    httpMethod = getMethodBuilder().setReferer(REDIRECT_URL).setAction(REDIRECT_URL).toHttpMethod();
 
-                    if (makeRedirectedRequest(getMethod)) {
-                        final Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Download<");
+                    if (makeRedirectedRequest(httpMethod)) {
+                        httpMethod = getMethodBuilder().setReferer(REDIRECT_URL).setAction(PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\">Download<")).toHttpMethod();
 
-                        if (matcher.find()) {
-                            client.setReferer(redirectURL);
-                            final String finalURL = matcher.group(1);
-                            getMethod = getGetMethod(finalURL);
-
-                            if (!tryDownloadAndSaveFile(getMethod)) {
-                                checkAllProblems();
-                                logger.warning(getContentAsString());
-                                throw new IOException("File input stream is empty");
-                            }
-                        } else {
-                            throw new PluginImplementationException("Download link was not found");
+                        if (!tryDownloadAndSaveFile(httpMethod)) {
+                            checkAllProblems();
+                            logger.warning(getContentAsString());
+                            throw new IOException("File input stream is empty");
                         }
                     } else {
                         throw new ServiceConnectionProblemException();
@@ -140,7 +131,7 @@ class IFileFileRunner extends AbstractRunner {
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            return getMethodBuilder().setReferer("http://ifile.it/dl").setAction(redirectURL + captcha).toHttpMethod();
+            return getMethodBuilder().setReferer(REDIRECT_URL).setAction(redirectURL + captcha).toHttpMethod();
         }
     }
 }

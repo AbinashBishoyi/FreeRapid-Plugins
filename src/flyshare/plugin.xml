@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="flyshare.cz" version="1.0.0" vendor="Vity"
-        class="cz.vity.freerapid.plugins.services.flyshare.">
+<plugin id="flyshare.cz" version="1.0.1" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.flyshare.FlyshareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www|new)\.flyshare\.cz/.+"/>
         <attribute id="minver" value="0.8"/>

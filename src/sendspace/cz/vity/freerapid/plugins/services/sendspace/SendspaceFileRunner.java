@@ -1,15 +1,15 @@
 package cz.vity.freerapid.plugins.services.sendspace;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
@@ -22,14 +22,13 @@ class SendspaceFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-
-        if (makeRedirectedRequest(httpMethod)) {
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(getMethod)) {
             checkSeriousProblems();
             checkNameAndSize();
         } else {
             checkSeriousProblems();
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -37,32 +36,37 @@ class SendspaceFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setAndEncodeParameter("download", " REGULAR DOWNLOAD ").toPostMethod();
+        GetMethod method = getGetMethod(fileURL);
 
-        if (makeRedirectedRequest(httpMethod)) {
+        if (makeRedirectedRequest(method)) {
             checkAllProblems();
             checkNameAndSize();
+            /*
             final String contentAsString = getContentAsString();
             final String encodedLink = PlugUtils.getStringBetween(contentAsString, "base64ToText('", "')));");
             final int intParameter = PlugUtils.getNumberBetween(contentAsString, "=", ";for(");
             final String stringParameter = PlugUtils.getStringBetween(contentAsString, "='", "';for(");
             final String decodedLink = utf8Decode(enc(base64ToText(encodedLink), intParameter, stringParameter));
             final String finalURL = PlugUtils.getStringBetween(decodedLink, "href=\"", "\"");
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(finalURL).toHttpMethod();
+            */
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromAHrefWhereATagContains("start download")
+                    .toGetMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();
                 logger.warning(getContentAsString());
-                throw new IOException("File input stream is empty");
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkAllProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-
         if (contentAsString.contains("404 Page Not Found") || contentAsString.contains("Sorry, the file you requested is not available") || contentAsString.contains("The page you are looking for is  not available")) {
             throw new URLNotAvailableAnymoreException("File was not found");
         }
@@ -70,9 +74,7 @@ class SendspaceFileRunner extends AbstractRunner {
 
     private void checkAllProblems() throws ErrorDuringDownloadingException {
         checkSeriousProblems();
-
         final String contentAsString = getContentAsString();
-
         if (contentAsString.contains("You cannot download more than one file at a time")) {
             throw new YouHaveToWaitException("You cannot download more than one file at a time", 60);
         }
@@ -80,7 +82,7 @@ class SendspaceFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "Name:</b>", "<");
+        PlugUtils.checkName(httpFile, contentAsString, "<h2 class=\"bgray\"><b>", "</b>");
         PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</b>", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

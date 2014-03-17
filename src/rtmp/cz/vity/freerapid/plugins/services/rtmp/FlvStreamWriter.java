@@ -53,7 +53,7 @@ public class FlvStreamWriter implements OutputWriter {
         return in;
     }
 
-    public void close() {
+    public synchronized void close() {
         try {
             channel.close();
             in.close();

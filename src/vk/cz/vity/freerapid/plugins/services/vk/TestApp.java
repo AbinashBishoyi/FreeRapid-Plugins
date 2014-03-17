@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.gorillavid;
+package cz.vity.freerapid.plugins.services.vk;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -15,12 +15,16 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://www.gorillavid.in/cnb/382tq3tx1la3"));
-            //httpFile.setNewURL(new URL("http://gorillavid.com/m4vl88f54cv4"));  //no route to host, server problem
-            httpFile.setNewURL(new URL("http://gorillavid.in/45v8hfkpgzv5"));
+            //httpFile.setNewURL(new URL("http://vk.com/video_ext.php?oid=17211115&id=165308093&hash=9080acdaadf272d3"));
+            //httpFile.setNewURL(new URL("http://vk.com/video_ext.php?oid=-36880507&id=165376600&hash=38b5d44a4e26d0ea"));
+            httpFile.setNewURL(new URL("http://vk.com/video193844286_165427099")); //requires login, redirect to biqle as workaround
+            //httpFile.setNewURL(new URL("http://vk.com/video193844286_165616118"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081);
-            final GorillaVidServiceImpl service = new GorillaVidServiceImpl();
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            final VkServiceImpl service = new VkServiceImpl();
+            VkSettingsConfig config = new VkSettingsConfig();
+            config.setVideoQuality(VideoQuality._360);
+            service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

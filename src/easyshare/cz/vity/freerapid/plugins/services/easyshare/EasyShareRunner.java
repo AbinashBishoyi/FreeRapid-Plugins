@@ -86,7 +86,7 @@ class EasyShareRunner {
             }
             while (client.getContentAsString().contains("Please enter")) {
                 logger.info(client.getContentAsString());
-                stepCaptcha(client.getContentAsString());
+               if(stepCaptcha(client.getContentAsString())) break;
             }
 
 

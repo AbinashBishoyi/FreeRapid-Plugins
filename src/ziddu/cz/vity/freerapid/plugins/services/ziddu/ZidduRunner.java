@@ -24,10 +24,33 @@ class ZidduRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-
+        //http://www.ziddu.com/downloadlink.php?uid=aqqblpWtbqygnOKnaKqhkZSqZayclZuo8
         //http://www.ziddu.com/downloadlink/1750286/Video_Php_And_Mysql01.txt
         //http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html
         //http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html
+
+        if (fileURL.contains("downloadlink.php")) {
+            final GetMethod getLink = getGetMethod(fileURL);
+            if (makeRequest(getLink)) {
+                final String stringLink = getContentAsString();
+                if (stringLink.contains("http://www.ziddu.com/download/")) {
+                    Matcher lnkMatch = PlugUtils.matcher("class=\"download\">([^<]+)", stringLink);
+                        if (lnkMatch.find()) {
+                            fileURL = lnkMatch.group(1);
+                            fileURL = fileURL.trim();
+
+
+                        } else throw new InvalidURLOrServiceProblemException("Cant find download link");
+
+                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
+
+
+            }  else throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
+
+
+        }
+
+
 
         if (fileURL.contains("www.ziddu.com/downloadlink")) {
             fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
@@ -41,8 +64,7 @@ class ZidduRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
-        } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        } else throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     private void checkNameandSize(String contentAsString) throws Exception {
@@ -87,6 +109,26 @@ class ZidduRunner extends AbstractRunner {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         //baseURL = fileURL;
+
+                if (fileURL.contains("downloadlink.php")) {
+            final GetMethod getLink = getGetMethod(fileURL);
+            if (makeRequest(getLink)) {
+                final String stringLink = getContentAsString();
+                if (stringLink.contains("http://www.ziddu.com/download/")) {
+                    Matcher lnkMatch = PlugUtils.matcher("class=\"download\">([^<]+)", stringLink);
+                        if (lnkMatch.find()) {
+                            fileURL = lnkMatch.group(1);
+                            fileURL = fileURL.trim();
+
+                        } else throw new InvalidURLOrServiceProblemException("Cant find download link");
+
+                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
+
+
+            }  else throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
+
+
+        }
 
         if (fileURL.contains("www.ziddu.com/downloadlink")) {
             fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
@@ -141,8 +183,7 @@ class ZidduRunner extends AbstractRunner {
            
 
 
-        } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        } else throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
  private String stepCaptcha(String contentAsString) throws Exception {
@@ -156,7 +197,7 @@ class ZidduRunner extends AbstractRunner {
 
                 if (securitycode == null) {
                     //throw new CaptchaEntryInputMismatchException();
-                    return "error";
+                    return "Cancel";
 
 
                 } else {

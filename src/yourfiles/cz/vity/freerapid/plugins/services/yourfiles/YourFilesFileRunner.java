@@ -66,7 +66,7 @@ class YourFilesFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             client.setReferer(fileURL);//prevention - some services checks referers
             //here is the download link extraction
-            final Matcher matcher = getMatcherAgainstContent("document.location=\"(http.+?)\"");
+            final Matcher matcher = getMatcherAgainstContent("onclick='[^']*document.location=\"(http[^\"]+)\"");
             if (matcher.find()) {
                 final GetMethod getMethod = getGetMethod(matcher.group(1));//we make POST request for file
                 if (!tryDownloadAndSaveFile(getMethod)) {

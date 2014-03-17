@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.zippyshare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -18,6 +15,7 @@ import java.util.regex.Matcher;
  */
 class ZippyShareFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(ZippyShareFileRunner.class.getName());
+    private static Integer variant = 0;
 
     @Override
     public void runCheck() throws Exception {
@@ -49,8 +47,45 @@ class ZippyShareFileRunner extends AbstractRunner {
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Download link not found");
                 }
-                Integer time = PlugUtils.getNumberBetween(getContentAsString(), "seed: ", "}");
-                url = matcher.group(1) + "&time=" + ((time * 13 % 2139) + 6);
+                Long time = (long) PlugUtils.getNumberBetween(getContentAsString(), "seed: ", "}");
+                Integer version = (int) (Float.parseFloat(PlugUtils.getStringBetween(getContentAsString(), "DownloadButton_v", "s.swf")) * 100);
+                switch (version) {
+                    case 100:
+                        url = matcher.group(1) + "&time=" + ((time * 13 % 2139) + 6);
+                        break;
+                    case 105:
+                        url = matcher.group(1) + "&time=" + ((((time * time + time) % 234903) * (long) (time / 8)) % 317562356);
+                        break;
+                    case 114:
+                        switch (variant) {
+                            // url = matcher.group(1) + "&time=" + (24 * time % 6743256);//15.2
+                            case 4:
+                                url = matcher.group(1) + "&time=" + (3 * time % 1424574); //19.2
+                                break;
+                            case 1:
+                                url = matcher.group(1) + "&time=" + (6 * time % 78678623); //18.2
+                                break;
+                            case 2:
+                                url = matcher.group(1) + "&time=" + (9 * time % 2374755); //19.2
+                                break;
+                            case 3:
+                                url = matcher.group(1) + "&time=" + (24 * time % 6743256);  //20.2 12:00
+                                break;
+                            case 0:
+                                url = matcher.group(1) + "&time=" + (11 * time % 9809328); //19.2
+                                break;
+                            default:
+                                checkProblems();
+                                variant = 0;
+                                throw new ServiceConnectionProblemException("Error starting download");
+
+                        }
+                        break;
+                    default:
+                        throw new PluginImplementationException("New version of download button detected, please report this to freerapid plugins section");
+
+                }
+
 
             } else {
                 matcher = getMatcherAgainstContent("<script[^<>]*?>\\s*?(var [^\r\n]+)\\s*?var [a-zA-Z\\d]+? ?= ?([^\r\n]+)");
@@ -65,14 +100,17 @@ class ZippyShareFileRunner extends AbstractRunner {
 
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+
+                variant++;
+                throw new YouHaveToWaitException("", 1);
+
             }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
+
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();

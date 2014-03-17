@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -55,10 +56,16 @@ class HellSpyFileRunner extends AbstractRunner {
             if (getContentAsString().contains("You must be signed-in to download files")) {
                 throw new BadLoginException("Failed to log in");
             }
-
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" target=\"downloadIframe\"")).toGetMethod();
+            String nextURL=PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" target=\"downloadIframe\"");
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setBaseURL(SERVICE_WEB).setAction(nextURL).toGetMethod();
+            if(nextURL.endsWith("?freedownload=1")){ //Sometimes you can download for free.
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting Free download");
+                }
+                return;
+            }
             if (makeRedirectedRequest(httpMethod)) {
-
                 if (!getContentAsString().contains("<a ")) {
                     throw new NotRecoverableDownloadException("Either your account does not have enough credit, or the plugin is broken");
                 }
@@ -101,12 +108,22 @@ class HellSpyFileRunner extends AbstractRunner {
     }
 
     private void setLanguage() throws Exception {
-        final HttpMethod httpMethod = getMethodBuilder()
+        String phpsess="";
+        for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
+                    if(cookie.getName().equals("PHPSESSID")){
+                        phpsess=cookie.getValue();
+                    }
+        }
+        Matcher m=Pattern.compile("http://([a-z]+?\\.)?hellspy\\.([a-z]{2,3})/(.+)").matcher(fileURL);
+        if(m.find()){
+            final HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(SERVICE_WEB)
-                .setActionFromAHrefWhereATagContains("English")
+                .setAction("http://"+m.group(1)+"hellspy.com/--"+phpsess+"-/"+m.group(3))
+                //.setActionFromAHrefWhereATagContains("English")
                 .toGetMethod();
-        if (!makeRedirectedRequest(httpMethod))
-            throw new ServiceConnectionProblemException();
+            if (!makeRedirectedRequest(httpMethod))
+                throw new ServiceConnectionProblemException();
+        }
     }
 
     private void login() throws Exception {

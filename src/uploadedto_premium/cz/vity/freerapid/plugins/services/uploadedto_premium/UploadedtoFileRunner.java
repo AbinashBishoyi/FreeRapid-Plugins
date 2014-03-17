@@ -22,8 +22,7 @@ class UploadedtoFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
-        addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -35,11 +34,11 @@ class UploadedtoFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.to</title>");
+        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.net</title>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name/size not found");
         }
-        httpFile.setFileName(matcher.group(1));
+        httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -48,8 +47,7 @@ class UploadedtoFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
-        addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));
         login();
         HttpMethod method = getGetMethod(fileURL);
         if (!tryDownloadAndSaveFile(method)) {
@@ -83,7 +81,7 @@ class UploadedtoFileRunner extends AbstractRunner {
                 }
             }
             final HttpMethod method = getMethodBuilder()
-                    .setAction("http://uploaded.to/io/login")
+                    .setAction("http://uploaded.net/io/login")
                     .setParameter("id", pa.getUsername())
                     .setParameter("pw", pa.getPassword())
                     .toPostMethod();

@@ -15,7 +15,7 @@ public class UploadedtoServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "uploaded.to_premium";
+        return "uploaded.net_premium";
     }
 
     @Override

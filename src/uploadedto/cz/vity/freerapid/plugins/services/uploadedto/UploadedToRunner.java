@@ -20,8 +20,7 @@ class UploadedToRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
-        addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkSizeAndName();
@@ -36,8 +35,7 @@ class UploadedToRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".uploaded.to", "lang", "en", "/", 86400, false));
-        addCookie(new Cookie(".ul.to", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -46,40 +44,38 @@ class UploadedToRunner extends AbstractRunner {
             final String fileId = getFileId();
             final int wait = PlugUtils.getNumberBetween(getContentAsString(), "<span>", "</span> seconds");
             setFileStreamContentTypes(new String[0], new String[]{"application/javascript"});
-            method = getGetMethod("http://uploaded.to/io/ticket/slot/" + fileId);
+            method = getGetMethod("http://uploaded.net/io/ticket/slot/" + fileId);
             if (makeRedirectedRequest(method)) {
                 if (getContentAsString().contains("err:")) {
                     throw new ServiceConnectionProblemException("All download slots are full");
                 }
                 downloadTask.sleep(wait + 1);
-                while (true) {
+                do {
                     if (!makeRedirectedRequest(stepCaptcha(fileId))) {
                         checkProblems();
                         throw new ServiceConnectionProblemException();
                     }
-                    if (!getMatcherAgainstContent("err\"?:\"?captcha").find()) {
-                        if (getContentAsString().contains("You have reached")) {
-                            throw new ServiceConnectionProblemException("Free download limit reached");
-                        }
-                        if (getContentAsString().contains("available download slots")) {
-                            throw new ServiceConnectionProblemException("All download slots are busy currently, please try again within a few minutes.");
-                        }
-                        if (getContentAsString().contains("You are already")) {
-                            throw new ServiceConnectionProblemException("You are already downloading a file");
-                        }
-                        if (getContentAsString().contains("Only premium users") || getContentAsString().contains("In order to download files bigger")) {
-                            throw new NotRecoverableDownloadException("Only premium users may download files larger than 1 GB");
-                        }
-                        if (getContentAsString().contains("The free download") || getContentAsString().contains("In order to download files bigger")) {
-                            throw new NotRecoverableDownloadException("The free download is currently not available - Please try again later");
-                        }
-                        method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("url:'", "'").toGetMethod();
-                        if (!tryDownloadAndSaveFile(method)) {
-                            checkProblems();
-                            throw new ServiceConnectionProblemException("Error starting download");
-                        }
-                        break;
-                    }
+                } while (getMatcherAgainstContent("err\"?:\"?captcha").find());
+
+                if (getContentAsString().contains("You have reached")) {
+                    throw new ServiceConnectionProblemException("Free download limit reached");
+                }
+                if (getContentAsString().contains("available download slots")) {
+                    throw new ServiceConnectionProblemException("All download slots are busy currently, please try again within a few minutes.");
+                }
+                if (getContentAsString().contains("You are already")) {
+                    throw new ServiceConnectionProblemException("You are already downloading a file");
+                }
+                if (getContentAsString().contains("Only premium users") || getContentAsString().contains("In order to download files bigger")) {
+                    throw new NotRecoverableDownloadException("Only premium users may download files larger than 1 GB");
+                }
+                if (getContentAsString().contains("The free download") || getContentAsString().contains("In order to download files bigger")) {
+                    throw new NotRecoverableDownloadException("The free download is currently not available - Please try again later");
+                }
+                method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("url:'", "'").toGetMethod();
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             } else {
                 checkProblems();
@@ -92,15 +88,11 @@ class UploadedToRunner extends AbstractRunner {
     }
 
     private void checkSizeAndName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.to</title>");
+        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.net</title>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name/size not found");
         }
-        String fileName = matcher.group(1);
-        if (fileName.contains("&hellip;")) {
-            fileName = fileName.substring(0,fileName.indexOf("&hellip;")) + "(temporarily truncated)";
-        }
-        httpFile.setFileName(fileName);
+        httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -144,7 +136,7 @@ class UploadedToRunner extends AbstractRunner {
         r.setRecognized(captcha);
         */
         return r.modifyResponseMethod(
-                getMethodBuilder().setReferer(fileURL).setAction("http://uploaded.to/io/ticket/captcha/" + fileId)
+                getMethodBuilder().setReferer(fileURL).setAction("http://uploaded.net/io/ticket/captcha/" + fileId)
         ).toPostMethod();
     }
 

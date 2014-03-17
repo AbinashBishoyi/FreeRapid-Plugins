@@ -7,11 +7,10 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Ladislav Vitasek
  */
 public class UploadedToShareServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "uploaded.to";
 
     @Override
     public String getName() {
-        return SERVICE_NAME;
+        return "uploaded.net";
     }
 
     @Override

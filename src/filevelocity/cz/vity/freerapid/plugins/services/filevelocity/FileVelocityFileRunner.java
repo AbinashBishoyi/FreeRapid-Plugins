@@ -113,6 +113,8 @@ class FileVelocityFileRunner extends AbstractRunner {
             throw new PluginImplementationException();//some unknown problem
         }
 
+        checkDownloadProblems();
+
         final MethodBuilder methodBuilder = getMethodBuilder()
                 .setActionFromFormByName("F1", true)
                 .setAction(fileURL)

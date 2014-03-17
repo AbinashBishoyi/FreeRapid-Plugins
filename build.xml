@@ -108,6 +108,7 @@
         <ant dir="${src.dir}/rapidsharede/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/bitroad/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshareuser/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/badongo/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

@@ -22,7 +22,7 @@ class PreFilesFileRunner extends XFileSharingRunner {
         fileNameHandlers.add(new FileNameHandler() {
             @Override
             public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-                httpFile.setFileName(PlugUtils.getStringBetween(content, "<div class=\"filename_bar\"><i></i><h2>", "<small>"));
+                httpFile.setFileName(PlugUtils.getStringBetween(content, "<div class=\"filename_bar\"><i></i><h3>", " <small>"));
             }
         });
         return fileNameHandlers;

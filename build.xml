@@ -208,6 +208,12 @@
         <ant dir="${src.dir}/cryptit/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/securedin/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/protectlinks/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/shareflare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/hotfilefolder/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/u115/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/filebeam/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/4upload/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/bigandfree_premium/" antfile="build.xml" inheritall="false"/>
 
     </target>
 

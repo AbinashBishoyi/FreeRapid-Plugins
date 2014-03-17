@@ -57,11 +57,10 @@ class NarodFileRunner extends AbstractRunner {
         httpFile.setFileName(namePartMatcher.replaceAll(""));
 
 
-
-    	 Matcher sizeMatcher=PlugUtils.matcher("Размер:(?:<[^>]*>|\\s)*(.*?)<", getContentAsString());
-    	 if(!sizeMatcher.find())
-    		 unimplemented();
-    	 httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1).replace('Б', 'B')));
+        Matcher sizeMatcher = PlugUtils.matcher("Размер:(?:<[^>]*>|\\s)*(.*?)<", getContentAsString());
+        if (!sizeMatcher.find())
+            unimplemented();
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1).replace('\u0411', 'B')));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -124,20 +123,20 @@ class NarodFileRunner extends AbstractRunner {
         if (contentAsString.contains("<td class=\"headCode\">404</td>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-        if(contentAsString.contains("Файл удален с сервиса."))
-        	throw new URLNotAvailableAnymoreException("File deleted");
+        if (contentAsString.contains("\u0424\u0430\u0439\u043B \u0443\u0434\u0430\u043B\u0435\u043D \u0441 \u0441\u0435\u0440\u0432\u0438\u0441\u0430."))
+            throw new URLNotAvailableAnymoreException("File deleted");
     }
-		
-		private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        if(getContentAsString().contains("<b class=\"error-msg\"><strong>Ошиблись?</strong> Попробуйте еще&nbsp;раз</b>"))
+
+    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("<b class=\"error-msg\"><strong>\u041E\u0448\u0438\u0431\u043B\u0438\u0441\u044C?</strong> " + "\u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0435" + "&nbsp;\u0440\u0430\u0437</b>"))
             throw new CaptchaEntryInputMismatchException();
-		}
-		
-		private void checkProblems() throws ErrorDuringDownloadingException {
-			checkDownloadProblems();
-			checkFileProblems();
-			if(getContentAsString().contains("Внутренняя ошибка сервиса."))
-				throw new ServiceConnectionProblemException();
-		}
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        checkDownloadProblems();
+        checkFileProblems();
+        if (getContentAsString().contains("\u0412\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u044F\u044F \u043E\u0448\u0438\u0431\u043A\u0430 \u0441\u0435\u0440\u0432\u0438\u0441\u0430.")) //Внутренняя ошибка сервиса.
+            throw new ServiceConnectionProblemException();
+    }
 
 }

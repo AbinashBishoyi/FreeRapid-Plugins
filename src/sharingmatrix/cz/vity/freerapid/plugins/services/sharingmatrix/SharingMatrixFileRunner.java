@@ -50,6 +50,9 @@ class SharingMatrixFileRunner extends AbstractRunner {
             httpMethod.setFollowRedirects(true);
             InputStream is = client.makeRequestForFile(httpMethod);
 
+            if (is == null)
+                throw new PluginImplementationException();
+
             CaptchaSupport captchaSupport = getCaptchaSupport();
             BufferedImage captchaImage = captchaSupport.loadCaptcha(is);
             do {

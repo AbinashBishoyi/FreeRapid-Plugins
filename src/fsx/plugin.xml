@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.fsx.FsxServiceImpl"
-        id="fsx.hu" vendor="Javi" version="1.0.0">
+        id="fsx.hu" vendor="Hosszu" version="1.0.1">
     <attributes>
-        <attribute id="urlRegex" value="http://(.+\.)fsx\.hu/download.php\?.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?fsx\.hu/.+|http://s\d\.fsx\.hu/.+"/>
         <attribute id="minver" value="0.851"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="fsx.hu"/>
-        <!-- TODO max count of parallel downloads -->
+        <!-- Max count of parallel downloads -->
         <attribute id="maxDownloads" value="1"/>
-        <attribute id="faviconImage" value="resources/favicon.png"/>
+        <attribute id="faviconImage" value="resources/fsx.png"/>
     </attributes>
 
     <runtime>

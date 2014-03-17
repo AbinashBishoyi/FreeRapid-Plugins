@@ -6,7 +6,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 /**
  * Class that provides basic info about plugin
  *
- * @author Javi
+ * @author Hosszu
  */
 public class FsxServiceImpl extends AbstractFileShareService {
 

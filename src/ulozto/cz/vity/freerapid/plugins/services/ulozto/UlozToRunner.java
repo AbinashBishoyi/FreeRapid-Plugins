@@ -58,16 +58,16 @@ class UlozToRunner extends AbstractRunner {
                         downloadTask.saveToFile(inputStream);
                         return;
                     }
-                    if(method.getStatusCode()==302){
-                        String nextUrl=method.getResponseHeader("Location").getValue();
-                        method=getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).toHttpMethod();
-                        if(nextUrl.contains("captcha=no#cpt")) {
+                    if (method.getStatusCode() == 302) {
+                        String nextUrl = method.getResponseHeader("Location").getValue();
+                        method = getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).toHttpMethod();
+                        if (nextUrl.contains("captcha=no#cpt")) {
                             makeRequest(method);
                             logger.warning("Wrong captcha code");
                             continue;
                         }
-                        if(nextUrl.contains("full=y"))
-                          throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
+                        if (nextUrl.contains("full=y"))
+                            throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
                         if (saved = tryDownloadAndSaveFile(method)) break;
                     }
                     checkProblems();
@@ -98,48 +98,48 @@ class UlozToRunner extends AbstractRunner {
         if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
         }
-        Matcher m=Pattern.compile("<h2 class=\"nadpis\"[^>]*><a href=\"[^\"]*\">([^<]+)</a>").matcher(content);
-        if(!m.find()) throw new PluginImplementationException("Cannot find filename");
+        Matcher m = Pattern.compile("<h2 class=\"nadpis\"[^>]*><a href=\"[^\"]*\">([^<]+)</a>").matcher(content);
+        if (!m.find()) throw new PluginImplementationException("Cannot find filename");
 
         httpFile.setFileName(m.group(1));
-        m=Pattern.compile("<div class=\"info_velikost\"[^>]*><div>([^<]+)</div>").matcher(content);
-        if(!m.find()) throw new PluginImplementationException("Cannot find filesize");
+        m = Pattern.compile("<div class=\"info_velikost\"[^>]*><div>(?:.+?\\|)?([^<]+)</div>").matcher(content);
+        if (!m.find()) throw new PluginImplementationException("Cannot find filesize");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(m.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private HttpMethod stepCaptcha(String contentAsString) throws Exception {
-            CaptchaSupport captchaSupport = getCaptchaSupport();
-            MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
-            String captcha = "";
-            if (captchaCount++ < 3) {
-                logger.info("captcha url:" + captchaMethod.getAction());
-                Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
-                if (m.find()) {
-                    String number = m.group(1);
-                    if (captchaReader == null) {
-                        captchaReader = new SoundReader();
-                    }
-                    HttpMethod methodSound = getMethodBuilder().setAction("http://img.uloz.to/captcha/sound/" + number + ".mp3").toGetMethod();
-                    captcha = captchaReader.parse(client.makeRequestForFile(methodSound));
+        CaptchaSupport captchaSupport = getCaptchaSupport();
+        MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
+        String captcha = "";
+        if (captchaCount++ < 3) {
+            logger.info("captcha url:" + captchaMethod.getAction());
+            Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
+            if (m.find()) {
+                String number = m.group(1);
+                if (captchaReader == null) {
+                    captchaReader = new SoundReader();
                 }
-            } else {
-                captcha = captchaSupport.getCaptcha(captchaMethod.getAction());
+                HttpMethod methodSound = getMethodBuilder().setAction("http://img.uloz.to/captcha/sound/" + number + ".mp3").toGetMethod();
+                captcha = captchaReader.parse(client.makeRequestForFile(methodSound));
             }
-            if (captcha == null) {
-                throw new CaptchaEntryInputMismatchException();
-            } else {
-                MethodBuilder sendForm = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dwn", true);
-                sendForm.setEncodePathAndQuery(true);
-                sendForm.setAndEncodeParameter("captcha_user", captcha);
-                return sendForm.toPostMethod();
-            }
+        } else {
+            captcha = captchaSupport.getCaptcha(captchaMethod.getAction());
+        }
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        } else {
+            MethodBuilder sendForm = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dwn", true);
+            sendForm.setEncodePathAndQuery(true);
+            sendForm.setAndEncodeParameter("captcha_user", captcha);
+            return sendForm.toPostMethod();
+        }
     }
 
     //"P�ekro�en po�et FREE slot�, pou�ijte VIP download
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
-        if (content.contains("Soubor byl sma")){
+        if (content.contains("Soubor byl sma")) {
             throw new URLNotAvailableAnymoreException("Soubor byl smazan");
         }
         if (content.contains("soubor nebyl nalezen")) {

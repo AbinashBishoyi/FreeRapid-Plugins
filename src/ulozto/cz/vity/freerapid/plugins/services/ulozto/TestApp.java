@@ -16,6 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             httpFile.setNewURL(new URL("http://www.uloz.to/1579588/7-harry-potter-a-relikvie-smrti-kniha-mp3-svet-warez-cz-part2-rar"));
+            httpFile.setNewURL(new URL("http://ulozto.cz/6014285/fringe.s03e02.hdtv.xvid-lol.avi"));
             testRun(new UlozToServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

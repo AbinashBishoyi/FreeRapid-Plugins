@@ -145,7 +145,7 @@ class MegauploadRunner {
 
                 if (captcha == null) {
                     captcha = downloader.askForCaptcha(captchaImage);
-                }
+                } else captchaImage.flush();//askForCaptcha release image
                 if (captcha == null)
                     throw new CaptchaEntryInputMismatchException();
 

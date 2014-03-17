@@ -103,17 +103,21 @@ class FileFactoryRunner {
 
     private void mainStep(String fileURL) throws Exception {
         if (--deep <= 0)
-            throw new InvalidURLOrServiceProblemException("Something is very weird");
+            throw new InvalidURLOrServiceProblemException("Something is very bad");
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
             String contentAsString = client.getContentAsString();
             Matcher matcher = Pattern.compile("Size: ([0-9-\\.]*) MB", Pattern.MULTILINE).matcher(contentAsString);
             if (!matcher.find()) {
-                if (contentAsString.contains("This file has been deleted"))
+                if (contentAsString.contains("This file has been deleted")) {
                     throw new URLNotAvailableAnymoreException("This file has been deleted.");
-                else
+                } else {
+                    if (contentAsString.contains("no free download slots")) {
+                        throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server.", 120);
+                    }
                     throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+                }
             }
             String s = matcher.group(1);
             httpFile.setFileSize((long) Float.parseFloat(s) * 1024 * 1024);
@@ -196,7 +200,7 @@ class FileFactoryRunner {
                 if (checkLimit(client.getContentAsString())) {
                     return;
                 }
-                logger.info(client.getContentAsString());
+                logger.warning(client.getContentAsString());
                 throw new IOException("File input stream is empty.");
             }
         } finally {

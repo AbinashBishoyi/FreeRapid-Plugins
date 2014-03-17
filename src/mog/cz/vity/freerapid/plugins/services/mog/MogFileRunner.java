@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
@@ -27,6 +28,11 @@ import java.util.regex.Matcher;
 class MogFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(MogFileRunner.class.getName());
 
+    //Introduce apiToken as static, because apparently they track different apiToken as different device.
+    //If different apiToken detected, they send "Another device is currently streaming error message".
+    //So we have to save the apiToken received after login, to be used for the rest of session.
+    private static String apiToken = null; //safe, assuming maxdownload=1
+
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         if (isAlbum()) { //album
             PlugUtils.checkName(httpFile, content, "\"album_name\":\"", "\"");
@@ -42,8 +48,10 @@ class MogFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        login();
-        final String apiToken = PlugUtils.getStringBetween(getContentAsString(), "\"api_token\":\"", "\"");
+        if (apiToken == null) {
+            login();
+            apiToken = PlugUtils.getStringBetween(getContentAsString(), "\"api_token\":\"", "\"");
+        }
         final String mediaId = getMediaIdFromUrl();
         HttpMethod method = getMediaInfoMethod(mediaId);
         if (!makeRedirectedRequest(method)) {
@@ -56,6 +64,21 @@ class MogFileRunner extends AbstractRtmpRunner {
         if (isAlbum()) {
             parseAlbum();
         } else {
+            //to make sure only one track played at one time, send stop playback message
+            addCookie(new Cookie(".mog.com", "mogger_alert", "alerted", "/", 86400, false));
+            method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction("https://mog.com/v2/playback/stop.json")
+                    .setParameter("track_id", mediaId)
+                    .setParameter("ts", String.valueOf(System.currentTimeMillis() / 1000))
+                    .setParameter("api_token", apiToken)
+                    .setParameter("allow_nonstreamable_token", "1")
+                    .setAjax()
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                logger.warning("Failed sending stop playback message");
+            }
+            logger.info("Stop playback response : " + getContentAsString());
             method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(String.format("https://mog.com/v2/tracks/%s/stream.json", mediaId))

@@ -2,9 +2,9 @@ package cz.vity.freerapid.plugins.services.ziddu;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
@@ -25,16 +25,15 @@ class ZidduRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
 
-
         //http://www.ziddu.com/downloadlink/1750286/Video_Php_And_Mysql01.txt
         //http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html
         //http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html
 
         if (fileURL.contains("www.ziddu.com/downloadlink")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink","www.ziddu.com/downloadfile") + ".html";
+            fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
 
         } else if (fileURL.contains("www.ziddu.com/download/")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/download/","www.ziddu.com/downloadfile/");
+            fileURL = fileURL.replaceFirst("www.ziddu.com/download/", "www.ziddu.com/downloadfile/");
         }
 
         baseURL = fileURL;
@@ -58,24 +57,27 @@ class ZidduRunner extends AbstractRunner {
 
         }
         //Matcher matcher = PlugUtils.matcher("Download ([^,]+), upload", contentAsString);
-        if (contentAsString.contains("fname"))  {
+        if (contentAsString.contains("fname")) {
             //final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
             //String ndpage = PlugUtils.getParameter("2ndpage", contentAsString);
             String fn = PlugUtils.getParameter("fname", contentAsString);
-         
+            fn = fn.replace(".html", "");//why did you removed it? it's OK with it
+            fn = fn.replace("\"", "");
+            fn = fn.replace(";", "");
+
+
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
+
+            Matcher matcher = PlugUtils.matcher("(([0-9.]* .B))<", contentAsString);
+            if (matcher.find()) {
+                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+                logger.info("File size " + a);
+                httpFile.setFileSize(a);
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            } else logger.warning("File size was not found" + contentAsString);
+
         } else logger.warning("File name was not found" + contentAsString);
-
-        Matcher matcher = PlugUtils.matcher("(([0-9.]* .B))<", contentAsString);
-        if (matcher.find()) {
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else logger.warning("File size was not found" + contentAsString);
-
-        
 
 
     }
@@ -85,14 +87,14 @@ class ZidduRunner extends AbstractRunner {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         //baseURL = fileURL;
-        
+
         if (fileURL.contains("www.ziddu.com/downloadlink")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink","www.ziddu.com/downloadfile") + ".html";
+            fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
 
         } else if (fileURL.contains("www.ziddu.com/download/")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/download/","www.ziddu.com/downloadfile/");
+            fileURL = fileURL.replaceFirst("www.ziddu.com/download/", "www.ziddu.com/downloadfile/");
         }
-        
+
         baseURL = fileURL;
         //httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));
         logger.info("Starting download in TASK " + fileURL);
@@ -111,7 +113,6 @@ class ZidduRunner extends AbstractRunner {
             //<input type="hidden" name="Keyword"  value="Keyword">
             //   <input type="submit" name="submit" value="Download"></td>
 
-
             //GET CAPTHA
 
             Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
@@ -119,42 +120,31 @@ class ZidduRunner extends AbstractRunner {
                 String s = "http://www.ziddu.com" + matcher.group(1);
                 logger.info(httpSite + s);
                 client.setReferer(baseURL);
-                String securitycode = getCaptchaSupport().getCaptcha(s);
+                String securitycode = getCaptchaSupport().getCaptcha(s); //returns "" when user pressed OK with no input
 
                 if (securitycode == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
-                    String fid = PlugUtils.getParameter("fid", contentAsString);
-                    String tid = PlugUtils.getParameter("tid", contentAsString);
-                    //String securitycode = PlugUtils.getParameter("securitycode", contentAsString); captha!!!
-                    String fname = PlugUtils.getParameter("fname", contentAsString);
-                    String securecode = PlugUtils.getParameter("securecode", contentAsString);
-                    String keyword = PlugUtils.getParameter("Keyword", contentAsString);
-                    String submit = PlugUtils.getParameter("submit", contentAsString);
-                    //<form name="securefrm" action="/downloadfile/2847949/1_458215942l.jpg.html" method="post" onSubmit="return doSubmit()" style="margin:0; display:inline;" >
                     matcher = PlugUtils.matcher("action=\"([^\"]*)", contentAsString);
-                    if (matcher.find()){
+                    if (matcher.find()) {
                         s = "http://www.ziddu.com" + matcher.group(1);
                         logger.info(s);
                         final PostMethod method = getPostMethod(s);
-                        method.addParameter("fid", fid);
-                        method.addParameter("tid", tid);
-                        method.addParameter("securitycode", securitycode);
-                        method.addParameter("fname", fname);
-                        method.addParameter("securecode", securecode);
-                        method.addParameter("Keyword", keyword);
-                        method.addParameter("submit", submit);
-                        //method.setFollowRedirects(true);
+
+                        String[] parameters = new String[]{"fid", "tid", "fname", "securecode", "submit"}; //array of parameter names for parsing
+                        PlugUtils.addParameters(method, contentAsString, parameters);
+                        method.addParameter("Keyword", "Ok"); //it always sends 'Ok'
+                        method.addParameter("securitycode", securitycode); //it does not work without captcha
+
+                        client.getHTTPClient().getParams().setBooleanParameter("noContentTypeInHeader", true);
 
                         if (!tryDownloadAndSaveFile(method)) {
                             checkProblems();
                             //if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))
-                             //   return false;
+                            //   return false;
                             logger.warning(getContentAsString());
-                            throw new IOException("File input stream is empty." + fname);
+                            throw new IOException("File input stream is empty.");
                         }
-
-
 
                     } else throw new InvalidURLOrServiceProblemException("Cant find action - " + contentAsString);
 
@@ -178,5 +168,5 @@ class ZidduRunner extends AbstractRunner {
 
     }
 
- 
+
 }

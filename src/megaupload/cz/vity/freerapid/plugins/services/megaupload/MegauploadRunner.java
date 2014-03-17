@@ -168,16 +168,9 @@ class MegauploadRunner extends AbstractRunner {
                 if (captcha == null)
                     throw new CaptchaEntryInputMismatchException();
 
-                //  client.setReferer(baseURL);
-                String d = PlugUtils.getParameter("d", contentAsString);
-                String imagecode = PlugUtils.getParameter("imagecode", contentAsString);
-                String megavar = PlugUtils.getParameter("megavar", contentAsString);
-
                 final PostMethod postMethod = getPostMethod(HTTP_SITE);
+                PlugUtils.addParameters(postMethod, contentAsString, new String[]{"d", "imagecode", "megavar"});
 
-                postMethod.addParameter("d", d);
-                postMethod.addParameter("imagecode", imagecode);
-                postMethod.addParameter("megavar", megavar);
                 postMethod.addParameter("imagestring", captcha);
 
                 if (makeRequest(postMethod)) {

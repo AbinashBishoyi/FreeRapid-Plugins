@@ -62,10 +62,7 @@ class UpnitoFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);
             client.setReferer(fileURL);
             final PostMethod postMethod = getPostMethod(fileURL);
-            PlugUtils.addParameter("dl2", contentAsString, postMethod);
-            PlugUtils.addParameter("verifytext", contentAsString, postMethod);
-            PlugUtils.addParameter("sid", contentAsString, postMethod);
-            PlugUtils.addParameter("auth_token", contentAsString, postMethod);
+            PlugUtils.addParameters(postMethod, contentAsString, new String[]{"dl2", "verifytext", "sid", "auth_token"});
 
             postMethod.addParameter("file", "");
             postMethod.addParameter("userinput", "");

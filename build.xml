@@ -86,6 +86,7 @@
         <ant dir="${src.dir}/radikalru/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/indowebster/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/toshared/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/uploading/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

@@ -39,6 +39,7 @@ class UploadingRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("downloadform")) {
                 checkNameAndSize(getContentAsString());
+                client.setReferer(fileURL);
                 PostMethod method = getPostMethod(fileURL);
                 method.addParameter("free", "1");
                 if (makeRedirectedRequest(method)) {
@@ -46,8 +47,10 @@ class UploadingRunner extends AbstractRunner {
                         logger.info(getContentAsString());
                         throw new PluginImplementationException();
                     }
-
-                    downloadTask.sleep(5);
+                    int timeToWait = 92;
+                    Matcher matcher = getMatcherAgainstContent("<script>\\s*var [^=]+=([0-9]+)");
+                    if (matcher.find()) timeToWait = Integer.decode(matcher.group(1));
+                    downloadTask.sleep(timeToWait);
                     PostMethod method2 = getPostMethod(fileURL);
                     method2.addParameter("free", "1");
                     method2.addParameter("x", "1");

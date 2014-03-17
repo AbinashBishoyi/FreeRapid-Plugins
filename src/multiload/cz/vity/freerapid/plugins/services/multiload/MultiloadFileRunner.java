@@ -45,7 +45,12 @@ class MultiloadFileRunner extends AbstractRunner {
     private void parseWebsite() throws Exception {
         setConfig();
         String server = MultiloadSettingsPanel.serverNames[config.getServerSetting()];
-        String linksGroup = PlugUtils.getStringBetween(getContentAsString(), "<p class=\"manager-server\"><strong>" + server + "</strong></p><p class=\"manager-linky\">", "</p>");
+        String linksGroup = "";
+        if (server.equals("multishare.cz")) {
+            linksGroup = PlugUtils.getStringBetween(getContentAsString(), "<p class=\"manager-linky multishare-kod\">", "</p>");
+        } else {
+            linksGroup = PlugUtils.getStringBetween(getContentAsString(), "<p class=\"manager-server\"><strong>" + server + "</strong></p><p class=\"manager-linky\">", "</p>");
+        }
         final List<URI> uriList = new LinkedList<URI>();
         boolean found = false;
         if (linksGroup.contains("<br>")) {
@@ -67,7 +72,7 @@ class MultiloadFileRunner extends AbstractRunner {
         } else {
             if (linksGroup.contains("(chyba serveru)")) {
                 throw new NotSupportedDownloadByServiceException("Chyba serveru " + server);
-            }else {
+            } else {
                 throw new PluginImplementationException("Cannot parse links");
             }
         }

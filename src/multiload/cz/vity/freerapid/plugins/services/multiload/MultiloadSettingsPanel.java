@@ -13,7 +13,7 @@ import javax.swing.JPanel;
  * @author JPEXS
  */
 public class MultiloadSettingsPanel extends JPanel implements ActionListener {
-    public static final String[] serverNames = {"czshare.com","hellshare.com","share-rapid.cz","rapidshare.com","uloz.to","quickshare.cz"};
+    public static final String[] serverNames = {"czshare.com","hellshare.com","share-rapid.cz","rapidshare.com","uloz.to","quickshare.cz","multishare.cz"};
     private MultiloadSettingsConfig config;
 
     public MultiloadSettingsPanel(MultiloadServiceImpl service) throws Exception {

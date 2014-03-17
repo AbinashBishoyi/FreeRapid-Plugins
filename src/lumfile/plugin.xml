@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.lumfile.LumFileServiceImpl"
-        id="lumfile.com" vendor="birchie" version="2.0.4">
+        id="lumfile.com" vendor="birchie" version="2.0.5">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?lumfile\.com/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?lumfile\.(com|eu|se)/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="lumfile.com"/>

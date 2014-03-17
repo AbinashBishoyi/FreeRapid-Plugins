@@ -14,7 +14,7 @@ public class IFileServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 9;
+        return 3;
     }
 
     @Override

@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.data;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -35,7 +32,7 @@ class DataFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<div class=\"download_filename\">", "</div>");
-        PlugUtils.checkFileSize(httpFile, content, "fájlméret:", "<div");
+        PlugUtils.checkFileSize(httpFile, content.replace("1,000.0 MB", "1 GB"), "fájlméret:", "<div");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -74,6 +71,10 @@ class DataFileRunner extends AbstractRunner {
         if (contentAsString.contains("nem létezik")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if (contentAsString.contains("200 MB-nál nagyobb")) {
+            throw new NotRecoverableDownloadException("Premium account needed for files >200MB");  //let to know user in FRD
+        }
+
     }
 
 }

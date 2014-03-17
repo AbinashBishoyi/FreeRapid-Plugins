@@ -16,10 +16,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://usershare.net/432yaj6kjm72"));
+            httpFile.setNewURL(new URL("http://usershare.net/moxg9yaldp39"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final UserShareServiceImpl service = new UserShareServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

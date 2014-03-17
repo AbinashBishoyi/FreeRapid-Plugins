@@ -75,7 +75,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
             return;
         }
-        final Matcher matcher = getMatcherAgainstContent("window\\._preloadedFastStartVideo = ([^\r\n]+?)\\\\n");
+        final Matcher matcher = getMatcherAgainstContent("window\\._preloadedFastStartVideo = ([^\r\n]+?\\})\\\\n");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name content not found");
         }

@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 class Channel4FileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(Channel4FileRunner.class.getName());
     private final static byte[] DECRYPT_KEY = "STINGMIMI".getBytes(Charset.forName("UTF-8"));
-    private final static SwfVerificationHelper helper = new SwfVerificationHelper("http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer_am2.swf");
+    private static SwfVerificationHelper helper;
     private String id;
 
     @Override
@@ -94,6 +94,7 @@ class Channel4FileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            final SwfVerificationHelper helper = getSwfvHelper();
             method = getGetMethod("http://ais.channel4.com/asset/" + id);
             makeRedirectedRequest(method);
             if (getContentAsString().contains("status=\"ERROR\"")) {
@@ -136,8 +137,20 @@ class Channel4FileRunner extends AbstractRtmpRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("This page cannot be found")
-                || getContentAsString().contains("Please try again later")) {
+                || getContentAsString().contains("Please try again later")
+                || getContentAsString().contains("Programme Unavailable")) {
             throw new URLNotAvailableAnymoreException("Page not found");
+        }
+    }
+
+    private SwfVerificationHelper getSwfvHelper() throws ErrorDuringDownloadingException {
+        final String url = "http://www.channel4.com/static/programmes/asset/flash/swf/"
+                + PlugUtils.getStringBetween(getContentAsString(), "var fourodPlayerFile = '", "';");
+        synchronized (Channel4FileRunner.class) {
+            if (helper == null || !url.equals(helper.getSwfURL())) {
+                helper = new SwfVerificationHelper(url);
+            }
+            return helper;
         }
     }
 

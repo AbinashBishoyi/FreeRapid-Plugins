@@ -117,6 +117,14 @@ class RapidShareRunner extends AbstractRunner {
 
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
+        matcher = getMatcherAgainstContent("\"downloadlink\">(.*?)<font");
+        if (matcher.find()) {
+            final String trimmedURL = matcher.group(1).trim();
+            final int i = trimmedURL.lastIndexOf('/');
+            if (i > 0)
+                httpFile.setFileName(trimmedURL.substring(i + 1));
+        }
+
         //| 5277 KB</font>
         matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
         if (matcher.find()) {

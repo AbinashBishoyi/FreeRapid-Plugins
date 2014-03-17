@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareServiceImpl.java 966 2008-12-05 20:25:59Z ATom $
+ * $Id: RapidShareServiceImpl.java 967 2008-12-05 20:49:53Z Vity $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -21,40 +21,61 @@
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
+import cz.vity.freerapid.utilities.LogUtils;
+
+import java.util.logging.Logger;
 
 /**
  * @author Ladislav Vitásek & Tomáš Procházka <tom.p@atomsoft.cz>
  */
 public class RapidShareServiceImpl extends AbstractFileShareService {
+    private final static Logger logger = Logger.getLogger(RapidShareServiceImpl.class.getName());
 
-	private static final String SERVICE_NAME = "RapidShare.com";
-	private static final String PLUGIN_CONFIG_FILE = "plugin_RapidSharePremium.xml";
+    private static final String SERVICE_NAME = "RapidShare.com";
+    private static final String PLUGIN_CONFIG_FILE = "plugin_RapidSharePremium.xml";
 
-	@Override
-	public String getName() {
-		return SERVICE_NAME;
-	}
+    @Override
+    public String getName() {
+        return SERVICE_NAME;
+    }
 
-	@Override
-	public int getMaxDownloadsFromOneIP() {
-		return Integer.MAX_VALUE;
-	}
+    @Override
+    public int getMaxDownloadsFromOneIP() {
+        return Integer.MAX_VALUE;
+    }
 
-	@Override
-	public boolean supportsRunCheck() {
-		return true;
-	}
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
 
-	@Override
-	protected PluginRunner getPluginRunnerInstance() {
-		return new RapidShareRunner();
-	}
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new RapidShareRunner();
+    }
 
-	@Override
-	public void showOptions() throws Exception {
-		//PremiumAccount pa = getPluginContext().getConfigurationStorageSupport().loadConfigFromFile(PLUGIN_CONFIG_FILE,PremiumAccount.class);
-		//pa = getPluginContext().getDialogSupport().showAccountDialog(pa, "RapidShare Premium login");
-		//getPluginContext().getConfigurationStorageSupport().storeConfigToFile(pa, PLUGIN_CONFIG_FILE);
-	}
+    @Override
+    public void showOptions() throws Exception {
+        final ConfigurationStorageSupport storageSupport = getPluginContext().getConfigurationStorageSupport();
+        PremiumAccount pa;
+        if (storageSupport.configFileExists(PLUGIN_CONFIG_FILE)) {
+            try {
+                pa = storageSupport.loadConfigFromFile(PLUGIN_CONFIG_FILE, PremiumAccount.class);
+            } catch (Exception e) {
+                LogUtils.processException(logger, e);
+                pa = new PremiumAccount();
+            }
+        } else pa = new PremiumAccount();
+        pa = getPluginContext().getDialogSupport().showAccountDialog(pa, "RapidShare Premium");
+        if (pa != null) {
+            try {
+                storageSupport.storeConfigToFile(pa, PLUGIN_CONFIG_FILE);
+            } catch (Exception e) {
+                LogUtils.processException(logger, e);
+            }
+        }
+    }
 }

@@ -2,7 +2,7 @@
 <project name="Hotfile.com" default="all" basedir=".">
     <property name="application" value="hotfile"/>
 
-    <property name="version" value="0.6.3"/>
+    <property name="version" value="0.6.7"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="hotfile.jar"/>

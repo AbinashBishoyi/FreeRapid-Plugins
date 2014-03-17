@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Kajda
  */
 public class NetGullServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "netgull.com";
+    private final static String SERVICE_NAME = "netgull.com";
 
     public String getName() {
         return SERVICE_NAME;

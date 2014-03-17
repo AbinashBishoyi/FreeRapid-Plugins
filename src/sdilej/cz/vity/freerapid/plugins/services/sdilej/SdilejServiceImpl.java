@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Kajda
  */
 public class SdilejServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "sdilej.to";
+    private final static String SERVICE_NAME = "sdilej.to";
 
     public String getName() {
         return SERVICE_NAME;

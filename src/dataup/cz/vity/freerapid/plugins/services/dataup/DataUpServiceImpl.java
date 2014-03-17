@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Kajda
  */
 public class DataUpServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "dataup.de";
+    private final static String SERVICE_NAME = "dataup.de";
 
     public String getName() {
         return SERVICE_NAME;

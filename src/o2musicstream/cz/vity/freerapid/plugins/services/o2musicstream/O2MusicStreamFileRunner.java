@@ -44,7 +44,7 @@ class O2MusicStreamFileRunner extends AbstractRunner {
             checkAllProblems();
             checkName();
             client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
-            httpMethod = getMethodBuilder().setAction("http://cdn-dispatcher.stream.cz/?id=" + PlugUtils.getStringBetween(getContentAsString(), "'hdID=", "&'")).toHttpMethod();
+            httpMethod = getMethodBuilder().setAction("http://cdn-dispatcher.stream.cz/?id=" + PlugUtils.getStringBetween(getContentAsString(), "hdID=", "&'")).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();

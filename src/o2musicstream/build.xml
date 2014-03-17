@@ -2,7 +2,7 @@
 <project name="O2MusicStream.cz" default="all" basedir=".">
     <property name="application" value="o2musicstream"/>
 
-    <property name="version" value="0.5"/>
+    <property name="version" value="0.5.1"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="o2musicstream.jar"/>

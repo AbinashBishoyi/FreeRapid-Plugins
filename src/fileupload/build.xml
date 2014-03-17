@@ -2,7 +2,7 @@
 <project name="FileUpload.eu" default="all" basedir=".">
     <property name="application" value="fileupload"/>
 
-    <property name="version" value="0.5"/>
+    <property name="version" value="0.5.1"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="fileupload.jar"/>

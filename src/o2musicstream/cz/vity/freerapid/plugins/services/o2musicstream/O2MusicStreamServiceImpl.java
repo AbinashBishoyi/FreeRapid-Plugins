@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Kajda
  */
 public class O2MusicStreamServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "o2musicstream.cz";
+    private final static String SERVICE_NAME = "o2musicstream.cz";
 
     public String getName() {
         return SERVICE_NAME;

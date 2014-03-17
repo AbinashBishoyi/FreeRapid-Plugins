@@ -15,7 +15,7 @@ import java.util.regex.Matcher;
  * @since 0.82
  */
 class DataUpFileRunner extends AbstractRunner {
-    private static final Logger logger = Logger.getLogger(DataUpFileRunner.class.getName());
+    private final static Logger logger = Logger.getLogger(DataUpFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -62,6 +62,10 @@ class DataUpFileRunner extends AbstractRunner {
 
         if (contentAsString.contains("Es wurde kein Download unter diesem Link gefunden")) {
             throw new URLNotAvailableAnymoreException("Es wurde kein Download unter diesem Link gefunden");
+        }
+
+        if (contentAsString.contains("Die Datei wurde vom Benutzer gelöscht")) {
+            throw new URLNotAvailableAnymoreException("Die Datei wurde vom Benutzer gelöscht");
         }
     }
 

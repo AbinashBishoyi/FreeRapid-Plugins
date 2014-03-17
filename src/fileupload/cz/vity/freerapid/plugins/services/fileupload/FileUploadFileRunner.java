@@ -25,7 +25,6 @@ class FileUploadFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         setPageEncoding("ISO-8859-1");
-        fileURL = checkFileURL(fileURL);
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
@@ -40,7 +39,6 @@ class FileUploadFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         setPageEncoding("ISO-8859-1");
-        fileURL = checkFileURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
@@ -65,27 +63,31 @@ class FileUploadFileRunner extends AbstractRunner {
         if (contentAsString.contains("This file has been deleted") || contentAsString.contains("This file does not exist on our server")) {
             throw new URLNotAvailableAnymoreException("This file has been deleted");
         }
+
+        if (contentAsString.contains("Diese Datei wurde vom User oder durch eine Abuse-Meldung gelöscht") || contentAsString.contains("Datei existiert nicht auf unserem Server")) {
+            throw new URLNotAvailableAnymoreException("Diese Datei wurde vom User oder durch eine Abuse-Meldung gelöscht");
+        }
     }
 
     private void checkAllProblems() throws ErrorDuringDownloadingException {
         checkSeriousProblems();
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+    private void checkNameAndSize() throws Exception {
         final String contentAsString = getContentAsString();
         PlugUtils.checkName(httpFile, contentAsString, "<h1>Download \"", "\"<");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Filesize:</b></td><td> ", "<");
+        PlugUtils.checkFileSize(httpFile, contentAsString, checkFileURL(fileURL) ? "Filesize:</b></td><td> " : "Dateigröße:</b></td><td> ", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private String checkFileURL(String fileURL) throws URISyntaxException {
+    private Boolean checkFileURL(String fileURL) throws URISyntaxException {
         final URI fileURI = new URI(fileURL);
         final String host = fileURI.getHost();
 
         if (!host.equalsIgnoreCase(SERVICE_HOST)) {
-            fileURL = fileURL.replaceFirst(host, SERVICE_HOST);
+            return false;
         }
 
-        return fileURL;
+        return true;
     }
 }

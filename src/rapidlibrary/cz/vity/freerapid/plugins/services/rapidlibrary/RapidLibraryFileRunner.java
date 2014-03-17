@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URL;
-import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -54,10 +53,10 @@ class RapidLibraryFileRunner extends AbstractRunner {
 
         String nameBefore, nameAfter, sizeBefore, sizeAfter;
         if (HTTP_SITE.equals("http://rapidlibrary.com")) {
-            nameBefore = "File&nbsp;name:</td><td class=zae3><font color=\"#0374F1\"><b>";
+            nameBefore = "<td class=zae3><font color=\"#0374F1\"><b>";
             nameAfter = "</b>";
             sizeBefore = "Size:</td><td class=zae3>";
-            sizeAfter = "M    </td>";
+            sizeAfter = "M</td>";
         } else if (HTTP_SITE.equals("http://4megaupload.com")) {
             nameBefore = "dwn_text_fullname\">";
             nameAfter = "</td>";
@@ -68,8 +67,8 @@ class RapidLibraryFileRunner extends AbstractRunner {
         }
 
         PlugUtils.checkName(httpFile, content, nameBefore, nameAfter);
-        String size = PlugUtils.getStringBetween(content, sizeBefore, sizeAfter);
-        PlugUtils.getFileSizeFromString(size + "MB");
+        final String size = PlugUtils.getStringBetween(content, sizeBefore, sizeAfter);
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size + "MB"));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -108,9 +107,9 @@ class RapidLibraryFileRunner extends AbstractRunner {
                 throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
             }
             logger.info("New URL " + newUrl);
-            this.httpFile.setNewURL(new URL(newUrl));
-            this.httpFile.setPluginID("");
-            this.httpFile.setState(DownloadState.QUEUED);
+            httpFile.setNewURL(new URL(newUrl));
+            httpFile.setPluginID("");
+            httpFile.setState(DownloadState.QUEUED);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -147,7 +146,7 @@ class RapidLibraryFileRunner extends AbstractRunner {
             logger.info("Manual captcha " + captcha);
         }
 
-        return getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("c_code", captcha.toUpperCase(Locale.ENGLISH)).setParameter("act", " Download ").toPostMethod();
+        return getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("c_code", captcha).setParameter("act", " Download ").toPostMethod();
     }
 
 }

@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.filefactory;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -180,7 +179,7 @@ class FileFactoryRunner extends AbstractRunner {
                     postMethod.addParameter("b", b);
                     postMethod.addParameter("captcha", captcha);
 
-                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                    if (makeRequest(postMethod)) {
                         iframeContent = client.getContentAsString();
                         return true;
                     }

@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -23,7 +22,7 @@ class RapidShareRunner extends AbstractRunner {
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);
         final GetMethod getMethod = client.getGetMethod(fileURL);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
             Matcher matcher = Pattern.compile("form id=\"ff\" action=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (!matcher.find()) {
                 matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
@@ -60,7 +59,7 @@ class RapidShareRunner extends AbstractRunner {
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
         final GetMethod getMethod = client.getGetMethod(fileURL);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
             Matcher matcher = Pattern.compile("form id=\"ff\" action=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (!matcher.find()) {
                 matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
@@ -96,7 +95,7 @@ class RapidShareRunner extends AbstractRunner {
             client.setReferer(fileURL);
             final PostMethod postMethod = client.getPostMethod(s);
             postMethod.addParameter("dl.start", "Free");
-            if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+            if (makeRequest(getMethod)) {
                 matcher = Pattern.compile("var c=([0-9]+);", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (!matcher.find()) {
                     checkProblems();

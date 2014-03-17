@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.uploadedto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.*;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -29,7 +28,7 @@ class UploadedToRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
             final String contentAsString = client.getContentAsString();
             checkSize(contentAsString);
 
@@ -91,8 +90,9 @@ class UploadedToRunner extends AbstractRunner {
 
         Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
         if (matcher.find()) {
-            logger.info("File size " + matcher.group(1));
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+            final String fileSize = matcher.group(1);
+            logger.info("File size " + fileSize);
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
 
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

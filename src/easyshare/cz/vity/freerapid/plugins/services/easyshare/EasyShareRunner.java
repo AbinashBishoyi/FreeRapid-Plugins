@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -60,7 +59,7 @@ class EasyShareRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
             checkName(client.getContentAsString());
             if (!(client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))) {
                 checkProblems();
@@ -85,7 +84,7 @@ class EasyShareRunner extends AbstractRunner {
                     if (matcher.find()) {
                         final String link = matcher.group(1);
                         getMethod = client.getGetMethod(httpSite + link);
-                        if (client.makeRequest(getMethod) != HttpStatus.SC_OK) {
+                        if (!makeRequest(getMethod)) {
                             logger.warning(client.getContentAsString());
                             throw new ServiceConnectionProblemException("Unknown error");
                         }

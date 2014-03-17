@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -66,6 +67,30 @@ class DepositFilesRunner extends AbstractRunner {
                 }
 
             }
+            
+            //	<img src="http://depositfiles.com/en/get_download_img_code.php?icid=yxcWQT8XPbxGNQxdTxTfEg__"/>
+            matcher = getMatcherAgainstContent("src=\"(.*?/get_download_img_code.php[^\"]*)\"" );
+            if (matcher.find()) {
+                String s = PlugUtils.replaceEntities(matcher.group(1));
+                logger.info("Captcha - image " + s);
+                String captcha;
+                final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
+                //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
+                captcha = getCaptchaSupport().askForCaptcha(captchaImage);
+
+                client.setReferer(HTTP_DEPOSITFILES + getMethod.getPath());
+                final PostMethod postMethod = getPostMethod(HTTP_DEPOSITFILES + getMethod.getPath());
+                PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"icid"});
+
+                postMethod.addParameter("img_code", captcha);
+
+                if (!makeRequest(postMethod)) {
+                    logger.info(getContentAsString());
+                    throw new PluginImplementationException();
+                }
+            }
+            
+            
             //        <span id="download_waiter_remain">60</span>
             matcher = getMatcherAgainstContent("download_waiter_remain\">([0-9]+)");
             if (!matcher.find()) {

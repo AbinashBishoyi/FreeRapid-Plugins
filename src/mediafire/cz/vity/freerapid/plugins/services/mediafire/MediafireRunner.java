@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
@@ -54,17 +55,15 @@ class MediafireRunner extends AbstractRunner {
 
             checkNameAndSize(getContentAsString());
 
-            if (getContentAsString().contains("dh('');")) { //if passworded
-                while (getContentAsString().contains("dh('');")) {
-                    HttpMethod postPwd = getMethodBuilder()
-                            .setReferer(fileURL)
-                            .setBaseURL("http://www.mediafire.com/")
-                            .setActionFromFormByName("form_password", true)
-                            .setAndEncodeParameter("downloadp", getPassword())
-                            .toPostMethod();
-                    if (!makeRedirectedRequest(postPwd)) {
-                        throw new ServiceConnectionProblemException("Some issue while posting password");
-                    }
+            while (getContentAsString().contains("dh('');")) { //handle password
+                HttpMethod postPwd = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setBaseURL("http://www.mediafire.com/")
+                        .setActionFromFormByName("form_password", true)
+                        .setAndEncodeParameter("downloadp", getPassword())
+                        .toPostMethod();
+                if (!makeRedirectedRequest(postPwd)) {
+                    throw new ServiceConnectionProblemException("Some issue while posting password");
                 }
             }
 
@@ -95,21 +94,16 @@ class MediafireRunner extends AbstractRunner {
                 String posID = match2.group(1);
                 logger.info("posID=" + posID);
 
-                if (makeRequest(method)) {
+                if (makeRedirectedRequest(method)) {
                     String rec = processUnescapeSection(getContentAsString());
 
-                    if (!rec.contains("'download")) {
-                        throw new ServiceConnectionProblemException();
+                    Matcher matcher = PlugUtils.matcher(Pattern.quote(posID) + "'\\)\\.innerHTML = '.+?';\" href=\"(http://.+?)\">", rec);
+                    if (!matcher.find()) {
+                        throw new ServiceConnectionProblemException("Download link not found, retrying...");
                     }
-
-                    String rawlink;
-                    try {
-                        rawlink = PlugUtils.getStringBetween(rec, posID + "').innerHTML = 'Your download is starting..';\" href=\"h", "\"> Click");
-                    } catch (PluginImplementationException e) {
-                        throw new ServiceConnectionProblemException(e);
-                    }
-                    logger.info("raw URL " + rawlink);
-                    String finalLink = parseLink("h" + rawlink);
+                    String rawlink = matcher.group(1);
+                    logger.info("Raw URL " + rawlink);
+                    String finalLink = parseLink(rawlink);
                     logger.info("Final URL " + finalLink);
 
                     client.setReferer(fileURL);
@@ -138,7 +132,7 @@ class MediafireRunner extends AbstractRunner {
     }
 
     private String processUnescapeSection(String cont) throws Exception {
-        String regx = "[a-zA-Z0-9\\s]+=unescape\\('([^']*)'\\);[a-zA-Z0-9\\s]+=([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
+        String regx = "[a-zA-Z0-9\\s]+=\\s*?unescape\\('([^']*)'\\);[a-zA-Z0-9\\s]+=\\s*?([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
         Boolean loop = true;
         String tuReturn = "";
         while (loop) {

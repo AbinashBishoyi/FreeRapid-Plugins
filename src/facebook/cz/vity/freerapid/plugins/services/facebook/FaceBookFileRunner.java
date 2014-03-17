@@ -58,16 +58,18 @@ class FaceBookFileRunner extends AbstractRunner {
                 if (getContentAsString().contains("\"status\":\"invalid\"")) {
                     throw new URLNotAvailableAnymoreException("This video either has been removed or is not visible due to privacy settings");
                 }
-                final String fileName = URLDecoder.decode(PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"video_title\",\"", "\"")), "UTF-8");
-                httpFile.setFileName(fileName.replace(" [HQ]", "") + ".mp4");
-                String videoUrl;
-                if (getContentAsString().contains("\"highqual_src\"")) {  //high quality as default
-                    videoUrl = PlugUtils.getStringBetween(getContentAsString(), "\"highqual_src\",\"", "\"");
+                //the unicode directional formatting codes confuse Matcher, so remove them
+                final String content = getContentAsString().replaceAll("[\\u202A\\u202B\\u202C]", "");
+                final String name = PlugUtils.getStringBetween(content, "<title id=\"pageTitle\">", "| Facebook</title>");
+                httpFile.setFileName(name + ".mp4");
+                final String videoData = URLDecoder.decode(PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"video\",\"", "\"")), "UTF-8");
+                final String videoUrl;
+                if (videoData.contains("\"hd_src\"")) {  //high quality as default
+                    videoUrl = PlugUtils.getStringBetween(videoData, "\"hd_src\":\"", "\"");
                 } else {
-                    videoUrl = PlugUtils.getStringBetween(getContentAsString(), "\"video_src\",\"", "\"");
+                    videoUrl = PlugUtils.getStringBetween(videoData, "\"sd_src\":\"", "\"");
                 }
-                videoUrl = URLDecoder.decode(PlugUtils.unescapeUnicode(videoUrl), "UTF-8");
-                method = getGetMethod(videoUrl);
+                method = getGetMethod(videoUrl.replace("\\/", "/"));
             } else { //pic
                 final MethodBuilder methodBuilder;
                 //language cookie doesn't seem to work, search link from regex, instead of grabbing link that contains "Download" token.

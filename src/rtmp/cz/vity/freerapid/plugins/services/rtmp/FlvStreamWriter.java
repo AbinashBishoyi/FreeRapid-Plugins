@@ -25,7 +25,9 @@ class FlvStreamWriter implements OutputWriter {
     private final IoBuffer buffer;
 
     private boolean headerWritten = false;
-
+    private int lastAudioTime=-1;
+    private int lastVideoTime=-1;
+    
     public FlvStreamWriter(int seekTime, RtmpSession session) {
         this.session = session;
         this.status = new WriterStatus(seekTime, session);
@@ -101,9 +103,23 @@ class FlvStreamWriter implements OutputWriter {
                 session.setPauseMode(0);
             }
         }
+        if(packetType==Packet.Type.AUDIO_DATA){
+           if(time<=lastAudioTime){ 
+              logger.info("Skipping duplicate audio data packet");
+              return;
+           }
+           lastAudioTime=time;
+        }
+        if(packetType==Packet.Type.VIDEO_DATA){
+           if(time<=lastVideoTime){
+              logger.info("Skipping duplicate video data packet");
+              return;
+           }
+           lastVideoTime=time;
+        }
         if (RtmpSession.DEBUG) {
             logger.finest(String.format("writing FLV tag %s %s %s", packetType, time, data));
-        }
+        }        
         buffer.clear();
         buffer.put(packetType.byteValue());
         final int size = data.limit();

@@ -91,6 +91,9 @@ class ExtabitFileRunner extends AbstractRunner {
         if (getContentAsString().contains("File is temporary unavailable")) {
             throw new ServiceConnectionProblemException("File is temporarily unavailable");
         }
+        if (getContentAsString().contains("The file that you're trying to download is larger than")) {
+            throw new NotRecoverableDownloadException("File is too large for free download");
+        }
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {

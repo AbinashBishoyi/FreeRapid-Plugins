@@ -69,7 +69,13 @@ class MegauploadRunner {
 
                 if ("".equals(s)) logger.warning("Link was not found" + client.getContentAsString());
                 logger.info("Found File URL - " + s);
+                matcher = PlugUtils.matcher(".*/([^/]*)$", s);
+                if (matcher.find()) {
+                    String filename = PlugUtils.unescapeHtml(matcher.group(1));
+                    logger.info("File name from URL " + filename);
+                    httpFile.setFileName(filename);
 
+                }
                 downloader.sleep(seconds + 1);
                 if (downloader.isTerminated())
                     throw new InterruptedException();

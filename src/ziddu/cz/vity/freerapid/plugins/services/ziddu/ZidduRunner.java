@@ -60,35 +60,35 @@ class ZidduRunner extends AbstractRunner {
 //        }
 //}
     private void checkNameandSize(String contentAsString) throws Exception {
-
-        if (!contentAsString.contains("Thank You For Downloading")) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-        }
-
-        if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-        }
-
-        if (contentAsString.contains("fname")) {
-
-            String fn = PlugUtils.getParameter("fname", contentAsString);
-            fn = fn.replace(".html", "");//why did you removed it? it's OK with it
-            fn = fn.replace("\"", "");
-            fn = fn.replace(";", "");
-
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-
-            Matcher matcher = PlugUtils.matcher("(([0-9.]* .B))", contentAsString);
-            if (matcher.find()) {
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + a);
-                httpFile.setFileSize(a);
-                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-            } else logger.warning("File size was not found" + contentAsString);
-
-        } else logger.warning("File name was not found" + contentAsString);
+//
+//        if (!contentAsString.contains("Thank You For Downloading")) {
+//            logger.warning(getContentAsString());
+//            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+//        }
+//
+//        if (contentAsString.contains("File not found")) {
+//            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
+//        }
+//
+//        if (contentAsString.contains("fname")) {
+//
+//            String fn = PlugUtils.getParameter("fname", contentAsString);
+//            fn = fn.replace(".html", "");//why did you removed it? it's OK with it
+//            fn = fn.replace("\"", "");
+//            fn = fn.replace(";", "");
+//
+//            logger.info("File name " + fn);
+//            httpFile.setFileName(fn);
+//
+//            Matcher matcher = PlugUtils.matcher("(([0-9.]* .B))", contentAsString);
+//            if (matcher.find()) {
+//                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+//                logger.info("File size " + a);
+//                httpFile.setFileSize(a);
+//                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+//            } else logger.warning("File size was not found" + contentAsString);
+//
+//        } else logger.warning("File name was not found" + contentAsString);
 
 
     }
@@ -112,6 +112,33 @@ class ZidduRunner extends AbstractRunner {
 
         if (makeRequest(getMethod)) {
             String contentAsString = getContentAsString();
+            //find action
+
+            Matcher mAction = PlugUtils.matcher("action=\"([^\"]+)", contentAsString);
+            if (mAction.find()){
+                logger.info("Action found " + mAction.group(1) );
+                client.setReferer(mAction.group(1));
+                
+                PostMethod pMethod = getPostMethod(mAction.group(1));
+                pMethod.addParameter("mmemid","0");
+                pMethod.addParameter("mname","");
+                pMethod.addParameter("lang","english");
+                pMethod.addParameter("Submit", "");
+                pMethod.addParameter("Submit2"," Share ");
+                pMethod.addParameter("Submit3", "Link");
+                if(makeRequest(pMethod)) {
+                    logger.info("Success requested");
+                    
+
+                }
+            }
+
+            contentAsString = getContentAsString();
+            
+
+
+
+
             checkNameandSize(contentAsString);       //<img src="/CaptchaSecurityImages.php?width=100&amp;height=38&amp;characters=5"
             logger.info("Looking for captcha..");
             
@@ -139,8 +166,10 @@ class ZidduRunner extends AbstractRunner {
             if (makeRequest(getLink)) {
                 final String stringLink = getContentAsString();
                 if (stringLink.contains("http://www.ziddu.com/download/")) {
-                    Matcher lnkMatch = PlugUtils.matcher("class=\"download\">([^<]+)", stringLink);
+                    Matcher lnkMatch = PlugUtils.matcher("(http://www.ziddu.com/download[^<]+)", stringLink);
                     if (lnkMatch.find()) {
+                        logger.info("Found download Link " + lnkMatch.group(1));
+
                         tURL = lnkMatch.group(1);
                         tURL = tURL.trim();
                     } else throw new InvalidURLOrServiceProblemException("Cant find download link");
@@ -163,10 +192,10 @@ class ZidduRunner extends AbstractRunner {
         }
 
         if (tURL.contains("www.ziddu.com/downloadlink")) {
-            tURL = tURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
+            tURL = tURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/download") + ".html";
 
-        } else if (tURL.contains("www.ziddu.com/download/")) {
-            tURL = tURL.replaceFirst("www.ziddu.com/download/", "www.ziddu.com/downloadfile/");
+        } else if (tURL.contains("www.ziddu.com/downloadfile/")) {
+            tURL = tURL.replaceFirst("www.ziddu.com/downloadfile/", "www.ziddu.com/download/");
         }
         return tURL;
     }

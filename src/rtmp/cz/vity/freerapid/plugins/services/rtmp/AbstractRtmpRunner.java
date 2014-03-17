@@ -58,6 +58,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
                 return false;
             }
         } catch (Throwable e) {
+            LogUtils.processException(logger, e);
             throw new PluginImplementationException("RTMP error (" + e.toString() + ")", e);
         } finally {
             if (rtmpClient != null) {

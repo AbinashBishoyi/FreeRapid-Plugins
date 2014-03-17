@@ -27,7 +27,7 @@ class LetitbitRunner extends AbstractRunner {
         super.runCheck();
         addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
         setPageEncoding("Windows-1251");
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod httpMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
@@ -58,9 +58,15 @@ class LetitbitRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            final MethodBuilder methodBuilder2 = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dvifree", true);
-            final String secondPageUrl = methodBuilder2.getAction();
+            final MethodBuilder methodBuilder2 = getMethodBuilder().setReferer(fileURL);
+            if (getContentAsString().contains("\u0421\u043F\u0430\u0441\u0438\u0431\u043E")) {
+                //Russian IPs see a different page here
+                methodBuilder2.setActionFromFormWhereTagContains("\u0421\u043F\u0430\u0441\u0438\u0431\u043E", true);
+            } else {
+                methodBuilder2.setActionFromFormByName("dvifree", true);
+            }
             final HttpMethod httpMethod2 = methodBuilder2.toPostMethod();
+            final String secondPageUrl = httpMethod2.getURI().toString();
             if (!makeRedirectedRequest(httpMethod2)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Download link 1 issue");
@@ -77,11 +83,10 @@ class LetitbitRunner extends AbstractRunner {
                 captchatry++;
             } while (getContentAsString().contains("history.go(-1)"));
 
-            final MethodBuilder methodBuilder3 = getMethodBuilder()
+            final HttpMethod httpMethod3 = getMethodBuilder()
                     .setActionFromIFrameSrcWhereTagContains("name=\"topFrame\"")
-                    .setReferer(secondPageUrl);
-            final String thirdPageUrl = methodBuilder3.getAction();
-            final HttpMethod httpMethod3 = methodBuilder3.toGetMethod();
+                    .setReferer(secondPageUrl).toGetMethod();
+            final String thirdPageUrl = httpMethod3.getURI().toString();
             if (!makeRedirectedRequest(httpMethod3)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Download link 3 issue");
@@ -100,7 +105,6 @@ class LetitbitRunner extends AbstractRunner {
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod4)) {
                 checkProblems();
-                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
@@ -110,8 +114,8 @@ class LetitbitRunner extends AbstractRunner {
     }
 
     private String getCaptchaImageURL() throws Exception {
-        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getAction();
-        logger.info("Captcha image: " + s);
+        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getEscapedURI();
+        logger.info("Captcha image URL: " + s);
         return s;
     }
 

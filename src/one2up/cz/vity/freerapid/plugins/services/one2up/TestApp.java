@@ -17,6 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             httpFile.setNewURL(new URL("http://dl2.one2up.com/view_content.php?content_ID=168971"));
+            //httpFile.setNewURL(new URL("http://dl-11.one2up.com/onetwo/content/2013/4/19/ff76af22682c985d12665380506a3946.rar"));  //direct download
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

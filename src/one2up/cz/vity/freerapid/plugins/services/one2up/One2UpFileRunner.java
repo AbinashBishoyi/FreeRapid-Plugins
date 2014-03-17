@@ -22,6 +22,11 @@ class One2UpFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        if (!fileURL.contains("view_content.php")) {
+            httpFile.setFileName(fileURL.substring(1 + fileURL.lastIndexOf("/")));
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            return;
+        }
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -43,6 +48,14 @@ class One2UpFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
+        if (!fileURL.contains("view_content.php")) {
+            httpFile.setFileName(fileURL.substring(1 + fileURL.lastIndexOf("/")));
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();//if downloading failed
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            }
+            return;
+        }
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems

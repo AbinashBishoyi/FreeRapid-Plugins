@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -20,9 +19,9 @@ import java.util.regex.Pattern;
 class LetitbitRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LetitbitRunner.class.getName());
 
-
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -53,8 +52,9 @@ class LetitbitRunner extends AbstractRunner {
         } else logger.warning("File name was not found" + contentAsString);
     }
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    @Override
+    public void run() throws Exception {
+        super.run();
         logger.info("Starting download in TASK " + fileURL);
 
         final GetMethod getMethod = getGetMethod(fileURL);

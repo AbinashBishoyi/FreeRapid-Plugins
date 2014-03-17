@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -25,8 +24,9 @@ class MegauploadRunner extends AbstractRunner {
     private String HTTP_SITE = "http://www.megaupload.com";
     private int captchaCount;
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -36,9 +36,9 @@ class MegauploadRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    @Override
+    public void run() throws Exception {
+        super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";

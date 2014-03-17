@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 
 /**
@@ -18,10 +18,8 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
         return Integer.MAX_VALUE;
     }
 
-
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
-        new RapidShareRunner().run(downloader);
+    protected PluginRunner getPluginRunnerInstance() {
+        return new RapidShareRunner();
     }
 
 }

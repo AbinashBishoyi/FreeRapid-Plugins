@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -18,8 +17,8 @@ import java.util.regex.Matcher;
 class RapidShareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    public void runCheck() throws Exception {
+        super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
@@ -27,8 +26,8 @@ class RapidShareRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    public void run() throws Exception {
+        super.run();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();

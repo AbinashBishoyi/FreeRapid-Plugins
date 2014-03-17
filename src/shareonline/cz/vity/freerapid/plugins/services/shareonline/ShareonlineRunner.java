@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -28,8 +27,8 @@ class ShareonlineRunner extends AbstractRunner {
         this.context = context;
     }
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    public void runCheck() throws Exception {
+        super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -37,8 +36,8 @@ class ShareonlineRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    public void run() throws Exception {
+        super.run();
         client = downloader.getClient();
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);

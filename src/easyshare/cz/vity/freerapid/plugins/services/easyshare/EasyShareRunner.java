@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.easyshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -22,8 +21,9 @@ class EasyShareRunner extends AbstractRunner {
     private String httpSite;
     private String baseURL;
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkName(getContentAsString());
@@ -50,8 +50,9 @@ class EasyShareRunner extends AbstractRunner {
         } else logger.warning("File name was not found" + getContentAsString());
     }
 
-
-    public void run(HttpFileDownloader downloader) throws Exception {
+    @Override
+    public void run() throws Exception {
+        super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         baseURL = fileURL;
         httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));

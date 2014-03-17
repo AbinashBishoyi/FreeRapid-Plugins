@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -23,8 +22,9 @@ class NetloadInRunner extends AbstractRunner {
     private String initURL;
     private String enterURL;
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
@@ -42,8 +42,8 @@ class NetloadInRunner extends AbstractRunner {
     }
 
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    public void run() throws Exception {
+        super.run();
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);

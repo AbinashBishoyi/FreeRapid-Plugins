@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -22,8 +21,9 @@ class DepositFilesRunner extends AbstractRunner {
     private static final String HTTP_DEPOSITFILES = "http://www.depositfiles.com";
 
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
         fileURL = CheckURL(fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
@@ -33,8 +33,9 @@ class DepositFilesRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    @Override
+    public void run() throws Exception {
+        super.run();
         fileURL = CheckURL(fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);

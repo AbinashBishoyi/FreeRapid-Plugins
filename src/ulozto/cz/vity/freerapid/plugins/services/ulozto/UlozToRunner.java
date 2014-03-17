@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -23,8 +22,8 @@ class UlozToRunner extends AbstractRunner {
         super();
     }
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    public void runCheck() throws Exception {
+        super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -32,8 +31,8 @@ class UlozToRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    public void run() throws Exception {
+        super.run();
 
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);

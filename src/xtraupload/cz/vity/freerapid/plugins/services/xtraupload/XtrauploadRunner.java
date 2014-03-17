@@ -27,8 +27,9 @@ class XtrauploadRunner extends AbstractRunner {
     private HttpFileDownloader downloader;
     private String initURL;
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    @Override
+    public void run() throws Exception {
+        super.run();
         this.downloader = downloader;
         HttpFile httpFile = downloader.getDownloadFile();
         client = downloader.getClient();

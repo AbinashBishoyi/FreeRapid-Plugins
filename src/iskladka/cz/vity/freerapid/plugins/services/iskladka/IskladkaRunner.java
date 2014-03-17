@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -18,8 +17,9 @@ import java.util.regex.Matcher;
 class IskladkaRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(IskladkaRunner.class.getName());
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    @Override
+    public void run() throws Exception {
+        super.run();
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
 

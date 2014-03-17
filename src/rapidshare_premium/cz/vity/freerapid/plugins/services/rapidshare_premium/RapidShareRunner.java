@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
@@ -23,13 +24,14 @@ import java.util.regex.Pattern;
 /**
  * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
  */
-class RapidShareRunner {
+class RapidShareRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
     private RapidShareConfigProvider configProvider;
     private HttpDownloadClient client;
 
-    public void run(HttpFileDownloader downloader) throws Exception {
+    @Override
+    public void run() throws Exception {
 
         configProvider = RapidShareConfigProvider.getInstance();
         logger.info("Starting download in TASK " + downloader.getDownloadFile().getFileUrl());

@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -38,8 +37,9 @@ class FileFactoryRunner extends AbstractRunner {
         deep = 2;
     }
 
-    public void runCheck(HttpFileDownloader downloader) throws Exception {
-        super.runCheck(downloader);
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
 
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
@@ -49,8 +49,8 @@ class FileFactoryRunner extends AbstractRunner {
     }
 
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
+    public void run() throws Exception {
+        super.run();
         step = Step.INIT;
         initURL = fileURL;
         logger.info("Starting download in TASK " + initURL);

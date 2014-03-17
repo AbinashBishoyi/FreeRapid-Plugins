@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.rtmp;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClient;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -14,7 +15,10 @@ import java.io.InterruptedIOException;
 import java.util.logging.Logger;
 
 /**
+ * Subclass this for support for RTMP downloads.
+ *
  * @author ntoskrnl
+ * @see #tryDownloadAndSaveFile(RtmpSession)
  */
 public abstract class AbstractRtmpRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(AbstractRtmpRunner.class.getName());
@@ -22,7 +26,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
     /**
      * Method uses given RtmpSession parameter to connect to the server and tries to download.<br />
      * Download state of HttpFile is updated automatically - sets <code>DownloadState.GETTING</code> and then <code>DownloadState.DOWNLOADING</code>.
-     * The HttpClient parameter <code>noContentLengthAvailable</code> is also set.
+     * The DownloadClient parameter {@link DownloadClientConsts#NO_CONTENT_LENGTH_AVAILABLE NO_CONTENT_LENGTH_AVAILABLE} is also set.
      *
      * @param rtmpSession RtmpSession to use for downloading
      * @return true if file was successfully downloaded, false otherwise
@@ -41,8 +45,9 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             throw new IOException("No defined file name");
         httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fn), "_"));
 
-        client.getHTTPClient().getParams().setBooleanParameter("noContentLengthAvailable", true);
+        setClientParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
 
+        rtmpSession.setConnectionSettings(client.getSettings());//for proxy
         rtmpSession.setHttpFile(httpFile);//for size estimation
 
         RtmpClient rtmpClient = null;
@@ -50,7 +55,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             rtmpClient = new RtmpClient(rtmpSession);
             rtmpClient.connect();
 
-            InputStream in = rtmpClient.getStream();
+            InputStream in = rtmpSession.getOutputWriter().getStream();
 
             if (in != null) {
                 logger.info("Saving to file");
@@ -64,12 +69,13 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             //ignore
         } catch (InterruptedIOException e) {
             //ignore
-        } catch (Throwable e) {
+        } catch (Exception e) {
             LogUtils.processException(logger, e);
-            while (e.getCause() != null) {
-                e = e.getCause();
+            Throwable t = e;
+            while (t.getCause() != null) {
+                t = t.getCause();
             }
-            throw new PluginImplementationException("RTMP error - " + getThrowableDescription(e));
+            throw new PluginImplementationException("RTMP error - " + getThrowableDescription(t));
         } finally {
             if (rtmpClient != null) {
                 try {

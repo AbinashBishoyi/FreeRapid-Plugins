@@ -1,26 +1,13 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
-import org.apache.mina.common.ByteBuffer;
+import org.apache.mina.core.buffer.IoBuffer;
 
 import java.util.logging.Logger;
 
-public class Header {
+/**
+ * @author Peter Thomas
+ */
+class Header {
 
     private static final Logger logger = Logger.getLogger(Header.class.getName());
 
@@ -121,7 +108,7 @@ public class Header {
         this.relative = relative;
     }
 
-    public boolean decode(ByteBuffer in, RtmpSession session) {
+    public boolean decode(IoBuffer in, RtmpSession session) {
 
         final int remaining = in.remaining();
 
@@ -208,7 +195,7 @@ public class Header {
         return true;
     }
 
-    public void encode(ByteBuffer out) {
+    public void encode(IoBuffer out) {
         if (channelId <= 63) {
             out.put((byte) ((headerType.value << 6) + channelId));
         } else if (channelId <= 320) {

@@ -1,24 +1,9 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
-import org.apache.mina.common.IoSession;
+import org.apache.mina.core.session.IoSession;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -30,6 +15,10 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * @author Peter Thomas
+ * @author ntoskrnl
+ */
 public class RtmpSession {
 
     public static final boolean DEBUG = false;
@@ -70,20 +59,92 @@ public class RtmpSession {
     private byte[] serverDigest;
     private byte[] serverResponse;
     private HttpFile httpFile;
+    private ConnectionSettings connectionSettings;
 
+    /**
+     * Empty constructor. Mainly for internal use.
+     */
     public RtmpSession() {
     }
 
+    /**
+     * Constructs a new RtmpSession with the specified parameters.
+     *
+     * @param host     server
+     * @param port     port
+     * @param app      app
+     * @param playName play name
+     */
     public RtmpSession(String host, int port, String app, String playName) {
-        this(host, port, app, playName, false);
+        initConnectParams(host, port, app, playName, false);
     }
 
+    /**
+     * Constructs a new RtmpSession with the specified parameters.
+     *
+     * @param host      server
+     * @param port      port
+     * @param app       app
+     * @param playName  play name
+     * @param encrypted true if RTMPE should be used, plain RTMP otherwise
+     */
     public RtmpSession(String host, int port, String app, String playName, boolean encrypted) {
         initConnectParams(host, port, app, playName, encrypted);
     }
 
+    /**
+     * Constructs a new RtmpSession with the specified parameters.
+     *
+     * @param host     server
+     * @param port     port
+     * @param app      app
+     * @param playName play name
+     * @param protocol protocol
+     */
+    public RtmpSession(String host, int port, String app, String playName, String protocol) {
+        initConnectParams(host, port, app, playName, protocol);
+    }
+
+    /**
+     * Constructs a new RtmpSession with the specified play name and other parameters parsed from a URL.
+     *
+     * @param url      URL to parse
+     * @param playName play name
+     * @throws PluginImplementationException if URL is invalid
+     */
+    public RtmpSession(String url, String playName) throws PluginImplementationException {
+        Pattern pattern = Pattern.compile("(rtmp(?:e|t|s|te|ts)?)://([^/:]+)(:[0-9]+)?/(.+)");
+        Matcher matcher = pattern.matcher(url);
+        if (!matcher.matches()) {
+            throw new PluginImplementationException("Invalid RTMP url: " + url);
+        }
+        logger.finest("parsing url: " + url);
+        String protocol = matcher.group(1);
+        logger.finest("protocol = '" + protocol + "'");
+        String hostString = matcher.group(2);
+        logger.finest("host = '" + hostString + "'");
+        String portString = matcher.group(3);
+        if (portString == null) {
+            logger.finest("port is null in url, will use default 1935");
+        } else {
+            portString = portString.substring(1); // skip the ':'
+            logger.finest("port = '" + portString + "'");
+        }
+        String appString = matcher.group(4);
+        logger.finest("app = '" + appString + "'");
+        logger.finest("play = '" + playName + "'");
+        int portInt = portString == null ? 1935 : Integer.parseInt(portString);
+        initConnectParams(hostString, portInt, appString, playName, protocol);
+    }
+
+    /**
+     * Constructs a new RtmpSession with parameters parsed from a URL.
+     *
+     * @param url URL to parse
+     * @throws PluginImplementationException if URL is invalid
+     */
     public RtmpSession(String url) throws PluginImplementationException {
-        Pattern pattern = Pattern.compile("(rtmpe?)://([^/:]+)(:[0-9]+)?/([^/]+)/(.*)");
+        Pattern pattern = Pattern.compile("(rtmp(?:e|t|s|te|ts)?)://([^/:]+)(:[0-9]+)?/([^/]+)/(.*)");
         Matcher matcher = pattern.matcher(url);
         if (!matcher.matches()) {
             throw new PluginImplementationException("Invalid RTMP url: " + url);
@@ -105,17 +166,18 @@ public class RtmpSession {
         String playString = matcher.group(5);
         logger.finest("play = '" + playString + "'");
         int portInt = portString == null ? 1935 : Integer.parseInt(portString);
-        boolean encrypted = protocol.equalsIgnoreCase("rtmpe");
-        initConnectParams(hostString, portInt, appString, playString, encrypted);
+        initConnectParams(hostString, portInt, appString, playString, protocol);
+    }
+
+    private void initConnectParams(String host, int port, String app, String playName, String protocol) {
+        initConnectParams(host, port, app, playName, isProtocolEncrypted(protocol));
     }
 
     private void initConnectParams(String host, int port, String app, String playName, boolean encrypted) {
         this.host = host;
         this.port = port;
         this.playName = playName;
-        if (encrypted) {
-            this.encrypted = true;
-        }
+        this.encrypted = encrypted;
         String tcUrl = (encrypted ? "rtmpe://" : "rtmp://") + host + ":" + port + "/" + app;
         connectParams = new HashMap<String, Object>();
         connectParams.put("objectEncoding", 0);
@@ -128,6 +190,10 @@ public class RtmpSession {
         connectParams.put("capabilities", 239);
         connectParams.put("videoCodecs", 252);
         this.outputWriter = new FlvStreamWriter(playStart, this);
+    }
+
+    public static boolean isProtocolEncrypted(String protocol) throws NullPointerException {
+        return protocol.equalsIgnoreCase("rtmpe") || protocol.equalsIgnoreCase("rtmpte");
     }
 
     public static RtmpSession getFrom(IoSession ioSession) {
@@ -402,6 +468,14 @@ public class RtmpSession {
 
     public void setHttpFile(HttpFile httpFile) {
         this.httpFile = httpFile;
+    }
+
+    public ConnectionSettings getConnectionSettings() {
+        return connectionSettings;
+    }
+
+    public void setConnectionSettings(ConnectionSettings connectionSettings) {
+        this.connectionSettings = connectionSettings;
     }
 
 }

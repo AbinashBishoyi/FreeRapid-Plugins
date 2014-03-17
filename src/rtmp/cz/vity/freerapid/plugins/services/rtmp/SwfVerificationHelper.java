@@ -41,6 +41,13 @@ public class SwfVerificationHelper {
     }
 
     /**
+     * @return SWF URL, which was set in the constructor
+     */
+    public String getSwfURL() {
+        return swfURL;
+    }
+
+    /**
      * Sets the SWF verification parameters in the specified RtmpSession.
      * <p/>
      * If {@link #REFRESH_INTERVAL} time has passed since the last download of the SWF,

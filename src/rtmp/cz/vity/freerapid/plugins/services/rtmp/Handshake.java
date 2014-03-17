@@ -1,22 +1,6 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
-import org.apache.mina.common.ByteBuffer;
+import org.apache.mina.core.buffer.IoBuffer;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -40,8 +24,11 @@ import java.util.logging.Logger;
  * thanks also to the detailed breakdown of the handshake created by the
  * crtmpserver project http://www.rtmpd.com
  * available at http://www.rtmpd.com/export/425/trunk/docs/RTMPEHandshake.pdf
+ *
+ * @author Peter Thomas
+ * @author ntoskrnl
  */
-public class Handshake {
+class Handshake {
 
     private static final Logger logger = Logger.getLogger(Handshake.class.getName());
 
@@ -96,7 +83,7 @@ public class Handshake {
         return offset;
     }
 
-    private static byte[] getFourBytesFrom(ByteBuffer buf, int offset) {
+    private static byte[] getFourBytesFrom(IoBuffer buf, int offset) {
         int initial = buf.position();
         buf.position(offset);
         byte[] bytes = new byte[4];
@@ -153,14 +140,14 @@ public class Handshake {
         return sharedSecret;
     }
 
-    private ByteBuffer data;
+    private IoBuffer data;
 
-    public ByteBuffer getData() {
+    public IoBuffer getData() {
         return data;
     }
 
     public static Handshake generateClientRequest1(RtmpSession session) {
-        ByteBuffer buf = ByteBuffer.allocate(HANDSHAKE_SIZE);
+        IoBuffer buf = IoBuffer.allocate(HANDSHAKE_SIZE);
         Utils.writeInt32Reverse(buf, (int) System.currentTimeMillis() & 0x7FFFFFFF);
         if (session.isEncrypted()) {
             buf.put(new byte[]{(byte) 128, (byte) 0, (byte) 3, (byte) 2});
@@ -200,7 +187,7 @@ public class Handshake {
         }
 
         Handshake hs = new Handshake();
-        hs.data = ByteBuffer.allocate(HANDSHAKE_SIZE + 1);
+        hs.data = IoBuffer.allocate(HANDSHAKE_SIZE + 1);
         if (session.isEncrypted()) {
             hs.data.put((byte) 0x06);
         } else {
@@ -211,7 +198,7 @@ public class Handshake {
         return hs;
     }
 
-    public static boolean decodeServerResponse(ByteBuffer in, RtmpSession session) {
+    public static boolean decodeServerResponse(IoBuffer in, RtmpSession session) {
         if (in.remaining() < 1 + HANDSHAKE_SIZE + HANDSHAKE_SIZE) {
             return false;
         }
@@ -239,7 +226,7 @@ public class Handshake {
             session.setEncrypted(false);
         }
 
-        ByteBuffer partOne = ByteBuffer.allocate(HANDSHAKE_SIZE);
+        IoBuffer partOne = IoBuffer.allocate(HANDSHAKE_SIZE);
         partOne.put(serverResponse, 1, HANDSHAKE_SIZE);
         partOne.flip();
         logger.finest("server response part 1: " + partOne);
@@ -325,7 +312,7 @@ public class Handshake {
             }
         }
 
-        ByteBuffer partTwo = ByteBuffer.allocate(HANDSHAKE_SIZE);
+        IoBuffer partTwo = IoBuffer.allocate(HANDSHAKE_SIZE);
         partTwo.put(serverResponse, 1 + HANDSHAKE_SIZE, HANDSHAKE_SIZE);
         partTwo.flip();
 
@@ -362,7 +349,7 @@ public class Handshake {
             partOne.get(bytesFromServer);
             byte[] bytesFromServerHash = Utils.sha256(session.getSwfHash(), bytesFromServer);
             // construct SWF verification pong payload
-            ByteBuffer swfv = ByteBuffer.allocate(42);
+            IoBuffer swfv = IoBuffer.allocate(42);
             swfv.put((byte) 0x01);
             swfv.put((byte) 0x01);
             swfv.putInt(session.getSwfSize());
@@ -384,7 +371,7 @@ public class Handshake {
             byte[] randomBytes = new byte[HANDSHAKE_SIZE];
             Random random = new Random();
             random.nextBytes(randomBytes);
-            ByteBuffer buf = ByteBuffer.wrap(randomBytes);
+            IoBuffer buf = IoBuffer.wrap(randomBytes);
             byte[] digest = Utils.sha256(session.getServerDigest(), CLIENT_CONST_CRUD);
             byte[] message = new byte[HANDSHAKE_SIZE - SHA256_LEN];
             buf.rewind();
@@ -412,7 +399,7 @@ public class Handshake {
             hs.data = buf;
             return hs;
         } else { // return server response part 1
-            ByteBuffer buf = ByteBuffer.allocate(HANDSHAKE_SIZE);
+            IoBuffer buf = IoBuffer.allocate(HANDSHAKE_SIZE);
             buf.put(session.getServerResponse(), 1, HANDSHAKE_SIZE);
             buf.flip();
             Handshake hs = new Handshake();
@@ -446,7 +433,7 @@ public class Handshake {
      */
 
     private static void rtmpe8_crypt(byte[] digest, byte[] signature0) {
-        ByteBuffer signature = ByteBuffer.wrap(signature0);
+        IoBuffer signature = IoBuffer.wrap(signature0);
         for (int i = 0; i < SHA256_LEN; i += 8) {
             int[] v = new int[]{
                     Utils.readInt32Reverse(signature),

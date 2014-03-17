@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.turbobit;
+package cz.vity.freerapid.plugins.services.itv;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,21 +8,23 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Arthur Gunawan
+ * @author ntoskrnl
  */
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
+            //log everything
+            //InputStream is = new BufferedInputStream(new FileInputStream("C:\\Users\\Administrator\\Desktop\\logtest.properties"));
+            //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://turbobit.net/j5ymo3novrfi.html"));
-
+            httpFile.setNewURL(new URL("http://www.itv.com/itvplayer/video/?Filter=172097"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 9050, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final TurboBitServiceImpl service = new TurboBitServiceImpl(); //instance of service - of our plugin
+            final ItvServiceImpl service = new ItvServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

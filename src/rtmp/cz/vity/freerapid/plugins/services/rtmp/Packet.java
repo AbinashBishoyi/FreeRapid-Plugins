@@ -1,28 +1,15 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
-import org.apache.mina.common.ByteBuffer;
+import org.apache.mina.core.buffer.IoBuffer;
 
 import java.util.logging.Logger;
 
 import static cz.vity.freerapid.plugins.services.rtmp.Header.Type.*;
 
-public class Packet {
+/**
+ * @author Peter Thomas
+ */
+class Packet {
 
     private static final Logger logger = Logger.getLogger(Packet.class.getName());
 
@@ -70,13 +57,13 @@ public class Packet {
     }
 
     private Header header;
-    private ByteBuffer data;
+    private IoBuffer data;
     private boolean complete;
 
     public Packet() {
     }
 
-    public Packet(Header header, ByteBuffer data) {
+    public Packet(Header header, IoBuffer data) {
         this.header = header;
         data.flip();
         this.data = data;
@@ -85,26 +72,26 @@ public class Packet {
 
     public Packet(Header header, int dataSize) {
         this.header = header;
-        data = ByteBuffer.allocate(dataSize);
+        data = IoBuffer.allocate(dataSize);
     }
 
     public static Packet bytesRead(int value) {
         Header header = new Header(MEDIUM, 2, Type.BYTES_READ);
-        ByteBuffer body = ByteBuffer.allocate(4);
+        IoBuffer body = IoBuffer.allocate(4);
         body.putInt(value);
         return new Packet(header, body);
     }
 
     public static Packet serverBw(int value) {
         Header header = new Header(LARGE, 2, Type.SERVER_BANDWIDTH);
-        ByteBuffer body = ByteBuffer.allocate(8);
+        IoBuffer body = IoBuffer.allocate(8);
         body.putInt(value);
         return new Packet(header, body);
     }
 
     public static Packet ping(int type, int target, int bufferTime) {
         Header header = new Header(MEDIUM, 2, Type.CONTROL_MESSAGE);
-        ByteBuffer body = ByteBuffer.allocate(10);
+        IoBuffer body = IoBuffer.allocate(10);
         body.putShort((short) type);
         body.putInt(target);
         if (type == 3) {
@@ -115,7 +102,7 @@ public class Packet {
 
     public static Packet swfVerification(byte[] bytes) {
         Header header = new Header(MEDIUM, 2, Type.CONTROL_MESSAGE);
-        ByteBuffer body = ByteBuffer.allocate(44);
+        IoBuffer body = IoBuffer.allocate(44);
         body.putShort((short) 0x001B);
         body.put(bytes);
         return new Packet(header, body);
@@ -125,11 +112,11 @@ public class Packet {
         return header;
     }
 
-    public ByteBuffer getData() {
+    public IoBuffer getData() {
         return data;
     }
 
-    public void setData(ByteBuffer data) {
+    public void setData(IoBuffer data) {
         this.data = data;
     }
 
@@ -137,7 +124,7 @@ public class Packet {
         return complete;
     }
 
-    public boolean decode(ByteBuffer in, RtmpSession session) {
+    public boolean decode(IoBuffer in, RtmpSession session) {
 
         final int position = in.position();
 
@@ -202,8 +189,8 @@ public class Packet {
         return true;
     }
 
-    public ByteBuffer encode(final int chunkSize) {
-        ByteBuffer buffer = ByteBuffer.allocate(2048);
+    public IoBuffer encode(final int chunkSize) {
+        IoBuffer buffer = IoBuffer.allocate(2048);
         header.encode(buffer);
         int remaining = header.getSize();
         while (true) {

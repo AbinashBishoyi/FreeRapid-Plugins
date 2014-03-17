@@ -1,60 +1,80 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
+import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.utilities.LogUtils;
-import org.apache.mina.common.CloseFuture;
-import org.apache.mina.common.IoHandlerAdapter;
-import org.apache.mina.common.IoSession;
+import org.apache.mina.core.future.CloseFuture;
+import org.apache.mina.core.service.IoConnector;
+import org.apache.mina.core.service.IoHandler;
+import org.apache.mina.core.service.IoHandlerAdapter;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.filter.codec.ProtocolDecoder;
 import org.apache.mina.filter.codec.ProtocolEncoder;
-import org.apache.mina.transport.socket.nio.SocketConnector;
+import org.apache.mina.proxy.AbstractProxyIoHandler;
+import org.apache.mina.proxy.ProxyConnector;
+import org.apache.mina.proxy.handlers.socks.SocksProxyConstants;
+import org.apache.mina.proxy.handlers.socks.SocksProxyRequest;
+import org.apache.mina.proxy.session.ProxyIoSession;
+import org.apache.mina.transport.socket.SocketConnector;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
-import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.logging.Logger;
 
-public class RtmpClient extends IoHandlerAdapter {
+/**
+ * @author Peter Thomas
+ * @author ntoskrnl
+ */
+class RtmpClient extends IoHandlerAdapter {
 
     private static final Logger logger = Logger.getLogger(RtmpClient.class.getName());
 
     private final RtmpSession session;
-    private final SocketConnector connector;
+    private final IoConnector connector;
     private IoSession ioSession;
+
+    private boolean closed = false;
 
     public RtmpClient(RtmpSession session) {
         this.session = session;
-        connector = new SocketConnector();
-        connector.getFilterChain().addLast("crypto", new RtmpeIoFilter());
-        connector.getFilterChain().addLast("codec", new ProtocolCodecFilter(new RtmpCodecFactory()));
+        SocketConnector socketConnector = new NioSocketConnector();
+        socketConnector.getFilterChain().addLast("crypto", new RtmpeIoFilter());
+        socketConnector.getFilterChain().addLast("codec", new ProtocolCodecFilter(new RtmpCodecFactory()));
+        ConnectionSettings settings = session.getConnectionSettings();
+        if (settings != null && settings.isProxySet() && settings.getProxyType() == Proxy.Type.SOCKS) {
+            this.connector = getProxyConnector(socketConnector, settings);
+        } else {
+            socketConnector.setDefaultRemoteAddress(new InetSocketAddress(session.getHost(), session.getPort()));
+            socketConnector.setHandler(this);
+            this.connector = socketConnector;
+        }
     }
 
-    public InputStream getStream() {
-        return session.getOutputWriter().getStream();
+    private ProxyConnector getProxyConnector(SocketConnector socketConnector, ConnectionSettings settings) {
+        ProxyConnector connector = new ProxyConnector(socketConnector);
+        connector.setHandler(new ProxyIoHandler(this));
+        connector.setProxyIoSession(
+                new ProxyIoSession(
+                        new InetSocketAddress(settings.getProxyURL(), settings.getProxyPort()),
+                        new SocksProxyRequest(
+                                SocksProxyConstants.SOCKS_VERSION_5,
+                                SocksProxyConstants.ESTABLISH_TCPIP_STREAM,
+                                new InetSocketAddress(session.getHost(), session.getPort()),
+                                null
+                        )
+                )
+        );
+        return connector;
     }
 
     public void connect() {
-        connector.connect(new InetSocketAddress(session.getHost(), session.getPort()), this);
+        connector.connect();
     }
 
     @Override
-    public void sessionOpened(IoSession ioSession) {
+    public void sessionOpened(IoSession ioSession) throws Exception {
         this.ioSession = ioSession;
         session.setDecoderOutput(new MinaIoSessionOutput(this));
         session.putInto(ioSession);
@@ -68,16 +88,43 @@ public class RtmpClient extends IoHandlerAdapter {
         disconnect();
     }
 
-    public void disconnect() {
-        try {
-            logger.fine("disconnecting, bytes read: " + ioSession.getReadBytes());
-            connector.setWorkerTimeout(0);
-            CloseFuture future = ioSession.close();
-            logger.fine("closing connection, waiting for thread exit");
-            future.join();
-            logger.fine("connection closed successfully");
-        } finally {
-            session.getOutputWriter().close();
+    public synchronized void disconnect() {
+        if (!closed) {
+            closed = true;
+            // A new thread is needed to prevent deadlocks
+            // in case this method is called from a worked thread.
+            // (It would wait for itself to complete otherwise.)
+            new Thread(new Runnable() {
+                public void run() {
+                    try {
+                        if (ioSession != null) {
+                            logger.fine("disconnecting, bytes read: " + ioSession.getReadBytes());
+                            CloseFuture future = ioSession.close(true);
+                            logger.fine("closing connection, waiting for thread exit");
+                            future.awaitUninterruptibly();
+                            logger.fine("connection closed successfully");
+                        }
+                        logger.finest("disposing connector");
+                        connector.dispose();
+                        logger.finest("connector disposed successfully");
+                    } finally {
+                        session.getOutputWriter().close();
+                    }
+                }
+            }, "disconnect").start();
+        }
+    }
+
+    private static class ProxyIoHandler extends AbstractProxyIoHandler {
+
+        private IoHandler ioHandler;
+
+        public ProxyIoHandler(IoHandler ioHandler) {
+            this.ioHandler = ioHandler;
+        }
+
+        public void proxySessionOpened(IoSession ioSession) throws Exception {
+            ioHandler.sessionOpened(ioSession);
         }
     }
 
@@ -86,11 +133,11 @@ public class RtmpClient extends IoHandlerAdapter {
         private ProtocolEncoder encoder = new RtmpEncoder();
         private ProtocolDecoder decoder = new RtmpDecoder();
 
-        public ProtocolDecoder getDecoder() {
+        public ProtocolDecoder getDecoder(IoSession ioSession) {
             return decoder;
         }
 
-        public ProtocolEncoder getEncoder() {
+        public ProtocolEncoder getEncoder(IoSession ioSession) {
             return encoder;
         }
     }

@@ -23,7 +23,7 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/170858/eureka-crossing-over"));//US-only
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 9050, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final HuluServiceImpl service = new HuluServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
@@ -32,7 +32,7 @@ public class TestApp extends PluginDevApplication {
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console
         }
-        this.exit();//exit application
+        //this.exit();//exit application
     }
 
     /**

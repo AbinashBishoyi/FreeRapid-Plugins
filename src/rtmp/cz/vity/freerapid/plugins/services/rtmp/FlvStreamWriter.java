@@ -1,22 +1,6 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
-import org.apache.mina.common.ByteBuffer;
+import org.apache.mina.core.buffer.IoBuffer;
 
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -25,7 +9,11 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.logging.Logger;
 
-public class FlvStreamWriter implements OutputWriter {
+/**
+ * @author Peter Thomas
+ * @author ntoskrnl
+ */
+class FlvStreamWriter implements OutputWriter {
 
     private static final Logger logger = Logger.getLogger(FlvStreamWriter.class.getName());
 
@@ -33,7 +21,8 @@ public class FlvStreamWriter implements OutputWriter {
     private final WritableByteChannel channel;
     private final PipedInputStream in;
     private final PipedOutputStream out;
-    private final ByteBuffer buffer;
+    private final IoBuffer buffer;
+
     private boolean headerWritten = false;
 
     public FlvStreamWriter(int seekTime, RtmpSession session) {
@@ -45,7 +34,7 @@ public class FlvStreamWriter implements OutputWriter {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        buffer = ByteBuffer.allocate(2048);
+        buffer = IoBuffer.allocate(2048);
         buffer.setAutoExpand(true);
     }
 
@@ -64,7 +53,7 @@ public class FlvStreamWriter implements OutputWriter {
     }
 
     private void writeHeader() {
-        ByteBuffer buffer = ByteBuffer.allocate(13);
+        IoBuffer buffer = IoBuffer.allocate(13);
         buffer.put((byte) 0x46); // F
         buffer.put((byte) 0x4C); // L
         buffer.put((byte) 0x56); // V
@@ -82,7 +71,7 @@ public class FlvStreamWriter implements OutputWriter {
         write(header.getPacketType(), packet.getData(), time);
     }
 
-    public synchronized void writeFlvData(ByteBuffer data) {
+    public synchronized void writeFlvData(IoBuffer data) {
         while (data.hasRemaining()) {
             Packet.Type packetType = Packet.Type.parseByte(data.get());
             int size = Utils.readInt24(data);
@@ -91,13 +80,13 @@ public class FlvStreamWriter implements OutputWriter {
             data.getInt(); // 4 bytes of zeros (reserved)
             byte[] bytes = new byte[size];
             data.get(bytes);
-            ByteBuffer temp = ByteBuffer.wrap(bytes);
+            IoBuffer temp = IoBuffer.wrap(bytes);
             write(packetType, temp, timestamp);
             data.getInt(); // FLV tag size (size + 11)
         }
     }
 
-    public synchronized void write(Packet.Type packetType, ByteBuffer data, final int time) {
+    public synchronized void write(Packet.Type packetType, IoBuffer data, final int time) {
         if (RtmpSession.DEBUG) {
             logger.finest(String.format("writing FLV tag %s %s %s", packetType, time, data));
         }
@@ -117,7 +106,7 @@ public class FlvStreamWriter implements OutputWriter {
         write(buffer);
     }
 
-    private void write(ByteBuffer buffer) {
+    private void write(IoBuffer buffer) {
         if (!headerWritten) {
             headerWritten = true;
             logger.fine("First data packet received, writing FLV header");
@@ -126,7 +115,11 @@ public class FlvStreamWriter implements OutputWriter {
         try {
             channel.write(buffer.buf());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            if ("Pipe closed".equals(e.getMessage())) {
+                logger.fine("Pipe closed, skipping packet");
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 

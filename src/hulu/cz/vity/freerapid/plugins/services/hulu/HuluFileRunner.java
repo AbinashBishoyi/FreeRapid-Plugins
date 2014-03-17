@@ -16,7 +16,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -63,7 +62,7 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
+        final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();
@@ -98,7 +97,7 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
+            setClientParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
             final String cid = PlugUtils.getStringBetween(getContentAsString(), "\"content_id\", \"", "\"");
             final String eidUrl = "http://r.hulu.com/videos?eid=" + cidToEid(parseContentId(getContentId(cid)));
             logger.info("eidUrl = " + eidUrl);
@@ -112,16 +111,24 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
                 if (makeRedirectedRequest(method)) {
                     final String content = decryptContentSelect(getContentAsString());
                     logger.info("Content select:\n" + content);
-                    if (content.contains("allowInternational=\"false\"")) {
-                        logger.info("Performing geocheck");
-                        method = getGetMethod("http://releasegeo.hulu.com/geoCheck");
-                        if (makeRedirectedRequest(method)) {
-                            if (getContentAsString().contains("not-valid")) {
-                                throw new NotRecoverableDownloadException("This video can only be streamed in the US");
+                    if (content.contains("we noticed you are trying to access Hulu through")) {
+                        throw new NotRecoverableDownloadException("Hulu noticed that you are trying to access them through a proxy");
+                    }
+                    if (!client.getSettings().isProxySet()) {
+                        // Do not perform geocheck if using a proxy.
+                        // The geocheck server detects proxies better than the stream server,
+                        // which may cause issues.
+                        if (content.contains("allowInternational=\"false\"")) {
+                            logger.info("Performing geocheck");
+                            method = getGetMethod("http://releasegeo.hulu.com/geoCheck");
+                            if (makeRedirectedRequest(method)) {
+                                if (getContentAsString().contains("not-valid")) {
+                                    throw new NotRecoverableDownloadException("This video can only be streamed in the US");
+                                }
+                            } else {
+                                checkProblems();
+                                throw new ServiceConnectionProblemException();
                             }
-                        } else {
-                            checkProblems();
-                            throw new ServiceConnectionProblemException();
                         }
                     }
                     final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"", content);

@@ -1,28 +1,17 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
-import org.apache.mina.common.ByteBuffer;
-import org.apache.mina.common.IoFilterAdapter;
-import org.apache.mina.common.IoSession;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.filterchain.IoFilterAdapter;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.write.DefaultWriteRequest;
+import org.apache.mina.core.write.WriteRequest;
 
 import java.util.logging.Logger;
 
-public class RtmpeIoFilter extends IoFilterAdapter {
+/**
+ * @author Peter Thomas
+ */
+class RtmpeIoFilter extends IoFilterAdapter {
 
     private static final Logger logger = Logger.getLogger(RtmpeIoFilter.class.getName());
 
@@ -35,11 +24,11 @@ public class RtmpeIoFilter extends IoFilterAdapter {
             session.send(Packet.bytesRead(bytesReadSoFar));
             session.setBytesReadLastSent(bytesReadSoFar);
         }
-        if (!session.isEncrypted() || !session.isHandshakeComplete() || !(message instanceof ByteBuffer)) {
+        if (!session.isEncrypted() || !session.isHandshakeComplete() || !(message instanceof IoBuffer)) {
             nextFilter.messageReceived(ioSession, message);
             return;
         }
-        ByteBuffer buf = (ByteBuffer) message;
+        IoBuffer buf = (IoBuffer) message;
         int initial = buf.position();
         byte[] encrypted = new byte[buf.remaining()];
         buf.get(encrypted);
@@ -57,7 +46,7 @@ public class RtmpeIoFilter extends IoFilterAdapter {
             nextFilter.filterWrite(ioSession, writeRequest);
             return;
         }
-        ByteBuffer buf = (ByteBuffer) writeRequest.getMessage();
+        IoBuffer buf = (IoBuffer) writeRequest.getMessage();
         if (!buf.hasRemaining()) {
             // ignore empty buffers
             nextFilter.filterWrite(ioSession, writeRequest);
@@ -69,7 +58,7 @@ public class RtmpeIoFilter extends IoFilterAdapter {
             buf.position(initial);
             buf.put(encrypted);
             buf.position(initial);
-            nextFilter.filterWrite(ioSession, new WriteRequest(buf, writeRequest.getFuture()));
+            nextFilter.filterWrite(ioSession, new DefaultWriteRequest(buf, writeRequest.getFuture()));
         }
     }
 

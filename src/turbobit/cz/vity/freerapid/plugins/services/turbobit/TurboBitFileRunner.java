@@ -163,8 +163,9 @@ class TurboBitFileRunner extends AbstractRunner {
             if (err404Matcher.group(1).contains("\u00d0\u2014\u00d0\u00b0\u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d1?\u00d0\u00b5\u00d0\u00bd\u00d0\u00bd\u00d1\u2039\u00d0\u00b9 \u00d0\u00b4\u00d0\u00be\u00d0\u00ba\u00d1?\u00d0\u00bc\u00d0\u00b5\u00d0\u00bd\u00d1\u201a \u00d0\u00bd\u00d0\u00b5 \u00d0\u00bd\u00d0\u00b0\u00d0\u00b9\u00d0\u00b4\u00d0\u00b5\u00d0\u00bd"))
                 throw new URLNotAvailableAnymoreException(err404Matcher.group(1));
         }
-        if (getContentAsString().contains("\u0424\u0430\u0439\u043B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D."))
-            throw new URLNotAvailableAnymoreException();
+        if (getContentAsString().contains("\u0424\u0430\u0439\u043B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D")
+                || getContentAsString().contains("File was not found"))
+            throw new URLNotAvailableAnymoreException("File not found");
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {

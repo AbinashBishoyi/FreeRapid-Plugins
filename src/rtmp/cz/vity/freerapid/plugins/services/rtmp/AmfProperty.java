@@ -1,22 +1,6 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
-import org.apache.mina.common.ByteBuffer;
+import org.apache.mina.core.buffer.IoBuffer;
 
 import java.util.Date;
 import java.util.Map;
@@ -24,7 +8,10 @@ import java.util.logging.Logger;
 
 import static cz.vity.freerapid.plugins.services.rtmp.AmfProperty.Type.*;
 
-public class AmfProperty {
+/**
+ * @author Peter Thomas
+ */
+class AmfProperty {
 
     private static final Logger logger = Logger.getLogger(AmfProperty.class.getName());
 
@@ -109,34 +96,34 @@ public class AmfProperty {
         }
     }
 
-    private static String decodeString(ByteBuffer in) {
+    private static String decodeString(IoBuffer in) {
         short size = in.getShort();
         byte[] bytes = new byte[size];
         in.get(bytes);
         return new String(bytes); // TODO UTF-8 ?
     }
 
-    private static void encodeString(ByteBuffer out, String value) {
+    private static void encodeString(IoBuffer out, String value) {
         byte[] bytes = value.getBytes(); // TODO UTF-8 ?
         out.putShort((short) bytes.length);
         out.put(bytes);
     }
 
-    public static void encode(ByteBuffer out, Object... values) {
+    public static void encode(IoBuffer out, Object... values) {
         for (Object value : values) {
             AmfProperty temp = new AmfProperty(value);
             temp.encode(out);
         }
     }
 
-    public static ByteBuffer encode(Object... values) {
-        ByteBuffer out = ByteBuffer.allocate(2048);
+    public static IoBuffer encode(Object... values) {
+        IoBuffer out = IoBuffer.allocate(2048);
         encode(out, values);
         return out;
     }
 
 
-    public void decode(ByteBuffer in, boolean decodeName) {
+    public void decode(IoBuffer in, boolean decodeName) {
         if (decodeName) {
             name = decodeString(in);
         }
@@ -146,7 +133,7 @@ public class AmfProperty {
                 value = in.getDouble();
                 break;
             case BOOLEAN:
-                value = (in.get() == 0x01) ? true : false;
+                value = in.get() == 0x01;
                 break;
             case STRING:
                 value = decodeString(in);
@@ -196,7 +183,7 @@ public class AmfProperty {
         logger.finest("decoded property: " + toString());
     }
 
-    public void encode(ByteBuffer out) {
+    public void encode(IoBuffer out) {
         logger.finest("encoding property: " + toString());
         if (name != null) {
             encodeString(out, name);

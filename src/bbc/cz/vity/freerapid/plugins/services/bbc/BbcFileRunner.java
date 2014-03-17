@@ -50,7 +50,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found");
         }
-        final String series = matcher.group(1);
+        final String series = matcher.group(1).replace(": ", " - ");
         final String episode = matcher.group(2).replace(": ", " - ");
         httpFile.setFileName(series + (episode.isEmpty() ? "" : " - " + episode) + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -119,6 +119,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("this programme is not available")) {
+            throw new URLNotAvailableAnymoreException("This programme is not available anymore");
+        }
         if (getContentAsString().contains("Page not found")) {
             throw new URLNotAvailableAnymoreException("Page not found");
         }

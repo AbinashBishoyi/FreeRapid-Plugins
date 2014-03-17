@@ -1,25 +1,9 @@
-/*
- * Copyright 2002-2005 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cz.vity.freerapid.plugins.services.rtmp;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.mina.common.ByteBuffer;
+import org.apache.mina.core.buffer.IoBuffer;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -28,9 +12,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 
-public class Utils {
+/**
+ * @author Peter Thomas
+ * @author ntoskrnl
+ */
+class Utils {
 
-    public static int readInt24(ByteBuffer in) {
+    public static int readInt24(IoBuffer in) {
         int val = 0;
         val += (in.get() & 0xFF) * 256 * 256;
         val += (in.get() & 0xFF) * 256;
@@ -39,14 +27,14 @@ public class Utils {
     }
 
     @SuppressWarnings("PointlessBitwiseExpression")
-    public static void writeInt24(ByteBuffer out, int value) {
+    public static void writeInt24(IoBuffer out, int value) {
         out.put((byte) (0xFF & (value >> 16)));
         out.put((byte) (0xFF & (value >> 8)));
         out.put((byte) (0xFF & (value >> 0)));
     }
 
     @SuppressWarnings("PointlessBitwiseExpression")
-    public static int readInt32Reverse(ByteBuffer in) {
+    public static int readInt32Reverse(IoBuffer in) {
         int val = 0;
         val += (in.get() & 0xFF) << 0;
         val += (in.get() & 0xFF) << 8;
@@ -55,7 +43,7 @@ public class Utils {
         return val;
     }
 
-    public static void writeInt32Reverse(ByteBuffer out, int value) {
+    public static void writeInt32Reverse(IoBuffer out, int value) {
         out.put((byte) (0xFF & value));
         out.put((byte) (0xFF & (value >> 8)));
         out.put((byte) (0xFF & (value >> 16)));
@@ -189,7 +177,7 @@ public class Utils {
         session.setDecoderOutput(decoderOutput);
         session.setInvokeResultHandler(new DefaultInvokeResultHandler());
         byte[] bytes = readAsByteArray(inFileName);
-        ByteBuffer buf = ByteBuffer.wrap(bytes);
+        IoBuffer buf = IoBuffer.wrap(bytes);
         int prevPosition = -1;
         while (prevPosition < buf.position()) {
             prevPosition = buf.position();
@@ -227,7 +215,7 @@ public class Utils {
 
     public static Packet hexToPacket(String hex) {
         byte[] bytes = fromHex(hex);
-        ByteBuffer buf = ByteBuffer.wrap(bytes);
+        IoBuffer buf = IoBuffer.wrap(bytes);
         RtmpSession session = new RtmpSession();
         session.setChunkSize(buf.limit());
         Packet packet = new Packet();

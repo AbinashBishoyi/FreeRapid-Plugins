@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="bbc.co.uk" version="1.0.1" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.bbc.BbcServiceImpl">
+<plugin id="itv.com" version="1.0.0" vendor="ntoskrnl"
+        class="cz.vity.freerapid.plugins.services.itv.ItvServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?bbc\.co\.uk/(iplayer/episode|i)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?itv\.com/itvplayer/video/\?Filter=\d+"/>
         <attribute id="minver" value="0.849"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="bbc.co.uk"/>
+        <attribute id="services" value="itv.com"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
@@ -14,6 +14,6 @@
         <import plugin-id="rtmp" plugin-version="1.0.8" match="greater-or-equal"/>
     </requires>
     <runtime>
-        <library id="bbc.co.uk" path="/" type="code"/>
+        <library id="itv.com" path="/" type="code"/>
     </runtime>
 </plugin>

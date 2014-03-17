@@ -3,10 +3,9 @@ package cz.vity.freerapid.plugins.services.turbobit.captcha;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
@@ -17,7 +16,7 @@ import java.util.logging.Logger;
 public class CaptchaPreparer {
     private final static Logger logger = Logger.getLogger(CaptchaPreparer.class.getName());
     private final static String[] BACKGROUND_FILES = {"captcha-bg-01.png", "captcha-bg-02.png", "captcha-bg-03.png", "captcha-bg-04.png", "captcha-bg-05.png", "captcha-bg-06.png", "captcha-bg-07.png", "captcha-bg-08.png", "captcha-bg-09.png", "captcha-bg-10.png"};
-    private final static List<BackgroundImage> backgrounds = new ArrayList<BackgroundImage>(BACKGROUND_FILES.length);
+    private final static Set<BufferedImage> backgrounds = new HashSet<BufferedImage>(BACKGROUND_FILES.length);
 
     /**
      * Prepares captcha image for recognition
@@ -27,35 +26,29 @@ public class CaptchaPreparer {
      * @throws Exception If something goes wrong
      */
     public static BufferedImage getPreparedImage(final BufferedImage input) throws Exception {
-        //final BufferedImage input = ImageIO.read(new FileInputStream("E:\\projects\\captchatest\\captcha.png"));
-        final int w = input.getWidth();
-        final int h = input.getHeight();
-
-        //load sample background images
-        if (backgrounds.size() == 0) {
-            backgrounds.clear();
-            for (final String backgroundFile : BACKGROUND_FILES) {
-                //final BufferedImage bg = ImageIO.read(new FileInputStream("E:\\projects\\captchatest\\" + backgroundFile));
-                final BufferedImage bg = ImageIO.read((new CaptchaPreparer()).getClass().getResourceAsStream("/resources/" + backgroundFile));
-                backgrounds.add(new BackgroundImage(bg));
+        synchronized (CaptchaPreparer.class) {
+            //load sample background images
+            if (backgrounds.size() == 0) {
+                for (final String backgroundFile : BACKGROUND_FILES) {
+                    //final BufferedImage bg = ImageIO.read(new FileInputStream("E:\\projects\\captchatest\\" + backgroundFile));
+                    final BufferedImage bg = ImageIO.read(CaptchaPreparer.class.getResourceAsStream("/resources/" + backgroundFile));
+                    backgrounds.add(bg);
+                }
             }
         }
 
-        //determine correct sample background by comparing amounts of differences to the captcha image
-        for (final BackgroundImage bg : backgrounds) {
-            bg.similarity = bg.differenceTo(input);
+        final TreeSet<MyImage> set = new TreeSet<MyImage>();
+        for (final BufferedImage bg : backgrounds) {
+            set.add(new MyImage(bg, input));
         }
-        Collections.sort(backgrounds, new Comparator<BackgroundImage>() {
-            public int compare(BackgroundImage o1, BackgroundImage o2) {
-                return o2.similarity - o1.similarity;
-            }
-        });
-        if (backgrounds.get(0).similarity < 50) {
+        if (set.first().similarity < 0.5) {
             logger.warning("Possible problems determining correct sample background");
         }
-        final BufferedImage background = backgrounds.get(0).image;
+        final BufferedImage background = set.first().image;
 
         //subtract the background from the the captcha image, and make the result black and white
+        final int w = input.getWidth();
+        final int h = input.getHeight();
         final BufferedImage output = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
@@ -69,36 +62,33 @@ public class CaptchaPreparer {
         return output;
     }
 
-    private static class BackgroundImage {
+    private static class MyImage implements Comparable<MyImage> {
         public BufferedImage image;
-        public int similarity;
+        public double similarity;
 
-        public BackgroundImage(final BufferedImage image) {
+        public MyImage(final BufferedImage image, final BufferedImage compareTo) {
             this.image = image;
+            this.similarity = similarity(compareTo);
         }
 
-        public int differenceTo(final BackgroundImage other) {
-            return differenceTo(other.image);
-        }
-
-        public int differenceTo(final BufferedImage other) {
+        private double similarity(final BufferedImage compareTo) {
             int number = 0;
             int similarity = 0;
-            for (int y = 0; y < this.image.getHeight(); y++) {
-                for (int x = 0; x < this.image.getWidth(); x++) {
+            for (int y = 0, n = Math.min(image.getHeight(), compareTo.getHeight()); y < n; y++) {
+                for (int x = 0, m = Math.min(image.getWidth(), compareTo.getWidth()); x < m; x++) {
                     number++;
-                    if (this.image.getRGB(x, y) == other.getRGB(x, y)) {
+                    if (image.getRGB(x, y) == compareTo.getRGB(x, y)) {
                         similarity++;
                     }
                 }
             }
-            return (int) (((double) similarity) / ((double) number) * 100);//percentage
+            return ((double) similarity) / ((double) number);
+        }
+
+        @Override
+        public int compareTo(MyImage that) {
+            return Double.valueOf(that.similarity).compareTo(this.similarity);
         }
     }
 
-    /*
-    public static void main(String[] args) throws Exception {
-        CaptchaPreparer.getPreparedImage();
-    }
-    */
 }

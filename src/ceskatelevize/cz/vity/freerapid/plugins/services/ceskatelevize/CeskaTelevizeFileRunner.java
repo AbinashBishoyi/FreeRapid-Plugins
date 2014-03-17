@@ -38,6 +38,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        setPageEncoding("Windows-1250");
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -142,6 +143,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        setPageEncoding("Windows-1250");
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -180,7 +182,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             } catch (Exception ex) {
                 throw new PluginImplementationException("Cannot get Playlist");
             }
-            final MethodBuilder mb = getMethodBuilder().setReferer(fileURL).setAction("http://www.ceskatelevize.cz/ajax/getPlaylistURI.php");
+            final MethodBuilder mb = getMethodBuilder().setReferer(fileURL).setAction(getPlaylistUrl());
             for (final String key : params.keySet()) {
                 mb.setParameter(key, params.get(key));
             }
@@ -223,6 +225,14 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         if (contentAsString.contains("content is not available at")) {
             throw new PluginImplementationException("This content is not available at your territory due to limited copyright");
         }
+    }
+
+    private String getPlaylistUrl() throws Exception {
+        final HttpMethod method = getGetMethod("http://img.ceskatelevize.cz/libraries/player/ajaxPlaylist.js?ver=1.1");
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException();
+        }
+        return PlugUtils.getStringBetween(getContentAsString(), "url: \"", "\"");
     }
 
     private SwitchItem getSelectedSwitchItem(String playlistContent) throws PluginImplementationException {

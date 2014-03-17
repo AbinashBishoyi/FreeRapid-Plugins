@@ -214,6 +214,9 @@
         <ant dir="${src.dir}/filebeam/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/4upload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/bigandfree_premium/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/multiupload/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/filestube/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/filedropper/" antfile="build.xml" inheritall="false"/>
 
     </target>
 

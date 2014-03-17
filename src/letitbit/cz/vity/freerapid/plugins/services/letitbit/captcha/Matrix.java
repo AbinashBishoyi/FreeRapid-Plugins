@@ -9,14 +9,18 @@ public class Matrix implements Comparable<Matrix>, Serializable {
 
     private static final long serialVersionUID = -3921208452563560481L;
 
-    int width;
-    int height;
-    int[][] value;
+    public int width;
+    public int height;
+    public int[][] value;
 
     public Matrix(int h, int w) {
         width = w;
         height = h;
         value = new int[w][h];
+    }
+
+    public Matrix() {
+
     }
 
     public void set(int y, int x, int value) {

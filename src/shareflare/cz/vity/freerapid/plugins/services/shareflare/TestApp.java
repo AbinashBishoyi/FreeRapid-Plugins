@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
+import java.io.IOException;
 import java.net.URL;
 
 /**
@@ -36,7 +37,24 @@ public class TestApp extends PluginDevApplication {
      *
      * @param args arguments for application
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
         Application.launch(TestApp.class, args);//starts the application - calls startup() internally
+//        InputStream in = TestApp.class.getResourceAsStream("/resources/shareflare-captcha.bin");
+//        //InputStream in = new ByteArrayInputStream(letters);
+//        GZIPInputStream gzis = new GZIPInputStream(in);
+//        ObjectInputStream ois = new ObjectInputStream(gzis);
+//        final TreeMap<String, Matrix> map = (TreeMap<String, Matrix>) ois.readObject();
+//        final TreeMap out = new TreeMap<String, cz.vity.freerapid.plugins.services.letitbit.captcha.Matrix>();
+//        for (Map.Entry<String, Matrix> entry : map.entrySet()) {
+//            final cz.vity.freerapid.plugins.services.letitbit.captcha.Matrix m = new cz.vity.freerapid.plugins.services.letitbit.captcha.Matrix();
+//            m.width = entry.getValue().width;
+//            m.height = entry.getValue().height;
+//            m.value = entry.getValue().value;
+//            out.put(entry.getKey(), m);
+//        }
+//        final ObjectOutputStream out2 = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream(new File("c:\\out.bin"))));
+//        out2.writeObject(out);
+//        out2.close();
+//        System.out.println("map = " + map);
     }
 }

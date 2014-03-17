@@ -5,9 +5,11 @@ package cz.vity.freerapid.plugins.services.multiupload;
  */
 public class MultiUploadSettingsConfig {
     private boolean checkDownloadService;
+    private boolean queueAllLinks;
 
     public MultiUploadSettingsConfig() {
-        setCheckDownloadService(true);
+        checkDownloadService = true;
+        queueAllLinks = true;
     }
 
     public void setCheckDownloadService(final boolean checkDownloadService) {
@@ -16,5 +18,13 @@ public class MultiUploadSettingsConfig {
 
     public boolean getCheckDownloadService() {
         return this.checkDownloadService;
+    }
+
+    public boolean isQueueAllLinks() {
+        return queueAllLinks;
+    }
+
+    public void setQueueAllLinks(boolean queueAllLinks) {
+        this.queueAllLinks = queueAllLinks;
     }
 }

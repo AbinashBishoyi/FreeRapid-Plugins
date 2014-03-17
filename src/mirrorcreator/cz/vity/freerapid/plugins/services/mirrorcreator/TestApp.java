@@ -15,11 +15,15 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://mir.cr/Z2KBKXPT"));
-            //httpFile.setNewURL(new URL("http://www.mirrorcreator.com/files/MDGTGXGM/"));
+            //httpFile.setNewURL(new URL("http://mir.cr/Z2KBKXPT"));
+            httpFile.setNewURL(new URL("http://www.mirrorcreator.com/files/MDGTGXGM/"));
+            //httpFile.setNewURL(new URL("http://mir.cr/05UZGDWS"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081);
             final MirrorCreatorServiceImpl service = new MirrorCreatorServiceImpl();
+            final MirrorCreatorSettingsConfig config = new MirrorCreatorSettingsConfig();
+            config.setQueueAllLinks(true);
+            service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

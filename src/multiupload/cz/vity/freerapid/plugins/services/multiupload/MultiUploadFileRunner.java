@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -23,6 +24,11 @@ import java.util.regex.Matcher;
  */
 class MultiUploadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MultiUploadFileRunner.class.getName());
+
+    private MultiUploadSettingsConfig getConfig() throws Exception {
+        MultiUploadServiceImpl service = (MultiUploadServiceImpl) getPluginService();
+        return service.getConfig();
+    }
 
     @Override
     public void runCheck() throws Exception {
@@ -63,7 +69,17 @@ class MultiUploadFileRunner extends AbstractRunner {
         }
         // add urls to queue - let their plugins do the validation
         if (list.isEmpty()) throw new PluginImplementationException("No links found");
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        final MultiUploadSettingsConfig config = getConfig();
+        if (config.isQueueAllLinks()) { //queue all links
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        } else { //queue link using priority
+            final List<URL> urlList = new LinkedList<URL>();
+            for (final URI uri : list) {
+                final URL url = new URL(uri.toURL().toString());
+                urlList.add(url);
+            }
+            getPluginService().getPluginContext().getQueueSupport().addLinkToQueueUsingPriority(httpFile, urlList);
+        }
         httpFile.setState(DownloadState.COMPLETED);
         httpFile.getProperties().put("removeCompleted", true);
     }

@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
@@ -12,6 +13,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -25,6 +27,11 @@ import java.util.regex.Matcher;
  */
 class MirrorCreatorFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MirrorCreatorFileRunner.class.getName());
+
+    private MirrorCreatorSettingsConfig getConfig() throws Exception {
+        MirrorCreatorServiceImpl service = (MirrorCreatorServiceImpl) getPluginService();
+        return service.getConfig();
+    }
 
     @Override
     public void runCheck() throws Exception {
@@ -71,7 +78,19 @@ class MirrorCreatorFileRunner extends AbstractRunner {
             if (list.isEmpty()) {
                 throw new URLNotAvailableAnymoreException("No available mirrors");
             }
-            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+            final MirrorCreatorSettingsConfig config = getConfig();
+            if (config.isQueueAllLinks()) { //queue all links
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+            } else { //queue link using priority
+                final List<URL> urlList = new LinkedList<URL>();
+                for (final URI uri : list) {
+                    final URL url = new URL(uri.toURL().toString());
+                    urlList.add(url);
+                }
+                getPluginService().getPluginContext().getQueueSupport().addLinkToQueueUsingPriority(httpFile, urlList);
+            }
+            httpFile.setState(DownloadState.COMPLETED);
+            httpFile.getProperties().put("removeCompleted", true);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -104,7 +123,8 @@ class MirrorCreatorFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Link disabled or is invalid")
-                || contentAsString.contains("the link you have clicked is not available")) {
+                || contentAsString.contains("the link you have clicked is not available")
+                || contentAsString.contains("Links Unavailable")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

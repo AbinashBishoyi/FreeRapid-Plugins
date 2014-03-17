@@ -12,6 +12,7 @@ public class MultiUploadSettingsPanel extends JPanel {
     private MultiUploadSettingsConfig config;
 
     private final JCheckBox checkDownloadService = new JCheckBox("Check for file errors on download server");
+    private final JCheckBox checkQueueAllLinks = new JCheckBox("Queue all links");
 
     public MultiUploadSettingsPanel(MultiUploadServiceImpl service) throws Exception {
         super();
@@ -20,7 +21,10 @@ public class MultiUploadSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
+        checkDownloadService.setAlignmentX(Component.LEFT_ALIGNMENT);
+        checkQueueAllLinks.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkDownloadService.setSelected(config.getCheckDownloadService());
+        checkQueueAllLinks.setSelected(config.isQueueAllLinks());
 
         checkDownloadService.addActionListener(new ActionListener() {
             @Override
@@ -28,9 +32,15 @@ public class MultiUploadSettingsPanel extends JPanel {
                 config.setCheckDownloadService(checkDownloadService.isSelected());
             }
         });
-
-        setLayout(new BorderLayout());
-        add(checkDownloadService, BorderLayout.CENTER);
+        checkQueueAllLinks.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setQueueAllLinks(checkQueueAllLinks.isSelected());
+            }
+        });
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        add(checkDownloadService);
+        add(checkQueueAllLinks);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }
 

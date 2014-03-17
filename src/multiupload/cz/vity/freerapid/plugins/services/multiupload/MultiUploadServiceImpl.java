@@ -47,4 +47,11 @@ public class MultiUploadServiceImpl extends AbstractFileShareService {
 
         return config;
     }
+
+    public void setConfig(final MultiUploadSettingsConfig config) {
+        synchronized (MultiUploadServiceImpl.class) {
+            this.config = config;
+        }
+    }
+
 }

@@ -1,11 +1,12 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="megaupload.com" version="1.02"
+<plugin id="megaupload.com" version="1.02" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.megaupload.MegauploadShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(megaupload|megarotic|sexuploader)\.com/.*"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
+        <attribute id="services" value="megaupload.com megarotic.com sexuploader.com"/>
     </attributes>
 
     <runtime>

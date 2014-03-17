@@ -137,7 +137,7 @@ class DepositFilesRunner {
 
         matcher = PlugUtils.matcher("slots[^<]*busy", content);
         if (matcher.find()) {
-            throw new ServiceConnectionProblemException(String.format("<b>All downloading slots for your country are busy</b><br>"));
+            throw new YouHaveToWaitException(String.format("<b>All downloading slots for your country are busy</b><br>"), 60*2);
 
         }
         if (content.contains("file does not exist")) {

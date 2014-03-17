@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="divshare.com" version="1.0" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.divshare.DivshareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?divshare\.com/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="divshare.com"/>
+        <attribute id="faviconImage" value="resources/favicon.gif"/>
+    </attributes>
+
+    <runtime>
+        <library id="divshare.com" path="/" type="code"/>
+    </runtime>
+</plugin>

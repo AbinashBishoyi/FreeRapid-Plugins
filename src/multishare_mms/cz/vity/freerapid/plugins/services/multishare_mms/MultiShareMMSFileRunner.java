@@ -9,6 +9,9 @@ import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Random;
 import org.apache.commons.httpclient.HttpMethod;
@@ -16,6 +19,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import javax.swing.JOptionPane;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -30,6 +34,9 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     private static final String SERVER_URL = "http://www.multishare.cz/";
     private boolean badConfig = false;
     private static String PHPSESSID = "";
+    private static String versionUrl="http://www.multishare.cz/html/mms_support.php?version";
+
+    private static String version="1.1.1";
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -56,10 +63,41 @@ class MultiShareMMSFileRunner extends AbstractRunner {
         }
     }
 
+    public void openBrowser(URL url) {
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE))
+            return;
+        try {
+            Desktop.getDesktop().browse(url.toURI());
+        } catch (IOException e) {
+
+        } catch (Exception ignored) {
+            //ignore
+        }
+    }
+
+    public void versionCheck() throws IOException, PluginImplementationException
+    {
+        GetMethod get=new GetMethod(versionUrl);
+        if(makeRedirectedRequest(get))
+        {
+            String actualVersion=getContentAsString().trim();
+            logger.info("Actual version:"+actualVersion);
+            if(!actualVersion.equals(version))
+            {
+                if(JOptionPane.showOptionDialog(null, "Na webu byla nalezena nov\u011Bj\u0161\u00ED verze pluginu MultiShare MMS - verze "+actualVersion+"\nChcete ji stahnout\u003F Aktualizaci mus\u00EDte prov\u00E9st ru\u010Dn\u011B sta\u017Een\u00EDm z internetu.", "Nov\u011Bj\u0161\u00ED verze Multishare MMS", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null)==JOptionPane.YES_OPTION){
+                    logger.info("Redirecting browser to plugin page");
+                    openBrowser(new URL("http://www.multishare.cz/frd/plugin/"));
+                    throw new PluginImplementationException("Je ke sta\u017Een\u00ED nov\u011Bj\u0161\u00ED verze - "+actualVersion);
+                }
+            }                        
+        }
+    }
+
     @Override
     public void run() throws Exception {
         super.run();
         checkNameAndSize();
+        versionCheck();
         logger.info("Starting download in TASK " + fileURL);
         if (!PHPSESSID.equals("")) {
             client.getHTTPClient().getState().addCookie(new Cookie("www.multishare.cz", "PHPSESSID", PHPSESSID, "/", 86400, false));

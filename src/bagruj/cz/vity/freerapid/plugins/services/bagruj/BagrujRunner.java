@@ -107,9 +107,9 @@ class BagrujRunner extends AbstractRunner {
 
     // added by Smisek
     private void checkCaptcha() throws Exception {
-        if (getContentAsString().contains("testcaptcha")) {
+        if (getContentAsString().contains("captcha_code")) {
             checkNameAndSize(getContentAsString());
-            while (getContentAsString().contains("testcaptcha")) {
+            while (getContentAsString().contains("captcha_code")) {
                 Matcher matcher = getMatcherAgainstContent("<span id=\"countdown\">([0-9]+)</span>");
                 PostMethod method = stepCaptcha(getContentAsString());
                 if (matcher.find()) {
@@ -211,7 +211,7 @@ class BagrujRunner extends AbstractRunner {
 
 
     private PostMethod stepCaptcha(String contentAsString) throws Exception {
-        if (contentAsString.contains("testcaptcha")) {
+        if (contentAsString.contains("captcha_code")) {
             CaptchaSupport captchaSupport = getCaptchaSupport();
             Matcher matcher = PlugUtils.matcher("(http://bagruj.cz/captchas/[^\"]+)", contentAsString);
             if (matcher.find()) {
@@ -245,7 +245,7 @@ class BagrujRunner extends AbstractRunner {
                 throw new PluginImplementationException("Captcha picture was not found");
             }
         }
-        return null;
+        throw new PluginImplementationException();
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {

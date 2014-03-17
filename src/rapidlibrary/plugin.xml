@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="rapidlibrary.com" version="1.1.2" vendor="ntoskrnl"
+<plugin id="rapidlibrary.com" version="1.1.3" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.services.rapidlibrary.RapidLibraryServiceImpl">
     <attributes>
         <attribute id="urlRegex"

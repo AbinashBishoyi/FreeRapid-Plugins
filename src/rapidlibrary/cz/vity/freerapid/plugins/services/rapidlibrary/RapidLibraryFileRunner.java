@@ -11,6 +11,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URL;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -20,8 +21,8 @@ import java.util.logging.Logger;
 class RapidLibraryFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidLibraryFileRunner.class.getName());
     private String HTTP_SITE;
-    private int captchaCounter = 1, captchaMax = 5;
-
+    private final int captchaMax = 5;
+    private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
@@ -38,9 +39,9 @@ class RapidLibraryFileRunner extends AbstractRunner {
     }
 
     private void checkService() throws InvalidURLOrServiceProblemException {
-        if ((httpFile.getFileUrl().getHost().contains("rapidlibrary.com"))) {
+        if (httpFile.getFileUrl().getHost().contains("rapidlibrary.com")) {
             HTTP_SITE = "http://rapidlibrary.com";
-        } else if ((httpFile.getFileUrl().getHost().contains("4megaupload.com"))) {
+        } else if (httpFile.getFileUrl().getHost().contains("4megaupload.com")) {
             HTTP_SITE = "http://4megaupload.com";
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -53,10 +54,10 @@ class RapidLibraryFileRunner extends AbstractRunner {
 
         String nameBefore, nameAfter, sizeBefore, sizeAfter;
         if (HTTP_SITE.equals("http://rapidlibrary.com")) {
-            nameBefore = "<td class=zae3><font color=\"#0374F1\"><b>";
-            nameAfter = "</b>";
-            sizeBefore = "Size:</td><td class=zae3>";
-            sizeAfter = "M</td>";
+            nameBefore = "<b>";
+            nameAfter = "</b></span><br>";
+            sizeBefore = "&nbsp;<b>";
+            sizeAfter = "&nbsp;Mb</b></span>";
         } else if (HTTP_SITE.equals("http://4megaupload.com")) {
             nameBefore = "dwn_text_fullname\">";
             nameAfter = "</td>";
@@ -82,11 +83,9 @@ class RapidLibraryFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            HttpMethod httpMethod;
-            if (getContentAsString().contains("Please ENTER CODE")) {
-                while (getContentAsString().contains("Please ENTER CODE")) {
-                    httpMethod = stepCaptcha();
-                    if (!makeRedirectedRequest(httpMethod)) {
+            if (getContentAsString().contains("name=\"c_code\"")) {
+                while (getContentAsString().contains("name=\"c_code\"")) {
+                    if (!makeRedirectedRequest(stepCaptcha())) {
                         throw new ServiceConnectionProblemException();
                     }
                 }
@@ -102,7 +101,7 @@ class RapidLibraryFileRunner extends AbstractRunner {
                 newUrl = getMethodBuilder().setActionFromAHrefWhereATagContains("Download from rapidshare").getAction();
             } else if (HTTP_SITE.equals("http://4megaupload.com")) {
                 //newUrl = getMethodBuilder().setActionFromAHrefWhereATagContains("File Download").getAction();//doesn't work because of no quotes around link, method expects them
-                newUrl = (getMethodBuilder().setActionFromTextBetween("download_link_dwn><a href=", "target=\"_blank\" rel=\"nofollow\">File Download").getAction()).replace(" ", "");
+                newUrl = getMethodBuilder().setActionFromTextBetween("download_link_dwn><a href=", "target=\"_blank\" rel=\"nofollow\">File Download").getAction().replace(" ", "");
             } else {
                 throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
             }
@@ -118,22 +117,21 @@ class RapidLibraryFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("file not found") || content.contains("Not Found")) {
+        if (content.contains("file not found") || content.contains("<H1>Not Found</H1>") || content.contains("last200big.png")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
     private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        String captchaSrc;
-        if (HTTP_SITE.equals("http://rapidlibrary.com")) {
-            captchaSrc = "http://rapidlibrary.com/code2.php";
-        } else if (HTTP_SITE.equals("http://4megaupload.com")) {
-            captchaSrc = "http://4megaupload.com/code.php";
-        } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
-        }
-        //logger.info("Captcha URL " + captchaSrc);
+        final String captchaImageAction = getMethodBuilder().setBaseURL(HTTP_SITE).setActionFromImgSrcWhereTagContains("code").getAction();
+        final String captchaSrc = HTTP_SITE + (captchaImageAction.startsWith("/") ? captchaImageAction : "/" + captchaImageAction);
+        logger.info("Captcha URL " + captchaSrc);
+
+        //again have to do it the ugly way because of no quotes around some values, prevents the use of setActionFromFormWhereTagContains();
+        final Matcher act = getMatcherAgainstContent("name=(?:\"|')act(?:\"|') value=(?:\"|')([^'\"<>]+?)(?:\"|')>");
+        if (!act.find())
+            throw new PluginImplementationException("Captcha form parameter not found");
 
         String captcha;
         if (captchaCounter <= captchaMax) {
@@ -146,7 +144,12 @@ class RapidLibraryFileRunner extends AbstractRunner {
             logger.info("Manual captcha " + captcha);
         }
 
-        return getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("c_code", captcha).setParameter("act", " Download ").toPostMethod();
+        return getMethodBuilder()
+                .setReferer(fileURL)
+                .setBaseURL(fileURL)
+                .setParameter("c_code", captcha)
+                .setParameter("act", act.group(1))
+                .toPostMethod();
     }
 
 }

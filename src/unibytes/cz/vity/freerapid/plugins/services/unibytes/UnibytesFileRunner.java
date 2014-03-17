@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.unibytes;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -15,6 +12,7 @@ import org.apache.commons.httpclient.util.URIUtil;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -58,7 +56,10 @@ class UnibytesFileRunner extends AbstractRunner {
         }
         checkProblems();
         checkNameAndSize();
-        MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Free");
+        final Matcher match = PlugUtils.matcher("<a href=\"([^\"]+?)\"[^>]*?btn_red[^>]*?>Free", getContentAsString());
+        if (!match.find())
+            throw new PluginImplementationException("Free download page not found");
+        MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setAction(match.group(1));
         methodBuilder.setAction(URIUtil.encodeQuery(methodBuilder.getAction()));
         method = methodBuilder.toHttpMethod();
         if (!makeRedirectedRequest(method)) {

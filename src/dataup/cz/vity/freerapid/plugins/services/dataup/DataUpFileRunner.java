@@ -21,7 +21,7 @@ class DataUpFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         setPageEncoding("ISO-8859-1");
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setEncodePathAndQuery(true).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkSeriousProblems();
@@ -36,7 +36,7 @@ class DataUpFileRunner extends AbstractRunner {
         super.run();
         setPageEncoding("ISO-8859-1");
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setEncodePathAndQuery(true).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();

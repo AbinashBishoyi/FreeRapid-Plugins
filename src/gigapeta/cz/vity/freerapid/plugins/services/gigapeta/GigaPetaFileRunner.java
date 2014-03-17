@@ -32,7 +32,7 @@ class GigaPetaFileRunner extends AbstractRunner {
 	}
 
 	private void checkNameAndSize() throws ErrorDuringDownloadingException {
-		final Matcher name_match=PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*((.+?)\\s*</tr>", getContentAsString());
+		final Matcher name_match=PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>", getContentAsString());
 		if(!name_match.find())
 			unimplemented();
 

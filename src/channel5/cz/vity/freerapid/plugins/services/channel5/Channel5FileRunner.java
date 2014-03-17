@@ -47,7 +47,7 @@ class Channel5FileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("File name not found (1)");
         }
         String name = matcher.group(1);
-        matcher = getMatcherAgainstContent("<h3 class=\"episode_header\"><span class=\"sifr_grey_light\">(?:(?:Season|Series) (\\d+))?(?: \\- )?(?:Episode (\\d+))?(?:: )?(.+?)?</span></h3>");
+        matcher = getMatcherAgainstContent("<h3 class=\"episode_header\"><span class=\"[^\"]+?\">(?:(?:Season|Series) (\\d+))?(?: \\- )?(?:Episode (\\d+))?(?:: )?(.+?)?</span></h3>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found (2)");
         }
@@ -85,8 +85,8 @@ class Channel5FileRunner extends AbstractRtmpRunner {
             setFileStreamContentTypes(new String[0], new String[]{"application/x-amf"});
             method = getPostMethod("http://c.brightcove.com/services/messagebroker/amf?playerId=1707001745001");
             ((PostMethod) method).setRequestEntity(new ByteArrayRequestEntity(getAmfPostData(), "application/x-amf"));
-            // bypass the geocheck
-            method.setRequestHeader("X-Forwarded-For", "212.169.3.171");
+            //bypassing the geocheck here is useless as the rtmp server also checks it
+            //method.setRequestHeader("X-Forwarded-For", "212.169.3.171");
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
@@ -195,7 +195,7 @@ class Channel5FileRunner extends AbstractRtmpRunner {
             url = String.format("%s?videoId=%s&lineUpId=&pubId=%s&playerId=1707001745001&affiliateId=",
                     matcher.group(1), videoId, pubId);
             playName = matcher.group(2);
-            matcher = PlugUtils.matcher("H264\\-(\\d+)", playName);
+            matcher = PlugUtils.matcher("\\b(\\d+)k\\b", playName);
             if (!matcher.find()) {
                 logger.warning(s);
                 throw new PluginImplementationException("Stream bitrate not found");

@@ -95,7 +95,7 @@ class RapidShareRunner extends AbstractRunner {
             client.setReferer(fileURL);
             final PostMethod postMethod = client.getPostMethod(s);
             postMethod.addParameter("dl.start", "Free");
-            if (makeRequest(getMethod)) {
+            if (makeRequest(postMethod)) {
                 matcher = Pattern.compile("var c=([0-9]+);", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (!matcher.find()) {
                     checkProblems();

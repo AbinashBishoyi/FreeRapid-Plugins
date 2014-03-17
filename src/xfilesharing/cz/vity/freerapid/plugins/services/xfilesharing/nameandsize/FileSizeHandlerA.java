@@ -14,7 +14,7 @@ public class FileSizeHandlerA implements FileSizeHandler {
 
     @Override
     public void checkFileSize(final HttpFile httpFile, final String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("\\(([\\s\\d\\.,]+?(?:bytes|.B))\\s*\\)", content);
+        Matcher matcher = PlugUtils.matcher("\\(([\\s\\d\\.,]+?(?:bytes|.B|.b))\\s*\\)", content);
         if (!matcher.find()) {
             throw new PluginImplementationException("File size not found");
         }

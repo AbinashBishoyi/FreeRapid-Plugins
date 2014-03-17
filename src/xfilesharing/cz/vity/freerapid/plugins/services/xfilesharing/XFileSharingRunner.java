@@ -54,6 +54,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         fileSizeHandlers.add(new FileSizeHandlerA());
         fileSizeHandlers.add(new FileSizeHandlerB());
         fileSizeHandlers.add(new FileSizeHandlerC());
+        fileSizeHandlers.add(new FileSizeHandlerD());
         return fileSizeHandlers;
     }
 
@@ -273,8 +274,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
 
     protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("till next download")) {
-            final Matcher matcher = getMatcherAgainstContent("(?:(\\d+) hours?, )?(?:(\\d+) minutes?, )?(?:(\\d+) seconds?) till next download");
+        if (content.contains("till next download") || content.contains("You have to wait")) {
+            final Matcher matcher = getMatcherAgainstContent("(?:(\\d+) hours?, )?(?:(\\d+) minutes?, )?(?:(\\d+) seconds?)");
             int waitHours = 0, waitMinutes = 0, waitSeconds = 0;
             if (matcher.find()) {
                 if (matcher.group(1) != null) {

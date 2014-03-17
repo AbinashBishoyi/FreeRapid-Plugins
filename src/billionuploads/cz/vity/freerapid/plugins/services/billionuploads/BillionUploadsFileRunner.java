@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.billionuploads;
 
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
-import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 
 import java.util.List;
 
@@ -18,13 +17,6 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
         final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
         fileNameHandlers.add(0, new BillionUploadsFileNameHandler());
         return fileNameHandlers;
-    }
-
-    @Override
-    protected List<FileSizeHandler> getFileSizeHandlers() {
-        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
-        fileSizeHandlers.add(0, new BillionUploadsFileSizeHandler());
-        return fileSizeHandlers;
     }
 
 }

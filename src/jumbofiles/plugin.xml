@@ -8,6 +8,7 @@
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="jumbofiles.com"/>
         <attribute id="maxDownloads" value="10"/>
+        <attribute id="defaultDownloads" value="1"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

@@ -3,10 +3,8 @@ package cz.vity.freerapid.plugins.services.cramit;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchaType;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
-import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 
 import java.util.List;
-import java.util.LinkedList;
 
 /**
  * @author RickCL
@@ -18,13 +16,6 @@ public class CramitRunner extends XFileSharingRunner {
         final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
         fileNameHandlers.add(0, new CramitFileNameHandler());
         return fileNameHandlers;
-    }
-
-    @Override
-    protected List<FileSizeHandler> getFileSizeHandlers() {
-        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
-        fileSizeHandlers.add(0, new CramitFileSizeHandler());
-        return fileSizeHandlers;
     }
 
     @Override
@@ -45,7 +36,7 @@ public class CramitRunner extends XFileSharingRunner {
     @Override
     protected List<CaptchaType> getCaptchaTypes() {
         final List<CaptchaType> captchaTypes = super.getCaptchaTypes();
-        captchaTypes.add(0,new CramitCaptchaType());
+        captchaTypes.add(0, new CramitCaptchaType());
         return captchaTypes;
     }
 }

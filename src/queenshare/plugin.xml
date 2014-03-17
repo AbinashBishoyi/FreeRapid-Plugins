@@ -7,7 +7,8 @@
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="queenshare.com"/>
-        <attribute id="maxDownloads" value="1"/>
+        <attribute id="maxDownloads" value="10"/>
+        <attribute id="defaultDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>

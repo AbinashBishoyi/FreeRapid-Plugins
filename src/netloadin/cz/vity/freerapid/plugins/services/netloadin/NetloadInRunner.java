@@ -173,12 +173,16 @@ class NetloadInRunner {
             throw new PluginImplementationException("Parameter " + s + " was not found");
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
         matcher = Pattern.compile("You could download your next file in.*countdown\\(([0-9]+)", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {
             final int time = Integer.parseInt(matcher.group(1)) / 6000;
             throw new YouHaveToWaitException(String.format("<b> You could download your next file in %s minutes", time), time * 60);
+        }
+        matcher = Pattern.compile("Sorry, we don't host the requested file", Pattern.MULTILINE).matcher(client.getContentAsString());
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>Requested file isn't hosted. Probably was deleted.</b>"));
         }
 
     }

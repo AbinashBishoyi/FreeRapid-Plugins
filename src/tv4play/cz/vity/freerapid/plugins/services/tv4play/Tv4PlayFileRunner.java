@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.tv4play;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
@@ -20,7 +17,7 @@ import java.util.regex.Matcher;
  *
  * @author ntoskrnl
  */
-class Tv4PlayFileRunner extends AbstractRtmpRunner {
+public class Tv4PlayFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(Tv4PlayFileRunner.class.getName());
 
     private final static String SWF_URL = "http://www.tv4play.se/flash/tv4playflashlets.swf";
@@ -31,10 +28,10 @@ class Tv4PlayFileRunner extends AbstractRtmpRunner {
         super.runCheck();
         final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkProblems(getContentAsString());
             checkNameAndSize();
         } else {
-            checkProblems();
+            checkProblems(getContentAsString());
             throw new ServiceConnectionProblemException();
         }
     }
@@ -54,16 +51,18 @@ class Tv4PlayFileRunner extends AbstractRtmpRunner {
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            checkProblems();
+            checkProblems(getContentAsString());
             checkNameAndSize();
             method = getGetMethod("http://prima.tv4play.se/api/web/asset/" + getId() + "/play");
             // They send "Content-Encoding: utf-8", which is a violation of the HTTP spec.
             // As such, makeRedirectedRequest cannot be used here.
-            if (client.getHTTPClient().executeMethod(method) != HttpStatus.SC_OK) {
-                checkProblems();
-                throw new URLNotAvailableAnymoreException("File not found");
-            }
+            final int responseCode = client.getHTTPClient().executeMethod(method);
             final String content = method.getResponseBodyAsString();
+            if (responseCode != HttpStatus.SC_OK) {
+                logger.warning(content);
+                checkProblems(content);
+                throw new ServiceConnectionProblemException("Error fetching stream info file");
+            }
             Matcher matcher = PlugUtils.matcher("<base>(.+?)</base>", content);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Error parsing stream info file (1)");
@@ -80,7 +79,7 @@ class Tv4PlayFileRunner extends AbstractRtmpRunner {
             helper.setSwfVerification(rtmpSession, client);
             tryDownloadAndSaveFile(rtmpSession);
         } else {
-            checkProblems();
+            checkProblems(getContentAsString());
             throw new ServiceConnectionProblemException();
         }
     }
@@ -93,9 +92,16 @@ class Tv4PlayFileRunner extends AbstractRtmpRunner {
         return matcher.group(1);
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Länken du klickat på eller adressen du skrivit in leder ingenstans")) {
+    protected void checkProblems(final String content) throws ErrorDuringDownloadingException {
+        if (content.contains("Länken du klickat på eller adressen du skrivit in leder ingenstans")
+                || content.contains("ASSET_NOT_FOUND")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("ASSET_PLAYBACK_INVALID_GEO_LOCATION")) {
+            throw new NotRecoverableDownloadException("This video is not available in your geographical location");
+        }
+        if (content.contains("SESSION_NOT_AUTHENTICATED")) {
+            throw new NotRecoverableDownloadException("This video is only available for premium users");
         }
     }
 

@@ -17,7 +17,7 @@ public class TestApp extends PluginApplication {
             httpFile.setNewURL(new URL("http://depositfiles.com/de/files/7845416"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             // connectionSettings.setProxy("localhost", 8081);
-            run(new DepositFilesShareServiceImpl(), httpFile, connectionSettings);
+            testRun(new DepositFilesShareServiceImpl(), httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();
         }

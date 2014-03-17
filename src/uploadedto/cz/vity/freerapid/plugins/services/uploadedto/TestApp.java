@@ -17,7 +17,7 @@ public class TestApp extends PluginApplication {
             httpFile.setNewURL(new URL("http://uploaded.to/file/h6gwzp/www.softarchive.net_txenl5.tar.001"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             connectionSettings.setProxy("localhost", 8081);
-            run(new UploadedToShareServiceImpl(), httpFile, connectionSettings);
+            testRun(new UploadedToShareServiceImpl(), httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();
         }

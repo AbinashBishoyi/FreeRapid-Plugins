@@ -17,7 +17,7 @@ public class TestApp extends PluginApplication {
             httpFile.setNewURL(new URL("http://w17.easy-share.com/1701853057.html"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             connectionSettings.setProxy("localhost", 8081);
-            run(new EasyShareServiceImpl(), httpFile, connectionSettings);
+            testRun(new EasyShareServiceImpl(), httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();
         }

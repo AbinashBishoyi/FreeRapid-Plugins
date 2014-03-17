@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -73,6 +74,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
                 makeRedirectedRequest(method);
             }
 
+            client.getHTTPClient().getParams().setParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //Multishare kurvi nazvy souboru v hlavicce podtrzitky
 
             Random rnd = new Random();
             final String baseUrl = "http://dl" + (rnd.nextInt(9999) + 1) + ".mms.multishare.cz/";

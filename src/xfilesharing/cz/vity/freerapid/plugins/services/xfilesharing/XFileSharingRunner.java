@@ -66,7 +66,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
 
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = new LinkedList<String>();
-        downloadLinkRegexes.add("<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
+        downloadLinkRegexes.add("<a href\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
         return downloadLinkRegexes;
     }
 
@@ -120,14 +120,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             final int httpStatus = client.makeRequest(method, false);
             if (httpStatus / 100 == 3) {
                 //redirect to download file location
-                final Header locationHeader = method.getResponseHeader("Location");
-                if (locationHeader == null) {
-                    throw new PluginImplementationException("Invalid redirect");
-                }
-                method = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setAction(locationHeader.getValue())
-                        .toGetMethod();
+                method = stepRedirectToFileLocation(method);
                 break;
             } else if (checkDownloadPageMarker()) {
                 //page containing download link
@@ -248,6 +241,17 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             }
         }
         throw new PluginImplementationException("Download link not found");
+    }
+
+    protected HttpMethod stepRedirectToFileLocation(HttpMethod method) throws Exception {
+        final Header locationHeader = method.getResponseHeader("Location");
+        if (locationHeader == null) {
+            throw new PluginImplementationException("Invalid redirect");
+        }
+        return getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction(locationHeader.getValue())
+                .toGetMethod();
     }
 
     protected void checkFileProblems() throws ErrorDuringDownloadingException {

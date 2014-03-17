@@ -70,7 +70,7 @@ class HellSpyFileRunner extends AbstractRunner {
                     throw new NotRecoverableDownloadException("Either your account does not have enough credit, or the plugin is broken");
                 }
 
-                httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("zde").toGetMethod();
+                httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromTextBetween("launchFullDownload('", "',").toGetMethod();//setActionFromAHrefWhereATagContains("zde").toGetMethod();
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
@@ -143,16 +143,16 @@ class HellSpyFileRunner extends AbstractRunner {
                     }
                 }
 
-                final Matcher lg = getMatcherAgainstContent("name=\"(.+?_lg)\"");
+                /*final Matcher lg = getMatcherAgainstContent("name=\"(.+?_lg)\"");
                 final Matcher psw = getMatcherAgainstContent("name=\"(.+?_psw)\"");
                 if (!lg.find() || !psw.find())
                     throw new PluginImplementationException("Login form not found");
-
+                */
                 httpMethod = getMethodBuilder()
                         .setReferer(SERVICE_WEB)
                         .setActionFromFormWhereTagContains("Login", true)
-                        .setParameter(lg.group(1), pa.getUsername())
-                        .setParameter(psw.group(1),pa.getPassword())
+                        .setParameter("username", pa.getUsername())
+                        .setParameter("password",pa.getPassword())
                         .toPostMethod();
                 if (!makeRedirectedRequest(httpMethod))
                     throw new ServiceConnectionProblemException("Error posting login info");

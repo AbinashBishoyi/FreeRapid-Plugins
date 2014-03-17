@@ -15,7 +15,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://jumbofiles.com/kzjpaxlhq6ee"));
+            //httpFile.setNewURL(new URL("http://jumbofiles.com/kzjpaxlhq6ee"));
+            httpFile.setNewURL(new URL("http://jumbofiles.org/newfile?n=40512&BID035C.rar"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final JumboFilesServiceImpl service = new JumboFilesServiceImpl();

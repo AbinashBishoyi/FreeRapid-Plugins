@@ -3,9 +3,11 @@ package cz.vity.freerapid.plugins.services.jumbofiles;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -14,7 +16,7 @@ import java.util.regex.Pattern;
 /**
  * Class which contains main code
  *
- * @author tong2shot,birchie
+ * @author tong2shot, birchie
  */
 class JumboFilesFileRunner extends XFileSharingRunner {
 
@@ -52,13 +54,18 @@ class JumboFilesFileRunner extends XFileSharingRunner {
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
         final MethodBuilder methodBuilder;
-        if (getContentAsString().contains("method_free")) {
-            methodBuilder = getMethodBuilder()
+        String content = getContentAsString();
+        try {
+            final String formData = PlugUtils.getStringBetween(content, "getElementById(\"dl\").innerHTML = '", "';");
+            content = content.replaceAll("<div id=\"dl\"", "<div id=\"dl\">" + formData);
+        } catch (Exception e) { /**/ }
+        if (content.contains("method_free")) {
+            methodBuilder = getMethodBuilder(content)
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("method_free", true)
                     .setAction(fileURL);
         } else {
-            methodBuilder = getMethodBuilder()
+            methodBuilder = getMethodBuilder(content)
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("F1", true)
                     .setAction(fileURL);
@@ -79,5 +86,14 @@ class JumboFilesFileRunner extends XFileSharingRunner {
             throw new PluginImplementationException("This server is in maintenance mode. Please try again later.");
         }
         // calling super.checkFileProblems() will catch "File Not Found", which is not the case
+    }
+
+    @Override
+    protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("Delay between downloads must be not less than")) {
+            throw new YouHaveToWaitException("You have reached the download limit", 10 * 60);
+        }
+        super.checkDownloadProblems();
     }
 }

@@ -35,7 +35,8 @@ class RdioFileRunner extends AbstractRunner {
         HttpMethod method = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction("http://www.rdio.com/api/1/")
-                .setParameter("url", new org.apache.commons.httpclient.URI(URIUtil.decode(fileURL), false, "UTF-8").getEscapedPath())  //java.net.URI messes up some chars, use apache version instead
+                .setParameter("url", new org.apache.commons.httpclient.URI(URIUtil.decode(fileURL), false, "UTF-8").getEscapedPath().replaceAll(",", "%2C"))  //both java.net.URI & apache's URI mess up some chars, great !! :))
+                //.setParameter("url", new URI(fileURL).getRawPath().replaceAll("%28","(").replaceAll("%29",")"))  //above's alternative?
                 .setParameter("extras", "tracks")
                 .setParameter("method", "getObjectFromUrl")
                 .setParameter("_authorization_key", authorizationKey)

@@ -24,7 +24,7 @@ class UploadHeroFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
-        addCookie(new Cookie(".uploadhero.com", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploadhero.co", "lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkErrors();
@@ -47,7 +47,7 @@ class UploadHeroFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        addCookie(new Cookie(".uploadhero.com", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploadhero.co", "lang", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request

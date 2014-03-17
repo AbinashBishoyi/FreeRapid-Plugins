@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.uploadhero;
+package cz.vity.freerapid.plugins.services.linkto;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -8,21 +8,21 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class UploadHeroServiceImpl extends AbstractFileShareService {
+public class LinkToServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "uploadhero.co";
+        return "linkto.net";
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;
+        return false;
     }
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new UploadHeroFileRunner();
+        return new LinkToFileRunner();
     }
 
 }

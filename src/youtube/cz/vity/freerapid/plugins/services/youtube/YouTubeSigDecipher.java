@@ -1,12 +1,8 @@
 package cz.vity.freerapid.plugins.services.youtube;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.webclient.DownloadClient;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
-import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.*;
 import java.util.*;
@@ -16,6 +12,10 @@ import java.util.regex.Pattern;
 import java.util.zip.InflaterInputStream;
 
 /**
+ * Reading materials :
+ * SWF File Format Specification            : http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/swf/pdf/swf-file-format-spec.pdf
+ * ActionScript Virtual Machine 2 Overview  : http://www.adobe.com/content/dam/Adobe/en/devnet/actionscript/articles/avm2overview.pdf
+ *
  * @author tong2shot
  * @author ntoskrnl
  * @author JPEXS (http://www.free-decompiler.com)
@@ -35,13 +35,13 @@ class YouTubeSigDecipher {
     private static final int nameSpaceKinds[] = new int[]{KIND_NAMESPACE, KIND_PRIVATE, KIND_PACKAGE, KIND_PACKAGE_INTERNAL, KIND_PROTECTED, KIND_EXPLICIT, KIND_STATIC_PROTECTED};
     private static final Pattern REVERSE_PATTERN = Pattern.compile("^\\Q\u005d\\E..\\Q\u00d2\u0046\\E..\\Q\u0001\u0080\u0014\\E$", Pattern.DOTALL);
     private static final Pattern CLONE_SWAP_PATTERN = Pattern.compile("^\\Q\u005d\\E(..)\\Q\u00d2\u0024\\E(.)\\Q\u0046\\E..\\Q\u0002\u0080\u0014\\E$", Pattern.DOTALL);
+    private static final String CHARSET_NAME = "ISO-8859-1";
 
-    private final HttpDownloadClient client;
+    private final InputStream is;
     private Map<Integer, String> multiname_map = new HashMap<Integer, String>();
 
-    public YouTubeSigDecipher(final HttpDownloadClient client) {
-        this.client = new DownloadClient();
-        this.client.initClient(client.getSettings());
+    public YouTubeSigDecipher(final InputStream is) {
+        this.is = is;
     }
 
     private List<String> clone(List<String> lst, int from) {
@@ -53,16 +53,16 @@ class YouTubeSigDecipher {
         return lst;
     }
 
-    private List<String> swap(List<String> lstSig, int pos) {
-        String head = lstSig.get(0);
-        String headSwapTo = lstSig.get(pos % lstSig.size());
-        lstSig.set(0, headSwapTo);
-        lstSig.set(pos, head);
-        return lstSig;
+    private List<String> swap(List<String> lst, int pos) {
+        String head = lst.get(0);
+        String headSwapTo = lst.get(pos % lst.size());
+        lst.set(0, headSwapTo);
+        lst.set(pos, head);
+        return lst;
     }
 
-    public String decipher(final HttpMethod method, final String sig) throws Exception {
-        final String bytecode = getBytecode(method);
+    public String decipher(final String sig) throws Exception {
+        final String bytecode = getBytecode();
         List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
         lstSig.remove(0); //remove empty char at head
         for (final String callBytecode : bytecode.split("\\u00d6")) {
@@ -74,12 +74,9 @@ class YouTubeSigDecipher {
             }
             matcher = CLONE_SWAP_PATTERN.matcher(callBytecode);
             if (matcher.find()) {
-                String a = matcher.group(1);
-                byte[] c = new byte[2];
-                for (int i = 0; i < a.length(); i++)
-                    c[i] = (byte) Integer.parseInt(Integer.toHexString(a.charAt(i) | 0x10000).substring(1), 16);
-                InputStream isa = new ByteArrayInputStream(c);
-                int multiname_index = readU32(isa);
+                String fps_index = matcher.group(1); //findpropstrict index/arg
+                InputStream bis = new ByteArrayInputStream(fps_index.getBytes(CHARSET_NAME));
+                int multiname_index = readU30(bis);
                 if (multiname_map.containsKey(multiname_index)) {
                     if (multiname_map.get(multiname_index).contains("clone_")) { //clone
                         final int arg = matcher.group(2).charAt(0);
@@ -102,13 +99,8 @@ class YouTubeSigDecipher {
         return sb.toString();
     }
 
-    private String getBytecode(final HttpMethod method) throws Exception {
-        final InputStream is = client.makeRequestForFile(method);
-        if (is == null) {
-            throw new ServiceConnectionProblemException("Error downloading SWF");
-        }
+    private String getBytecode() throws Exception {
         final String swf = readSwfStreamToString(is);
-
         final String regex = "(?s)\\Q\u00d0\u0030\u00d1\u002c\u0001\u0046\\E.\\Q\u002e\u0001\u0080\u0014\u00d6\\E"
                 + "(.+?)\\Q\u00d6\u00d2\u002c\u0001\u0046\\E.\\Q\u0030\u0001\u0048\\E";
         final Matcher matcher = PlugUtils.matcher(regex, swf);
@@ -120,8 +112,11 @@ class YouTubeSigDecipher {
 
     private String readSwfStreamToString(InputStream is) throws IOException {
         try {
-
             final byte[] bytes = new byte[2048];
+            //read the first 8 bytes :
+            //3 bytes - signature
+            //1 byte  - version
+            //4 bytes - file length
             if (readBytes(is, bytes, 8) != 8) {
                 throw new IOException("Error reading from stream");
             }
@@ -136,11 +131,11 @@ class YouTubeSigDecipher {
             multiname_map = getMultinameMap(bis);
 
             final StringBuilder sb = new StringBuilder(8192);
-            sb.append(new String(bytes, 0, 8, "ISO-8859-1"));
+            sb.append(new String(bytes, 0, 8, CHARSET_NAME));
             int len;
             bis.reset();
             while ((len = bis.read(bytes)) != -1) {
-                sb.append(new String(bytes, 0, len, "ISO-8859-1"));
+                sb.append(new String(bytes, 0, len, CHARSET_NAME));
             }
             return sb.toString();
         } finally {
@@ -152,137 +147,144 @@ class YouTubeSigDecipher {
         }
     }
 
-    private Map<Integer, String> getMultinameMap(InputStream bis) throws IOException {
-        readBytes(bis, 9); //RECT
-        bis.read();
-        bis.read(); //frame rate
-        readUI16(bis); //frame count
+    private Map<Integer, String> getMultinameMap(InputStream is) throws IOException {
+        readBytes(is, 9); //RECT
+        read(is); //ignore
+        read(is); //frame rate
+        readUI16(is); //frame count
 
         //read tag
         Map<Integer, String> constant_string_map = new HashMap<Integer, String>();  //k=string index, v=string name
         Map<Integer, String> multiname_map = new HashMap<Integer, String>();  //k=multiname index, v=string name
         while (true) {
-            int tagCodeAndLength = readUI16(bis);
+            int tagCodeAndLength = readUI16(is);
             int tagCode = (tagCodeAndLength) >> 6;
             if (tagCode == 0) {
                 break;
             }
 
-
             long tagLength = (tagCodeAndLength & 0x003F);
             if (tagLength == 0x3f) {
-                tagLength = readSI32(bis);
+                tagLength = readSI32(is);
             }
-            byte data[] = readBytes(bis, (int) tagLength);
+
+            //we only interested in DoABC tag (tag code = 82)
+            byte data[] = readBytes(is, (int) tagLength);
             if (tagCode != 82) {
                 continue;
             }
 
-            InputStream abcIs = new ByteArrayInputStream(data);
-            //DoABC tag
-            //long flags = readUI32(abcIs);
-            readUI32(abcIs); //flags
-            String name = readString(abcIs);
+            doAbcTag(data, constant_string_map, multiname_map);
+        }
+        return multiname_map;
+    }
 
-            //ABC
-            int minor_version = readUI16(abcIs); //minor ver
-            readUI16(abcIs); //major ver
+    private void doAbcTag(byte[] data, Map<Integer, String> constant_string_map, Map<Integer, String> multiname_map) throws IOException {
+        //DoABC tag
+        InputStream abcIs = new ByteArrayInputStream(data);
+        readUI32(abcIs); //flags
+        readString(abcIs); //name
 
-            //constant pool
+        //ABC
+        int minor_version = readUI16(abcIs);
+        readUI16(abcIs); //major ver
 
-            //constant int
-            int constant_int_pool_count = readU30(abcIs);
-            for (int i = 1; i < constant_int_pool_count; i++) { //index 0 not used. Values 1..n-1
-                readS32(abcIs);
+        //constant pool
+
+        //constant int
+        int constant_int_pool_count = readU30(abcIs);
+        for (int i = 1; i < constant_int_pool_count; i++) { //index 0 not used. Values 1..n-1
+            readS32(abcIs); //int value
+        }
+
+        //constant uint
+        int constant_uint_pool_count = readU30(abcIs);
+        for (int i = 1; i < constant_uint_pool_count; i++) { //index 0 not used. Values 1..n-1
+            readU32(abcIs); //uint value
+        }
+
+        //constant double
+        int constant_double_pool_count = readU30(abcIs);
+        for (int i = 1; i < constant_double_pool_count; i++) { //index 0 not used. Values 1..n-1
+            readDouble(abcIs); //double value
+        }
+
+        //constant decimal
+        if (minor_version >= MINORwithDECIMAL) {
+            int constant_decimal_pool_count = readU30(abcIs);
+            for (int i = 1; i < constant_decimal_pool_count; i++) { //index 0 not used. Values 1..n-1
+                readDecimal(abcIs); //decimal value
             }
+        }
 
-            //constant uint
-            int constant_uint_pool_count = readU30(abcIs);
-            for (int i = 1; i < constant_uint_pool_count; i++) { //index 0 not used. Values 1..n-1
-                readU32(abcIs);
+        //constant string
+        int constant_string_pool_count = readU30(abcIs);
+        for (int i = 1; i < constant_string_pool_count; i++) { //index 0 not used. Values 1..n-1
+            String constant_string = readAbcString(abcIs);
+            //save constant string if it contains clone_, reverse_, or swap_
+            if (constant_string.contains("clone_")
+                    || constant_string.contains("reverse_")
+                    || constant_string.contains("swap_")) {
+                constant_string_map.put(i, constant_string);
             }
+        }
 
-            //constant double
-            int constant_double_pool_count = readU30(abcIs);
-            for (int i = 1; i < constant_double_pool_count; i++) { //index 0 not used. Values 1..n-1
-                readDouble(abcIs);
-            }
-
-            //constant decimal
-            if (minor_version >= MINORwithDECIMAL) {
-                int constant_decimal_pool_count = readU30(abcIs);
-                for (int i = 1; i < constant_decimal_pool_count; i++) { //index 0 not used. Values 1..n-1
-                    readDecimal(abcIs);
-                }
-            }
-
-            //constant string
-            int constant_string_pool_count = readU30(abcIs);
-            for (int i = 1; i < constant_string_pool_count; i++) { //index 0 not used. Values 1..n-1
-                String constant_string = readABCString(abcIs);
-                if (constant_string.contains("clone_")
-                        || constant_string.contains("reverse_")
-                        || constant_string.contains("swap_")) {
-                    constant_string_map.put(i, constant_string);
-                }
-            }
-
-            //constant namespace
-            int constant_namespace_pool_count = readU30(abcIs);
-            for (int i = 1; i < constant_namespace_pool_count; i++) { //index 0 not used. Values 1..n-1
-                int kind = abcIs.read();
-                for (int nameSpaceKind : nameSpaceKinds) {
-                    if (nameSpaceKind == kind) {
-                        readU30(abcIs);
-                        break;
-                    }
-                }
-            }
-
-            //constant namespace set
-            int constant_namespace_set_pool_count = readU30(abcIs);
-            for (int i = 1; i < constant_namespace_set_pool_count; i++) { //index 0 not used. Values 1..n-1
-                int namespace_count = readU30(abcIs);
-                for (int j = 0; j < namespace_count; j++) {
-                    readU30(abcIs);
-                }
-            }
-
-            //constant multiname
-            int constant_multiname_pool_count = readU30(abcIs);
-            for (int i = 1; i < constant_multiname_pool_count; i++) { //index 0 not used. Values 1..n-1
-                int kind = abcIs.read();
-
-                if ((kind == 7) || (kind == 0xd)) { // CONSTANT_QName and CONSTANT_QNameA.
-                    readU30(abcIs);
-                    int string_name_index = readU30(abcIs);
-                    if (constant_string_map.containsKey(string_name_index)) {
-                        multiname_map.put(i, constant_string_map.get(string_name_index));
-                    }
-                } else if ((kind == 0xf) || (kind == 0x10)) { //CONSTANT_RTQName and CONSTANT_RTQNameA
-                    readU30(abcIs);
-                } else if ((kind == 0x11) || (kind == 0x12))//kind==0x11,0x12 nothing CONSTANT_RTQNameL and CONSTANT_RTQNameLA.
-                {
-                    //
-                } else if ((kind == 9) || (kind == 0xe)) { // CONSTANT_Multiname and CONSTANT_MultinameA.
-                    readU30(abcIs);
-                    readU30(abcIs);
-                } else if ((kind == 0x1B) || (kind == 0x1C)) { //CONSTANT_MultinameL and CONSTANT_MultinameLA
-                    readU30(abcIs);
-                } else if (kind == 0x1D) {
-                    //Constant_TypeName
-                    readU30(abcIs);  //Multiname index!!!
-                    int paramsLength = readU30(abcIs);
-                    for (int j = 0; j < paramsLength; j++) {
-                        readU30(abcIs); //multiname indices!
-                    }
-                } else {
-                    throw new IOException("Unknown kind of Multiname:0x" + Integer.toHexString(kind));
+        //constant namespace
+        int constant_namespace_pool_count = readU30(abcIs);
+        for (int i = 1; i < constant_namespace_pool_count; i++) { //index 0 not used. Values 1..n-1
+            int kind = abcIs.read();
+            for (int nameSpaceKind : nameSpaceKinds) {
+                if (nameSpaceKind == kind) {
+                    readU30(abcIs); //string name index
+                    break;
                 }
             }
         }
 
-        return multiname_map;
+        //constant namespace set
+        int constant_namespace_set_pool_count = readU30(abcIs);
+        for (int i = 1; i < constant_namespace_set_pool_count; i++) { //index 0 not used. Values 1..n-1
+            int namespace_count = readU30(abcIs);
+            for (int j = 0; j < namespace_count; j++) {
+                readU30(abcIs); //namespace index
+            }
+        }
+
+        //constant multiname
+        int constant_multiname_pool_count = readU30(abcIs);
+        for (int i = 1; i < constant_multiname_pool_count; i++) { //index 0 not used. Values 1..n-1
+            int kind = abcIs.read();
+
+            if ((kind == 7) || (kind == 0xd)) { // CONSTANT_QName and CONSTANT_QNameA.
+                readU30(abcIs); //namespace index
+                int string_name_index = readU30(abcIs);
+                //save multimap index (k) and string name (v) if the string name index exists in constant_string_map
+                if (constant_string_map.containsKey(string_name_index)) {
+                    multiname_map.put(i, constant_string_map.get(string_name_index));
+                }
+            } else if ((kind == 0xf) || (kind == 0x10)) { //CONSTANT_RTQName and CONSTANT_RTQNameA
+                readU30(abcIs); //string name index
+            } else if ((kind == 0x11) || (kind == 0x12))//kind==0x11,0x12 nothing CONSTANT_RTQNameL and CONSTANT_RTQNameLA.
+            {
+                //
+            } else if ((kind == 9) || (kind == 0xe)) { // CONSTANT_Multiname and CONSTANT_MultinameA.
+                readU30(abcIs); //string name index
+                readU30(abcIs); //namespace set index
+            } else if ((kind == 0x1B) || (kind == 0x1C)) { //CONSTANT_MultinameL and CONSTANT_MultinameLA
+                readU30(abcIs); //namespace set index
+            } else if (kind == 0x1D) {
+                //Constant_TypeName
+                readU30(abcIs);  //Multiname index!!!
+                int paramsLength = readU30(abcIs);
+                for (int j = 0; j < paramsLength; j++) {
+                    readU30(abcIs); //multiname indices!
+                }
+            } else {
+                throw new IOException("Unknown kind of Multiname:0x" + Integer.toHexString(kind));
+            }
+        }
+        //our intent is to populate multiname_map
+        //skip parsing the rest of ABC file
     }
 
     private static int readBytes(InputStream is, byte[] buffer, int count) throws IOException {
@@ -303,6 +305,10 @@ class YouTubeSigDecipher {
             ret[i] = (byte) is.read();
         }
         return ret;
+    }
+
+    private static int read(InputStream is) throws IOException {
+        return is.read();
     }
 
     private static int readUI16(InputStream is) throws IOException {
@@ -409,10 +415,22 @@ class YouTubeSigDecipher {
         return ret;
     }
 
-    private static String readABCString(InputStream is) throws IOException {
+    private static String readAbcString(InputStream is) throws IOException {
         int length = readU30(is);
         byte b[] = safeRead(is, length);
         return new String(b, "UTF-8");
     }
+
+    /*
+    public static void main(String[] args) throws Exception {
+        //watch_as3-vfldOoVEA~.swf
+        //watch_as3-vflJvFBCS.swf
+        //watch_as3-vflNr3l6D.swf
+        //watch_as3-vflU4Jt6h.swf
+        //watch_as3-vflW5qQCZ.swf
+        System.out.println(new YouTubeSigDecipher(new FileInputStream(new File("/media/DATA/kerja/javaProj/FRD/frd/youtube/watch_as3-vflU4Jt6h.swf")))
+                .decipher("BB5A7F095FE6874253FF152F0145151A6791478EE4.0691ADBB55103ABA1088D2B98BF6B4A3A1444EDCDC"));
+    }
+    */
 
 }

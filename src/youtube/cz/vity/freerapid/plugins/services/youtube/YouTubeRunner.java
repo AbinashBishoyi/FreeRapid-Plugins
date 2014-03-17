@@ -16,6 +16,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -135,7 +136,11 @@ class YouTubeRunner extends AbstractRtmpRunner {
                         matcher = PlugUtils.matcher("(?:\\\\u0026)?s=([A-Z0-9\\.]+?)(?:\\\\u0026|$)", formatContent);
                         if (matcher.find()) {
                             logger.info(matcher.group(1));
-                            final String signature = new YouTubeSigDecipher(client).decipher(getGetMethod(swfUrl), matcher.group(1));
+                            InputStream is = client.makeRequestForFile(getGetMethod(swfUrl));
+                            if (is == null) {
+                                throw new ServiceConnectionProblemException("Error downloading SWF");
+                            }
+                            final String signature = new YouTubeSigDecipher(is).decipher(matcher.group(1));
                             videoURL = videoURL + "&signature=" + signature;
                         }
                     }

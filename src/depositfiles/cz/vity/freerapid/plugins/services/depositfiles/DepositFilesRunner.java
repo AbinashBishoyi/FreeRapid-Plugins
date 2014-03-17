@@ -138,7 +138,7 @@ class DepositFilesRunner extends AbstractRunner {
         if (content.contains("file does not exist"))
             throw new URLNotAvailableAnymoreException("Such file does not exist or it has been removed for infringement of copyrights");
 
-        Matcher matcher = getMatcherAgainstContent("File name: <b[^<>]*?>(.+?)</b>");
+        Matcher matcher = getMatcherAgainstContent("File name: <b title=\"(.+?)\"");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found");
         }

@@ -85,7 +85,7 @@ class DepositFilesFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher name = getMatcherAgainstContent("File name: <b[^<>]*?>(.+?)</b>");
+        final Matcher name = getMatcherAgainstContent("File name: <b title=\"(.+?)\"");
         if (!name.find()) throw new PluginImplementationException("File name not found");
         httpFile.setFileName(name.group(1));
 

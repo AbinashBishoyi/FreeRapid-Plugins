@@ -11,6 +11,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -34,7 +35,7 @@ class WatFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String name = PlugUtils.getStringBetween(getContentAsString(), "<strong class=\"c2\" itemprop=\"title\">", "</strong>");
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<strong class=\"title\">", "</strong>");
         httpFile.setFileName(name + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -47,7 +48,11 @@ class WatFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems(method);
             checkNameAndSize();
-            final String id = PlugUtils.getStringBetween(getContentAsString(), "id=\"media\" value=\"", "\"");
+            final Matcher matcher = getMatcherAgainstContent("<span id=\"shortVideoId\">([\\da-z]+?)</span>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Video ID not found");
+            }
+            final String id = String.valueOf(Integer.parseInt(matcher.group(1), 36));
             String url = getStreamUrl("/webhd/" + id);
             if (url == null) {
                 url = getStreamUrl("/web/" + id);

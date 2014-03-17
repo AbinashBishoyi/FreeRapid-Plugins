@@ -1,19 +1,19 @@
 package cz.vity.freerapid.plugins.services.odsiebie;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 
 /**
  * Class which contains main code
@@ -43,30 +43,37 @@ class OdSiebieFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        if (login()){ //for rare captcha remove
+        if (login()) { //for rare captcha remove
             logger.info("Starting download in TASK " + fileURL);
             String fileID = PlugUtils.getStringBetween(fileURL, "odsiebie.com/pokaz/", ".html") + ".html";
             GetMethod method = getGetMethod(fileURL);
-            if (makeRedirectedRequest(method)){
+            if (makeRedirectedRequest(method)) {
                 String s = "http://odsiebie.com/pobierz/" + fileID;
                 logger.info("File URL - " + s);
                 client.setReferer(fileURL);
-                method = getGetMethod(s);
-                if (makeRedirectedRequest(method)) {
+                if (makeRedirectedRequest(getPostMethod(s))) {
                     String old = s;
                     s = "http://odsiebie.com/download/" + fileID;
                     logger.info("Download URL - " + s);
                     client.setReferer(old);
                     method = getGetMethod(s);
-                    if (!tryDownloadAndSaveFile(method)){
+                    final int resultCode = client.makeRequest(method, false);
+                    if (!isRedirect(resultCode))
+                        throw new PluginImplementationException("Redirect not found");
+                    final Header responseLocation = method.getResponseHeader("Location");//Location does not return correct URL
+                    if (responseLocation == null)
+                        throw new PluginImplementationException("Location header not found");
+                    //method builder cares about correct URL - it will repair invalid URL if possible
+                    final HttpMethod finalHttpMethod = getMethodBuilder().setReferer(s).setAction(responseLocation.getValue()).toHttpMethod();
+                    if (!tryDownloadAndSaveFile(finalHttpMethod)) {
                         checkProblems();
-                        logger.warning(getContentAsString());;
+                        logger.warning(getContentAsString());
                         throw new PluginImplementationException();
                     }
                 } else {
                     throw new ServiceConnectionProblemException("Couldn't connect to service.");
                 }
-            }   else {
+            } else {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
@@ -80,7 +87,7 @@ class OdSiebieFileRunner extends AbstractRunner {
         if (contentAsString.contains("Wybierz")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-        if (contentAsString.contains("kod")){
+        if (contentAsString.contains("kod")) {
             throw new ServiceConnectionProblemException("Captcha code required for this file. Download it mannually");
         }
     }
@@ -89,17 +96,17 @@ class OdSiebieFileRunner extends AbstractRunner {
         String URL = "http://odsiebie.com";
         GetMethod gMethod = getGetMethod(URL);
         logger.info("1");
-        if(makeRedirectedRequest(gMethod)){
+        if (makeRedirectedRequest(gMethod)) {
             logger.info("2");
             PostMethod pMethod = getPostMethod("http://odsiebie.com/?login");
             pMethod.addParameter("luser", "frd@mailinator.com");
             pMethod.addParameter("lpass", "frdodsiebieplug");
-            if(makeRedirectedRequest(pMethod)){
+            if (makeRedirectedRequest(pMethod)) {
                 logger.info("3");
-                if(getContentAsString().contains("Zalogowany jako")){
+                if (getContentAsString().contains("Zalogowany jako")) {
                     logger.info("4");
                     return true;
-                } else{
+                } else {
                     logger.info("5");
                     return false;
                 }
@@ -109,5 +116,19 @@ class OdSiebieFileRunner extends AbstractRunner {
         logger.info("6");
         return false;
     }
+
+    /**
+     * Checks if the given status code is type redirect
+     *
+     * @param statuscode http response status code
+     * @return true, if status code is one of the redirect code
+     */
+    protected boolean isRedirect(int statuscode) {
+        return (statuscode == HttpStatus.SC_MOVED_TEMPORARILY) ||
+                (statuscode == HttpStatus.SC_MOVED_PERMANENTLY) ||
+                (statuscode == HttpStatus.SC_SEE_OTHER) ||
+                (statuscode == HttpStatus.SC_TEMPORARY_REDIRECT);
+    }
+
 
 }

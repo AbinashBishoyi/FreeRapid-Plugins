@@ -103,6 +103,9 @@ class RapidShareRunner extends AbstractRunner {
         if (getContentAsString().contains("File deleted")) {
             throw new URLNotAvailableAnymoreException("File has been deleted");
         }
+        if (getContentAsString().contains("This file is too big to download it for free")) {
+            throw new NotRecoverableDownloadException("This file is too big to download it for free");
+        }
         Matcher matcher = getMatcherAgainstContent("ERROR:([^\"']+)");
         if (matcher.find()) {
             throw new NotRecoverableDownloadException("RapidShare error: " + matcher.group(1));

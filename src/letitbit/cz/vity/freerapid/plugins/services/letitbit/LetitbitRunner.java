@@ -34,9 +34,8 @@ class LetitbitRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "File: <span>", "</span>");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "[<span>", "</span>]");
+        PlugUtils.checkName(httpFile, getContentAsString(), "target=\"_blank\"><span>", "</span>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "[<span>", "</span>]");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -126,8 +125,9 @@ class LetitbitRunner extends AbstractRunner {
         if (content.contains("file was not found")
                 || content.contains("\u043D\u0430\u0439\u0434\u0435\u043D")
                 || content.contains("<title>404</title>")
-                || (content.contains("Request file ") && content.contains(" Deleted"))) {
-            throw new URLNotAvailableAnymoreException("The requested file was not found");
+                || (content.contains("Request file ") && content.contains(" Deleted"))
+                || content.contains("File not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 

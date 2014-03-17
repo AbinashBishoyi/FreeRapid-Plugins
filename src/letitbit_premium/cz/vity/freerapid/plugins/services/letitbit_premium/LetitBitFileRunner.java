@@ -67,7 +67,7 @@ class LetitBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "File: <span>", "</span>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "target=\"_blank\"><span>", "</span>");
         PlugUtils.checkFileSize(httpFile, getContentAsString(), "[<span>", "</span>]");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -83,8 +83,9 @@ class LetitBitFileRunner extends AbstractRunner {
         if (content.contains("file was not found")
                 || content.contains("\u043D\u0430\u0439\u0434\u0435\u043D")
                 || content.contains("<title>404</title>")
-                || (content.contains("Request file ") && content.contains(" Deleted"))) {
-            throw new URLNotAvailableAnymoreException("The requested file was not found");
+                || (content.contains("Request file ") && content.contains(" Deleted"))
+                || content.contains("File not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("You do not have enough premium points to download this file")) {
             throw new NotRecoverableDownloadException("You do not have enough premium points to download this file");

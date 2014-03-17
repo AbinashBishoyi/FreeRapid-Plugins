@@ -79,21 +79,11 @@ class NarodFileRunner extends AbstractRunner {
         }
     }
 
-    /**
-     * @throws PluginImplementationException
-     */
     private void unimplemented() throws PluginImplementationException {
         logger.warning(getContentAsString());//log the info
         throw new PluginImplementationException();//some unknown problem
     }
 
-    /**
-     * @param setAction
-     * @return
-     * @throws ErrorDuringDownloadingException
-     *
-     * @throws IOException
-     */
     private MethodBuilder addCaptchaPrameters(MethodBuilder builder) throws ErrorDuringDownloadingException, IOException {
         HttpMethod keyRequest = getMethodBuilder()
                 .setAction("http://narod.ru/disk/getcapchaxml/?rnd=" + (int) (Math.random() * 777))
@@ -121,13 +111,13 @@ class NarodFileRunner extends AbstractRunner {
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("<b class=\"error-msg\"><strong>?????????</strong> ?????????? ???&nbsp;???</b>"))
+        if (getContentAsString().contains("<b class=\\\"error-msg\\\"><strong>?????????</strong> ?????????? ???&nbsp;???</b>"))
             throw new CaptchaEntryInputMismatchException();
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         checkDownloadProblems();
         checkFileProblems();
-		}
+    }
 
 }

@@ -28,6 +28,7 @@ class SendspaceFileRunner extends AbstractRunner {
             checkSeriousProblems();
             checkNameAndSize();
         } else {
+            checkSeriousProblems();
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
@@ -36,7 +37,7 @@ class SendspaceFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setAndEncodeParameter("download", " REGULAR DOWNLOAD ").toPostMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
@@ -62,7 +63,7 @@ class SendspaceFileRunner extends AbstractRunner {
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("404 Page Not Found") || contentAsString.contains("Sorry, the file you requested is not available")) {
+        if (contentAsString.contains("404 Page Not Found") || contentAsString.contains("Sorry, the file you requested is not available") || contentAsString.contains("The page you are looking for is  not available")) {
             throw new URLNotAvailableAnymoreException("File was not found");
         }
     }
@@ -113,7 +114,8 @@ class SendspaceFileRunner extends AbstractRunner {
 
     private String enc(String text, int intParameter, String stringParameter) {
         final int[] SGdo = new int[intParameter];
-        final int WWL = intParameter;
+        final int WWL;
+        WWL = intParameter;
 
         for (int UPYiAP = 0; UPYiAP < WWL; UPYiAP++) {
             SGdo[UPYiAP] = UPYiAP;

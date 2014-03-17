@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="zippyshare.com" version="0.1" vendor="Alex"
+        class="cz.vity.freerapid.plugins.services.zippyshare.ZippyShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?zippyshare\.com(.+?)+file.html"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.809"/>
+        <attribute id="services" value="zippyshare.com"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="zippyshare.com" path="/" type="code"/>
+    </runtime>
+</plugin>

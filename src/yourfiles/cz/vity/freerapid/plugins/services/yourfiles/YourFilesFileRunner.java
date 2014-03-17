@@ -66,15 +66,14 @@ class YourFilesFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             client.setReferer(fileURL);//prevention - some services checks referers
             //here is the download link extraction
-            final Matcher matcher = getMatcherAgainstContent("onclick='[^']*document.location=\"(http[^\"]+)\"");
-            if (matcher.find()) {
-                final GetMethod getMethod = getGetMethod(matcher.group(1));//we make POST request for file
-                if (!tryDownloadAndSaveFile(getMethod)) {
-                    checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
-                }
-            } else throw new PluginImplementationException("Plugin error: Download link not found");
+            final String link = PlugUtils.getStringBetween(contentAsString, "var bla = '", "';")
+                    .replace("dumdidum", "").replace("dumdidu", "")
+                    .substring(PlugUtils.getNumberBetween(contentAsString, "substring(", ");"));
+            final GetMethod getMethod = getGetMethod(link);//we make request for file
+            if (!tryDownloadAndSaveFile(getMethod)) {
+                checkProblems();//if downloading failed
+                throw new PluginImplementationException();//some unknown problem
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -84,7 +83,7 @@ class YourFilesFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Die angefragte Datei wurde nicht gefunden")) {
-            throw new URLNotAvailableAnymoreException("Die angefragte Datei wurde nicht gefunden"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("The requested file was not found"); //let to know user in FRD
         }
         if (contentAsString.contains("Connection to database server failed")) {
             throw new ServiceConnectionProblemException("Connection to database server failed"); //let to know user in FRD

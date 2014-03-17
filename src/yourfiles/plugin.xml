@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="yourfiles.biz" version="1.0.3" vendor="Vity+JPEXS"
+<plugin id="yourfiles.biz" version="1.0.4" vendor="Vity+JPEXS"
         class="cz.vity.freerapid.plugins.services.yourfiles.YourFilesServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?yourfiles\.(biz|to)/.+"/>

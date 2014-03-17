@@ -34,9 +34,9 @@ public class RtmpSession {
     private Map<Integer, Header> prevHeadersIn = new ConcurrentHashMap<Integer, Header>();
     private Map<Integer, Header> prevHeadersOut = new ConcurrentHashMap<Integer, Header>();
     private Map<Integer, Packet> prevPacketsIn = new ConcurrentHashMap<Integer, Packet>();
-    private Map<Integer, String> invokedMethods = new ConcurrentHashMap<Integer, String>();
+    private Map<Long, String> invokedMethods = new ConcurrentHashMap<Long, String>();
     private int chunkSize = 128;
-    private int nextInvokeId;
+    private long nextInvokeId;
     private int bytesReadLastSent;
     private Map<String, Object> connectParams;
     private String playName;
@@ -65,6 +65,7 @@ public class RtmpSession {
     private HttpFile httpFile;
     private ConnectionSettings connectionSettings;
     private String secureToken;
+    private int bwCheckCounter;
 
     /**
      * Empty constructor. Mainly for internal use.
@@ -109,7 +110,7 @@ public class RtmpSession {
     public RtmpSession(String host, int port, String app, String playName, String protocol) {
         initConnectParams(host, port, app, playName, protocol);
     }
-    
+
     /**
      * Constructs a new RtmpSession with the specified play name and other parameters parsed from a URL.
      *
@@ -227,7 +228,7 @@ public class RtmpSession {
         return getInvokedMethods().get(invoke.getSequenceId());
     }
 
-    public int getNextInvokeId() {
+    public long getNextInvokeId() {
         return ++nextInvokeId;
     }
 
@@ -289,21 +290,9 @@ public class RtmpSession {
         return swfVerification;
     }
 
-    public String getSecureToken() {
-        return secureToken;
-    }
-    
-    
-
     public void setSwfVerification(byte[] swfVerification) {
         this.swfVerification = swfVerification;
     }
-
-    public void setSecureToken(String secureToken) {
-       this.secureToken = secureToken;
-    }
-    
-    
 
     public int getSwfSize() {
         return swfSize;
@@ -455,7 +444,7 @@ public class RtmpSession {
         this.bytesReadLastSent = bytesReadLastSent;
     }
 
-    public Map<Integer, String> getInvokedMethods() {
+    public Map<Long, String> getInvokedMethods() {
         return invokedMethods;
     }
 
@@ -525,6 +514,22 @@ public class RtmpSession {
 
     public void setConnectionSettings(ConnectionSettings connectionSettings) {
         this.connectionSettings = connectionSettings;
+    }
+
+    public String getSecureToken() {
+        return secureToken;
+    }
+
+    public void setSecureToken(String secureToken) {
+        this.secureToken = secureToken;
+    }
+
+    public int getBwCheckCounter() {
+        return bwCheckCounter;
+    }
+
+    public void setBwCheckCounter(int bwCheckCounter) {
+        this.bwCheckCounter = bwCheckCounter;
     }
 
 }

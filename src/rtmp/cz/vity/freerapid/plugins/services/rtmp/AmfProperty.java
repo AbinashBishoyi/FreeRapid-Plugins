@@ -97,7 +97,7 @@ public class AmfProperty {
     }
 
     private static String decodeString(IoBuffer in) {
-        short size = in.getShort();
+        int size = in.getShort() & 0xFFFF;
         byte[] bytes = new byte[size];
         in.get(bytes);
         return new String(bytes); // TODO UTF-8 ?

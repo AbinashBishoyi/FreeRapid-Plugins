@@ -19,7 +19,7 @@ public class Invoke {
     private static final Logger logger = Logger.getLogger(Invoke.class.getName());
 
     private String methodName;
-    private int sequenceId;
+    private long sequenceId;
     private int channelId;
     private int time;
     private int streamId = -1;
@@ -55,7 +55,7 @@ public class Invoke {
         this.time = time;
     }
 
-    public int getSequenceId() {
+    public long getSequenceId() {
         return sequenceId;
     }
 
@@ -63,7 +63,6 @@ public class Invoke {
         return methodName;
     }
 
-    @SuppressWarnings("unchecked")
     public Packet encode(RtmpSession session) {
         sequenceId = session.getNextInvokeId();
         session.getInvokedMethods().put(sequenceId, methodName);
@@ -79,7 +78,9 @@ public class Invoke {
         if (args != null && args.length > 0) {
             for (Object arg : args) {
                 if (arg instanceof Map) {
-                    list.add(new AmfObject((Map) arg));
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> map = (Map<String, Object>) arg;
+                    list.add(new AmfObject(map));
                 } else {
                     list.add(arg);
                 }
@@ -102,12 +103,12 @@ public class Invoke {
         object.decode(packet.getData(), false);
         List<AmfProperty> properties = object.getProperties();
         methodName = (String) properties.get(0).getValue();
-        double temp = (Double) properties.get(1).getValue();
-        sequenceId = (int) temp;
+        Double temp = (Double) properties.get(1).getValue();
+        sequenceId = temp.longValue();
         if (properties.size() > 2) {
             int argsLength = properties.size() - 2;
             args = new Object[argsLength];
-            for (int i = 0; i < argsLength; i++) {              
+            for (int i = 0; i < argsLength; i++) {
                 args[i] = properties.get(i + 2).getValue();
             }
         }

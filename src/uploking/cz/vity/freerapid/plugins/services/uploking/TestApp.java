@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.am4share;
+package cz.vity.freerapid.plugins.services.uploking;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,19 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://am4share.com/i5uw7kupcb7z/PAH_-_E01__720p_Mokel.avi.003"));
-            httpFile.setNewURL(new URL("http://amshare.co/x4yr4tfzvnp8"));
+            httpFile.setNewURL(new URL("http://uploking.com/file/16paOzuR/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final Am4ShareServiceImpl service = new Am4ShareServiceImpl(); //instance of service - of our plugin
-
-            //we set premium account details
-            //final PremiumAccount config = new PremiumAccount();
-            //config.setUsername("****");
-            //config.setPassword("****");
-            //service.setConfig(config);
-
+            //then we tries to download
+            final UploKingServiceImpl service = new UploKingServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

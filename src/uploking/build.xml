@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="Am4Share.com" default="all" basedir=".">
-    <property name="application" value="am4share"/>
+<project name="UploKing.com" default="all" basedir=".">
+    <property name="application" value="uploking"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="am4share.jar"/>
+    <property name="mainjar.file" value="uploking.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -76,8 +76,6 @@
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
             <sourcepath location="../recaptcha"/>
-            <sourcepath location="../solvemediacaptcha/"/>
-            <sourcepath location="../xfilesharing/"/>
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

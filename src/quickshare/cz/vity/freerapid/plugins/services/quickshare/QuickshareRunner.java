@@ -68,7 +68,7 @@ class QuickshareRunner {
                     } else {
                         checkProblems();
                         logger.info(client.getContentAsString());
-                        throw new ServiceConnectionProblemException("Soubor v tuto chvíli není k dispozici! Možná se z této IP již stahuje");
+                        throw new ServiceConnectionProblemException("Všechny volné sloty jsou obsazeny nebo se z této IP již stahuje");
                     }
                 } finally {
                     method.abort();

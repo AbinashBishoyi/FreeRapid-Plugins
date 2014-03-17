@@ -16,8 +16,8 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class SuboryRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(SuboryRunner.class.getName());
-    private final static String SERVICE_WEB = "http://www.subory.sk";
+    private static final Logger LOGGER = Logger.getLogger(SuboryRunner.class.getName());
+    private static final String SERVICE_WEB = "http://www.subory.sk";
 
     @Override
     public void runCheck() throws Exception {
@@ -35,7 +35,7 @@ class SuboryRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
+        LOGGER.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -54,7 +54,7 @@ class SuboryRunner extends AbstractRunner {
 
                 if (!tryDownloadAndSaveFile(postMethod)) {
                     checkAllProblems();
-                    logger.warning(getContentAsString());
+                    LOGGER.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
             } else {
@@ -82,21 +82,21 @@ class SuboryRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("Ve.kos. s.boru:</strong></td><td\\s*class=desc>(.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -110,7 +110,7 @@ class SuboryRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String captchaSrc = matcher.group(1);
-            logger.info("Captcha URL " + captchaSrc);
+            LOGGER.info("Captcha URL " + captchaSrc);
             final String captcha = captchaSupport.getCaptcha(SERVICE_WEB + captchaSrc);
 
             if (captcha == null) {

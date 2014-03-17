@@ -16,14 +16,13 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class HotfileFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(HotfileFileRunner.class.getName());
-    private final static String SERVICE_WEB = "http://hotfile.com";
+    private static final Logger LOGGER = Logger.getLogger(HotfileFileRunner.class.getName());
+    private static final String SERVICE_WEB = "http://hotfile.com";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final MethodBuilder builder = getMethodBuilder();
-        final HttpMethod httpMethod = builder.setAction(fileURL).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkSeriousProblems();
@@ -36,9 +35,8 @@ class HotfileFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
-        MethodBuilder builder = getMethodBuilder();
-        HttpMethod httpMethod = builder.setAction(fileURL).toHttpMethod();
+        LOGGER.info("Starting download in TASK " + fileURL);
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
@@ -86,21 +84,21 @@ class HotfileFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("\\((.+?)\\)</h2><(?:h3|script)");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -123,9 +121,10 @@ class HotfileFileRunner extends AbstractRunner {
 
     private void downloadFile() throws Exception {
         final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
+
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkAllProblems();
-            logger.warning(getContentAsString());
+            LOGGER.warning(getContentAsString());
             throw new IOException("File input stream is empty");
         }
     }

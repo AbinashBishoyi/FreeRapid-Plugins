@@ -1,22 +1,25 @@
 package cz.vity.freerapid.plugins.services.uppit;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.UnsupportedEncodingException;
-import java.io.IOException;
-import java.net.URLEncoder;
 
 /**
  * @author Kajda
  */
 class UppITFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(UppITFileRunner.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(UppITFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -34,7 +37,7 @@ class UppITFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
+        LOGGER.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -50,7 +53,7 @@ class UppITFileRunner extends AbstractRunner {
 
                 if (!tryDownloadAndSaveFile(getMethod)) {
                     checkAllProblems();
-                    logger.warning(getContentAsString());
+                    LOGGER.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
             } else {
@@ -78,21 +81,21 @@ class UppITFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("</b> \\((.+?)\\)<br /><br />This");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 

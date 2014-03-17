@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Kajda
  */
 class RapidShareDeFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(RapidShareDeFileRunner.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(RapidShareDeFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -45,7 +45,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
+        LOGGER.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -75,7 +75,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
 
                         if (!tryDownloadAndSaveFile(postMethod)) {
                             checkAllProblems();
-                            logger.warning(getContentAsString());
+                            LOGGER.warning(getContentAsString());
                             throw new IOException("File input stream is empty");
                         }
                     } else {
@@ -107,7 +107,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
     private void checkAllProblems() throws ErrorDuringDownloadingException {
         checkSeriousProblems();
         final String contentAsString = getContentAsString();
-        Matcher matcher;
+        final Matcher matcher;
 
         if (contentAsString.contains("Access-code wrong")) {
             throw new ServiceConnectionProblemException("Access-code wrong");
@@ -140,21 +140,21 @@ class RapidShareDeFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("</b> \\((.+?)\\)\\.</p>");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -168,7 +168,7 @@ class RapidShareDeFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String captchaSrc = matcher.group(1);
-            logger.info("Captcha URL " + captchaSrc);
+            LOGGER.info("Captcha URL " + captchaSrc);
             final String captcha = captchaSupport.getCaptcha(captchaSrc);
 
             if (captcha == null) {

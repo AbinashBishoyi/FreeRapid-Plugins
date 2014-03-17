@@ -1,21 +1,24 @@
 package cz.vity.freerapid.plugins.services.youtube;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.IOException;
 
 /**
  * @author Kajda
  */
 class YouTubeFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
-    private final static String SERVICE_WEB = "http://www.youtube.com";
+    private static final Logger LOGGER = Logger.getLogger(YouTubeFileRunner.class.getName());
+    private static final String SERVICE_WEB = "http://www.youtube.com";
     private String fmtParameter = "";
     private String fileExtension = ".flv";
 
@@ -35,7 +38,7 @@ class YouTubeFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
+        LOGGER.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -57,7 +60,7 @@ class YouTubeFileRunner extends AbstractRunner {
 
                     if (!tryDownloadAndSaveFile(getMethod)) {
                         checkAllProblems();
-                        logger.warning(getContentAsString());
+                        LOGGER.warning(getContentAsString());
                         throw new IOException("File input stream is empty");
                     }
                 } else {
@@ -88,10 +91,10 @@ class YouTubeFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim() + fileExtension;
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 

@@ -3,25 +3,23 @@ package cz.vity.freerapid.plugins.services.dataup;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.IOException;
 
 /**
  * @author Kajda
  */
 class DataUpFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(DataUpFileRunner.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DataUpFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final MethodBuilder builder = getMethodBuilder();
-        final HttpMethod httpMethod = builder.setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkSeriousProblems();
@@ -34,20 +32,17 @@ class DataUpFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
-        MethodBuilder builder = getMethodBuilder();
-        HttpMethod httpMethod = builder.setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
+        LOGGER.info("Starting download in TASK " + fileURL);
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).encodeLastPartOfAction().toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            builder = getMethodBuilder();
-            builder.setActionFromFormByName("dl_load", true);
-            httpMethod = builder.setReferer(fileURL).toHttpMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dl_load", true).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();
-                logger.warning(getContentAsString());
+                LOGGER.warning(getContentAsString());
                 throw new IOException("File input stream is empty");
             }
         } else {
@@ -82,21 +77,21 @@ class DataUpFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("label>Gr..e: (.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 

@@ -6,15 +6,15 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.IOException;
 
 /**
  * @author Kajda
  */
 class FileFlyerFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(FileFlyerFileRunner.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(FileFlyerFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -32,7 +32,7 @@ class FileFlyerFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
+        LOGGER.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -48,7 +48,7 @@ class FileFlyerFileRunner extends AbstractRunner {
 
                 if (!tryDownloadAndSaveFile(getMethod)) {
                     checkAllProblems();
-                    logger.warning(getContentAsString());
+                    LOGGER.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
             } else {
@@ -85,21 +85,21 @@ class FileFlyerFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("id=\"ItemsList_ctl00_size\">(.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 

@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.IOException;
-import java.awt.image.BufferedImage;
 
 /**
  * @author Kajda
  */
 class BitRoadFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(BitRoadFileRunner.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(BitRoadFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -35,7 +35,7 @@ class BitRoadFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
+        LOGGER.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -74,7 +74,7 @@ class BitRoadFileRunner extends AbstractRunner {
 
                                 if (!tryDownloadAndSaveFile(getMethod)) {
                                     checkAllProblems();
-                                    logger.warning(getContentAsString());
+                                    LOGGER.warning(getContentAsString());
                                     throw new IOException("File input stream is empty");
                                 }
                             } else {
@@ -114,21 +114,21 @@ class BitRoadFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("Size:<b style=\"padding-left:5px;\">(.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -136,14 +136,14 @@ class BitRoadFileRunner extends AbstractRunner {
     }
 
     private PostMethod stepCaptcha(String redirectURL, String paramUid, int captchaOCRCounter) throws ErrorDuringDownloadingException {
-        CaptchaSupport captchaSupport = getCaptchaSupport();
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
 
-        Matcher matcher = getMatcherAgainstContent("img src='(.+?)' border='0'");
+        final Matcher matcher = getMatcherAgainstContent("img src='(.+?)' border='0'");
 
         if (matcher.find()) {
-            String captchaSrc = matcher.group(1);
-            logger.info("Captcha URL " + captchaSrc);
-            String captcha;
+            final String captchaSrc = matcher.group(1);
+            LOGGER.info("Captcha URL " + captchaSrc);
+            final String captcha;
 
             if (captchaOCRCounter <= 3) {
                 captcha = readCaptchaImage(captchaSrc);
@@ -171,7 +171,7 @@ class BitRoadFileRunner extends AbstractRunner {
         String captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
 
         if (captcha != null) {
-            logger.info("Captcha - OCR recognized " + captcha);
+            LOGGER.info("Captcha - OCR recognized " + captcha);
         } else {
             captcha = "";
         }

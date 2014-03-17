@@ -7,23 +7,23 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.List;
-import java.util.LinkedList;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Kajda
  */
 class BadongoFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(BadongoFileRunner.class.getName());
-    private final static String SERVICE_WEB = "http://www.badongo.com";
+    private static final Logger LOGGER = Logger.getLogger(BadongoFileRunner.class.getName());
+    private static final String SERVICE_WEB = "http://www.badongo.com";
 
     @Override
     public void runCheck() throws Exception {
@@ -43,13 +43,13 @@ class BadongoFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         fileURL = checkFileURL(fileURL);
-        logger.info("Starting download in TASK " + fileURL);
+        LOGGER.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            URI fileURI = new URI(fileURL);
+            final URI fileURI = new URI(fileURL);
             final String[] filePath = fileURI.getPath().split("/");
 
             if (getContentAsString().contains("This file has been split into") && filePath.length <= 4) { // More files
@@ -57,7 +57,7 @@ class BadongoFileRunner extends AbstractRunner {
                 parseWebsite();
                 httpFile.getProperties().put("removeCompleted", true);
             } else { // One file
-                Matcher matcher;
+                final Matcher matcher;
 
                 if (filePath[1].equals("pic")) {
                     if (makeRedirectedRequest(getGetMethod(fileURL + "?size=original"))) {
@@ -126,21 +126,21 @@ class BadongoFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
+            LOGGER.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("Filesize : (.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
+                LOGGER.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                logger.warning("File size was not found");
+                LOGGER.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            logger.warning("File name was not found");
+            LOGGER.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -177,9 +177,7 @@ class BadongoFileRunner extends AbstractRunner {
                 final String contentAsString = getContentAsString().replaceAll("\\\\\"", "\"");
 
                 if (contentAsString.contains("name=\"downForm\"")) {
-                    final MethodBuilder builder = new MethodBuilder(contentAsString, client);
-                    builder.setActionFromFormByName("downForm", true);
-                    final HttpMethod httpMethod = builder.setReferer(fileURL).setParameter("user_code", stepCaptcha(contentAsString)).toHttpMethod();
+                    final HttpMethod httpMethod = new MethodBuilder(contentAsString, client).setReferer(fileURL).setActionFromFormByName("downForm", true).setParameter("user_code", stepCaptcha(contentAsString)).toHttpMethod();
 
                     if (!makeRedirectedRequest(httpMethod)) {
                         throw new ServiceConnectionProblemException();
@@ -196,7 +194,7 @@ class BadongoFileRunner extends AbstractRunner {
     private void downloadFile(HttpMethod httpMethod) throws Exception {
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkAllProblems();
-            logger.warning(getContentAsString());
+            LOGGER.warning(getContentAsString());
             throw new IOException("File input stream is empty");
         }
     }
@@ -212,7 +210,7 @@ class BadongoFileRunner extends AbstractRunner {
             try {
                 uriList.add(new URI(link));
             } catch (URISyntaxException e) {
-                LogUtils.processException(logger, e);
+                LogUtils.processException(LOGGER, e);
             }
 
             start = matcher.end();
@@ -228,7 +226,7 @@ class BadongoFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String captchaSrc = SERVICE_WEB + matcher.group(1);
-            logger.info("Captcha URL " + captchaSrc);
+            LOGGER.info("Captcha URL " + captchaSrc);
             final String captcha = captchaSupport.getCaptcha(captchaSrc);
 
             if (captcha == null) {

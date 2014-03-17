@@ -39,7 +39,12 @@ class WowEbookComFileRunner extends AbstractRunner {
 
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            String directURL = PlugUtils.getStringBetween(getContentAsString(), "] <a target=\"_blank\" href=\"", "\"");
+            final String start = "] <a target=\"_blank\" href=\"";
+            final String end = "\"";
+            String directURL = PlugUtils.getStringBetween(getContentAsString(), start, end);
+            if (!directURL.contains("prefiles")) {
+                directURL = PlugUtils.getStringBetween(getContentAsString(), start, end, 2);
+            }
             directURL = directURL.replaceFirst("http://adf.ly/\\d+/", "");
             logger.info("Download Service URL: " + directURL);
             httpFile.setNewURL(new URL(directURL));

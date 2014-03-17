@@ -38,7 +38,7 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = Pattern.compile("File\\sname:.*<b>([^<]*)").matcher(content);
+        Matcher matcher = Pattern.compile("File\\sname:\\s(?:</?\\w+\\s*[^>]*>)*([^<]*)").matcher(content);
         if( !matcher.find() ) {
             throw new PluginImplementationException("File name not found");
         }

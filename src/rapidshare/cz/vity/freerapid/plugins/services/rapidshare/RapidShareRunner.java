@@ -97,6 +97,9 @@ class RapidShareRunner extends AbstractRunner {
         if (getContentAsString().contains("All free download slots are full")) {
             throw new ServiceConnectionProblemException("All free download slots are full");
         }
+        if (getContentAsString().contains("Please stop flooding our download servers")) {
+            throw new YouHaveToWaitException("RapidShare server says: Please stop flooding our download servers", 360);
+        }
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {

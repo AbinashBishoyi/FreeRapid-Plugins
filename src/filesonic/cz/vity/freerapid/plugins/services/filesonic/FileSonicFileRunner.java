@@ -76,11 +76,15 @@ class FileSonicFileRunner extends AbstractRunner {
                     r.setRecognized(captcha);
                     method = r.modifyResponseMethod(getMethodBuilder().setReferer(fileURL).setAction(startUrl)).toPostMethod();
                 } else if (content.contains("var countDownDelay =")) {
-                    final String tm = PlugUtils.getParameter("tm", content);
-                    final String tm_hash = PlugUtils.getParameter("tm_hash", content);
-                    method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).setParameter("tm", tm).setParameter("tm_hash", tm_hash).toPostMethod();
                     final int waitTime = PlugUtils.getWaitTimeBetween(content, "var countDownDelay =", ";", TimeUnit.SECONDS);
                     downloadTask.sleep(waitTime + 1);
+                    try {
+                        final String tm = PlugUtils.getParameter("tm", content);
+                        final String tm_hash = PlugUtils.getParameter("tm_hash", content);
+                        method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).setParameter("tm", tm).setParameter("tm_hash", tm_hash).toPostMethod();
+                    } catch (PluginImplementationException e) {
+                        method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
+                    }
                 } else if (content.contains("Start download now")) {
                     method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start download now").toGetMethod();
                     if (!tryDownloadAndSaveFile(method)) {

@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.filefactory;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -27,7 +26,7 @@ class FileFactoryFileRunner extends AbstractRunner {
 
         if (makeRedirectedRequest(getMethod)) {
             checkSeriousProblems();
-            checkNameAndSize();
+            checkNameAndSize(getContentAsString());
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
@@ -41,10 +40,10 @@ class FileFactoryFileRunner extends AbstractRunner {
 
         if (makeRedirectedRequest(getMethod)) {
             checkAllProblems();
-            checkNameAndSize();
+            checkNameAndSize(getContentAsString());
 
             final MethodBuilder methodBuilder = getMethodBuilder();
-            final HttpMethod httpMethod = methodBuilder.setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).setBaseURL(SERVICE_WEB).toHttpMethod();
+            final HttpMethod httpMethod = methodBuilder.setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").setBaseURL(SERVICE_WEB).toHttpMethod();
             final String redirectURL = SERVICE_WEB + methodBuilder.getAction();
 
             if (makeRedirectedRequest(httpMethod)) {
@@ -80,23 +79,15 @@ class FileFactoryFileRunner extends AbstractRunner {
                 */
 
                 checkAllProblems();
-
-                Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Click here to begin your download");
-
-                if (matcher.find()) {
-                    downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS));
-                    client.setReferer(redirectURL);
-                    final String finalURL = matcher.group(1);
-                    getMethod = getGetMethod(finalURL);
-
-                    if (!tryDownloadAndSaveFile(getMethod)) {
-                        checkAllProblems();
-                        logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty");
-                    }
-                } else {
-                    throw new PluginImplementationException("Download link was not found");
+                client.setReferer(redirectURL);
+                HttpMethod finalMethod = getMethodBuilder().setReferer(redirectURL).setActionFromAHrefWhereATagContains("Download Now").toHttpMethod();
+                downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS));
+                if (!tryDownloadAndSaveFile(finalMethod)) {
+                    checkAllProblems();
+                    logger.warning(getContentAsString());
+                    throw new IOException("File input stream is empty");
                 }
+
             } else {
                 throw new ServiceConnectionProblemException();
             }
@@ -156,30 +147,9 @@ class FileFactoryFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("class=\"last\">(.+?)<");
-
-        if (matcher.find()) {
-            final String fileName = matcher.group(1).trim();
-            logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
-
-            matcher = getMatcherAgainstContent("<span>(.+?) file uploaded");
-
-            if (matcher.find()) {
-                final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + fileSize);
-                httpFile.setFileSize(fileSize);
-            } else {
-                logger.warning("File size was not found");
-                throw new PluginImplementationException();
-            }
-        } else {
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
-        }
-
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span");
+        PlugUtils.checkFileSize(httpFile, content, "<span>", "file uploaded");
     }
 
     /*

@@ -22,9 +22,9 @@ import java.util.regex.Matcher;
  */
 class GrooveSharkFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(GrooveSharkFileRunner.class.getName());
-    private final static String CLIENT_REVISION = "20120206";
-    private final static String SALT_1 = "orrlyHowdYouFindThis";
-    private final static String SALT_2 = "evilHackersAreInOurFuture";
+    private final static String CLIENT_REVISION = "20120312";
+    private final static String SALT_1 = "reallyHotSauce";
+    private final static String SALT_2 = "circlesAndSquares";
     private String sessionId;
     private String uuid;
 
@@ -122,7 +122,7 @@ class GrooveSharkFileRunner extends AbstractRunner {
     }
 
     private String getRequestToken(final String request, final String salt, final String communicationToken) {
-        final String random = String.format("%1$06x", new Random().nextInt(0xFFFFFF));
+        final String random = String.format("%06x", new Random().nextInt(0xFFFFFF));
         return random + DigestUtils.shaHex(request + ":" + communicationToken + ":" + salt + ":" + random);
     }
 

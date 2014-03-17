@@ -67,7 +67,7 @@ class StorageFileRunner extends AbstractRunner {
                 final int countDown = json.getInt("countdown");
                 downloadTask.sleep(countDown + 1);//musi byt
                 //here is the download link extraction
-                this.client.getHTTPClient().getParams().setParameter("dontUseHeaderFilename", true);
+                //    this.client.getHTTPClient().getParams().setParameter("dontUseHeaderFilename", true);
                 if (!tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(link).toHttpMethod())) {
                     checkProblems();//if downloading failed
                     logger.warning(getContentAsString());//log the info

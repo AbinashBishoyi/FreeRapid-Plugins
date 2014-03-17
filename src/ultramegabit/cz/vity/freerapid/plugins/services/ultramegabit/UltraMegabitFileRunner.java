@@ -24,9 +24,10 @@ class UltraMegabitFileRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
-            checkProblems();
+            checkFileProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else {
+            checkFileProblems();
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -48,14 +49,19 @@ class UltraMegabitFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
+            checkFileProblems();
+            checkProblems();
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder()
+            HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("recaptcha", true)
                     .toPostMethod();
 
-            //here is the download link extraction
+            final int status = client.makeRequest(httpMethod, false);
+            if (status / 100 == 3) {
+                httpMethod = getGetMethod(httpMethod.getResponseHeader("Location").getValue());
+            }
+            httpMethod.removeRequestHeader("Accept-Encoding");  // stop it using gzip
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -66,7 +72,7 @@ class UltraMegabitFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         if (content.contains("File Not Found")
                 || content.contains("file was removed")
@@ -75,6 +81,10 @@ class UltraMegabitFileRunner extends AbstractRunner {
                 || content.contains("file has been removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
         if (content.contains("Account limitation notice") && content.contains("are only able to download")) {
             throw new YouHaveToWaitException("Download limit reached", 300);
         }
@@ -111,14 +121,15 @@ class UltraMegabitFileRunner extends AbstractRunner {
             final int delay = wait - (int) now;
             throw new YouHaveToWaitException("Your download has been limited, you need to wait " + (delay / 60) + ":" + (delay % 60), delay);
         }
-        if (content.contains("have reached the download-limit")) {
-            throw new YouHaveToWaitException("You have reached the download limit", 10 * 60);
+        if (content.contains("have reached the download-limit") ||
+                content.contains("Free Download Closed")) {
+            throw new YouHaveToWaitException("Reached free download limit, wait or try premium", 10 * 60);
+        }
+        if (content.contains("There are too many free users downloading")) {
+            throw new YouHaveToWaitException("Too many free users downloading from this server at this time", 10 * 60);
         }
         if (content.contains("Error happened when generating Download Link")) {
             throw new YouHaveToWaitException("Error happened when generating download link", 60);
-        }
-        if (content.contains("Free Download Closed")) {
-            throw new ServiceConnectionProblemException("Reached free download limit, wait or try premium");
         }
         if (content.contains("file is available to premium users only")
                 || content.contains("Premium only download, Upgrade now")

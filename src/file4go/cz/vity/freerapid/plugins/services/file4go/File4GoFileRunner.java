@@ -1,23 +1,16 @@
 package cz.vity.freerapid.plugins.services.file4go;
 
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-
-import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
+
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -54,8 +47,8 @@ class File4GoFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
             Matcher matcher = Pattern.compile("var time = (\\d+)").matcher(contentAsString);
-            if( matcher.find() ) {
-                throw new YouHaveToWaitException("Wait " + matcher.group(1), Integer.parseInt(matcher.group(1)) );
+            if (matcher.find()) {
+                throw new YouHaveToWaitException("Wait " + matcher.group(1), Integer.parseInt(matcher.group(1)));
             }
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
@@ -73,7 +66,7 @@ class File4GoFileRunner extends AbstractRunner {
     private HttpMethod handleCaptcha() throws Exception {
         final String rcKey = "6Lebss8SAAAAAFCpZbm6hIMsfMF3rulH2IJyGvns";
         //final String rcControl = PlugUtils.getStringBetween(getContentAsString(), "var recaptcha_control_field = '", "';");
-        final String id = fileURL.substring( fileURL.indexOf("/d/")+3, fileURL.lastIndexOf('/') );
+        final String id = fileURL.substring(fileURL.indexOf("/d/") + 3, fileURL.lastIndexOf('/'));
         while (true) {
             final ReCaptcha rc = new ReCaptcha(rcKey, client);
             final String captcha = getCaptchaSupport().getCaptcha(rc.getImageURL());
@@ -94,10 +87,10 @@ class File4GoFileRunner extends AbstractRunner {
             //return getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
             try {
                 return getMethodBuilder().setActionFromTextBetween("<span id=\"boton_download\" ><a href=\"", "\" class=\"ddda\"").toGetMethod();
-            } catch(BuildMethodException bme) {
+            } catch (BuildMethodException bme) {
                 //var time = 1180 -- then wait
-                System.out.println( content );
-                throw new YouHaveToWaitException("Wait", 180 );
+                logger.info(content);
+                throw new YouHaveToWaitException("Wait", 180);
             }
             /*
             if (content.contains("error_free_download_blocked")) {

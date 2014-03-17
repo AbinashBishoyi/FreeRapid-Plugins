@@ -26,8 +26,8 @@ public class TestApp extends PluginDevApplication {
             //*
             //we set premium account details
             final PremiumAccount config = new PremiumAccount();
-            config.setUsername("gailsymonns@yahoo.com");
-            config.setPassword("1q2w3e4r");
+            config.setUsername("****");
+            config.setPassword("****");
             service.setConfig(config);
             //*/
             //runcheck makes the validation

@@ -35,14 +35,12 @@ class ImagevenueFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        //can't get this to work
-        Matcher matcher = PlugUtils.matcher(fileURL, "img\\.php\\?image=(.+)?");
+        final Matcher matcher = PlugUtils.matcher("image=(.+?)#?$", fileURL);
         if (!matcher.find()) {
-            checkProblems();
             throw new PluginImplementationException("Filename not found");
         }
-        httpFile.setFileName(matcher.group(1));
-        //httpFile.setFileName("unnamed.jpg");//temporary, for testing
+        //  httpFile.setFileName(matcher.group(1));
+        httpFile.setFileName("z");//temporary, for testing
         //name is automatically taken from the file URL, there is no available full file name on their page with extension
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

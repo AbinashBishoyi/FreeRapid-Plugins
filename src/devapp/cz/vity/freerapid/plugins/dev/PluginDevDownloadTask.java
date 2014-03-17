@@ -72,7 +72,8 @@ class PluginDevDownloadTask implements HttpFileDownloadTask {
      */
     public void saveToFile(InputStream inputStream) throws Exception {
         logger.info("Writing temporary file on disk");
-        final File tempFile = File.createTempFile(file.getFileName(), "");
+        final String fileName = file.getFileName();
+        final File tempFile = File.createTempFile((fileName.length() >= 3) ? fileName : (fileName + ".xxx"), "");
         tempFile.deleteOnExit();
 
         logger.info("Simulating saving file from a stream - trying to read 2KB of data");

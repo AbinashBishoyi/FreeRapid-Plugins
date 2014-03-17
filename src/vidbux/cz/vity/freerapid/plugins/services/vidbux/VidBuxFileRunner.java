@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.vidbux;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
-import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchaType;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
@@ -55,10 +54,4 @@ class VidBuxFileRunner extends XFileSharingRunner {
         return downloadPageMarkers;
     }
 
-    @Override
-    protected List<CaptchaType> getCaptchaTypes() {
-        final List<CaptchaType> captchaTypes = super.getCaptchaTypes();
-        captchaTypes.add(0, new SolveMediaCaptchaType());
-        return captchaTypes;
-    }
 }

@@ -17,7 +17,7 @@
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="solvemediacaptcha"
                 plugin-version="1.0.0" reverse-lookup="false"/>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.7" reverse-lookup="false"/>
+                plugin-version="1.0.8" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="vidbux.com" path="/" type="code"/>

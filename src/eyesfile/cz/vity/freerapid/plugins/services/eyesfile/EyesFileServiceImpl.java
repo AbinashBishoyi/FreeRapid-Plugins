@@ -17,7 +17,7 @@ public class EyesFileServiceImpl extends XFileSharingServiceImpl {
 
     @Override
     public String getName() {
-        return "eyesfile.net";
+        return "eyesfile.ca";
     }
 
     @Override

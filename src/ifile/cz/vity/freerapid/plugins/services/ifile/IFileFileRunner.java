@@ -46,8 +46,8 @@ class IFileFileRunner extends AbstractRunner {
     private void finalRequest() throws Exception {
         final HttpMethod method = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
         makeRedirectedRequest(method);
-        String finalURL=PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn2\" target=\"_blank\" href=\"", "\"");
-        final HttpMethod finalMethod = getMethodBuilder().setAction(finalURL).setReferer(REDIRECT_URL).toHttpMethod();
+        //String finalURL=PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn2\" target=\"_blank\" href=\"", "\"");
+        final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("download").setReferer(REDIRECT_URL).toHttpMethod();
         if (!tryDownloadAndSaveFile(finalMethod)) {
             logger.warning(getContentAsString());
             throw new IOException("File input stream is empty.");
@@ -91,10 +91,10 @@ class IFileFileRunner extends AbstractRunner {
 
     private void makeUrl(String type, String extra) throws Exception {
         String c = BASE_URL + "download:dl_request?" + __x_fsa + "&type=" + type + "&esn=" + __esn + extra;
-        c += "&" + __x_fs+additional;
+        c += "&" + __x_fs + additional;
         HttpMethod method = getMethodBuilder().setAction(c).toHttpMethod();
         method.addRequestHeader("X-Requested-With", "XMLHttpRequest"); //We use AJAX :-)
-        
+
         /**
          * Note:
          * Because server response content type is json,

@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="webshots.com" version="1.0.0" vendor="ntoskrnl"
+        class="cz.vity.freerapid.plugins.services.webshots.WebshotsServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://.*?webshots\.com/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="webshots.com"/>
+        <attribute id="maxDownloads" value="10"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="webshots.com" path="/" type="code"/>
+    </runtime>
+</plugin>

@@ -182,6 +182,9 @@
         <ant dir="${src.dir}/megavideo/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filesavr/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/fileshost/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/createfile/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/turbobit/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/narod/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/bebasupload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/remixshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/microsoftdownloads/" antfile="build.xml" inheritall="false"/>

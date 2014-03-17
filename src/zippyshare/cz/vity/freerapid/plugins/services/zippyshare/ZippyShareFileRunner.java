@@ -48,7 +48,7 @@ class ZippyShareFileRunner extends AbstractRunner {
 
             final String contentAsString = getContentAsString();
             String var = PlugUtils.getStringBetween(contentAsString, "var spong = '", "';");
-            final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 2);
+            final String unescape = getStringBetween(contentAsString, "= unescape(", ");", 3);
             logger.info("unescape = " + unescape);
             var = applyReplace(var, unescape);
 

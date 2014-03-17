@@ -4,11 +4,10 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Vity
+ * @author Kajda
  */
-public class FileFactoryShareServiceImpl extends AbstractFileShareService {
+public class FileFactoryServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "filefactory.com";
-
 
     public String getName() {
         return SERVICE_NAME;
@@ -18,7 +17,6 @@ public class FileFactoryShareServiceImpl extends AbstractFileShareService {
         return 1;
     }
 
-
     @Override
     public boolean supportsRunCheck() {
         return true;
@@ -26,7 +24,6 @@ public class FileFactoryShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new FileFactoryRunner();
+        return new FileFactoryFileRunner();
     }
-
 }

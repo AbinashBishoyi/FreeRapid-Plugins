@@ -23,7 +23,7 @@ class HdsInputStream extends InputStream {
     private static final int FLV_PACKET_HEADER_SIZE = 11;
 
     private final FragmentRequester requester;
-    private final ByteBuffer currentPacket = ByteBuffer.allocate(64 * 1024);
+    private final ByteBuffer currentPacket = ByteBuffer.allocate(128 * 1024);
     private DataInputStream currentStream;
     private boolean finished;
 

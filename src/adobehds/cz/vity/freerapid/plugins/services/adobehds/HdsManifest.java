@@ -110,6 +110,7 @@ class HdsManifest {
         }
 
         public static F4mManifest fetch(final HttpDownloadClient client, final String url, final XPath xpath) throws Exception {
+            logger.info("Manifest URL: " + url);
             final HttpMethod method = client.getGetMethod(url);
             if (client.makeRequest(method, true) != HttpStatus.SC_OK) {
                 throw new ServiceConnectionProblemException();

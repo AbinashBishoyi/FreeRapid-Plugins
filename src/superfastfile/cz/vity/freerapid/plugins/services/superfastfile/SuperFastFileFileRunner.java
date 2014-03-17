@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -17,7 +18,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Vity
+ * @author Vity + ntoskrnl
  */
 class SuperFastFileFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SuperFastFileFileRunner.class.getName());
@@ -26,12 +27,17 @@ class SuperFastFileFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+
+        addCookie(new Cookie(".superfastfile.com", "lang", "english", "/", 86400, false));
+
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
@@ -44,14 +50,17 @@ class SuperFastFileFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+
+        addCookie(new Cookie(".superfastfile.com", "lang", "english", "/", 86400, false));
+
         final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRequest(method)) { //we make the main request
+        if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
             final HttpMethod m = getMethodBuilder().setReferer(fileURL).setActionFromFormByIndex(1, true).setAction(fileURL).removeParameter("method_premium").toPostMethod();
-            if (makeRequest(m)) {
+            if (makeRedirectedRequest(m)) {
                 checkProblems();//check problems                
                 final int sleep = PlugUtils.getNumberBetween(getContentAsString(), "\"countdown\">", "</span>");
 
@@ -70,9 +79,8 @@ class SuperFastFileFileRunner extends AbstractRunner {
                 }
                 final String captcha = builder.toString();
                 if (!captcha.isEmpty()) {
-                    //   throw new PluginImplementationException("Captcha not found");
-                    logger.info("Captcha:" + captcha);
-                    logger.info("File url:" + fileURL);
+                    logger.info("Captcha: " + captcha);
+                    logger.info("File url: " + fileURL);
                 }
                 final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("F1", true).setAction(fileURL);
 
@@ -84,20 +92,25 @@ class SuperFastFileFileRunner extends AbstractRunner {
                 this.downloadTask.sleep(sleep + 1);
 
                 //here is the download link extraction
-//                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download file").toPostMethod();
+                //final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download file").toPostMethod();
                 client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                 if (makeRedirectedRequest(methodBuilder.toPostMethod())) {
+
+                    if (getContentAsString().contains("our servers are overloaded")) {
+                        throw new ServiceConnectionProblemException("No download slots available for free users");
+                    }
+
                     final String s = PlugUtils.getStringBetween(getContentAsString(), "<a", "</span>");
                     logger.info(s);
                     final HttpMethod finalURL = getMethodBuilder("<a " + s).setActionFromAHrefWhereATagContains("http").toGetMethod();
                     if (!tryDownloadAndSaveFile(finalURL)) {
                         checkProblems();//if downloading failed
                         logger.warning(getContentAsString());//log the info
-                        throw new PluginImplementationException();//some unknown problem
+                        throw new ServiceConnectionProblemException("Error starting download");
                     }
-                } else throw new PluginImplementationException("create link not found");
+                } else throw new ServiceConnectionProblemException();
 
-            } else throw new PluginImplementationException("Main form not found");
+            } else throw new ServiceConnectionProblemException();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -106,14 +119,11 @@ class SuperFastFileFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
-        }
-        if (contentAsString.contains("No such")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (contentAsString.contains("File Not Found") || contentAsString.contains("No such")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("Wrong captcha")) {
-            throw new PluginImplementationException("Wrong captcha");
+            throw new PluginImplementationException("Problem with captcha");
         }
         final Matcher content = getMatcherAgainstContent("You have to wait (\\d+)");
         if (content.find()) {

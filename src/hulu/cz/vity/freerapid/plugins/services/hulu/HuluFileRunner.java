@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.hulu;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.services.tor.TorProxyClient;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -20,6 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -37,8 +39,8 @@ import java.util.regex.Pattern;
 class HuluFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(HuluFileRunner.class.getName());
 
-    private final static String SWF_URL = "http://download.hulu.com/huludesktop.swf";
-    //private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
+    private final static String SWF_URL = "http://www.hulu.com/site-player/205906/player.swf?cb=205906";
+    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     private final static String V_PARAM = "888324234";
     private final static String HMAC_KEY = "f6daaa397d51f568dd068709b0ce8e93293e078f7dfc3b40dd8c32d36d2b3ce1";
@@ -165,7 +167,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             final RtmpSession rtmpSession = getSession(getStream(getStreamList(content)));
             rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
-            //helper.setSwfVerification(rtmpSession, client);
+            helper.setSwfVerification(rtmpSession, client);
             tryDownloadAndSaveFile(rtmpSession);
         } else {
             checkProblems(getContentAsString());
@@ -189,18 +191,15 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 throw new YouHaveToWaitException("Hulu noticed that you are trying to access them through a proxy", 4);
             }
         }
-        if (content.contains("tp:exclusivity=\"plus\"")) {
-            throw new PluginImplementationException("This video is only available with Hulu Plus");
-        }
     }
 
     private RtmpSession getSession(final Stream stream) {
         return new RtmpSession(stream.server, 1935, stream.app, stream.play, true);
     }
 
-    private List<Stream> getStreamList(String content) throws ErrorDuringDownloadingException {
+    private List<Stream> getStreamList(String content) throws ErrorDuringDownloadingException, UnsupportedEncodingException {
         final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? height=\"(\\d+?)\".*? file-type=\"\\d+_(.+?)\".*? cdn=\"(?:darwin\\-)?(.+?)\"", content);
-        final List<Stream> streamList = new ArrayList<Stream>(); //k=video quality, v=stream, sorted by video quality ascending
+        final List<Stream> streamList = new ArrayList<Stream>();
         logger.info("Available streams : ");
         while (matcher.find()) {
             final String serverApp = matcher.group(1);
@@ -211,12 +210,13 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 throw new PluginImplementationException("Error parsing stream server");
             }
             final String server = serverAppMatcher.group(1);
-            final String app = serverAppMatcher.group(2) + "?sessionid=" + sessionId + "&" + PlugUtils.replaceEntities(token);
+            final String app = serverAppMatcher.group(2) + "?sessionid=" + sessionId + "&" + URLDecoder.decode(PlugUtils.replaceEntities(token), "UTF-8");
             final int bitrate = Integer.parseInt(matcher.group(4));
             final int videoQuality = Integer.parseInt(matcher.group(5)); //height as video quality
             final String videoFormat = matcher.group(6);
             final String cdn = matcher.group(7);
-            if (!videoFormat.equalsIgnoreCase("h264")) { //ignore non-h264
+            if (!(cdn.equalsIgnoreCase("akamai") || cdn.equalsIgnoreCase("limelight") || cdn.equalsIgnoreCase("level3")) //downloadable CDN: akamai, limelight, level3
+                    || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-limelight, non-level3, non-h264
                 continue;
             }
             Stream stream = new Stream(server, app, play, bitrate, videoQuality, videoFormat, cdn);
@@ -226,7 +226,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         if (streamList.isEmpty()) {
             throw new PluginImplementationException("No streams found");
         }
-        Collections.sort(streamList);
+        Collections.sort(streamList); //sorted by video quality ascending
         return streamList;
     }
 
@@ -257,14 +257,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
             if (stream.videoQuality == selectedVideoQuality) {
                 int tempWeight = 0;
                 String cdn = stream.cdn;
-                if (cdn.equalsIgnoreCase("akamai")) { //akamai > limelight > level3 > edgecast
+                if (cdn.equalsIgnoreCase("akamai")) { //akamai > limelight > level3
                     tempWeight = 50;
                 } else if (cdn.equalsIgnoreCase("limelight")) {
                     tempWeight = 49;
                 } else if (cdn.equalsIgnoreCase("level3")) {
                     tempWeight = 48;
-                } else if (cdn.equalsIgnoreCase("edgecast")) {
-                    tempWeight = 47;
                 }
                 if (tempWeight > weight) {
                     weight = tempWeight;

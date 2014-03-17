@@ -46,4 +46,8 @@ public class HellshareServiceImpl extends AbstractFileShareService {
         return config;
     }
 
+    public int getMaxDownloadsFromOneIP() {
+        return 9;
+    }
+
 }

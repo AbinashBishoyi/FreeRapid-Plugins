@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
 
-           httpFile.setNewURL(new URL("http://download.cz.hellshare.com/opera-mini-4-2-14912-advanced-cs.jad/537094"));
+           httpFile.setNewURL(new URL("http://download.cz.hellshare.com/bugfeature-jpg/1953244/"));
             testRun(new HellshareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

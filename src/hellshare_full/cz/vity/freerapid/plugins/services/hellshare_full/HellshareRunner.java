@@ -40,12 +40,10 @@ class HellshareRunner extends AbstractRunner {
 
             checkNameAndSize(getContentAsString());
 
-            Matcher matcher = getMatcherAgainstContent("<h2 class=\"[^\"]+\">P.ihl.si. s.</h2>|<h2 class=\"[^\"]+\">Bejelentkezés</h2>|<h2 class=\"[^\"]+\">Sign In</h2>");
-            if (matcher.find()) {
+            if (getContentAsString().contains("frm-loginForm")) {
                 Login(getContentAsString());
             }
-
-            matcher = getMatcherAgainstContent("<a id=\"button-download-full-nocredit\"");
+            Matcher matcher = getMatcherAgainstContent("<a id=\"button-download-full-nocredit\"");
             if (matcher.find()) {
                  throw new NotRecoverableDownloadException("No credit for download!");
             }
@@ -88,23 +86,11 @@ class HellshareRunner extends AbstractRunner {
                 }
                 badConfig = false;
             }
-            Matcher matcher = PlugUtils.matcher("<form id=\"([^\"]+)\" class=\"[^\"]+\" method=\"post\" action=\"([^\"]+)\" enctype=\"multipart/form-data\"", getContentAsString());
-            if (!matcher.find()) {
-                throw new PluginImplementationException();
-            }
-            String formName = matcher.group(1);
-            String postURL = matcher.group(2);
-
-            PostMethod postmethod = getPostMethod(postURL);
-
-            postmethod.addParameter(formName + "_lg", pa.getUsername());
-            postmethod.addParameter(formName + "_psw", pa.getPassword());
-            postmethod.addParameter(formName + "_sbm", "Prihlasit");
-            postmethod.addParameter("DownloadRedirect", "");
+            PostMethod  postmethod=(PostMethod) getMethodBuilder(getContentAsString()).setActionFromFormByName("frm-loginForm", true)
+                    .setParameter("username", pa.getUsername()).setParameter("password", pa.getPassword()).toPostMethod();
 
             if (makeRedirectedRequest(postmethod)) {
-                matcher = getMatcherAgainstContent("<h2 class=\"[^\"]+\">P.ihl.si. s.</h2>|<h2 class=\"[^\"]+\">Bejelentkezés</h2>|<h2 class=\"[^\"]+\">Sign In</h2>");
-                if (matcher.find()) {
+                if (getContentAsString().contains("frm-loginForm")) {
                     badConfig = true;
                     throw new NotRecoverableDownloadException("Bad HellShare full account login information!");
                 }

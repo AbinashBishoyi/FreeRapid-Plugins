@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.services.turbobit.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -102,9 +101,9 @@ class TurboBitFileRunner extends AbstractRunner {
 
         final Matcher filesizeMatcher = getMatcherAgainstContent("<span.+?</span>\\s+\\((.+?)\\)");
         if (filesizeMatcher.find()) {
-           httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
         } else {
-            new PluginImplementationException("File size not found");
+            throw new PluginImplementationException("File size not found");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -142,11 +141,15 @@ class TurboBitFileRunner extends AbstractRunner {
                     }
                 }
 
-                contentAsString=getContentAsString();
-                final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString,"minLimit : ",",", TimeUnit.SECONDS);
+                contentAsString = getContentAsString();
+                int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "minLimit : ", ",", TimeUnit.SECONDS);
+                if (contentAsString.contains("Timeout.minLimit = Timeout.minLimit/")) { // there is divider
+                    final int waitTimeDivider = PlugUtils.getNumberBetween(contentAsString, "Timeout.minLimit = Timeout.minLimit/", ";");
+                    waitTime = waitTime / waitTimeDivider;
+                }
                 downloadTask.sleep(waitTime);
 
-                final String timeoutAction = "http://turbobit.net/download/getLinkAfterTimeout/" + urlCode ;
+                final String timeoutAction = "http://turbobit.net/download/getLinkAfterTimeout/" + urlCode;
                 httpMethod = getMethodBuilder()
                         .setReferer(freeAction)
                         .setAction(timeoutAction)
@@ -156,17 +159,17 @@ class TurboBitFileRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                contentAsString=getContentAsString();
+                contentAsString = getContentAsString();
                 //logger.info(contentAsString);
 
-                final String finalURL = "http://turbobit.net/download/redirect/"+PlugUtils.getStringBetween(contentAsString,"<a href='/download/redirect/","'");
+                final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(contentAsString, "<a href='/download/redirect/", "'");
                 logger.info("Final URL: " + finalURL);
                 httpMethod = getMethodBuilder().setReferer(timeoutAction).setAction(finalURL).toGetMethod();
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new ServiceConnectionProblemException("Error starting download");
-                } 
+                }
             } else {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -236,7 +239,7 @@ class TurboBitFileRunner extends AbstractRunner {
             return r.modifyResponseMethod(
                     getMethodBuilder(content)
                             .setReferer(action)
-                            .setActionFromFormByIndex(3,true)
+                            .setActionFromFormByIndex(3, true)
                             //.setActionFromFormWhereTagContains("recaptcha", true)
                             .setAction(action)
             ).toPostMethod();

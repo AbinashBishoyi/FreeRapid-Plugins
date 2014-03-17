@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
@@ -16,7 +15,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
  */
 class MediafireRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
@@ -27,9 +26,9 @@ class MediafireRunner extends AbstractRunner {
 
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
-        int result = client.makeRequest(getMethod, true);
-        if (result == HttpStatus.SC_OK || result == HttpStatus.SC_NOT_FOUND) {
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             checkNameAndSize(getContentAsString());
         } else
             throw new ServiceConnectionProblemException();
@@ -43,12 +42,25 @@ class MediafireRunner extends AbstractRunner {
             return;
         }
 
-        final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        int result = client.makeRequest(getMethod, true);
-        if (result == HttpStatus.SC_OK || result == HttpStatus.SC_NOT_FOUND) {
-            checkNameAndSize(getContentAsString());
-            if (getContentAsString().contains("cu(")) {
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+
+            if (getContentAsString().contains("- Password Protected File -")) {
+                while (getContentAsString().contains("- Password Protected File -")) {
+                    //this doesn't work
+                    HttpMethod postPwd = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setAction(fileURL)//could propably be setActionFromFormByName("form_password", true), but it's the same as this
+                            .setAndEncodeParameter("downloadp", getPassword())
+                            .toPostMethod();
+                    if (!makeRedirectedRequest(postPwd)) {
+                        throw new PluginImplementationException("Some issue while posting password");
+                    }
+                }
+            }
+
+            if (getContentAsString().contains("cu('")) {
                 Matcher matcher = getMatcherAgainstContent("cu\\('([^']+)','([^']+)','([^']+)'\\)");
 
                 if (!matcher.find()) {
@@ -58,7 +70,7 @@ class MediafireRunner extends AbstractRunner {
                 String pk = matcher.group(2);
                 String r = matcher.group(3);
                 String url = "http://www.mediafire.com/dynamic/download.php?qk=" + qk + "&pk=" + pk + "&r=" + r;
-                logger.info("Sript target URL " + url);
+                logger.info("Script target URL " + url);
                 GetMethod method = getGetMethod(url);
 
 
@@ -66,8 +78,8 @@ class MediafireRunner extends AbstractRunner {
 
                     String u2 = PlugUtils.getStringBetween(getContentAsString(), "key to support (", ")\"");
                     String ml = PlugUtils.getStringBetween(getContentAsString(), "var mL='", "';");
-                    String mh = PlugUtils.getStringBetween(getContentAsString(), "var mH='" , "';");
-                    String my = PlugUtils.getStringBetween(getContentAsString(), "var mY='" , "';");
+                    String mh = PlugUtils.getStringBetween(getContentAsString(), "var mH='", "';");
+                    String my = PlugUtils.getStringBetween(getContentAsString(), "var mY='", "';");
 
                     String finalLink = "http://" + ml + "/" + u2 + "g/" + mh + "/" + my;
                     logger.info("Final URL " + finalLink);
@@ -80,16 +92,33 @@ class MediafireRunner extends AbstractRunner {
                         throw new PluginImplementationException();
                     }
 
-
-                } else throw new ServiceConnectionProblemException();
-
+                } else {
+                    checkProblems();
+                    throw new PluginImplementationException();
+                }
             } else {
                 checkProblems();
-                logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
-        } else
+        } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private void checkNameAndSize(String content) throws Exception {
+        if (isList()) return;
+
+        PlugUtils.checkFileSize(httpFile, content, "sharedtabsfileinfo1-fs\" value=\"", "\">");
+        PlugUtils.checkName(httpFile, content, "sharedtabsfileinfo1-fn\" value=\"", "\">");
+
+    }
+
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+        final String contentAsString = getContentAsString();
+        if (contentAsString.contains("The key you provided for file download was invalid") || contentAsString.contains("How can MediaFire help you?")) {
+            throw new URLNotAvailableAnymoreException(String.format("File not found"));
+        }
     }
 
     private void runList() throws Exception {
@@ -106,23 +135,7 @@ class MediafireRunner extends AbstractRunner {
         } else throw new ServiceConnectionProblemException();
     }
 
-
-    private void checkNameAndSize(String content) throws Exception {
-
-        if (!content.contains("mediafire.com")) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-        }
-        if (content.contains("The key you provided for file download was invalid") || content.contains("How can MediaFire help you?")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>The file was removed.</b><br>"));
-        }
-
-        if(isList()) return;
-
-        PlugUtils.checkFileSize(httpFile, content, "sharedtabsfileinfo1-fs\" value=\"", "\">");
-        PlugUtils.checkName(httpFile, content, "sharedtabsfileinfo1-fn\" value=\"", "\">");
-
-    }
+    /* this seems to be unused
 
     String parseLink(String rawlink) throws Exception {
 
@@ -162,15 +175,7 @@ class MediafireRunner extends AbstractRunner {
         } else
             throw new PluginImplementationException("Parameter " + s + " was not found");
     }
-
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("The key you provided for file download was invalid");
-        if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>The file was removed</b><br>"));
-        }
-
-    }
+    */
 
     private void parseList() {
         final Matcher matcher = getMatcherAgainstContent("oe\\[[0-9]+\\]=Array\\('([^']+?)'");
@@ -189,8 +194,16 @@ class MediafireRunner extends AbstractRunner {
     }
 
 
-   private boolean isList() {
-       return (fileURL.contains("?sharekey="));
-   }
+    private boolean isList() {
+        return (fileURL.contains("?sharekey="));
+    }
+
+    private String getPassword() throws Exception {
+        MediafirePasswordUI ps = new MediafirePasswordUI();
+        if (getDialogSupport().showOKCancelDialog(ps, "Secured file on Mediafire")) {
+            return (ps.getPassword());
+        } else throw new NotRecoverableDownloadException("This file is secured with a password");
+
+    }
 
 }

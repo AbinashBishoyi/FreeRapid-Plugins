@@ -11,7 +11,6 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -24,12 +23,13 @@ class FileVelocityFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileVelocityFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
+        addCookie(new Cookie(".filevelocity.com", "lang", "english", "/", null, false));
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkFileProblems();
             checkDownloadProblems();
@@ -38,8 +38,8 @@ class FileVelocityFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Download File:</b> ", "</h2>");
-        PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font></td>");
+        PlugUtils.checkName(httpFile, content, "<nobr>", "</nobr>");
+        PlugUtils.checkFileSize(httpFile, content, "<small style=\"font-size:10px;\">", "</small>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -70,7 +70,7 @@ class FileVelocityFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
             if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new NotRecoverableDownloadException("Invalid FileVelocity registered account login information!");
+                throw new BadLoginException("Invalid FileVelocity registered account login information!");
 
             return true;
         }
@@ -78,28 +78,26 @@ class FileVelocityFileRunner extends AbstractRunner {
 
 
     private boolean isPassworded() {
-        boolean passworded = getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
-        return passworded;
+        return getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
     }
 
 
     @Override
     public void run() throws Exception {
         super.run();
-
         login();
-
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod method = getGetMethod(fileURL); //create GET request
-        if (!makeRedirectedRequest(method)) { //we make the main request
+        GetMethod method = getGetMethod(fileURL);
+        addCookie(new Cookie(".filevelocity.com", "lang", "english", "/", null, false));
+        if (!makeRedirectedRequest(method)) {
             logger.warning(getContentAsString());
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
 
-        checkFileProblems();//check problems
-        checkNameAndSize(getContentAsString());//extract file name and size from the page
-        
+        checkFileProblems();
+        checkNameAndSize(getContentAsString());
+
         HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
                 .setBaseURL(fileURL)
@@ -108,9 +106,9 @@ class FileVelocityFileRunner extends AbstractRunner {
                 .toPostMethod();
 
         if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
+            checkDownloadProblems();
+            logger.warning(getContentAsString());
+            throw new PluginImplementationException();
         }
 
         checkDownloadProblems();
@@ -120,7 +118,6 @@ class FileVelocityFileRunner extends AbstractRunner {
                 .setAction(fileURL)
                 .removeParameter("method_premium");
 
-        //process wait time
         String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
         Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
         if (waitTimematcher.find()) {
@@ -137,15 +134,13 @@ class FileVelocityFileRunner extends AbstractRunner {
 
         httpMethod = stepCaptcha(methodBuilder);
 
-        //here is the download link extraction
         if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
     private HttpMethod stepCaptcha(MethodBuilder methodBuilder) throws Exception {
-        //process captcha
         final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha/api/challenge\\?k=(.*?)\">");
         reCaptchaKeyMatcher.find();
         final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
@@ -159,11 +154,10 @@ class FileVelocityFileRunner extends AbstractRunner {
         return r.modifyResponseMethod(methodBuilder).toPostMethod();
     }
 
-
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Not Found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
@@ -172,9 +166,19 @@ class FileVelocityFileRunner extends AbstractRunner {
         if (contentAsString.contains("Wrong captcha")) {
             throw new YouHaveToWaitException("Wrong captcha", 1);
         }
-        if (contentAsString.contains("seconds till next download")) {
-            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "You have to wait ", " seconds till next download", TimeUnit.SECONDS);
-            throw new YouHaveToWaitException("Wait between download", waitTime);
+        if (contentAsString.contains("till next download")) {
+            String regexRule = "(?:([0-9]+) hours?, )?(?:([0-9]+) minutes?, )?(?:([0-9]+) seconds?) till next download";
+            Matcher matcher = PlugUtils.matcher(regexRule, contentAsString);
+            int waitHours = 0, waitMinutes = 0, waitSeconds = 0, waitTime;
+            if (matcher.find()) {
+                if (matcher.group(1) != null)
+                    waitHours = Integer.parseInt(matcher.group(1));
+                if (matcher.group(2) != null)
+                    waitMinutes = Integer.parseInt(matcher.group(2));
+                waitSeconds = Integer.parseInt(matcher.group(3));
+            }
+            waitTime = (waitHours * 60 * 60) + (waitMinutes * 60) + waitSeconds;
+            throw new YouHaveToWaitException("You have to wait " + waitTime + " seconds", waitTime);
         }
         if (contentAsString.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Server problem");

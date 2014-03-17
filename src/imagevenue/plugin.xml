@@ -2,7 +2,7 @@
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.imagevenue.ImagevenueServiceImpl" id="imagevenue.com" vendor="ntoskrnl" version="1.0.5">
     <attributes>
-        <attribute id="urlRegex" value="http://.*?imagevenue\.com/img.php[?]image=.+"/>
+        <attribute id="urlRegex" value="https?://img[0-9]+\.imagevenue\.com/(img|view)\.php\?(.*?)image=.+"/>
         <attribute id="minver" value="0.85"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="imagevenue.com"/>

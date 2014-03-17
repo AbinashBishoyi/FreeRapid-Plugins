@@ -102,7 +102,7 @@ class UploadBoxFileRunner extends AbstractRunner {
 
         if (contentAsString.contains("he limit of traffic for you is exceeded")) {
             int wait = PlugUtils.getWaitTimeBetween(contentAsString, "wait <strong>", "</strong> minutes", TimeUnit.MINUTES);
-            throw new YouHaveToWaitException("The limit of traffic for you is exceeded.", wait);
+            throw new YouHaveToWaitException("The limit of traffic for you is exceeded.", wait * 60);
         }
 
     }

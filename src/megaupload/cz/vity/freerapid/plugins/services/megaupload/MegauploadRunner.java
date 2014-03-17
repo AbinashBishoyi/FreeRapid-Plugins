@@ -108,7 +108,7 @@ class MegauploadRunner {
         if (contentAsString.contains("Download limit exceeded")) {
             final GetMethod getMethod = client.getGetMethod(HTTP_SITE + "/premium/??");
             if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-                matcher = PlugUtils.matcher("Please wait ([0-9]+)", contentAsString);
+                matcher = PlugUtils.matcher("Please wait ([0-9]+)", client.getContentAsString());
                 if (matcher.find()) {
                     throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60 * Integer.parseInt(matcher.group(1)));
                 }

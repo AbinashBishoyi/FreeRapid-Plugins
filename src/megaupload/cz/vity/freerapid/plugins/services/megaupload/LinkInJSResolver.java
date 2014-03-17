@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
  * @author Ludek Zika
  */
 
-public class LinkInJSResolver {
+class LinkInJSResolver {
     static Logger logger;
     private String vars[][] = new String[2][2];
 
@@ -17,32 +17,31 @@ public class LinkInJSResolver {
         logger = log;
     }
 
-    public String FindUrl(String contentAsString) {
+    public String findUrl(String contentAsString) {
         Matcher matcher = Pattern.compile("download</font></a>';\\s*var (.) = ([^;]*);\\s*var (.) = ([^;]*);", Pattern.MULTILINE).matcher(contentAsString);
         if (matcher.find()) {
 
             vars[0][0] = matcher.group(1);
-            vars[0][1] = Expression(matcher.group(2));
+            vars[0][1] = expression(matcher.group(2));
             vars[1][0] = matcher.group(3);
-            vars[1][1] = Expression(matcher.group(4));
+            vars[1][1] = expression(matcher.group(4));
 
 
             matcher = Pattern.compile("dlbutton\"\\).innerHTML \\= '<a href=\"([^\"]*)", Pattern.MULTILINE).matcher(contentAsString);
             if (!matcher.find()) return "";
             String rawlink = matcher.group(1);
-            String link = parseLink(rawlink);
 
-            return link;
+            return parseLink(rawlink);
         } else return "";
     }
 
     char StringToAChar(String s) {
-        int i = (int) Integer.valueOf(s);
+        int i = Integer.valueOf(s);
         return (char) i;
 
     }
 
-    String Expression(String exp) {
+    String expression(String exp) {
         Matcher matcher;
         if (exp.contains("+")) {
 
@@ -50,9 +49,9 @@ public class LinkInJSResolver {
             if (matcher.find()) {
 
 
-                String j = Expression(matcher.group(1));
+                String j = expression(matcher.group(1));
 
-                String d = Expression(matcher.group(2));
+                String d = expression(matcher.group(2));
                 return j + d;
             }
             return "";
@@ -72,7 +71,7 @@ public class LinkInJSResolver {
 
             if (matcher.find()) {
 
-                int i = (int) Integer.valueOf(matcher.group(1));
+                int i = Integer.valueOf(matcher.group(1));
                 i = (int) Math.sqrt(i);
                 char v2c = (char) i;
 

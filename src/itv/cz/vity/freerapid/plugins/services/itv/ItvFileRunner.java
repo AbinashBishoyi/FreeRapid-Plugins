@@ -63,25 +63,14 @@ class ItvFileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String videoId = PlugUtils.getStringBetween(getContentAsString(), "<param name=\"videoId\" value=\"", "\"");
             final String productionId = PlugUtils.getStringBetween(getContentAsString(), "\"productionId\":\"", "\"").replace("\\/", "/");
-            method = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction("https://www.itv.com/itvplayer/api/user/player-token/" + videoId)
-                    .toGetMethod();
-            if (!makeRedirectedRequest(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            checkProblems();
-            final String userToken = PlugUtils.getStringBetween(getContentAsString(), "\"user_token\":\"", "\"").replace("\\/", "/");
             method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://mercury.itv.com/PlaylistService.svc?wsdl")
                     .setHeader("SOAPAction", "http://tempuri.org/PlaylistService/GetPlaylist")
                     .toPostMethod();
             ((PostMethod) method).setRequestEntity(new StringRequestEntity(
-                    String.format(PLAYLIST_REQUEST_BASE, productionId, getRandomGuid(), userToken), "text/xml", "utf-8"));
+                    String.format(PLAYLIST_REQUEST_BASE, productionId, getRandomGuid()), "text/xml", "utf-8"));
             if (!client.getSettings().isProxySet()) {
                 Tunlr.setupMethod(method);
             }
@@ -168,7 +157,7 @@ class ItvFileRunner extends AbstractRtmpRunner {
                     "        <itv:RevenueScienceValue>ITVPLAYER.12.18.4</itv:RevenueScienceValue>\n" +
                     "        <itv:SessionId/>\n" +
                     "        <itv:SsoToken/>\n" +
-                    "        <itv:UserToken>%s</itv:UserToken>\n" +
+                    "        <itv:UserToken/>\n" +
                     "      </tem:userInfo>\n" +
                     "      <tem:siteInfo>\n" +
                     "        <itv:AdvertisingRestriction>None</itv:AdvertisingRestriction>\n" +

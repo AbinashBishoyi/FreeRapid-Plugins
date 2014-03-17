@@ -1,13 +1,16 @@
 package cz.vity.freerapid.plugins.services.uploadcomua;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.uploadcomua.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,9 +22,9 @@ import java.util.regex.Pattern;
  */
 class UploadComUaFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadComUaFileRunner.class.getName());
-    private final static String SERVICE_WEB = "http://www.upload.com.ua/";
-    private final int captchaMax = 0;
-    private int captchaCounter = 1;
+    private final static String SERVICE_WEB = "http://www.upload.com.ua";
+    private final int captchaMax = 10;
+    private int captchaCounter = 0;
 
     @Override
     public void runCheck() throws Exception {
@@ -65,7 +68,6 @@ class UploadComUaFileRunner extends AbstractRunner {
 
             //solve captcha and go to waiting page
             while (getContentAsString().contains("/confirm.php")) {
-                downloadTask.sleep(4);//slow down a bit, otherwise captcha may not be accepted
                 if (!makeRedirectedRequest(stepCaptcha())) throw new ServiceConnectionProblemException();
             }
             logger.info("Captcha OK");
@@ -121,20 +123,41 @@ class UploadComUaFileRunner extends AbstractRunner {
         }
     }
 
-    private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
-        final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = SERVICE_WEB + "confirm.php";
-        //logger.info("Captcha URL " + captchaSrc);
-
-        String captcha;
-        if (captchaCounter <= captchaMax) {
-            captcha = PlugUtils.recognize(captchaSupport.getCaptchaImage(captchaSrc), "-d -1 -C F-0-9");
-            logger.info("OCR attempt " + captchaCounter + " of " + captchaMax + ", recognized " + captcha);
+    private HttpMethod stepCaptcha() throws Exception {
+        String captcha = null;
+        if (captchaCounter == 0) {//try utilizing this cookie bug/workaround first
             captchaCounter++;
+            logger.info("Attempting cookie method");
+            for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
+                if (cookie.getName().equals("capcha")) {
+                    captcha = cookie.getValue();
+                    break;
+                }
+            }
+            if (captcha == null) {
+                logger.info("Cookie not found");
+                captcha = "";
+            }
         } else {
-            captcha = captchaSupport.getCaptcha(captchaSrc);
-            if (captcha == null) throw new CaptchaEntryInputMismatchException();
-            logger.info("Manual captcha " + captcha);
+            final CaptchaSupport captchaSupport = getCaptchaSupport();
+            final String captchaSrc = SERVICE_WEB + getMethodBuilder().setActionFromImgSrcWhereTagContains("confirm.php").getAction();
+            logger.info("Captcha URL " + captchaSrc);
+
+            if (captchaCounter <= captchaMax) {
+                final HttpMethod getCaptcha = getMethodBuilder().setReferer(fileURL).setAction(captchaSrc).toGetMethod();
+                client.getHTTPClient().executeMethod(getCaptcha);
+                final InputStream is = getCaptcha.getResponseBodyAsStream();
+                captcha = CaptchaReader.recognize(is);
+                if (captcha == null) {
+                    logger.info("Could not separate captcha letters, attempt " + captchaCounter + " of " + captchaMax);
+                }
+                logger.info("OCR recognized " + captcha + ", attempt " + captchaCounter + " of " + captchaMax);
+                captchaCounter++;
+            } else {
+                captcha = captchaSupport.getCaptcha(captchaSrc);
+                if (captcha == null) throw new CaptchaEntryInputMismatchException();
+                logger.info("Manual captcha " + captcha);
+            }
         }
 
         return getMethodBuilder()

@@ -56,6 +56,7 @@ class FilebaseToRunner extends AbstractRunner {
             if (matcher.find()) {
                 PostMethod postMethod = getPostMethod(matcher.group(1));
                 PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"wait"});
+                //  logger.warning(getContentAsString());
                 if (!tryDownloadAndSaveFile(postMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
@@ -126,7 +127,7 @@ class FilebaseToRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Fehler 404 - Dieses Datei wurde leider nicht gefunden");
         }
         if (getContentAsString().contains("<h1>Not Found</h1>")) {
-            throw new URLNotAvailableAnymoreException("File was not found on the server");
+            throw new ServiceConnectionProblemException("File was not found on the server - service problem?");
         }
 //        if (getContentAsString().contains("Please finish download and try")) {
 //            throw new ServiceConnectionProblemException("You already download some file. Please finish download and try again.");

@@ -18,6 +18,19 @@ import java.util.regex.Matcher;
  */
 class UploadJockeyRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadJockeyRunner.class.getName());
+    public String dpOK ="Invalid";
+    public String upOK = "Invalid";
+    public String rpOK = "Invalid";
+    public String esOK = "Invalid";
+    public String ffOK = "Invalid";
+    public String muOK = "Invalid";
+
+    public String dpURL ="Invalid";
+    public String upURL = "Invalid";
+    public String rpURL = "Invalid";
+    public String esURL = "Invalid";
+    public String ffURL = "Invalid";
+    public String muURL = "Invalid";
 
     @Override
     public void run() throws Exception {
@@ -32,52 +45,26 @@ class UploadJockeyRunner extends AbstractRunner {
         //<a href="http://www.uploadjockey.com/redirect.php?url=aHR0cDovL2RlcG9zaXRmaWxlcy5jb20vZmlsZXMvZTd2ZnZnbjl1&key=297425" target="_blank" >DepositFiles.com</a> </div>
 
         //String x = JOptionPane.showInputDialog("Select server:");
+//Deposit files
+//Uploaded.to
+//Rapidshare
+
+//Easy-Share - Captcha
+//File Factory - Capthca
+//MegaUpload - Captcha
 
         final GetMethod mJockey = getGetMethod(fileURL);
         if (makeRequest(mJockey)) { //Load Jockey Page
             //Find File Factory // First for testing file removed error later make this last because there is >> Captcha
-                    String ffOK = "Invalid";
-                    String dpOK = "Invalid";
-                    String ffURL = "Invalid";
-                    String dpURL = "Invalid";
+
                     final String mContent = getContentAsString();
 
-                   final Matcher ffMatch = getMatcherAgainstContent("<a href=\"([^\"]+)\" target=\"_blank\" >FileFactory");
-                    if (ffMatch.find()) {
-                        final GetMethod gFF = getGetMethod(ffMatch.group(1));
-                            if (makeRedirectedRequest(gFF)) {
-                                //<iframe src="http://www.filefactory.com/file/" name="top" width="1100" height="600" scrolling="auto" frameborder="0"></iframe>
-                                final Matcher flMatch = getMatcherAgainstContent("<iframe src=\"([^\"]+)");
-                                    if (flMatch.find()) {
-                                        ffURL = flMatch.group(1);
-                                        final GetMethod gFF2 = getGetMethod(ffURL);
-                                            if (makeRedirectedRequest(gFF2)) {
-                                                String ffContent = getContentAsString();
-                                                ffOK = checkFileFactory(ffContent);
-                                            }
 
-                                    }
-                            }
-                    }
-                    
-                    
-                    final Matcher dpMatch = PlugUtils.matcher("<a href=\"([^\"]+)\" target=\"_blank\" >DepositFiles", mContent);
-                    
-                    if (dpMatch.find()) {
-                        //System.out.println("Processing DP");
-                        final GetMethod gDP = getGetMethod(dpMatch.group(1));
-                            if (makeRedirectedRequest(gDP)) {
-                                final Matcher dpMatch2 = getMatcherAgainstContent("<iframe src=\"([^\"]+)");
-                                    if(dpMatch2.find()) {
-                                        dpURL = dpMatch2.group(1);
-                                        final GetMethod gDP2 = getGetMethod(dpURL);
-                                            if (makeRedirectedRequest(gDP2)) {
-                                                String dpContent = getContentAsString();
-                                                dpOK = checkDepositFiles(dpContent);
-                                            }
-                                    }
-                            }
-                    }
+
+                    ffURL = checkServer(mContent,"FileFactory");
+                    dpURL = checkServer(mContent,"DepositFiles");
+
+
 
                     if (ffOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(ffURL));
@@ -90,7 +77,8 @@ class UploadJockeyRunner extends AbstractRunner {
 
                     this.httpFile.setPluginID("");
                     this.httpFile.setState(DownloadState.QUEUED);
-
+                    System.out.println(dpURL);
+                    
                     
 
                     
@@ -115,6 +103,36 @@ class UploadJockeyRunner extends AbstractRunner {
     //        throw new URLNotAvailableAnymoreException("The page you requested was not found in our database.");
     //    }
     //}
+        private String checkServer(String tContent, String tService) throws Exception {
+
+
+             final Matcher dpMatch = PlugUtils.matcher("<a href=\"([^\"]+)\" target=\"_blank\" >" + tService, tContent);
+                    if (dpMatch.find()) {
+                        //System.out.println("Processing DP");
+                        final GetMethod gDP = getGetMethod(dpMatch.group(1));
+                            if (makeRedirectedRequest(gDP)) {
+                                final Matcher dpMatch2 = getMatcherAgainstContent("<iframe src=\"([^\"]+)");
+                                    if(dpMatch2.find()) {
+                                        String cURL = dpMatch2.group(1);
+                                        final GetMethod gDP2 = getGetMethod(cURL);
+                                            if (makeRedirectedRequest(gDP2)) {
+                                                String dpContent = getContentAsString();
+
+                                                if (tService.equals("DepositFiles")) {
+                                                    dpOK = checkDepositFiles(dpContent);
+                                                } else
+                                                if (tService.equals("FileFactory")) {
+                                                    ffOK = checkFileFactory(dpContent);
+                                                }
+
+
+                                                return cURL;
+                                            }
+                                    }
+                            }
+                    }
+            return "Invalid";
+        }
 
         private String checkDepositFiles(String content) throws Exception {
         if (!content.contains("depositfiles")) {

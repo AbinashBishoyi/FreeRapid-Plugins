@@ -49,7 +49,7 @@ class TurtleShareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final Matcher match = PlugUtils.matcher("<div class=\"download_btn-wrap\"><a href=\"(.+?)\" class=\"download_button slow\">", contentAsString);
+            final Matcher match = PlugUtils.matcher("<div class=\"download_btn-wrap\"><a href=\"(.+?)\" class=\"download_button slow\"", contentAsString);
             if (!match.find())
                 throw new PluginImplementationException("Unable to locate download link");
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(match.group(1)).toHttpMethod();

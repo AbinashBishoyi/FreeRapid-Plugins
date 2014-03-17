@@ -87,7 +87,8 @@ class MegaSharesFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Could not download file") || content.contains("<h1>Not Found</h1>")) {
+        if (content.contains("Could not download file") || content.contains("<h1>Not Found</h1>")
+                || content.contains("class=\"red\">Invalid link")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("All download slots for this link are currently filled")) {

@@ -52,4 +52,11 @@ class FileRioFileRunner extends XFileSharingRunner {
         }
         throw new PluginImplementationException("Download link not found");
     }
+
+    @Override
+    protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        checkFileProblems();
+        super.checkDownloadProblems();
+    }
+
 }

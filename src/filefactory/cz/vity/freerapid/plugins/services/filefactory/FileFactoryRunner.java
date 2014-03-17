@@ -127,6 +127,10 @@ class FileFactoryRunner extends AbstractRunner {
                 || contentAsString.contains("All free download slots are in use")) {
             throw new ServiceConnectionProblemException("All free download slots are in use");
         }
+        if (contentAsString.contains("this file can only be downloaded by FileFactory Premium")
+                || contentAsString.contains("This file is only available to Premium Members")) {
+            throw new ServiceConnectionProblemException("This file is only for Premium members");
+        }
     }
 
     private void checkAllProblems() throws ErrorDuringDownloadingException {

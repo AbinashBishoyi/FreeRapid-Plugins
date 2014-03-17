@@ -82,10 +82,17 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         final MethodBuilder methodBuilder = getMethodBuilder(content)
                 .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("method_", true)
-                .setAction(fileURL);
+                .setAction(fileURL)
+                .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
             methodBuilder.removeParameter("method_premium");
         }
+        /*
+        if ((methodBuilder.getParameters().get("fname")!=null)) {
+            String fname = methodBuilder.getParameters().get("fname");
+            methodBuilder.setAndEncodeParameter("fname",fname);
+        }
+        */
         return methodBuilder;
     }
 

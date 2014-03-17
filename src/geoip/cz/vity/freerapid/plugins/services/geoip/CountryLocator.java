@@ -1,6 +1,5 @@
 package cz.vity.freerapid.plugins.services.geoip;
 
-import com.subgraph.orchid.geoip.CountryCodeService;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.DownloadClient;

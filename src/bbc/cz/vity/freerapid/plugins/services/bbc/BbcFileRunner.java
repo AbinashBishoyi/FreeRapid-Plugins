@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import jlibs.core.net.URLUtil;
@@ -273,11 +274,16 @@ class BbcFileRunner extends AbstractRtmpRunner {
 
     private void downloadSubtitle() throws Exception {
         URL url = new URL(fileURL);
-        String filename = URLUtil.getQueryParams(url.toString(), "UTF-8").get(SUBTITLE_FILENAME_PARAM);
+        String filename = null;
+        try {
+            filename = URLUtil.getQueryParams(url.toString(), "UTF-8").get(SUBTITLE_FILENAME_PARAM);
+        } catch (Exception e) {
+            //
+        }
         if (filename == null) {
             throw new PluginImplementationException("File name not found");
         }
-        httpFile.setFileName(URLDecoder.decode(filename, "UTF-8") + ".srt");
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + ".srt", "_"));
         fileURL = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
 
         HttpMethod method = getGetMethod(fileURL);

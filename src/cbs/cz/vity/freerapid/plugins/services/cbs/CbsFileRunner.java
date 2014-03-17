@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import jlibs.core.net.URLUtil;
@@ -169,7 +170,7 @@ class CbsFileRunner extends AbstractRtmpRunner {
         if (filename == null) {
             throw new PluginImplementationException("File name not found");
         }
-        httpFile.setFileName(URLDecoder.decode(filename, "UTF-8") + ".srt");
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + ".srt", "_"));
         fileURL = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
 
         HttpMethod method = getGetMethod(fileURL);

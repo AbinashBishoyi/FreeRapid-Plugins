@@ -1,4 +1,4 @@
-package com.subgraph.orchid.geoip;
+package cz.vity.freerapid.plugins.services.geoip;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

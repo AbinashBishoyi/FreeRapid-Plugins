@@ -17,9 +17,10 @@ public class TestApp extends PluginDevApplication {
         try {
             //httpFile.setNewURL(new URL("http://cs.twitch.tv/wries/b/319029303"));
             //httpFile.setNewURL(new URL("http://www.twitch.tv/paradoxinteractive/b/326746473"));
+            httpFile.setNewURL(new URL("http://store44.media44.justin.tv/archives/2012-7-30/highlight_326746473.flv?title=Oops%21+Penalty%21"));
             //httpFile.setNewURL(new URL("http://www.twitch.tv/tsm_chaox/b/328855029"));
             //httpFile.setNewURL(new URL("http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv")); //videoUrl
-            httpFile.setNewURL(new URL("http://store49.media47.justin.tv/archives/2012-8-30/live_user_wries_1346357670.flv?title=%C4%8Desk%C3%A1+kvalifikace+na+ESWC%21%21+2%2F4_3")); //videoUrl
+            //httpFile.setNewURL(new URL("http://store49.media47.justin.tv/archives/2012-8-30/live_user_wries_1346357670.flv?title=%C4%8Desk%C3%A1+kvalifikace+na+ESWC%21%21+2%2F4_3")); //videoUrl
             //httpFile.setNewURL(new URL("http://www.justin.tv/wries/b/330488455"));
             //httpFile.setNewURL(new URL("http://www.justin.tv/tsm_chaox/b/328855029"));
             //httpFile.setNewURL(new URL("http://en.twitch.tv/teamsp00ky/b/330898023"));

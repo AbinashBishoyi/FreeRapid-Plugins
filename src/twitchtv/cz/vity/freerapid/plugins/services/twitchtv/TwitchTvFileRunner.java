@@ -7,12 +7,16 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import jlibs.core.net.URLUtil;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,22 +51,24 @@ class TwitchTvFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher matcher = Pattern.compile("<h2 class='js-title'>(.+?)</h2>", Pattern.DOTALL).matcher(content);
-        if (!matcher.find()) {
+        String filename;
+        try {
+            filename = PlugUtils.getStringBetween(content, "\"title\":\"", "\"");
+        } catch (PluginImplementationException e) {
             throw new PluginImplementationException("Filename not found");
         }
-        httpFile.setFileName(matcher.group(1).replaceAll("\\s", " "));
+        httpFile.setFileName(filename.trim().replaceAll("\\s", " "));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
+        logger.info("Starting download in TASK " + fileURL);
         if (isVideoUrl(fileURL)) {
             processVideoUrl();
             return;
         }
-        logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             final String contentAsString = getContentAsString();
@@ -71,11 +77,11 @@ class TwitchTvFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);
             final int archiveId;
             try {
-                archiveId = PlugUtils.getNumberBetween(getContentAsString(), "archive_id=", "\"");
+                archiveId = PlugUtils.getNumberBetween(getContentAsString(), "\"archive_id\":", ",");
             } catch (PluginImplementationException e) {
                 throw new PluginImplementationException("Archive id not found");
             }
-            HttpMethod httpMethod = getGetMethod(String.format("http://api.justin.tv/api/broadcast/by_archive/%d.xml", archiveId));
+            final HttpMethod httpMethod = getGetMethod(String.format("http://api.justin.tv/api/broadcast/by_archive/%d.xml", archiveId));
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -154,22 +160,19 @@ class TwitchTvFileRunner extends AbstractRunner {
     private void processVideoUrl() throws Exception {
         //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv -> original videoUrl
         //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv?title=česká kvalifikace na ESWC!! 2/4_2 -> title+"_"+counter added
-        final Matcher matcher = PlugUtils.matcher("(http://.*?media\\d+\\.justin\\.tv/archives/.+?/.+?\\..{3}).*", fileURL);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing video URL");
-        }
+        URL url = new URL(fileURL);
         String title = null;
         try {
-            title = URIUtils.getQuery(fileURL).get(TITLE_PARAM);
+            title = URLUtil.getQueryParams(fileURL, "UTF-8").get(TITLE_PARAM);
         } catch (Exception e) {
             //
         }
-        fileURL = matcher.group(1);
+        fileURL = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
         final String extension = fileURL.substring(fileURL.lastIndexOf("."));
-        final String filename = (title == null ? fileURL.substring(fileURL.lastIndexOf("/") + 1) : title + extension);
-        httpFile.setFileName(filename);
+        final String filename = (title == null ? fileURL.substring(fileURL.lastIndexOf("/") + 1) : URLDecoder.decode(title + extension, "UTF-8"));
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(filename, "_"));
         client.setReferer(httpFile.getFileUrl().getProtocol() + "://" + httpFile.getFileUrl().getAuthority());
-        GetMethod method = getGetMethod(fileURL);
+        final GetMethod method = getGetMethod(fileURL);
         if (!tryDownloadAndSaveFile(method)) {
             checkProblems();
             throw new ServiceConnectionProblemException("Error starting download");

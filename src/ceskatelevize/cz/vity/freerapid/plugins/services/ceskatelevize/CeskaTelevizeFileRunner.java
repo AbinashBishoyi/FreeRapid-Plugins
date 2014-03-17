@@ -180,7 +180,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             } catch (Exception ex) {
                 throw new PluginImplementationException("Cannot get Playlist");
             }
-            final MethodBuilder mb = getMethodBuilder().setReferer(fileURL).setAction("http://www.ceskatelevize.cz/ajax/playlistURL.php");
+            final MethodBuilder mb = getMethodBuilder().setReferer(fileURL).setAction("http://www.ceskatelevize.cz/ajax/getPlaylistURL.php");
             for (final String key : params.keySet()) {
                 mb.setParameter(key, params.get(key));
             }

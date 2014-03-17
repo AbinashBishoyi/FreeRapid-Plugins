@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.share4web;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -40,7 +41,7 @@ class Share4WebFileRunner extends AbstractRunner {
             throw new PluginImplementationException("File name and size not found");
         }
         httpFile.setFileName(matcher.group(1).trim());
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).trim()));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).trim().replace(",", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -67,6 +68,7 @@ class Share4WebFileRunner extends AbstractRunner {
             }
             final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var timerRest =", ";", TimeUnit.SECONDS);
             downloadTask.sleep(waitTime + 1);
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //they trim filename
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

@@ -15,7 +15,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.gigabase.com/getfile/nwJXw981Wl45i0D3eqnQlwBB/She-Wolves.Jane-Mary-and-Elizabeth.part1.rar.html"));
+            //httpFile.setNewURL(new URL("http://www.gigabase.com/getfile/nwJXw981Wl45i0D3eqnQlwBB/She-Wolves.Jane-Mary-and-Elizabeth.part1.rar.html"));
+            httpFile.setNewURL(new URL("http://www.gigabase.com/getfile/nwJXw981Wl6C800CJ6_VYwBB/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final GigaBaseServiceImpl service = new GigaBaseServiceImpl();

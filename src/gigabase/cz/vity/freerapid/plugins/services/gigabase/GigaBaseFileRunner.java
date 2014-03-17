@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.gigabase;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -40,7 +41,7 @@ class GigaBaseFileRunner extends AbstractRunner {
             throw new PluginImplementationException("File name and size not found");
         }
         httpFile.setFileName(matcher.group(1).trim());
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).trim()));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).replace(",", "").trim()));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -54,6 +55,7 @@ class GigaBaseFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("but_dnld_regular.jpg").toGetMethod();
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //they trim filename
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

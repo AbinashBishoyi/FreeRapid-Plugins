@@ -15,7 +15,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.unibytes.com/%20ePEsNk7GGG-Lqw-Us4P3UgBB"));
+            //httpFile.setNewURL(new URL("http://www.unibytes.com/%20ePEsNk7GGG-Lqw-Us4P3UgBB"));
+            httpFile.setNewURL(new URL("http://www.unibytes.com/guHANc6YVUoLqw-Us4P3UgBB"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final UnibytesServiceImpl service = new UnibytesServiceImpl();

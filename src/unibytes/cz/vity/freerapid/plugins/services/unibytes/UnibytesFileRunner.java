@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -40,7 +41,8 @@ class UnibytesFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         PlugUtils.checkName(httpFile, content, "<span title=\"", "\"");
-        PlugUtils.checkFileSize(httpFile, content, "(", ")</h3>");
+        final long fileSize = PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "(", ")</h3>").replace(",", "").trim());
+        httpFile.setFileSize(fileSize);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -72,6 +74,7 @@ class UnibytesFileRunner extends AbstractRunner {
         methodBuilder = getMethodBuilder().setReferer(timerURL).setActionFromAHrefWhereATagContains("Download");
         methodBuilder.setAction(URIUtil.decode(methodBuilder.getAction()));
         method = methodBuilder.toGetMethod();
+        setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //they trim filename
         if (!tryDownloadAndSaveFile(method)) {
             checkProblems();
             throw new ServiceConnectionProblemException();

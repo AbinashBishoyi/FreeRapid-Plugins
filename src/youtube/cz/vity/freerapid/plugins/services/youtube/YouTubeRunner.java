@@ -525,7 +525,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
         if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_age.*")
                 || getContentAsString().contains("watch7-player-age-gate-content")
                 || getContentAsString().contains("Sign in to confirm your age")
-                || getContentAsString().contains("<script>window.location = \"https:\\/\\/www.youtube.com\\/verify_age")) {
+                || getContentAsString().contains("<script>window.location = \"https:\\/\\/www.youtube.com\\/verify_age")
+                || getContentAsString().contains("<script>window.location = \"http:\\/\\/www.youtube.com\\/verify_age")) {
             setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)");
             method = getGetMethod(fileURL);
             if (!makeRedirectedRequest(method)) {
@@ -533,7 +534,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
             }
 
             //controversy
-            if (getContentAsString().contains("<script>window.location = \"http:\\/\\/www.youtube.com\\/verify_controversy")) {
+            if (getContentAsString().contains("<script>window.location = \"http:\\/\\/www.youtube.com\\/verify_controversy")
+                    || getContentAsString().contains("<script>window.location = \"https:\\/\\/www.youtube.com\\/verify_controversy")) {
                 method = getMethodBuilder()
                         .setAction(PlugUtils.getStringBetween(getContentAsString(), "window.location = \"", "\"").replace("\\/", "/"))
                         .toGetMethod();
@@ -544,7 +546,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
             if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_controversy.*")
                     || getContentAsString().contains("verify_controversy?action_confirm=1")) {
                 method = getMethodBuilder()
-                        .setBaseURL("http://www.youtube.com")
+                        .setBaseURL("https://www.youtube.com")
                         .setActionFromFormWhereActionContains("verify_controversy", true)
                         .toPostMethod();
                 if (!makeRedirectedRequest(method)) {

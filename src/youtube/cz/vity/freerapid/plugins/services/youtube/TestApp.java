@@ -23,7 +23,7 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/user/HDstarcraft"));//user page
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=meCIER_s7Ng"));//transcript - subtitles
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=l3hTJOAG5lQ")); //age verification
-            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=giHIJgJS2sE")); //age & controversy verification
+            httpFile.setNewURL(new URL("https://www.youtube.com/watch?v=giHIJgJS2sE")); //age & controversy verification
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=mdtwvmFlhz8")); //age verification
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=UUv3nmgyia2M2FU2TAIRXSLw&feature=plcp")); //user uploaded video
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=PLE963AD215F0C4BE5")); //playlist

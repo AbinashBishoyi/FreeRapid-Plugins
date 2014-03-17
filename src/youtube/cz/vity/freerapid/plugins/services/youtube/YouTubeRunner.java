@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.UnsupportedEncodingException;
@@ -37,6 +38,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -51,6 +53,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
 
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -108,7 +111,11 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<meta name=\"title\" content=\"", "\"");
+        try {
+            PlugUtils.checkName(httpFile, getContentAsString(), "<meta name=\"title\" content=\"", "\"");
+        } catch (final PluginImplementationException e) {
+            PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- YouTube\n</title>");
+        }
         String fileName = PlugUtils.unescapeHtml(PlugUtils.unescapeHtml(httpFile.getFileName()));
         if (!isUserPage()) {
             fileName += fileExtension;

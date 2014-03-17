@@ -1,9 +1,7 @@
 package cz.vity.freerapid.plugins.services.duckload;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -57,47 +55,34 @@ class DuckLoadFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".duckload.com", "dl_set_lang", "en", "/", 86400, false));
+        addGACookies();
         setClientParameter("dontUseHeaderFilename", true);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            method = getMethodBuilder().setReferer(fileURL).setBaseURL(fileURL).setActionFromFormByName("form", true).toPostMethod();
-            downloadTask.sleep(21);
-            if (makeRedirectedRequest(method)) {
-                Matcher matcher = getMatcherAgainstContent("\\(<i>(.+?)</i> <strong>(.+?)</strong>\\)");
-                if (matcher.find()) {
-                    httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2)));
+            while (true) {
+                final String content = getContentAsString();
+                final String reCaptchaKey = PlugUtils.getStringBetween(content, "noscript?k=", "\"");
+                final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+                final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+                if (captcha == null) {
+                    throw new CaptchaEntryInputMismatchException();
                 }
-                final String url;
-                matcher = getMatcherAgainstContent("<embed src=\"(.+?)\"");
-                if (matcher.find()) {
-                    url = matcher.group(1);
-                } else {
-                    matcher = getMatcherAgainstContent("timetowait=([^&'\"]+)");
-                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
-                    final int wait = Integer.parseInt(matcher.group(1));
-                    matcher = getMatcherAgainstContent("ident=([^&'\"]+)");
-                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
-                    final String ident = matcher.group(1);
-                    matcher = getMatcherAgainstContent("token=([^&'\"]+)");
-                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
-                    final String token = matcher.group(1);
-                    matcher = getMatcherAgainstContent("filename=([^&'\"]+)");
-                    if (!matcher.find()) throw new PluginImplementationException("Download parameters not found");
-                    final String filename = matcher.group(1);
-                    url = "/api/as2/link/" + ident + "/" + token + "/" + filename;
-                    downloadTask.sleep(wait + 1);
+                r.setRecognized(captcha);
+                method = r.modifyResponseMethod(
+                        getMethodBuilder(content)
+                                .setReferer(fileURL)
+                                .setAction(fileURL)
+                                .setParameter("free_dl", "")
+                ).toPostMethod();
+                if (tryDownloadAndSaveFile(method)) {
+                    break;
                 }
-                addGACookies();
-                method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
-                if (!tryDownloadAndSaveFile(method)) {
+                if (!getContentAsString().contains("code entered is incorrect")) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error staring download");
                 }
-            } else {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
             }
         } else {
             checkProblems();
@@ -107,7 +92,8 @@ class DuckLoadFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Datei wurde nicht gefunden")
+        if (content.contains("File not found")
+                || content.contains("Datei wurde nicht gefunden")
                 || content.contains("<h1>404 - Not Found</h1>")
                 || content.contains("download.notfound")) {
             throw new URLNotAvailableAnymoreException("File not found");
@@ -115,15 +101,11 @@ class DuckLoadFileRunner extends AbstractRunner {
     }
 
     private void addGACookies() {
+        addCookie(new Cookie(".duckload.com", "PHPSESSID", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "__utma", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "__utmb", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "__utmc", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "__utmz", String.valueOf(random.nextLong()), "/", 86400, false));
-    }
-
-    @Override
-    protected String getBaseURL() {
-        return "http://www.duckload.com";
     }
 
 }

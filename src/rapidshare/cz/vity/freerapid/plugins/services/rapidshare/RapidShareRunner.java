@@ -7,6 +7,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -32,7 +33,7 @@ class RapidShareRunner extends AbstractRunner {
                 .setAction("https://api.rapidshare.com/cgi-bin/rsapi.cgi")
                 .setParameter("sub", "download")
                 .setParameter("fileid", fileID)
-                .setAndEncodeParameter("filename", fileName)
+                .setParameter("filename", fileName)
                 .setParameter("try", "1")
                 .setParameter("cbf", "RSAPIDispatcher")
                 .setParameter("cbid", "1")
@@ -67,10 +68,12 @@ class RapidShareRunner extends AbstractRunner {
                 .setParameter("editparentlocation", "1")
                 .setParameter("bin", "1")
                 .setParameter("fileid", fileID)
-                .setAndEncodeParameter("filename", fileName)
+                .setParameter("filename", fileName)
                 .setParameter("dlauth", matcher.group(2))
                 .toGetMethod();
-        downloadTask.sleep(wait + 1);
+        if (wait > 0) {
+            downloadTask.sleep(wait + 1);
+        }
         if (!tryDownloadAndSaveFile(method)) {
             checkProblems();
             throw new ServiceConnectionProblemException("Error starting download");
@@ -88,7 +91,7 @@ class RapidShareRunner extends AbstractRunner {
             throw new PluginImplementationException("Error parsing file URL");
         }
         fileID = matcher.group(1);
-        fileName = matcher.group(2);
+        fileName = URLDecoder.decode(matcher.group(2), "UTF-8");
         httpFile.setFileName(fileName);
     }
 

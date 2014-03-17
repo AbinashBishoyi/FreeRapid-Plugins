@@ -7,9 +7,9 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.IOException;
 
 /**
  * @author Kajda
@@ -134,20 +134,11 @@ class HotfileFileRunner extends AbstractRunner {
     }
 
     private void downloadFile() throws Exception {
-        final Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Click here to download");
-
-        if (matcher.find()) {
-            final String finalURL = matcher.group(1);
-            final MethodBuilder builder = getMethodBuilder();
-            final HttpMethod httpMethod = builder.setReferer(fileURL).setAction(finalURL).toHttpMethod();
-
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkAllProblems();
-                logger.warning(getContentAsString());
-                throw new IOException("File input stream is empty");
-            }
-        } else {
-            throw new PluginImplementationException("Download link was not found");
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
+        if (!tryDownloadAndSaveFile(httpMethod)) {
+            checkAllProblems();
+            logger.warning(getContentAsString());
+            throw new IOException("File input stream is empty");
         }
     }
 }

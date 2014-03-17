@@ -73,14 +73,19 @@ public class LetitbitRunner extends AbstractRunner {
                     }
                     logger.info("Posted form #" + i);
                 }
-                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
-                String content = handleCaptcha();
-                logger.info("Ajax response: " + content);
-                if (content.contains("[\"")) {
-                    content = PlugUtils.getStringBetween(content, "[", "]").replaceAll("(\\\\|\")", "");
-                    urls = Arrays.asList(content.split(","));
+                if (!getContentAsString().contains("recaptcha")) {
+                    final String url = PlugUtils.getStringBetween(getContentAsString(), "var _direct_links = new Array(\"", "\");");
+                    urls = Arrays.asList(url);
                 } else {
-                    urls = Arrays.asList(content);
+                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
+                    String content = handleCaptcha();
+                    logger.info("Ajax response: " + content);
+                    if (content.contains("[\"")) {
+                        content = PlugUtils.getStringBetween(content, "[", "]").replaceAll("(\\\\|\")", "");
+                        urls = Arrays.asList(content.split(","));
+                    } else {
+                        urls = Arrays.asList(content);
+                    }
                 }
             }
             httpMethod = getGetMethod(getFinalUrl(urls));
@@ -116,7 +121,7 @@ public class LetitbitRunner extends AbstractRunner {
         final Matcher matcher = getMatcherAgainstContent("(?is)(<form\\b.+?</form>)");
         while (matcher.find()) {
             final String content = matcher.group(1);
-            if (content.contains("md5crypt") && !content.contains("/sms/check")) {
+            if (content.contains("md5crypt") && !content.contains("/sms/check") && !content.contains("check_pinkod")) {
                 final HttpMethod method = getMethodBuilder(content).setActionFromFormByIndex(1, true).toPostMethod();
                 if (!makeRedirectedRequest(method)) {
                     throw new ServiceConnectionProblemException();

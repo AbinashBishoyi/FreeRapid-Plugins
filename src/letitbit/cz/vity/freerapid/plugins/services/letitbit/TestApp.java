@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://letitbit.net/download/72807.70d2045e51ca61a150ee158a4bfb/Super_Popki_Wife_Stockings.rar.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("212.119.97.198", 3128); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final LetitbitShareServiceImpl service = new LetitbitShareServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Meow <meowmeowsama@gmail.com>, tonyk
+ * @author Meow <meowmeowsama@gmail.com>, tonyk, Heend
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             // httpFile.setNewURL(new URL("http://u.115.com/file/t0181ce5f2"));
-            httpFile.setNewURL(new URL("http://u.115.com/file/f85d949b70"));
+            httpFile.setNewURL(new URL("http://115.com/file/cl7w0oma"));
             //httpFile.setNewURL(new URL("http://u.115.com/file/t8ace63561"));
 
             //the way we connect to the internet

@@ -8,15 +8,14 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Ladislav Vitasek & Tom� Proch�zka <to.m.p@atomsoft.cz>
+ * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
  */
 public class TestApp extends PluginDevApplication {
     protected void startup() {
 
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://www.uloz.to/1579588/7-harry-potter-a-relikvie-smrti-kniha-mp3-svet-warez-cz-part2-rar"));
-            httpFile.setNewURL(new URL("http://www.ulozto.sk/9278001/scooby-doo-a-scrappy-doo-scoobyho-predkove-avi"));
+            httpFile.setNewURL(new URL("http://www.uloz.to/5964807/robbie-williams-shes-madonna-mp3"));
             testRun(new UlozToServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

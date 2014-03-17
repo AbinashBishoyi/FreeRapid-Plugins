@@ -46,12 +46,12 @@ class UlozToRunner extends AbstractRunner {
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).setParameter("disclaimer", "1").toHttpMethod();
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
-            if (getContentAsString().contains("captcha_user")) {
+            if (getContentAsString().contains("captchaContainer")) {
 
                 checkNameAndSize(getContentAsString());
                 boolean saved = false;
                 captchaCount = 0;
-                while (getContentAsString().contains("captcha_user") || getContentAsString().contains("?captcha=no")) {
+                while (getContentAsString().contains("captchaContainer") || getContentAsString().contains("?captcha=no")) {
                     client.getHTTPClient().getParams().setIntParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha();
                     method.setFollowRedirects(false);
@@ -61,7 +61,7 @@ class UlozToRunner extends AbstractRunner {
                         downloadTask.saveToFile(inputStream);
                         return;
                     }
-                    if (method.getStatusCode() == 302) {
+                    if ((method.getStatusCode() == 302)||(method.getStatusCode() == 303)) {
                         String nextUrl = method.getResponseHeader("Location").getValue();
                         method = getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).setParameter("disclaimer", "1").toHttpMethod();
                         if (nextUrl.contains("captcha=no#cpt")) {
@@ -102,23 +102,15 @@ class UlozToRunner extends AbstractRunner {
         if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
         }
+        
+        httpFile.setFileName(PlugUtils.getStringBetween(content, "class=\"jsShowDownload\">", "</a>"));
 
-        String fileName = null;
-        try {
-            fileName = PlugUtils.getStringBetween(getContentAsString(), "- ", "</title>");
-        } catch (PluginImplementationException e) {
-            Matcher m = Pattern.compile("<h2 class=\"nadpis\"[^>]*><a href=\"[^\"]*\">([^<]+)</a>").matcher(content);
-            if (!m.find()) {
-                throw new PluginImplementationException("Cannot find filename");
-            }
-            fileName = m.group(1);
+        String size=PlugUtils.getStringBetween(content, "<span id=\"fileSize\">", "</span>");
+        if(size.contains("|")){
+           size=size.substring(size.indexOf("|")+1).trim();
         }
-
-
-        httpFile.setFileName(fileName);
-        Matcher m = Pattern.compile("<div class=\"info_velikost\"[^>]*>\\s*<div>\\s*(?:.+\\| *)?([^<\\|]+)\\s*</div>").matcher(content);
-        if (!m.find()) throw new PluginImplementationException("Cannot find filesize");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(m.group(1)));
+        
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -147,14 +139,14 @@ class UlozToRunner extends AbstractRunner {
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            MethodBuilder sendForm = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dwn", true);
+            MethodBuilder sendForm = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
             sendForm.setEncodePathAndQuery(true);
-            sendForm.setAndEncodeParameter("captcha_user", captcha);
+            sendForm.setAndEncodeParameter("captcha[text]", captcha);
             return sendForm.toPostMethod();
         }
     }
 
-    //"P�ekro�en po�et FREE slot�, pou�ijte VIP download
+    //"Prekro�en pocet FREE slotu, pouzijte VIP download
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();

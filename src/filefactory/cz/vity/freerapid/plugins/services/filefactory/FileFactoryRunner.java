@@ -97,7 +97,8 @@ class FileFactoryRunner extends AbstractRunner {
                 || contentAsString.contains("All free download slots are in use")) {
             throw new YouHaveToWaitException("All free download slots are in use", 10 * 60);
         }
-        if (contentAsString.contains("Sorry, the server hosting the file you are requesting is currently down for maintenance")) {
+        if (contentAsString.contains("Server Maintenance") ||
+                contentAsString.contains("The server hosting this file is temporarily unavailable")) {
             throw new YouHaveToWaitException("File's server currently down for maintenance", 30 * 60);
         }
         if (contentAsString.contains("Server Load Too High") ||

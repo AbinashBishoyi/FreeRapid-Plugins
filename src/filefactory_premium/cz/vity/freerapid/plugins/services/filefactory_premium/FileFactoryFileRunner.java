@@ -42,13 +42,13 @@ class FileFactoryFileRunner extends AbstractRunner {
         login();
 
         final GetMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
-            final String contentType = method.getResponseHeader("Content-Type").getValue().toLowerCase();
-            if (!contentType.contains("html")) {
-                //try downloading directly in case direct downloads are enabled
-                if (tryDownloadAndSaveFile(method)) return;
+        int httpStatus = client.makeRequest(method, false);
+        if (httpStatus / 100 == 3) {    // direct download
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
-
+        } else if (httpStatus == 200) {
             checkProblems();
             checkNameAndSize();
 
@@ -93,6 +93,10 @@ class FileFactoryFileRunner extends AbstractRunner {
             if (!matcher.find())
                 throw new PluginImplementationException("You have presently exceeded your download allowance, but waiting time was not found");
             throw new YouHaveToWaitException("You have presently exceeded your download allowance", 3600 * Integer.valueOf(matcher.group(1)) + 60 * 5);
+        }
+        if (content.contains("Server Maintenance") ||
+                content.contains("The server hosting this file is temporarily unavailable")) {
+            throw new YouHaveToWaitException("File's server currently down for maintenance", 30 * 60);
         }
         if (content.contains("Server Load Too High") ||
                 content.contains("The server hosting this file is temporarily overloaded")) {

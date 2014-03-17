@@ -70,7 +70,7 @@ class IFolderFileRunner extends AbstractRunner {
                 if (!makeRedirectedRequest(method)) {
                     throw new ServiceConnectionProblemException();
                 }
-                method = getMethodBuilder().setReferer("").setAction(PlugUtils.getStringBetween(getContentAsString(), "<font size=\"+1\"><a href=", ">")).toHttpMethod();
+                method = getMethodBuilder().setReferer("").setAction(PlugUtils.getStringBetween(getContentAsString(), "<font size=\"+1\" class=\"color_black\"><a href=", ">")).toHttpMethod();
                 if (!makeRedirectedRequest(method)) {
                     throw new ServiceConnectionProblemException();
                 }

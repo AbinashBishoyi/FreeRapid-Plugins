@@ -4,13 +4,15 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Kajda
+ * Class that provides basic info about plugin
+ *
+ * @author Vity
  */
-public class WebShareServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "webshare.net";
+public class WebshareServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
-        return SERVICE_NAME;
+        return "webshare.cz";
     }
 
     @Override
@@ -20,6 +22,7 @@ public class WebShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new WebShareFileRunner();
+        return new WebshareFileRunner();
     }
+
 }

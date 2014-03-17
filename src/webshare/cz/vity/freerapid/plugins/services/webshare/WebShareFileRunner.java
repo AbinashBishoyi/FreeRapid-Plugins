@@ -1,93 +1,74 @@
 package cz.vity.freerapid.plugins.services.webshare;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
- * @author Kajda
- * @since 0.82
+ * Class which contains main code
+ *
+ * @author Vity
  */
-class WebShareFileRunner extends AbstractRunner {
-    private static final Logger logger = Logger.getLogger(WebShareFileRunner.class.getName());
-    private static final String SERVICE_WEB = "http://www.web-share.net";
+class WebshareFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(WebshareFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception {
+    public void runCheck() throws Exception { //this method validates file
         super.runCheck();
-        setPageEncoding("Windows-1250");
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-
-        if (makeRedirectedRequest(httpMethod)) {
-            checkSeriousProblems();
-            checkNameAndSize();
+        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, content, "class=\"textbox\">", "</div>");
+        final int i = content.indexOf("Velikost souboru");
+        if (i > 0) {
+            final String s = content.substring(i).replaceAll("MiB", "MB").replaceAll("KiB", "KB").replaceAll("GiB", "GB");
+            PlugUtils.checkFileSize(httpFile, s, "class=\"textbox\">", "</div>");
+        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
-        setPageEncoding("Windows-1250");
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final GetMethod method = getGetMethod(fileURL); //create GET request
+        if (makeRedirectedRequest(method)) { //we make the main request
+            final String contentAsString = getContentAsString();//check for response
+            checkProblems();//check problems
+            checkNameAndSize(contentAsString);//extract file name and size from the page
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("hnout soubor").toHttpMethod();
 
-        if (makeRedirectedRequest(httpMethod)) {
-            checkAllProblems();
-            checkNameAndSize();
-            httpMethod = stepCaptcha();
-
+            //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkAllProblems();
-                logger.warning(getContentAsString());
-                throw new IOException("File input stream is empty");
+                checkProblems();//if downloading failed
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("Súbor sa nenašiel")) {
-            throw new URLNotAvailableAnymoreException("Súbor sa nenašiel");
+        if (contentAsString.contains("soubor nebyl nalezen")) {
+            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }
 
-    private void checkAllProblems() throws ErrorDuringDownloadingException {
-        checkSeriousProblems();
-        final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("Zadali ste nesprávny overovací kód")) {
-            throw new YouHaveToWaitException("Zadali ste nesprávny overovací kód", 4);
-        }
-    }
-
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "<br><h3>", "<");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Ve¾kos súboru: ", "<");
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
-        final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = SERVICE_WEB + PlugUtils.getStringBetween(getContentAsString(), "\"", "\" alt=\"code\" id=\"captcha_img\"");
-        logger.info("Captcha URL " + captchaSrc);
-        final String captcha = captchaSupport.getCaptcha(captchaSrc);
-
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
-        } else {
-            return getMethodBuilder().setReferer(fileURL).setActionFromFormByName("fd", true).setBaseURL(SERVICE_WEB).setParameter("captcha", captcha).toHttpMethod();
-        }
-    }
 }

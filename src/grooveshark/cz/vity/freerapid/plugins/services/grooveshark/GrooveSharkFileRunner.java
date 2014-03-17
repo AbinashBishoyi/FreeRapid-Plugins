@@ -7,15 +7,12 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 
 import java.util.Formatter;
-import java.util.Locale;
 import java.util.Random;
-import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -27,16 +24,20 @@ import java.util.regex.Matcher;
 class GrooveSharkFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(GrooveSharkFileRunner.class.getName());
     private final static String REQUEST_URL = "http://grooveshark.com/more.php?";
-    private final static String uuid = UUID.randomUUID().toString().toUpperCase(Locale.ENGLISH);
+    private final static String CLIENT_REVISION = "20111117";
+    private final static String SALT_1 = "bewareOfTheGingerApocalypse";
+    private final static String SALT_2 = "sitAndFartInMyDuck";
+    private String sessionId;
+    private String uuid;
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final String sessionId = getSessionId();
-        final String communicationToken = getCommunicationToken(sessionId);
-        final String songId = getSongIdFromSongToken(sessionId, communicationToken, getSongToken());
-        final HttpMethod method = getStreamKeyFromSongId(sessionId, communicationToken, songId);
+        setVariables();
+        final String communicationToken = getCommunicationToken();
+        final String songId = getSongIdFromSongToken(communicationToken, getSongToken());
+        final HttpMethod method = getStreamKeyFromSongId(communicationToken, songId);
         if (!tryDownloadAndSaveFile(method)) {
             throw new ServiceConnectionProblemException("Error starting download");
         }
@@ -50,21 +51,26 @@ class GrooveSharkFileRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private String getSessionId() throws Exception {
+    private void setVariables() throws Exception {
         final HttpMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
             throw new ServiceConnectionProblemException();
         }
-        final Cookie phpsessid = getCookieByName("PHPSESSID");
-        if (phpsessid == null) {
+        Matcher matcher = getMatcherAgainstContent("\"sessionID\":\"(.+?)\"");
+        if (!matcher.find()) {
             throw new PluginImplementationException("Session ID not found");
         }
-        return phpsessid.getValue();
+        sessionId = matcher.group(1);
+        matcher = getMatcherAgainstContent("\"uuid\":\"(.+?)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("UUID not found");
+        }
+        uuid = matcher.group(1);
     }
 
-    private String getCommunicationToken(final String sessionId) throws Exception {
-        final String content = String.format("{\"parameters\":{\"secretKey\":\"%s\"},\"header\":{\"clientRevision\":\"20110606\",\"uuid\":\"%s\",\"country\":{\"IPR\":\"10741\",\"ID\":\"67\",\"CC1\":\"0\",\"CC4\":\"0\",\"CC3\":\"0\",\"CC2\":\"4\"},\"client\":\"htmlshark\",\"privacy\":0,\"session\":\"%s\"},\"method\":\"getCommunicationToken\"}",
-                DigestUtils.md5Hex(sessionId), uuid, sessionId);
+    private String getCommunicationToken() throws Exception {
+        final String content = String.format("{\"parameters\":{\"secretKey\":\"%s\"},\"header\":{\"clientRevision\":\"%s\",\"uuid\":\"%s\",\"country\":{\"IPR\":\"10741\",\"ID\":\"67\",\"CC1\":\"0\",\"CC4\":\"0\",\"CC3\":\"0\",\"CC2\":\"4\"},\"client\":\"htmlshark\",\"privacy\":0,\"session\":\"%s\"},\"method\":\"getCommunicationToken\"}",
+                DigestUtils.md5Hex(sessionId), CLIENT_REVISION, uuid, sessionId);
         final PostMethod method = getPostMethod(REQUEST_URL + "getCommunicationToken");
         method.setRequestEntity(new StringRequestEntity(content, null, null));
         if (!makeRedirectedRequest(method)) {
@@ -77,9 +83,9 @@ class GrooveSharkFileRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private String getSongIdFromSongToken(final String sessionId, final String communicationToken, final String songToken) throws Exception {
-        final String content = String.format("{\"header\":{\"client\":\"htmlshark\",\"clientRevision\":\"20110606\",\"privacy\":0,\"country\":{\"ID\":\"67\",\"CC1\":\"0\",\"CC2\":\"4\",\"CC3\":\"0\",\"CC4\":\"0\",\"IPR\":\"10741\"},\"uuid\":\"%s\",\"session\":\"%s\",\"token\":\"%s\"},\"method\":\"getSongFromToken\",\"parameters\":{\"token\":\"%s\",\"country\":{\"ID\":\"67\",\"CC1\":\"0\",\"CC2\":\"4\",\"CC3\":\"0\",\"CC4\":\"0\",\"IPR\":\"10741\"}}}",
-                uuid, sessionId, getRequestToken("getSongFromToken", "backToTheScienceLab", communicationToken), songToken);
+    private String getSongIdFromSongToken(final String communicationToken, final String songToken) throws Exception {
+        final String content = String.format("{\"header\":{\"client\":\"htmlshark\",\"clientRevision\":\"%s\",\"privacy\":0,\"country\":{\"ID\":\"67\",\"CC1\":\"0\",\"CC2\":\"4\",\"CC3\":\"0\",\"CC4\":\"0\",\"IPR\":\"10741\"},\"uuid\":\"%s\",\"session\":\"%s\",\"token\":\"%s\"},\"method\":\"getSongFromToken\",\"parameters\":{\"token\":\"%s\",\"country\":{\"ID\":\"67\",\"CC1\":\"0\",\"CC2\":\"4\",\"CC3\":\"0\",\"CC4\":\"0\",\"IPR\":\"10741\"}}}",
+                CLIENT_REVISION, uuid, sessionId, getRequestToken("getSongFromToken", SALT_1, communicationToken), songToken);
         final PostMethod method = getPostMethod(REQUEST_URL + "getSongFromToken");
         method.setRequestEntity(new StringRequestEntity(content, null, null));
         if (!makeRedirectedRequest(method)) {
@@ -87,6 +93,12 @@ class GrooveSharkFileRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("\"result\":[]")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("invalid token")) {
+            throw new PluginImplementationException("Invalid token, plugin outdated");
+        }
+        if (getContentAsString().contains("invalid client")) {
+            throw new PluginImplementationException("Invalid client, plugin outdated");
         }
         checkName();
         final Matcher matcher1 = getMatcherAgainstContent("\"SongID\"\\s*:\\s*\"(.+?)\"");
@@ -96,9 +108,9 @@ class GrooveSharkFileRunner extends AbstractRunner {
         return matcher1.group(1);
     }
 
-    private HttpMethod getStreamKeyFromSongId(final String sessionId, final String communicationToken, final String songId) throws Exception {
-        final String content = String.format("{\"parameters\":{\"songID\":%s,\"mobile\":false,\"country\":{\"ID\":\"67\",\"CC2\":\"4\",\"CC4\":\"0\",\"CC1\":\"0\",\"IPR\":\"10741\",\"CC3\":\"0\"},\"prefetch\":false},\"header\":{\"token\":\"%s\",\"clientRevision\":\"20110606\",\"uuid\":\"%s\",\"country\":{\"ID\":\"67\",\"CC2\":\"4\",\"CC4\":\"0\",\"CC1\":\"0\",\"IPR\":\"10741\",\"CC3\":\"0\"},\"client\":\"jsqueue\",\"privacy\":0,\"session\":\"%s\"},\"method\":\"getStreamKeyFromSongIDEx\"}",
-                songId, getRequestToken("getStreamKeyFromSongIDEx", "bewareOfBearsharktopus", communicationToken), uuid, sessionId);
+    private HttpMethod getStreamKeyFromSongId(final String communicationToken, final String songId) throws Exception {
+        final String content = String.format("{\"parameters\":{\"songID\":%s,\"mobile\":false,\"country\":{\"ID\":\"67\",\"CC2\":\"4\",\"CC4\":\"0\",\"CC1\":\"0\",\"IPR\":\"10741\",\"CC3\":\"0\"},\"prefetch\":false},\"header\":{\"token\":\"%s\",\"clientRevision\":\"%s\",\"uuid\":\"%s\",\"country\":{\"ID\":\"67\",\"CC2\":\"4\",\"CC4\":\"0\",\"CC1\":\"0\",\"IPR\":\"10741\",\"CC3\":\"0\"},\"client\":\"jsqueue\",\"privacy\":0,\"session\":\"%s\"},\"method\":\"getStreamKeyFromSongIDEx\"}",
+                songId, getRequestToken("getStreamKeyFromSongIDEx", SALT_2, communicationToken), CLIENT_REVISION, uuid, sessionId);
         final PostMethod method = getPostMethod(REQUEST_URL + "getStreamKeyFromSongIDEx");
         method.setRequestEntity(new StringRequestEntity(content, null, null));
         if (!makeRedirectedRequest(method)) {

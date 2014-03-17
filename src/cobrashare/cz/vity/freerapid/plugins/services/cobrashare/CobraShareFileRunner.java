@@ -1,14 +1,13 @@
 package cz.vity.freerapid.plugins.services.cobrashare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -23,33 +22,21 @@ class CobraShareFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        GetMethod getMethod = getGetMethod(fileURL);
+        HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
-            final Matcher matcher = getMatcherAgainstContent("url=(http.+?)\"");
-            if (matcher.find()) {
-                client.setReferer(fileURL);
-                getMethod = getGetMethod(matcher.group(1));
-                if (makeRedirectedRequest(getMethod)) {
-                    checkNameAndSize(getContentAsString());
-                } else {
-                    logger.warning("Cannot find redirection page");
-                    throw new PluginImplementationException();
-                }
-            } else throw new PluginImplementationException();
+             stepRetarget();
+             checkNameAndSize(getContentAsString());
+
         } else
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException, IOException {
         checkProblems();
-        Matcher matcher = PlugUtils.matcher("File name :&nbsp;<\\/td>\\s*<td class=\"data\">(.+?)<", content);
-        if (matcher.find()) {
 
-            final String fileName = matcher.group(1).trim(); //method trim removes white characters from both sides of string
-            logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
-            //: <strong>204800</strong>KB<br>
-            matcher = PlugUtils.matcher("Size :&nbsp;<\\/td>\\s*<td class=\"data\">(.+?)<", content);
+        PlugUtils.checkName(httpFile,getContentAsString(),"<td class=\"popis\">File name :&nbsp;</td>\n<td class=\"data\">", "</td>");
+
+         Matcher matcher = PlugUtils.matcher("Size :&nbsp;<\\/td>\\s*<td class=\"data\">(.+?)<", content);
             if (matcher.find()) {
                 final String stringSize = matcher.group(1);
                 logger.info("String size:" + stringSize);
@@ -63,31 +50,61 @@ class CobraShareFileRunner extends AbstractRunner {
                 logger.warning("File size was not found\n:");
                 throw new PluginImplementationException();
             }
-        } else {
-            checkProblems();
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
-        }
+
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        runCheck();
+        HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        if (makeRedirectedRequest(getMethod)) {
+             stepRetarget();
+             checkNameAndSize(getContentAsString());
 
-        final Matcher matcher = getMatcherAgainstContent("form action=\"(http.+?)\"");
-        if (matcher.find()) {
-            client.setReferer(fileURL);
-            final PostMethod postMethod = getPostMethod(matcher.group(1));
-            PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"id"});
+        } else
+            throw new ServiceConnectionProblemException();
+        while (true) {
 
-            if (!tryDownloadAndSaveFile(postMethod)) {
+       checkProblems();
+       HttpMethod finalMethod = stepCaptcha();
+            if (!tryDownloadAndSaveFile(finalMethod)) {
+                if (getContentAsString().contains("retarget()"))  {
+                    stepRetarget();
+                    continue;
+                }
                 checkProblems();
                 logger.warning(getContentAsString());
                 throw new IOException("File input stream is empty.");
-            }
-        } else throw new PluginImplementationException("Download URL not found");
+            } else break;
+         }
+    }
+
+        private HttpMethod stepCaptcha() throws Exception {
+
+        CaptchaSupport captchaSupport = getCaptchaSupport();
+        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("ImageGen").getAction();
+        logger.info("Captcha URL " + s);
+        String captcha = captchaSupport.getCaptcha(s);
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        } else {
+            final HttpMethod postMethod = getMethodBuilder().setActionFromFormByIndex(1,true).
+                    setParameter("over", captcha).toPostMethod();
+            return postMethod;
+
+        }
+
+
+    }
+
+    private void stepRetarget() throws Exception  {
+
+       HttpMethod getMethod = getMethodBuilder().setActionFromTextBetween("url=","\"").setReferer(fileURL).toHttpMethod();
+                if (!makeRedirectedRequest(getMethod)) {
+                      throw new ServiceConnectionProblemException();
+                }
+
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException, IOException {

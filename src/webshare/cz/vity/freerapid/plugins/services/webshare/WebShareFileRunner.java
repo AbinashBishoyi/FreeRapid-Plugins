@@ -38,8 +38,12 @@ class WebShareFileRunner extends AbstractRunner {
     }
 
     private String getFileIdent(GetMethod method) throws Exception {
-        final String url = method.getURI().getURI();
-        return PlugUtils.getStringBetween(url, "/file/", "/");
+        String urlIdent = method.getURI().getURI();
+        urlIdent = urlIdent.substring(urlIdent.indexOf("/file/") + 6);
+        if (urlIdent.contains("/"))
+            return urlIdent.substring(0, urlIdent.indexOf("/"));
+        else
+            return urlIdent;
     }
 
     private void checkNameAndSize(GetMethod method) throws Exception {

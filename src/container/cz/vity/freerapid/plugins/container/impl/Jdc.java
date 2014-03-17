@@ -5,13 +5,13 @@ import cz.vity.freerapid.plugins.container.ContainerFormat;
 import cz.vity.freerapid.plugins.container.ContainerPlugin;
 import cz.vity.freerapid.plugins.container.FileInfo;
 import cz.vity.freerapid.utilities.LogUtils;
-import cz.vity.freerapid.utilities.crypto.Cipher;
-import cz.vity.freerapid.utilities.crypto.CipherInputStream;
-import cz.vity.freerapid.utilities.crypto.CipherOutputStream;
 import jd.plugins.DownloadLink;
 import jd.plugins.FilePackage;
 import org.apache.commons.codec.digest.DigestUtils;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;

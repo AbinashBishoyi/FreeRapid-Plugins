@@ -1,13 +1,13 @@
 package cz.vity.freerapid.plugins.container.impl;
 
 import cz.vity.freerapid.plugins.container.*;
-import cz.vity.freerapid.utilities.crypto.Cipher;
-import cz.vity.freerapid.utilities.crypto.CipherInputStream;
-import cz.vity.freerapid.utilities.crypto.CipherOutputStream;
 import jlibs.xml.sax.binding.BindingHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.helpers.AttributesImpl;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.transform.OutputKeys;

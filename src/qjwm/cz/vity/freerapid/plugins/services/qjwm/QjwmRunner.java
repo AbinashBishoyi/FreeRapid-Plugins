@@ -6,10 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
-import cz.vity.freerapid.plugins.webclient.DefaultFileStreamRecognizer;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
-import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
@@ -23,7 +20,7 @@ import java.util.regex.Matcher;
  */
 class QjwmRunner extends XFileSharingRunner {
     private final static Logger logger = Logger.getLogger(QjwmRunner.class.getName());
-    
+
     @Override
     protected void checkFileProblems() throws ErrorDuringDownloadingException {
         super.checkFileProblems();
@@ -38,31 +35,31 @@ class QjwmRunner extends XFileSharingRunner {
         addCookie(new Cookie(getCookieDomain(), "lang", "zh-cn", "/", 86400, false));
         setPageEncoding("GB2312");
     }
-    
+
     @Override
-    protected List<FileNameHandler> getFileNameHandlers(){
+    protected List<FileNameHandler> getFileNameHandlers() {
         List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
         fileNameHandlers.add(0, new QjwmFileNameHandlerA());
         fileNameHandlers.add(0, new QjwmFileNameHandlerB());
         return fileNameHandlers;
     }
-    
+
     @Override
-    protected List<FileSizeHandler> getFileSizeHandlers(){
+    protected List<FileSizeHandler> getFileSizeHandlers() {
         List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
         fileSizeHandlers.add(0, new QjwmFileSizeHandler());
         return fileSizeHandlers;
     }
 
     @Override
-    protected List<String> getDownloadPageMarkers(){
+    protected List<String> getDownloadPageMarkers() {
         List<String> downloadPageMarkers = super.getDownloadPageMarkers();
         downloadPageMarkers.add(0, "thunder_url = ");
         return downloadPageMarkers;
     }
 
     @Override
-    protected List<String> getDownloadLinkRegexes(){
+    protected List<String> getDownloadLinkRegexes() {
         List<String> regex = super.getDownloadLinkRegexes();
         regex.add(0, "thunder_url = \"(.+?)\";");
         return regex;
@@ -92,10 +89,8 @@ class QjwmRunner extends XFileSharingRunner {
 
     @Override
     protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
-        final String[] allowed = {"application"};
         getClientParameters().setUriCharset("GBK");
-        FileStreamRecognizer recognizer = new DefaultFileStreamRecognizer(allowed, false);
-        client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, recognizer);
+        setFileStreamContentTypes("application");
         addCookie(new Cookie(".qjwm.com", "Flag", "UURealAntiLink", "/", 86400, false));
 
         return super.tryDownloadAndSaveFile(method);

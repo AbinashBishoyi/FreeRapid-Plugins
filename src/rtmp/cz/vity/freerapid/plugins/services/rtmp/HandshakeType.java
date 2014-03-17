@@ -1,8 +1,8 @@
 package cz.vity.freerapid.plugins.services.rtmp;
 
-import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.mina.core.buffer.IoBuffer;
 
+import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 /**

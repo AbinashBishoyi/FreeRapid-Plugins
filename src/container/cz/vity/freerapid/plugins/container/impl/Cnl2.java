@@ -6,10 +6,10 @@ import cz.vity.freerapid.plugins.container.FileInfo;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import cz.vity.freerapid.utilities.LogUtils;
-import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
+import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.MalformedURLException;

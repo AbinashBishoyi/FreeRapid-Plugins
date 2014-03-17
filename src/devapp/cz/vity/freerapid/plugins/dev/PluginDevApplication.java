@@ -12,6 +12,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
 import cz.vity.freerapid.plugins.webclient.interfaces.ShareDownloadService;
 import cz.vity.freerapid.plugins.webclient.ssl.EasySSLProtocolSocketFactory;
 import cz.vity.freerapid.utilities.LogUtils;
+import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.jdesktop.application.Application;
@@ -27,7 +28,6 @@ import java.util.logging.Logger;
 public abstract class PluginDevApplication extends Application {
     private final static Logger logger = Logger.getLogger(PluginDevApplication.class.getName());
 
-
     /**
      * Returns new instance of HttpFileDownloadTask
      *
@@ -42,6 +42,7 @@ public abstract class PluginDevApplication extends Application {
     @Override
     protected void initialize(String[] args) {
         super.initialize(args);
+        Utils.getAppPath();
         ProxySelector.setDefault(null);
         try {
             trustAllCerts();
@@ -121,6 +122,5 @@ public abstract class PluginDevApplication extends Application {
     protected PluginContext getPluginContext() {
         return DevPluginContextImpl.create(new DevDialogSupport(this.getContext()), new DevStorageSupport(this.getContext()));
     }
-
 
 }

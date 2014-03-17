@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.channel4.Channel4ServiceImpl"
-        id="channel4.com" vendor="ntoskrnl" version="1.0.9">
+        id="channel4.com" vendor="ntoskrnl" version="1.0.10">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?channel4\.com/programmes/[^/]+?/4od(#|/player/)\d+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="channel4.com"/>
         <attribute id="maxDownloads" value="10"/>

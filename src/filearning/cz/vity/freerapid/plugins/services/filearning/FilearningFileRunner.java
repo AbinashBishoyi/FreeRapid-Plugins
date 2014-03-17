@@ -2,10 +2,7 @@ package cz.vity.freerapid.plugins.services.filearning;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DefaultFileStreamRecognizer;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -62,7 +59,7 @@ class FilearningFileRunner extends AbstractRunner {
             final HttpMethod httpMethod = downloadWaitPage(contentAsString);
             isDownloadBegin = true;
 
-            //here is the download link extraction
+            setFileStreamContentTypes("\"application/octet-stream\"");
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -106,11 +103,4 @@ class FilearningFileRunner extends AbstractRunner {
         return PlugUtils.getStringBetween(content, "file_id = '", "';");
     }
 
-    @Override
-    public boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
-        final String[] allowed = {"\"application/octet-stream\""};
-        FileStreamRecognizer recognizer = new DefaultFileStreamRecognizer(allowed, false);
-        client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, recognizer);
-        return super.tryDownloadAndSaveFile(method);
-    }
 }

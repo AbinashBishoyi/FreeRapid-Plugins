@@ -14,15 +14,12 @@ import java.awt.image.BufferedImage;
 public class DevDialogSupport implements DialogSupport {
     private final static Object captchaLock = new Object();
 
-
     /**
      * result from the user's input for password
      */
     private volatile String passwordResult;
 
-
     public DevDialogSupport(final ApplicationContext context) {
-
     }
 
     @Override
@@ -30,12 +27,12 @@ public class DevDialogSupport implements DialogSupport {
         return account;
     }
 
-
     @Override
     public boolean showOKCancelDialog(final Component container, final String title) throws Exception {
-        final boolean[] dialogResult = new boolean[]{false};
+        final boolean[] dialogResult = {false};
         if (!EventQueue.isDispatchThread()) {
             SwingUtilities.invokeAndWait(new Runnable() {
+                @Override
                 public void run() {
                     dialogResult[0] = showInputDialog(title, container, true) == 0;
                 }
@@ -49,6 +46,7 @@ public class DevDialogSupport implements DialogSupport {
     public void showOKDialog(final Component container, final String title) throws Exception {
         if (!EventQueue.isDispatchThread()) {
             SwingUtilities.invokeAndWait(new Runnable() {
+                @Override
                 public void run() {
                     showInputDialog(title, container, false);
                 }
@@ -56,31 +54,24 @@ public class DevDialogSupport implements DialogSupport {
         } else showInputDialog(title, container, false);
     }
 
-    public String askForCaptcha(BufferedImage image) throws Exception {
-        return askForCaptcha(new ImageIcon(image));
-    }
-
     @Override
-    public String askForCaptcha(final Icon image) throws Exception {
+    public String askForCaptcha(final BufferedImage image) throws Exception {
         synchronized (captchaLock) {
-            final String[] captchaResult = new String[]{""};
+            final String[] captchaResult = {""};
             if (!EventQueue.isDispatchThread()) {
                 SwingUtilities.invokeAndWait(new Runnable() {
+                    @Override
                     public void run() {
                         captchaResult[0] = getCaptcha(image);
                     }
                 });
             } else captchaResult[0] = getCaptcha(image);
-            if (image instanceof ImageIcon) {
-                ImageIcon icon = (ImageIcon) image;
-                icon.getImage().flush();
-            }
             return captchaResult[0];
         }
     }
 
-    private String getCaptcha(Icon image) {
-        return (String) JOptionPane.showInputDialog(null, "Insert what you see", "Insert CAPTCHA", JOptionPane.PLAIN_MESSAGE, image, null, null);
+    private String getCaptcha(BufferedImage image) {
+        return (String) JOptionPane.showInputDialog(null, "Insert what you see", "Insert CAPTCHA", JOptionPane.PLAIN_MESSAGE, new ImageIcon(image), null, null);
     }
 
     private static int showInputDialog(final String title, final Object inputObject, boolean cancelButton) {
@@ -95,7 +86,7 @@ public class DevDialogSupport implements DialogSupport {
             assert s != null;
             objects[i] = s;
         }
-        return JOptionPane.showOptionDialog(null, inputObject, title, JOptionPane.NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, objects, objects[0]);
+        return JOptionPane.showOptionDialog(null, inputObject, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, objects, objects[0]);
     }
 
     @Override
@@ -114,24 +105,8 @@ public class DevDialogSupport implements DialogSupport {
         }
     }
 
-
     private void askPassword(final String name) {
-        /*
-        if (AppPrefs.getProperty(UserProp.BLIND_MODE, UserProp.BLIND_MODE_DEFAULT)) {
-            Sound.playSound(context.getResourceMap().getString("captchaWav"));
-        }
-        */
         passwordResult = (String) JOptionPane.showInputDialog(null, "Password protected", "Insert Password", JOptionPane.PLAIN_MESSAGE, null, null, null);
     }
-
-//    private static Frame getActiveFrame() {
-//        final Frame[] frames = Frame.getFrames();
-//        for (Frame frame : frames) {
-//            if (frame.isActive())
-//                return frame;
-//        }
-//        return frames[0];
-//    }
-
 
 }

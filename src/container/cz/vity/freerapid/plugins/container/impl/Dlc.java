@@ -4,8 +4,6 @@ import cz.vity.freerapid.plugins.container.*;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.utilities.crypto.Cipher;
-import cz.vity.freerapid.utilities.crypto.CipherOutputStream;
 import jlibs.xml.sax.binding.BindingHandler;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Base64OutputStream;
@@ -16,6 +14,8 @@ import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.xml.sax.InputSource;
 import org.xml.sax.helpers.AttributesImpl;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.transform.OutputKeys;

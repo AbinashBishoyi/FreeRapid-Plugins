@@ -4,12 +4,12 @@ import cz.vity.freerapid.plugins.container.ContainerException;
 import cz.vity.freerapid.plugins.container.ContainerFormat;
 import cz.vity.freerapid.plugins.container.ContainerPlugin;
 import cz.vity.freerapid.plugins.container.FileInfo;
-import cz.vity.freerapid.utilities.crypto.Cipher;
-import cz.vity.freerapid.utilities.crypto.CipherInputStream;
 import jlibs.xml.sax.binding.BindingHandler;
 import org.apache.commons.codec.binary.Hex;
 import org.xml.sax.InputSource;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;

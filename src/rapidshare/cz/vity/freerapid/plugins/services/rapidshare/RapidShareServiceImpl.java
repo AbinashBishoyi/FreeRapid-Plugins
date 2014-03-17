@@ -17,6 +17,17 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
         return 1;
     }
 
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
+
+    @Override
+    public void runCheck(HttpFileDownloader httpFileDownloader) throws Exception {
+        super.runCheck(httpFileDownloader);
+        new RapidShareRunner().runCheck(httpFileDownloader);
+    }
+
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
         new RapidShareRunner().run(downloader);

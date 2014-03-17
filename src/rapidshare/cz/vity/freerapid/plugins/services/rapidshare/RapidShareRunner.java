@@ -23,6 +23,46 @@ class RapidShareRunner {
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
     private HttpDownloadClient client;
 
+
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        HttpFile httpFile = downloader.getDownloadFile();
+        client = downloader.getClient();
+        final String fileURL = httpFile.getFileUrl().toString();
+        logger.info("Starting download in TASK " + fileURL);
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+            Matcher matcher = Pattern.compile("form id=\"ff\" action=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (!matcher.find()) {
+                matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
+                if (matcher.find()) {
+                    final String error = matcher.group(1);
+                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed file"))
+                        throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
+                    if (error.contains("file could not be found"))
+                        throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
+                    logger.warning(client.getContentAsString());
+                    throw new InvalidURLOrServiceProblemException("<b>RapidShare error:</b><br>" + error);
+                }
+                if (client.getContentAsString().contains("has removed file"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>The uploader has removed this file from the server.");
+                if (client.getContentAsString().contains("file could not be found"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>The file could not be found. Please check the download link.");
+                if (client.getContentAsString().contains("illegal content"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Illegal content. File was removed.");
+                if (client.getContentAsString().contains("file has been removed"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Due to a violation of our terms of use, the file has been removed from the server.");
+                logger.warning(client.getContentAsString());
+                throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+            }
+            String s = matcher.group(1);
+            //| 5277 KB</font>
+            matcher = Pattern.compile("\\| (.*?) KB</font>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (matcher.find())
+                httpFile.setFileSize(new Integer(matcher.group(1).replaceAll(" ", "")) * 1024);
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
     public void run(HttpFileDownloader downloader) throws Exception {
         HttpFile httpFile = downloader.getDownloadFile();
         client = downloader.getClient();

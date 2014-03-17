@@ -6,7 +6,7 @@
         <attribute id="urlRegex" value="http://(www\.)?shareator\.com/.*"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
-        <attribute id="services" value="shareonline.biz"/> 
+        <attribute id="services" value="shareator.com"/>
     </attributes>
 
     <runtime>

@@ -55,17 +55,19 @@ class ForSharedRunner extends AbstractRunner {
                 parseFolder();
             } else {
                 method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("<a id=\"btnLink\" href=\"", "\"").toGetMethod();
-                if (makeRedirectedRequest(method)) {
-                    checkProblems();
-                    method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("Download file").toGetMethod();
-                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "id=\"secondsLeft\" value=\"", "\"") + 1);
-                    if (!tryDownloadAndSaveFile(method)) {
+                if (!method.getURI().toString().contains("/download/")) {
+                    if (makeRedirectedRequest(method)) {
                         checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
+                        method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("Download file").toGetMethod();
+                        downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "id=\"secondsLeft\" value=\"", "\"") + 1);
+                    } else {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException("Can't load download page");
                     }
-                } else {
+                }
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
-                    throw new ServiceConnectionProblemException("Can't load download page");
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
         } else {

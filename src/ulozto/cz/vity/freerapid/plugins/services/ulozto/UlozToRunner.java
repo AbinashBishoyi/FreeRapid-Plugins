@@ -113,6 +113,10 @@ class UlozToRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha() throws Exception {
+        if(getContentAsString().contains("Please click here to continue")) {
+           logger.info("Using HTML redirect");
+           return getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Please click here to continue").toGetMethod();
+        }
         CaptchaSupport captchaSupport = getCaptchaSupport();
         MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
         String captcha = "";

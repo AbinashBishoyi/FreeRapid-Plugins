@@ -9,7 +9,6 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.logging.Logger;
@@ -19,40 +18,35 @@ import java.util.regex.Matcher;
  * @author Ladislav Vitasek, Ludek Zika
  */
 
-class MegauploadRunner {
+class MegauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
-    private HttpDownloadClient client;
-    private HttpFileDownloader downloader;
     private String HTTP_SITE = "http://www.megaupload.com";
     private int captchaCount;
 
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
+        if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
+            HTTP_SITE = "http://www.megarotic.com";
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+
     public void run(HttpFileDownloader downloader) throws Exception {
-        this.downloader = downloader;
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
+        super.run(downloader);
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
-        final String fileURL = httpFile.getFileUrl().toString();
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
         logger.info("Starting download in TASK " + fileURL);
 
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-            Matcher matcher = PlugUtils.matcher(" ([0-9.]+ .B).?</div>", client.getContentAsString());
-            if (matcher.find()) {
-                logger.info("File size " + matcher.group(1));
-                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
-            } else {
-                if (client.getContentAsString().contains("trying to access is temporarily unavailable"))
-                    throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
-            }
-            matcher = PlugUtils.matcher("Filename:(</font>)?</b> ([^<]*)", client.getContentAsString());
-            if (matcher.find()) {
-                final String fn = PlugUtils.unescapeHtml(matcher.group(2));
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-            } else logger.warning("File name was not found" + client.getContentAsString());
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
+            Matcher matcher;
             captchaCount = 0;
             while (client.getContentAsString().contains("Please enter")) {
                 stepCaptcha(client.getContentAsString());
@@ -82,20 +76,10 @@ class MegauploadRunner {
 
                 httpFile.setState(DownloadState.GETTING);
                 final GetMethod method = client.getGetMethod(encodeURL(s));
-
-                try {
-                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                    if (inputStream != null) {
-                        downloader.saveToFile(inputStream);
-                    } else {
-                        checkProblems();
-                        logger.warning(client.getContentAsString());
-                        throw new IOException("File input stream is empty.");
-                    }
-
-                } finally {
-                    method.abort();
-                    method.releaseConnection();
+                if (!tryDownload(method)) {
+                    checkProblems();
+                    logger.warning(client.getContentAsString());
+                    throw new IOException("File input stream is empty.");
                 }
             } else {
                 checkProblems();
@@ -107,13 +91,38 @@ class MegauploadRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
+    private void checkNameAndSize(String content) throws Exception {
+
+        if (content.contains("link you have clicked is not available")) {
+            throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
+
+        }
+        Matcher matcher = PlugUtils.matcher(" ([0-9.]+ .B).?</div>", content);
+        if (matcher.find()) {
+            logger.info("File size " + matcher.group(1));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+        }
+        matcher = PlugUtils.matcher("Filename:(</font>)?</b> ([^<]*)", content);
+        if (matcher.find()) {
+            final String fn = PlugUtils.unescapeHtml(matcher.group(2));
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        } else logger.warning("File name was not found" + client.getContentAsString());
+
+    }
+
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, IOException, YouHaveToWaitException {
 
         final String contentAsString = client.getContentAsString();
+        if (contentAsString.contains("trying to access is temporarily unavailable"))
+            throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
+
+
         if (contentAsString.contains("Download limit exceeded")) {
             final GetMethod getMethod = client.getGetMethod(HTTP_SITE + "/premium/???????????????");
-            if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+            if (makeRequest(getMethod)) {
                 Matcher matcher = PlugUtils.matcher("Please wait ([0-9]+)", client.getContentAsString());
                 if (matcher.find()) {
                     throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60 * Integer.parseInt(matcher.group(1)));
@@ -142,7 +151,7 @@ class MegauploadRunner {
                 String s = replaceEntities(matcher.group(1));
                 logger.info("Captcha - image " + HTTP_SITE + s);
                 String captcha = null;
-                final BufferedImage captchaImage = downloader.getCaptchaImage(HTTP_SITE + s);
+                final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(HTTP_SITE + s);
                 if (captchaCount++ < 3) {
                     EditImage ei = new EditImage(captchaImage);
                     captcha = PlugUtils.recognize(ei.separate(), "-C A-z");
@@ -156,7 +165,7 @@ class MegauploadRunner {
                 }
 
                 if (captcha == null) {
-                    captcha = downloader.askForCaptcha(captchaImage);
+                    captcha = getCaptchaSupport().askForCaptcha(captchaImage);
                 } else captchaImage.flush();//askForCaptcha uvolnuje ten obrazek, takze tady to udelame rucne
                 if (captcha == null)
                     throw new CaptchaEntryInputMismatchException();
@@ -173,7 +182,7 @@ class MegauploadRunner {
                 postMethod.addParameter("megavar", megavar);
                 postMethod.addParameter("imagestring", captcha);
 
-                if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                if (makeRequest(postMethod)) {
 
                     return true;
                 }

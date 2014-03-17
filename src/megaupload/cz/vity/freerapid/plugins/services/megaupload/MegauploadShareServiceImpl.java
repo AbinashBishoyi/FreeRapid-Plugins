@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.megaupload;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author Ladislav Vitasek
@@ -17,10 +17,14 @@ public class MegauploadShareServiceImpl extends AbstractFileShareService {
         return 1;
     }
 
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
-        new MegauploadRunner().run(downloader);
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new MegauploadRunner();
     }
 
 }

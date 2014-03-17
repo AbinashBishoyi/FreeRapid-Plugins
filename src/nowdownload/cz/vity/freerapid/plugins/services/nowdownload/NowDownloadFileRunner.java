@@ -49,10 +49,25 @@ class NowDownloadFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
+            final String content = getContentAsString();//check for response
             checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toHttpMethod();
+            checkNameAndSize(content);//extract file name and size from the page
+            HttpMethod httpMethod;
+            try {                   // .eu
+                httpMethod = getMethodBuilder().setReferer(fileURL)
+                        .setActionFromAHrefWhereATagContains("Download Now").toHttpMethod();
+            } catch (Exception e) {  // .ch
+                httpMethod = getMethodBuilder().setReferer(fileURL)
+                        .setActionFromAHrefWhereATagContains("Download your file").toHttpMethod();
+                final int wait = PlugUtils.getNumberBetween(content, "var t=", ";") + 1;
+                downloadTask.sleep(wait);
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new PluginImplementationException("Error finding download");
+                }
+                httpMethod = getMethodBuilder().setReferer(fileURL)
+                        .setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
+            }
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -65,7 +80,7 @@ class NowDownloadFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("This file does not exist")) {
+        if (contentAsString.contains("This file does not exist") || contentAsString.contains("The file is being transfered")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

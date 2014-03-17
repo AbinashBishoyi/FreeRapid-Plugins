@@ -99,16 +99,16 @@
         <delete dir="${dist.dir}"/>
     </target>
 
-    <target name="all" depends="clean,init,build" description="build all"/>
+    <target name="all" depends="clean,init,build" description="build all">
+        <zip zipfile="${dist.dir}/plugins.zip" level="9" compress="true">
+            <fileset dir=".">
+                <include name="${dist.dir}/"/>
+            </fileset>
+        </zip>
+    </target>
 
 
     <target name="dist" depends="build" description="creating release">
-        <!--<zip zipfile="${dist.dir}/${version.name}.zip" level="9" compress="true">-->
-        <!--<fileset dir=".">-->
-        <!--<include name="${build.dir}/"/>-->
-        <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->
-        <!--</fileset>-->
-        <!--</zip>-->
         <zip destfile="${dist.dir}/freerapid-plugintools-src.zip" level="9" compress="true">
             <fileset dir=".">
                 <include name="${lib.dir}/"/>

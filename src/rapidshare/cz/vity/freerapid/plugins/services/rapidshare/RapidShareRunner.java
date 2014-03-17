@@ -17,10 +17,11 @@ import java.util.regex.Matcher;
  * @author Ladislav Vitasek
  */
 class RapidShareRunner extends AbstractRunner {
-    
+
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
     ConfigurationStorageSupport storage;
-    PluginContext context ;
+    PluginContext context;
+
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -32,9 +33,9 @@ class RapidShareRunner extends AbstractRunner {
 
     public void run() throws Exception {
         super.run();
- //       storage = getPluginService().getPluginContext().getConfigurationStorageSupport();
-       context =  getPluginService().getPluginContext();
- 
+        //       storage = getPluginService().getPluginContext().getConfigurationStorageSupport();
+        context = getPluginService().getPluginContext();
+
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
@@ -61,8 +62,8 @@ class RapidShareRunner extends AbstractRunner {
                 if (matcher.find()) {
                     s = matcher.group(1);
                     logger.info("Download URL: " + s);
-                  String myUrl =  getPrefferedMirror();
-               if(!"".equals(myUrl)) s=myUrl; 
+                    String myUrl = getPrefferedMirror();
+                    if (!"".equals(myUrl)) s = myUrl;
                     downloadTask.sleep(seconds + 1);
                     final PostMethod method = getPostMethod(s);
                     method.addParameter("mirror", "on");
@@ -80,10 +81,10 @@ class RapidShareRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    private String getPrefferedMirror() throws Exception{
-       RapidShareServiceImpl service = (RapidShareServiceImpl) getPluginService();
-      RapidShareMirrorConfig config = service.getConfig();
-       MirrorChooser chooser = new MirrorChooser(context,config);
+    private String getPrefferedMirror() throws Exception {
+        RapidShareServiceImpl service = (RapidShareServiceImpl) getPluginService();
+        RapidShareMirrorConfig config = service.getConfig();
+        MirrorChooser chooser = new MirrorChooser(context, config);
         chooser.setContent(getContentAsString());
         return chooser.getPreferredURL(getContentAsString());
     }
@@ -140,7 +141,7 @@ class RapidShareRunner extends AbstractRunner {
             final String ip = matcher.group(1);
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Your IP address %s is already downloading a file. <br>Please wait until the download is completed.", ip));
         }
-        if (getContentAsString().contains("Currently a lot of users")) {
+        if (getContentAsString().contains("Currently a lot of users") || getContentAsString().contains("We regret")) {
             matcher = getMatcherAgainstContent("Please try again in ([0-9]+) minute");
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);

@@ -82,17 +82,21 @@ class PutLockerFileRunner extends AbstractRunner {
             }
             final String downloadURL;
             boolean isVideoStream = false;
+            final String getFileAHRef = "<a href=\"/get_file.php";
             if (getContentAsString().contains("video_player")) { //video stream
-                PutLockerSettingsConfig config = getConfig();
+                final PutLockerSettingsConfig config = getConfig();
                 final VideoQuality configQuality = config.getVideoQuality();
-                if ((configQuality == VideoQuality.High) && (getContentAsString().contains("<a href=\"/get_file.php?"))) {  //large file (same as downloading the file)
-                    downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"/get_file.php", "\"");
+                if ((configQuality == VideoQuality.High) && (getContentAsString().contains(getFileAHRef))) {  //large file (same as downloading the file)
+                    downloadURL = PlugUtils.getStringBetween(getContentAsString(), getFileAHRef, "\"");
                 } else { // small file (download the stream)
                     isVideoStream = true;
+                    String filename = httpFile.getFileName();
+                    filename = filename.substring(0, filename.lastIndexOf(".")) + ".flv";
+                    httpFile.setFileName(filename);
                     downloadURL = PlugUtils.getStringBetween(getContentAsString(), "playlist: '/get_file.php", "',");
                 }
-            } else if (getContentAsString().contains("<a href=\"/get_file.php?")) { // file
-                downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"/get_file.php", "\"");
+            } else if (getContentAsString().contains(getFileAHRef)) { // file
+                downloadURL = PlugUtils.getStringBetween(getContentAsString(), getFileAHRef, "\"");
             } else if (getContentAsString().contains("<img src=\"/get_file.php")) { //image
                 downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<img src=\"/get_file.php", "\" >");
             } else {

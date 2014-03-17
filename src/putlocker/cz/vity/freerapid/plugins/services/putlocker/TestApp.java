@@ -16,10 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.putlocker.com/file/A391FE603855950F"));
+            //httpFile.setNewURL(new URL("http://www.putlocker.com/file/A391FE603855950F"));
+            //httpFile.setNewURL(new URL("http://www.sockshare.com/file/C979D1BB2F4387D3"));
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/65AADB926B140666"));
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/B982BF0B0F93EA0D"));
-            //httpFile.setNewURL(new URL("http://www.sockshare.com/file/815F22F09D74B38F"));
+            httpFile.setNewURL(new URL("http://www.sockshare.com/file/815F22F09D74B38F"));
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/359B64625F4CBEA4"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
@@ -27,7 +28,7 @@ public class TestApp extends PluginDevApplication {
             //then we tries to download
             final PutLockerServiceImpl service = new PutLockerServiceImpl(); //instance of service - of our plugin
             PutLockerSettingsConfig config = new PutLockerSettingsConfig();
-            config.setVideoQuality(VideoQuality.High);
+            config.setVideoQuality(VideoQuality.Low);
             service.setConfig(config);
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

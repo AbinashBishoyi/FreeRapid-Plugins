@@ -61,11 +61,9 @@ class LinkCryptFileRunner extends AbstractRunner {
         fileURL = method.getURI().toString();
         String content = getContentAsString();
 
-        method = getMethodBuilder()
-                .setReferer(fileURL)
-                .setAction("http://linkcrypt.ws/js/jquery.js")
-                .toGetMethod();
-        makeRedirectedRequest(method);
+        dummyRequest("http://linkcrypt.ws/js/jquery.js");
+        dummyRequest("http://linkcrypt.ws/dir/image/Warning.png");
+        dummyRequest("http://linkcrypt.ws/image/menu_rigth.png");
 
         if (stepCaptcha(content)) {
             content = getContentAsString();
@@ -77,8 +75,20 @@ class LinkCryptFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Folder not avialable")) {
+        if (getContentAsString().contains("<title>Linkcrypt.ws // Error 404</title>")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+    }
+
+    private void dummyRequest(final String url) throws Exception {
+        final InputStream is = client.makeRequestForFile(getGetMethod(url));
+        if (is == null) {
+            throw new ServiceConnectionProblemException("Dummy request failed");
+        }
+        try {
+            is.close();
+        } catch (final Exception e) {
+            LogUtils.processException(logger, e);
         }
     }
 

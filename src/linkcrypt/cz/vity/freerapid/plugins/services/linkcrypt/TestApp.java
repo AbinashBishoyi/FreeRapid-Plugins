@@ -16,7 +16,9 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://linkcrypt.ws/dir/v452559zi726o4l"));
+            httpFile.setNewURL(new URL("http://linkcrypt.ws/dir/v452559zi726o4l"));//no captcha
+            httpFile.setNewURL(new URL("http://linkcrypt.ws/dir/w2m63xda7y88jj6"));//keycaptcha
+            httpFile.setNewURL(new URL("http://linkcrypt.ws/dir/5onop46s332ch62"));//captx
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

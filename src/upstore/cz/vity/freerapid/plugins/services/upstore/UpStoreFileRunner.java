@@ -22,6 +22,7 @@ class UpStoreFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception { //this method validates file
+        if (fileURL.contains("upsto.re/")) fileURL = fileURL.replace("upsto.re/", "upstore.net/");
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
@@ -44,6 +45,7 @@ class UpStoreFileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
+        if (fileURL.contains("upsto.re/")) fileURL = fileURL.replace("upsto.re/", "upstore.net/");
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
@@ -94,7 +96,8 @@ class UpStoreFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("File not found")) {
+        if (content.contains("File not found") ||
+                content.contains("File was deleted by owner")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (content.contains("already downloaded another file recently from your IP")) {

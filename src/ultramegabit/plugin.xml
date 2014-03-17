@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.fileswap.FileSwapServiceImpl"
-        id="fileswap.com" vendor="birchie" version="1.0.1">
+<plugin class="cz.vity.freerapid.plugins.services.ultramegabit.UltraMegabitServiceImpl"
+        id="ultramegabit.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?fileswap\.com/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?ultramegabit\.com/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="fileswap.com"/>
+        <attribute id="services" value="ultramegabit.com"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="fileswap.com" path="/" type="code"/>
+        <library id="ultramegabit.com" path="/" type="code"/>
     </runtime>
 </plugin>

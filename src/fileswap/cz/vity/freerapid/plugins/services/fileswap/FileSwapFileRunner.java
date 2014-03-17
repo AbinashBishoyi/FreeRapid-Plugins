@@ -36,7 +36,7 @@ class FileSwapFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<title>FileSwap.com : ", " download free</title>");
-        Matcher mm = PlugUtils.matcher("<b>Size:</b>\\s*(&nbsp;\\s*)?(.+?)\\s*</td>", content);
+        Matcher mm = PlugUtils.matcher("Size:\\s*(&nbsp;\\s*)?(.+?)\\s*&nbsp;", content);
         if (!mm.find()) throw new PluginImplementationException("File size not found");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(mm.group(mm.groupCount())));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -51,7 +51,7 @@ class FileSwapFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("DOWNLOAD NOW").toHttpMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("SLOW").toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {

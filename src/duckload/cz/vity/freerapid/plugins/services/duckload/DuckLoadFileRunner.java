@@ -37,16 +37,16 @@ class DuckLoadFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("<title>(.+?) @ DuckLoad\\.com</title>");
-        if (matcher.find()) {
-            httpFile.setFileName(matcher.group(1));
-        } else {
-            matcher = PlugUtils.matcher("/([^/]+)$", fileURL);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("File name not found");
-            }
-            httpFile.setFileName(URLDecoder.decode(matcher.group(1), "UTF-8"));
+        Matcher matcher = PlugUtils.matcher("/([^/]+)$", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found");
         }
+        httpFile.setFileName(URLDecoder.decode(matcher.group(1), "UTF-8"));
+        matcher = getMatcherAgainstContent("\\(<i>(.+?)</i> <strong>(.+?)</strong>\\)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -56,11 +56,11 @@ class DuckLoadFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".duckload.com", "dl_set_lang", "en", "/", 86400, false));
         addGACookies();
-        setClientParameter("dontUseHeaderFilename", true);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            fileURL = method.getURI().toString();
             while (true) {
                 final String content = getContentAsString();
                 final String reCaptchaKey = PlugUtils.getStringBetween(content, "noscript?k=", "\"");
@@ -81,7 +81,7 @@ class DuckLoadFileRunner extends AbstractRunner {
                 }
                 if (!getContentAsString().contains("code entered is incorrect")) {
                     checkProblems();
-                    throw new ServiceConnectionProblemException("Error staring download");
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
         } else {

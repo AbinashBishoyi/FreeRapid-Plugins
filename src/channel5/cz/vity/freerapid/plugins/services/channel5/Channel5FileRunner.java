@@ -2,6 +2,8 @@ package cz.vity.freerapid.plugins.services.channel5;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
+import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.binary.Base64;
@@ -10,6 +12,9 @@ import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -20,6 +25,8 @@ import java.util.regex.Matcher;
  */
 class Channel5FileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(Channel5FileRunner.class.getName());
+    private final static String SWF_URL = "http://admin.brightcove.com/viewer/us20120911.1533/connection/ExternalConnection_2.swf";
+    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     @Override
     public void runCheck() throws Exception {
@@ -35,33 +42,31 @@ class Channel5FileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String name;
-        final Matcher matcher = getMatcherAgainstContent("<h3 class=\"episode_header\"><span class=\"sifr_grey_light\">(?:(?:Season|Series) (\\d+) \\- Episode (\\d+))?(?:: )?(.+?)?</span></h3>");
+        Matcher matcher = getMatcherAgainstContent("<h[12]><span class=\"sifr_white\">(.+?)</span></h[12]>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found (1)");
         }
-        final Matcher matcher2 = getMatcherAgainstContent("<h[12]><span class=\"sifr_white\">(.+?)</span></h[12]>");
-        if (!matcher2.find()) {
+        String name = matcher.group(1);
+        matcher = getMatcherAgainstContent("<h3 class=\"episode_header\"><span class=\"sifr_grey_light\">(?:(?:Season|Series) (\\d+))?(?: \\- )?(?:Episode (\\d+))?(?:: )?(.+?)?</span></h3>");
+        if (!matcher.find()) {
             throw new PluginImplementationException("File name not found (2)");
         }
-        final String program = matcher2.group(1);
         final String seasonNum = matcher.group(1);
         final String episodeNum = matcher.group(2);
-        final String episode = matcher.group(3);
-        final boolean episodeSet = episode != null;
-        final boolean seasonAndEpisodeNumSet = seasonNum != null && episodeNum != null;
-        if (episodeSet && seasonAndEpisodeNumSet) {
+        if (seasonNum != null && episodeNum != null) {
             final int seasonNumI = Integer.parseInt(seasonNum);
             final int episodeNumI = Integer.parseInt(episodeNum);
-            name = String.format("%s - S%02dE%02d - %s", program, seasonNumI, episodeNumI, episode);
-        } else if (episodeSet && !seasonAndEpisodeNumSet) {
-            name = String.format("%s - %s", program, episode);
-        } else if (seasonAndEpisodeNumSet) {
+            name += String.format(" - S%02dE%02d", seasonNumI, episodeNumI);
+        } else if (seasonNum != null) {
             final int seasonNumI = Integer.parseInt(seasonNum);
+            name += String.format(" - S%02d", seasonNumI);
+        } else if (episodeNum != null) {
             final int episodeNumI = Integer.parseInt(episodeNum);
-            name = String.format("%s - S%02dE%02d", program, seasonNumI, episodeNumI);
-        } else {
-            name = program;
+            name += String.format(" - E%02d", episodeNumI);
+        }
+        final String episodeName = matcher.group(3);
+        if (episodeName != null) {
+            name += " - " + episodeName;
         }
         httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -75,8 +80,10 @@ class Channel5FileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            final String pubId = PlugUtils.getStringBetween(getContentAsString(), "publisherID=", "&");
+            setPageEncoding("ISO-8859-1");
             setFileStreamContentTypes(new String[0], new String[]{"application/x-amf"});
-            method = getPostMethod("http://c.brightcove.com/services/messagebroker/amf?playerId=1707001743001");
+            method = getPostMethod("http://c.brightcove.com/services/messagebroker/amf?playerId=1707001745001");
             ((PostMethod) method).setRequestEntity(new ByteArrayRequestEntity(getAmfPostData(), "application/x-amf"));
             // bypass the geocheck
             method.setRequestHeader("X-Forwarded-For", "212.169.3.171");
@@ -86,7 +93,11 @@ class Channel5FileRunner extends AbstractRtmpRunner {
             if (getContentAsString().contains("The video you are trying to watch cannot be viewed from your current country or location")) {
                 throw new NotRecoverableDownloadException("The video you are trying to watch cannot be viewed from your current country or location");
             }
-            logger.info(getContentAsString());
+            final RtmpSession rtmpSession = getRtmpSession(pubId);
+            rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
+            rtmpSession.getConnectParams().put("pageUrl", fileURL);
+            helper.setSwfVerification(rtmpSession, client);
+            tryDownloadAndSaveFile(rtmpSession);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -112,6 +123,7 @@ class Channel5FileRunner extends AbstractRtmpRunner {
         final ByteBuffer urlBuf = ByteBuffer.allocate(fileURL.length() + 20);
         putAmf3String(urlBuf, fileURL);
         urlBuf.flip();
+
         ByteBuffer.wrap(data, 82, 4).putInt(379 + urlBuf.limit());
 
         final ByteBuffer postData = ByteBuffer.wrap(new byte[data.length + urlBuf.limit() + data2.length]);
@@ -147,6 +159,67 @@ class Channel5FileRunner extends AbstractRtmpRunner {
             buf.put((byte) (value & 0xFF));
         } else {
             throw new PluginImplementationException("AMF3 integer out of range: " + value);
+        }
+    }
+
+    private RtmpSession getRtmpSession(final String pubId) throws Exception {
+        Matcher matcher = getMatcherAgainstContent("mediaDTO\n\u0001?\u0005(.{8})");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing server response (1)");
+        }
+        final String videoId = String.valueOf((long) ByteBuffer.wrap(matcher.group(1).getBytes("ISO-8859-1")).asDoubleBuffer().get());
+
+        final List<Stream> list = new LinkedList<Stream>();
+        matcher = getMatcherAgainstContent("(rtmpe?://[^\u0004]+)");
+        while (matcher.find()) {
+            list.add(new Stream(matcher.group(1), videoId, pubId));
+        }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("Error parsing server response (3)");
+        }
+        return Collections.max(list).getRtmpSession();
+    }
+
+    private static class Stream implements Comparable<Stream> {
+        private final String url;
+        private final String playName;
+        private final int bitrate;
+
+        public Stream(final String s, final String videoId, final String pubId) throws ErrorDuringDownloadingException {
+            Matcher matcher = PlugUtils.matcher("^(.+?)/&(.+)$", s);
+            if (!matcher.find()) {
+                logger.warning(s);
+                throw new PluginImplementationException("Error parsing stream URL");
+            }
+            url = String.format("%s?videoId=%s&lineUpId=&pubId=%s&playerId=1707001745001&affiliateId=",
+                    matcher.group(1), videoId, pubId);
+            playName = matcher.group(2);
+            matcher = PlugUtils.matcher("H264\\-(\\d+)", playName);
+            if (!matcher.find()) {
+                logger.warning(s);
+                throw new PluginImplementationException("Stream bitrate not found");
+            }
+            bitrate = Integer.parseInt(matcher.group(1));
+            logger.info("Found stream: " + this);
+        }
+
+        public RtmpSession getRtmpSession() throws ErrorDuringDownloadingException {
+            logger.info("Downloading stream: " + this);
+            return new RtmpSession(url, playName);
+        }
+
+        @Override
+        public int compareTo(final Stream that) {
+            return Integer.valueOf(this.bitrate).compareTo(that.bitrate);
+        }
+
+        @Override
+        public String toString() {
+            return "Stream{" +
+                    "url='" + url + '\'' +
+                    ", playName='" + playName + '\'' +
+                    ", bitrate=" + bitrate +
+                    '}';
         }
     }
 

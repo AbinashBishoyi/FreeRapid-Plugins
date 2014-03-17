@@ -7,7 +7,6 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -19,14 +18,12 @@ import java.util.regex.Matcher;
  */
 class OronFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(OronFileRunner.class.getName());
-    private final static String HTTP_SITE = "http://www.oron.com";
-    private boolean badConfig = false;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         addCookie(new Cookie(".oron.com", "lang", "english", "/", 86400, false));
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
@@ -98,19 +95,17 @@ class OronFileRunner extends AbstractRunner {
 
     private void login() throws Exception {
         synchronized (OronFileRunner.class) {
-            OronServiceImpl service = (OronServiceImpl) getPluginService();
+            final OronServiceImpl service = (OronServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
-            if (!pa.isSet() || badConfig) {
+            if (!pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
                     throw new BadLoginException("No Oron Premium account login information!");
                 }
-                badConfig = false;
             }
 
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction(HTTP_SITE)
-                    .setReferer(HTTP_SITE + "/login.html")
+                    .setAction("/login")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
                     .setParameter("op", "login")

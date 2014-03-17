@@ -41,11 +41,16 @@ public class OronServiceImpl extends AbstractFileShareService {
     PremiumAccount getConfig() throws Exception {
         if (config == null) {
             synchronized (OronServiceImpl.class) {
-                config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
+                if (config == null) {
+                    config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
+                }
             }
         }
-
         return config;
+    }
+
+    void setConfig(final PremiumAccount config) {
+        this.config = config;
     }
 
 }

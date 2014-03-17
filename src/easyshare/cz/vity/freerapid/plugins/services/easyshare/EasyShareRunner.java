@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +29,7 @@ class EasyShareRunner {
     private HttpFileDownloader downloader;
     private String httpSite;
     private HttpFile httpFile;
+    private String baseURL;
 
     public void run(HttpFileDownloader downloader) throws Exception {
         this.downloader = downloader;
@@ -35,6 +37,7 @@ class EasyShareRunner {
         client = downloader.getClient();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         final String fileURL = httpFile.getFileUrl().toString();
+        baseURL = fileURL;
         httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));
 
         logger.info("Starting download in TASK " + fileURL);
@@ -42,16 +45,18 @@ class EasyShareRunner {
         GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-            Matcher matcher = PlugUtils.matcher("File size: ([0-9.]+(\\ )?.B).?</div>", client.getContentAsString());
+
+           Matcher matcher = Pattern.compile("Download ([^,]+), upload", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
-                logger.info("File size " + matcher.group(1));
-                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
-            } else {
+                final String fn = matcher.group(1);
+                logger.info("File name " + fn);
+                httpFile.setFileName(fn);
+            } else logger.warning("File name was not found" + client.getContentAsString());
                 //TODO
                 if (client.getContentAsString().contains("trying to access is temporarily unavailable"))
                     throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
-            }
-            matcher = PlugUtils.matcher("w='([0-9]*?)';", client.getContentAsString());//TODO vypada to, ze to tam neni pokazde
+        if (client.getContentAsString().contains("w=")) {
+          matcher = PlugUtils.matcher("w='([0-9]*?)';", client.getContentAsString());
             if (matcher.find()) {
                 downloader.sleep(Integer.parseInt(matcher.group(1)));
             } else {
@@ -68,11 +73,19 @@ class EasyShareRunner {
                     logger.warning(client.getContentAsString());
                     throw new ServiceConnectionProblemException("Unknown error");
                 }
-            } else if (client.getContentAsString().contains("Please enter")) {
-                //do nothing
-            } else throw new PluginImplementationException("Plugin implementation problem");
+            }
 
+           }  else if (!client.getContentAsString().contains("Please enter")) {
+                logger.warning(client.getContentAsString());
+                throw new PluginImplementationException("Plugin implementation problem");
+            }
+           matcher = PlugUtils.matcher("File size: ([0-9.]+( )?.B).?</div>", client.getContentAsString());
+            if (matcher.find()) {
+                logger.info("File size " + matcher.group(1));
+                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+            }
             while (client.getContentAsString().contains("Please enter")) {
+                logger.info(client.getContentAsString());
                 stepCaptcha(client.getContentAsString());
             }
 
@@ -116,15 +129,19 @@ class EasyShareRunner {
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info(httpSite + s);
+                    client.setReferer(baseURL);
                 String captcha = downloader.getCaptcha(httpSite + s);
 
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
-                    //  client.setReferer(baseURL);
-                    //TODO vyparsovat jeste z formu adresu
-                    final PostMethod method = client.getPostMethod(httpSite);
+                    matcher = PlugUtils.matcher("<form action=\"([^\"]*file_contents[^\"]*)\"", contentAsString);
+                      if (matcher.find()) {
+                       s = matcher.group(1);
+                        logger.info( s);
 
+                    final PostMethod method = client.getPostMethod(s);
+                  client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
                     method.addParameter("id", id);
                     method.addParameter("captcha", captcha);
 
@@ -145,7 +162,12 @@ class EasyShareRunner {
                         method.abort();
                         method.releaseConnection();
                     }
-                }
+                    } else {
+                        logger.warning(client.getContentAsString());
+                          throw new PluginImplementationException("Action was not found");
+                          }
+                 }
+
             } else throw new PluginImplementationException("Captcha picture was not found");
         }
         return false;

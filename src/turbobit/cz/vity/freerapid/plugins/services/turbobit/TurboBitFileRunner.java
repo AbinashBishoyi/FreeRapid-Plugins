@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
     private final static String LANG_REF = "http://www.turbobit.net/en";
-    private final static int CAPTCHA_MAX = 10;
+    private final static int CAPTCHA_MAX = 0;
     private int captchaCounter = 1;
 
     @Override

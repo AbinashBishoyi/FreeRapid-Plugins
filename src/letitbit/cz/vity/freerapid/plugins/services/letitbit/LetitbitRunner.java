@@ -1,17 +1,16 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
 
 import java.net.URL;
+import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
 /**
@@ -88,11 +87,30 @@ class LetitbitRunner extends AbstractRunner {
             downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
 
             String url = handleCaptcha(pageUrl);
+
+            logger.info("Ajax response : " + url);
+
             if (url.contains("[\"")) {
-                url = PlugUtils.getStringBetween(url,"\",\"","\"]").replaceAll("\\\\","");
+                url = PlugUtils.getStringBetween(url, "[", "]").replaceAll("\\\\", "");
+                final StringTokenizer st = new StringTokenizer(url, ",");
+                while (st.hasMoreTokens()) {
+                    String testUrl = st.nextToken().replaceAll("\"", "");
+                    logger.info("Url match : " + testUrl);
+                    httpMethod = getGetMethod(testUrl + "&check=1");
+                    logger.info("Url to be checked : " + httpMethod.getURI().toString());
+                    httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                    if (!makeRequest(httpMethod)) {
+                        checkProblems();
+                        throw new PluginImplementationException();
+                    }
+                    if (httpMethod.getStatusCode() == HttpStatus.SC_OK) {
+                        url = testUrl;
+                        break;
+                    }
+                }
             }
 
-            //logger.info("Final URL : " + url);
+            logger.info("Final URL : " + url);
 
             httpMethod = getMethodBuilder()
                     .setReferer(pageUrl)

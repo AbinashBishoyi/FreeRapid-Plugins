@@ -29,7 +29,6 @@ class YandexDiskFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             fileURL = getMethod.getURI().toString();
-            gotoFileInfoPage();
             checkProblems();
             checkNameAndSize(getContentAsString());
         } else {
@@ -39,8 +38,9 @@ class YandexDiskFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<name>", "</name>");
-        PlugUtils.checkFileSize(httpFile, content, "<size>", "</size>");
+        PlugUtils.checkName(httpFile, content, "<span class=\"b-text b-text_title\">", "</span>");
+        httpFile.setFileName(PlugUtils.unescapeHtml(httpFile.getFileName()));
+        PlugUtils.checkFileSize(httpFile, content, "<span class=\"b-text\">", ", uploaded");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -52,18 +52,15 @@ class YandexDiskFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             fileURL = method.getURI().toString();
-            gotoFileInfoPage();
             checkProblems();
             checkNameAndSize(getContentAsString());
+            final String ckey = PlugUtils.getStringBetween(getContentAsString(), "\"ckey\":\"", "\"");
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction("https://disk.yandex.net/my/handlers/handlers.jsx")
-                    .setParameter("_handlers", "disk-file-info")
-                    .setParameter("_locale", "en")
-                    .setParameter("_page", "disk-share")
-                    .setParameter("_service", "disk")
+                    .setAction("http://disk.yandex.com/handlers.jsx")
+                    .setParameter("_ckey", ckey)
+                    .setParameter("_name", "getLinkFileDownload")
                     .setParameter("hash", getHash())
-                    .setParameter("public_url", "1")
                     .toPostMethod();
             method.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
             method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
@@ -71,7 +68,7 @@ class YandexDiskFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            final String downloadURL = "https:" + PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "<file>", "</file>"));
+            final String downloadURL = "http:" + PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "\"url\":\"", "\""));
             logger.info(downloadURL);
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
@@ -99,31 +96,13 @@ class YandexDiskFileRunner extends AbstractRunner {
     }
 
     private String getHash() throws Exception {
-        final Matcher matcher = PlugUtils.matcher("hash=(.+?)(?:&.*)$", fileURL);
+        final Matcher matcher = PlugUtils.matcher("hash=(.+?)(?:&.*)?$", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing URL");
         }
         final String hash = URLDecoder.decode(matcher.group(1), "UTF-8");
         logger.info(hash);
         return hash;
-    }
-
-    private void gotoFileInfoPage() throws Exception {
-        final HttpMethod method = getMethodBuilder()
-                .setReferer(fileURL)
-                .setAction("https://disk.yandex.net/my/handlers/handlers.jsx")
-                .setParameter("_handlers", "disk-file-info")
-                .setParameter("_locale", "en")
-                .setParameter("_page", "disk-share")
-                .setParameter("_service", "disk")
-                .setParameter("hash", getHash())
-                .toPostMethod();
-        method.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-        method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-        if (!makeRedirectedRequest(method)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
     }
 
 }

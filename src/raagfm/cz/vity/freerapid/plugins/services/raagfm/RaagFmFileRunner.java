@@ -51,7 +51,7 @@ class RaagFmFileRunner extends AbstractRunner {
             final String referer = "http://player.raag.fm/player/flash/main.swf?xmlPath=" + fileURL;
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(referer)
-                    .setAction(String.format("%s&%s",fileURL,SEC_CODE))
+                    .setAction(String.format("%s&%s", fileURL, SEC_CODE))
                     .toGetMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
@@ -59,6 +59,7 @@ class RaagFmFileRunner extends AbstractRunner {
             }
             final String musicPath = PlugUtils.getStringBetween(getContentAsString(), "<musicpath><![CDATA[", "]]>");
             final String musicTitle = PlugUtils.getStringBetween(getContentAsString(), "<musictitle><![CDATA[", "]]>");
+            final String artist = PlugUtils.getStringBetween(getContentAsString(), "<artist><![CDATA[", "]]>");
             final Matcher matcher = PlugUtils.matcher("http://.+?/[^/]+(\\.\\w+)\\??", musicPath);
             final String extension;
             if (!matcher.find()) {
@@ -66,7 +67,7 @@ class RaagFmFileRunner extends AbstractRunner {
             } else {
                 extension = matcher.group(1);
             }
-            httpFile.setFileName(musicTitle + extension);
+            httpFile.setFileName(String.format("%s - %s%s", artist, musicTitle, extension));
             httpMethod = getMethodBuilder()
                     .setReferer(referer)
                     .setAction(musicPath)

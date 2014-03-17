@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.io.IOException;
+import java.net.URL;
 
 /**
  * @author Kajda
@@ -39,16 +40,13 @@ class IFileFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            if (fileURL.endsWith("/")) {
-                fileURL = fileURL.substring(0, fileURL.length() - 1);
-            }
-
-            final int index = fileURL.lastIndexOf("/");
+            final URL fURL = new URL(fileURL);
+            final String[] filePath = fURL.getPath().split("/");
             
-            if (index > 0) {
-                String URL = "http://ifile.it/download:dl_request?is=" + fileURL.substring(index + 1) + ",type=simple,message=ok";
-                client.setReferer(URL);
-                getMethod = getGetMethod(URL);
+            if (filePath.length > 1) {
+                String redirectURL = "http://ifile.it/download:dl_request?is=" + filePath[1] + ",type=simple,message=ok";
+                client.setReferer(redirectURL);
+                getMethod = getGetMethod(redirectURL);
 
                 if (!makeRedirectedRequest(getMethod)) {
                     throw new ServiceConnectionProblemException();
@@ -56,9 +54,9 @@ class IFileFileRunner extends AbstractRunner {
 
                 checkProblems();
 
-                URL = "http://ifile.it/dl";
-                client.setReferer(URL);
-                getMethod = getGetMethod(URL);
+                redirectURL = "http://ifile.it/dl";
+                client.setReferer(redirectURL);
+                getMethod = getGetMethod(redirectURL);
 
                 if (!makeRedirectedRequest(getMethod)) {
                     throw new ServiceConnectionProblemException();
@@ -98,7 +96,7 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("gray;\">((?:.|\\s)+?)\\(");
+        Matcher matcher = getMatcherAgainstContent("gray;\">((?:.|\\s)+?)&nbsp;\\s*\\(");
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();

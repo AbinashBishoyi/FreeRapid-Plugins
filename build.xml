@@ -60,6 +60,9 @@
         <ant dir="${src.dir}/megaupload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/netloadin/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/uploadedto/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/egoshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/letitbit/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/shareonline/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

@@ -10,6 +10,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -37,7 +38,12 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<b>&nbsp;", "</b></h1>");
+        Matcher matcher = Pattern.compile("File\\sname:.*<b>([^<]*)").matcher(content);
+        if( !matcher.find() ) {
+            throw new PluginImplementationException("File name not found");
+        }
+        httpFile.setFileName( matcher.group(1).replaceAll("&nbsp;", "") );
+        //PlugUtils.checkName(httpFile, content, "<b>&nbsp;", "</b></h1>"); //This method not work for file: http://www.turbobit.net/7lr9sp0qzdug.html
         PlugUtils.checkFileSize(httpFile, content, "</b> ", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

@@ -141,10 +141,14 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private RtmpSession getStream(final String content) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"", content);
+        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"[^<>]+?cdn=\"(.+?)\"", content);
         final List<Stream> list = new LinkedList<Stream>();
         while (matcher.find()) {
-            list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
+            if ("level3".equals(matcher.group(5))) {
+                logger.info("Ignoring stream served by Level3");
+            } else {
+                list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
+            }
         }
         if (list.isEmpty()) {
             throw new PluginImplementationException("No streams found");
@@ -312,7 +316,6 @@ class HuluFileRunner extends AbstractRtmpRunner {
             throw new ServiceConnectionProblemException("Error posting login info");
         }
         if (!getContentAsString().contains("ok=1")) {
-            logger.warning("Content from login: " + getContentAsString());
             throw new BadLoginException("Invalid Hulu account login information");
         }
         return true;

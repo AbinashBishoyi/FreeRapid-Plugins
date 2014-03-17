@@ -99,6 +99,7 @@ class OronFileRunner extends AbstractRunner {
                 throw new URLNotAvailableAnymoreException("File not found");
         }
         if (getContentAsString().contains("<b>File Not Found</b>")
+                || getContentAsString().contains("File could not be found")
                 || getContentAsString().contains("<meta NAME=\"description\" CONTENT=\"ORON.com - File Not Found\">")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }

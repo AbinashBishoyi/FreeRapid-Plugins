@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.multishare_org.MultiShare_orgServiceImpl"
-        id="multishare_org.org" vendor="birchie" version="1.0.0">
+        id="multishare.org" vendor="birchie" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?multishare\.org/file/.+"/>
         <attribute id="minver" value="0.852"/>
@@ -12,6 +12,6 @@
     </attributes>
 
     <runtime>
-        <library id="multishare_org.org" path="/" type="code"/>
+        <library id="multishare.org" path="/" type="code"/>
     </runtime>
 </plugin>

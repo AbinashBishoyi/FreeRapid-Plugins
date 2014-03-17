@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="oron.com" version="1.0.12" vendor="Thumb+JPEXS"
+<plugin id="oron.com" version="1.0.13" vendor="Thumb+JPEXS"
         class="cz.vity.freerapid.plugins.services.oron.OronServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?oron\.com/.+"/>

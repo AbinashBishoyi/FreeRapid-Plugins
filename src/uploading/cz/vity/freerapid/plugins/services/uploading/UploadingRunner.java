@@ -117,7 +117,8 @@ class UploadingRunner extends AbstractRunner {
         if (getContentAsString().contains("You still need to wait for the start of your download")) {
             throw new YouHaveToWaitException("You still need to wait for the start of your download", 65);
         }
-        if (getContentAsString().contains("Requested file not found")) {
+        if (getContentAsString().contains("Requested file not found") ||
+                getContentAsString().contains("LOOKS LIKE FILE NOT FOUND")) {
             throw new URLNotAvailableAnymoreException("Requested file not found");
         }
         if (getContentAsString().contains("You have reached the daily downloads limit")) {

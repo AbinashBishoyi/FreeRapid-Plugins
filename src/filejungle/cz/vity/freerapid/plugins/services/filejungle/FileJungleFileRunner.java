@@ -169,7 +169,8 @@ class FileJungleFileRunner extends AbstractRunner implements FileStreamRecognize
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File not available")) {
+        if (contentAsString.contains("File not available") ||
+                contentAsString.contains("This file is no longer available")) {
             throw new URLNotAvailableAnymoreException("File not available");
         }
     }

@@ -12,7 +12,7 @@ public class MultiShare_orgServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "multishare_org.org";
+        return "multishare.org";
     }
 
     @Override

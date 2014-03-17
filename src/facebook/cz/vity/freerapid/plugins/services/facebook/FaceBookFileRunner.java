@@ -64,7 +64,7 @@ class FaceBookFileRunner extends AbstractRunner {
                 httpFile.setFileName(name + ".mp4");
                 final String videoData = URLDecoder.decode(PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"video\",\"", "\"")), "UTF-8");
                 final String videoUrl;
-                if (videoData.contains("\"hd_src\"")) {  //high quality as default
+                if (!videoData.contains("\"hd_src\":null")) {  //high quality as default
                     videoUrl = PlugUtils.getStringBetween(videoData, "\"hd_src\":\"", "\"");
                 } else {
                     videoUrl = PlugUtils.getStringBetween(videoData, "\"sd_src\":\"", "\"");

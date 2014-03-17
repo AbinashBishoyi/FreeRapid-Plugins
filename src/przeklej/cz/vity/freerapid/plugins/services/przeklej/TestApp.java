@@ -16,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://przeklej.pl/plik/testbitmap-rar-0001pbb7n03p"));
+            //httpFile.setNewURL(new URL("http://przeklej.pl/plik/testbitmap-rar-0001pbb7n03p"));// unprotected
+            httpFile.setNewURL(new URL("http://www.przeklej.pl/plik/testbitmap-www-przeklej-pl-rar-0008mpcoc"));// protected by password
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

@@ -3,11 +3,15 @@ package cz.vity.freerapid.plugins.services.uploadedto;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -41,6 +45,19 @@ class UploadedToRunner extends AbstractRunner {
             checkProblems();
             checkSizeAndName();
             fileURL = method.getURI().toString();
+            if (fileURL.contains("/f/") || fileURL.contains("/folder/")) {
+                List<URI> list = new LinkedList<URI>();
+                final Matcher m = PlugUtils.matcher("<h2><a href=\"(.+?)/from/", getContentAsString());
+                while (m.find()) {
+                    list.add(new URI("http://uploaded.net/" + m.group(1).trim()));
+                }
+                if (list.isEmpty()) throw new PluginImplementationException("No links found");
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                httpFile.setFileName("Link(s) Extracted !");
+                httpFile.setState(DownloadState.COMPLETED);
+                httpFile.getProperties().put("removeCompleted", true);
+                return;
+            }
             final String fileId = getFileId();
             final int wait = PlugUtils.getNumberBetween(getContentAsString(), "<span>", "</span> seconds");
             setFileStreamContentTypes(new String[0], new String[]{"application/javascript"});
@@ -88,12 +105,17 @@ class UploadedToRunner extends AbstractRunner {
     }
 
     private void checkSizeAndName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\(([^\\(\\)]+?)\\) \\- uploaded\\.(?:to|net)</title>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File name/size not found");
+        if (fileURL.contains("/f/") || fileURL.contains("/folder/")) {
+            httpFile.setFileName("Folder : " + PlugUtils.getStringBetween(getContentAsString(), "<title>", "</title>"));
+            httpFile.setFileSize(PlugUtils.getNumberBetween(getContentAsString(), ">(", ")<"));
+        } else {
+            final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\(([^\\(\\)]+?)\\) \\- uploaded\\.(?:to|net)</title>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File name/size not found");
+            }
+            httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).replace(".", "")));
         }
-        httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).replace(".", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

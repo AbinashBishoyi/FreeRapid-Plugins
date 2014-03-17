@@ -2,12 +2,16 @@ package cz.vity.freerapid.plugins.services.rapidgator_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -26,7 +30,11 @@ class RapidGatorFileRunner extends AbstractRunner {
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            if (fileURL.contains("/folder/")) {
+                httpFile.setFileName("Folder : " + PlugUtils.getStringBetween(getContentAsString(), "<title>Download file", "</title>"));
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            } else
+                checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -62,6 +70,19 @@ class RapidGatorFileRunner extends AbstractRunner {
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
+            if (fileURL.contains("/folder/")) {
+                List<URI> list = new LinkedList<URI>();
+                final Matcher m = PlugUtils.matcher("class=\"(?:odd|even)\"><td><a href=\"(.+?)\"", getContentAsString());
+                while (m.find()) {
+                    list.add(new URI("http://rapidgator.net" + m.group(1).trim()));
+                }
+                if (list.isEmpty()) throw new PluginImplementationException("No links found");
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                httpFile.setFileName("Link(s) Extracted !");
+                httpFile.setState(DownloadState.COMPLETED);
+                httpFile.getProperties().put("removeCompleted", true);
+                return;
+            }
             checkNameAndSize(getContentAsString());
             method = getMethodBuilder().setActionFromTextBetween("var premium_download_link = '", "';").toGetMethod();
             if (!tryDownloadAndSaveFile(method)) {

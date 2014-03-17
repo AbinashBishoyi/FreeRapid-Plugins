@@ -1,12 +1,13 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="lix.in" version="0.1" vendor="Alex"
+<plugin id="lix.in" version="1.0.1" vendor="Alex"
         class="cz.vity.freerapid.plugins.services.lixin.LixinServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://lix\.in/[0-9a-z\-]+"/>
-        <attribute id="minver" value="0.80"/>
-        <attribute id="maxver" value="0.82"/>
+        <attribute id="urlRegex" value="http://(www\.)?lix\.in/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="lix.in"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

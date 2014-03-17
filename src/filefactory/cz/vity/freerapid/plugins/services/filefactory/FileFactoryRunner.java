@@ -65,7 +65,7 @@ class FileFactoryFileRunner extends AbstractRunner {
                 checkAllProblems();
                 final String content = getContentAsString();
 
-                HttpMethod finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setAction(getLink()).toGetMethod();
+                HttpMethod finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Download with ").toGetMethod();
 
                 downloadTask.sleep(PlugUtils.getWaitTimeBetween(content, "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
 
@@ -131,6 +131,7 @@ class FileFactoryFileRunner extends AbstractRunner {
         }
     }
 
+    /*
     private String getLink() throws Exception {
         Matcher matcher = getMatcherAgainstContent("\"\\?key=\".+?\"(.+?)\"");
         if (!matcher.find()) {
@@ -177,11 +178,13 @@ class FileFactoryFileRunner extends AbstractRunner {
 
         throw new PluginImplementationException("Error parsing JavaScript: Variable '" + s + "' not found");
     }
+    */
 
     private HttpMethod stepCaptcha() throws Exception {
         if (reCaptchaKey == null)
             reCaptchaKey = PlugUtils.getStringBetween(getContentAsString(), "Recaptcha.create(\"", "\"");
-        if (captchaCheck == null) captchaCheck = PlugUtils.getStringBetween(getContentAsString(), "check:'", "'");
+        if (captchaCheck == null)
+            captchaCheck = PlugUtils.getStringBetween(getContentAsString(), "check:'", "'");
         final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
         final CaptchaSupport captchaSupport = getCaptchaSupport();
 

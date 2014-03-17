@@ -5,7 +5,9 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 
+import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -102,11 +104,61 @@ class TurboBitFileRunner extends AbstractRunner {
             checkProblems();
             throw new PluginImplementationException();
         }
-        String myAction = "http://www.turbobit.net/download/timeout/" + matcher.group(2) + "/";
+
+        String urlCode = matcher.group(2);
+        String myAction = "http://www.turbobit.net/download/free/" + urlCode + "/";
         HttpMethod httpMethod = getMethodBuilder().setReferer(mRef).setAction(myAction).toGetMethod();
         client.setReferer(mRef);
         String getRef = client.getReferer();
         logger.info("Get Referer : " + getRef);
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();
+            throw new PluginImplementationException();
+        }
+        //<img alt="Captcha" src="http://turbobit.net/captcha/securimg_1/1264152974"  />
+        matcher = getMatcherAgainstContent("<img alt=\"Captcha\"[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>" );
+        if (matcher.find()) {
+            String s = PlugUtils.replaceEntities(matcher.group(1));
+            logger.info("Captcha - image " + s);
+            String captcha;
+            final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
+            //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
+            captcha = getCaptchaSupport().askForCaptcha(captchaImage);
+
+            client.setReferer(mRef);
+            final PostMethod postMethod = getPostMethod( myAction );
+            //PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"icid"});
+
+            postMethod.addParameter("captcha_response", captcha);
+
+            if (!makeRequest(postMethod)) {
+                logger.info(getContentAsString());
+                throw new PluginImplementationException();
+            }
+        }
+
+        
+        matcher = getMatcherAgainstContent("limit: ([0-9]+),");
+        if (!matcher.find()) {
+            checkProblems();
+            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+        }
+        String t = matcher.group(1);
+        int seconds = new Integer(t);
+        logger.info("wait - " + t);
+
+        logger.info("Download URL: " + t);
+        downloadTask.sleep(seconds + 1);
+        
+        myAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
+        httpMethod = getMethodBuilder().setReferer(mRef).setAction(myAction).toGetMethod();
+        client.setReferer(mRef);
+        getRef = client.getReferer();
+        logger.info("Get Referer : " + getRef);
+
+        
+        // <a href='/download/redirect/c8ca1469cb893d8acbb17305bf01035b/045888zyivux' onclick='mg_switch(this,event);'>
+        //matcher = getMatcherAgainstContent("<a href\\s*=\\s*['\"]([^'\"]+)['\"][^>]*['\"]" );
 
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
@@ -117,7 +169,7 @@ class TurboBitFileRunner extends AbstractRunner {
         if (!contentAsString.contains("download/redirect/")) {
             checkProblems();
             throw new PluginImplementationException();
-        }
+        }/**/
 
         String finURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(contentAsString, "/download/redirect/", "'");
         logger.info("Final URL: " + finURL);

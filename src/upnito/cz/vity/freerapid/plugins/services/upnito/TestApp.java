@@ -16,7 +16,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.upnito.sk/download.php?dwToken=8ab899bc3c0ddcbb7d8a4620a9a13b2e"));
+            //httpFile.setNewURL(new URL("http://www.upnito.sk/download.php?dwToken=8ab899bc3c0ddcbb7d8a4620a9a13b2e"));
+            httpFile.setNewURL(new URL("http://www.upnito.sk/download.php?dwToken=3fcc2d384254fb058e514834a6160c0b"));
+            //musi fungovat take
+            //   httpFile.setNewURL(new URL("http://www.upnito.sk/subor/3fcc2d384254fb058e514834a6160c0b.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

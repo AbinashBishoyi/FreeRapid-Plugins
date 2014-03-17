@@ -157,6 +157,7 @@
         <ant dir="${src.dir}/picasa/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/freakshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/relink/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/anonym/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

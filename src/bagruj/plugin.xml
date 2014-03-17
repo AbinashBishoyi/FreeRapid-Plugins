@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="bagruj.cz" version="1.1.2" vendor="Lukiz + Smisek"
+<plugin id="bagruj.cz" version="1.2.0" vendor="Lukiz+Smisek+Vity"
         class="cz.vity.freerapid.plugins.services.bagruj.BagrujServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bagruj\.cz/.+"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="bagruj.cz"/>
         <attribute id="hasOptions" value="true"/>

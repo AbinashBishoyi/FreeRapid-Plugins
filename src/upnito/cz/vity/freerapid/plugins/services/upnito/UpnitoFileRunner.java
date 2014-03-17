@@ -41,8 +41,25 @@ class UpnitoFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "bor:</strong>", "<br>");
-        PlugUtils.checkFileSize(httpFile, content, "kos\u0165:</strong>", "<br>");
+        //novy zpusob stahovani souboru
+        if (fileURL.contains("download.php")) {
+            //chyst·ö sa stiahnuù s˙bor flyshare.frp (<strong>4</strong>KB)</td>
+            PlugUtils.checkName(httpFile, content, "sa stiahnu\u0165 s\u00FAbor", "(");
+            Matcher matcher = PlugUtils.matcher("\\(<strong>([0-9]+)</strong>(.?B)\\)", content);
+            if (matcher.find()) {
+                final long size = PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2));
+                httpFile.setFileSize(size);
+            } else {
+                checkProblems();
+                logger.warning("File size was not found\n:");
+                throw new PluginImplementationException();
+            }
+
+        } else {
+            //stary zpusob stahovani souboru, maji to zpetne kompatibilni
+            PlugUtils.checkName(httpFile, content, "bor:</strong>", "<br>");
+            PlugUtils.checkFileSize(httpFile, content, "kos\u0165:</strong>", "<br>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -100,7 +117,7 @@ class UpnitoFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("S˙bor bol zmazan˝");
         }
         if (contentAsString.contains("za sebou stahovat ten")) {
-            throw new ServiceConnectionProblemException("Nemozete tolkokrat za sebou stahovat ten isty subor!");
+            throw new YouHaveToWaitException("Nemozete tolkokrat za sebou stahovat ten isty subor!", 60);
         }
 
         if (PlugUtils.find("te stiahnu. zadarmo", contentAsString)) {

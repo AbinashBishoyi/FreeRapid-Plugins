@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.regex.Matcher;
 class BagrujRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(BagrujRunner.class.getName());
     private final static Map<String, GetMethod> methodsMap = new HashMap<String, GetMethod>();     // added by Smisek
+    private int captchaCounter;
 
     public BagrujRunner() {
         super();
@@ -44,12 +46,12 @@ class BagrujRunner extends AbstractRunner {
 
         if (checkInQueue())     // added by Smisek
             return;
-
+        captchaCounter = 0;
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
-            if (getContentAsString().contains("captcha")) {
+            if (getContentAsString().contains("testcaptcha")) {
                 checkNameAndSize(getContentAsString());
-                while (getContentAsString().contains("captcha")) {
+                while (getContentAsString().contains("testcaptcha")) {
                     Matcher matcher = getMatcherAgainstContent("<span id=\"countdown\">([0-9]+)</span>");
                     PostMethod method = stepCaptcha(getContentAsString());
                     if (matcher.find()) {
@@ -105,9 +107,9 @@ class BagrujRunner extends AbstractRunner {
 
     // added by Smisek
     private void checkCaptcha() throws Exception {
-        if (getContentAsString().contains("captcha")) {
+        if (getContentAsString().contains("testcaptcha")) {
             checkNameAndSize(getContentAsString());
-            while (getContentAsString().contains("captcha")) {
+            while (getContentAsString().contains("testcaptcha")) {
                 Matcher matcher = getMatcherAgainstContent("<span id=\"countdown\">([0-9]+)</span>");
                 PostMethod method = stepCaptcha(getContentAsString());
                 if (matcher.find()) {
@@ -209,19 +211,26 @@ class BagrujRunner extends AbstractRunner {
 
 
     private PostMethod stepCaptcha(String contentAsString) throws Exception {
-        if (contentAsString.contains("captcha")) {
+        if (contentAsString.contains("testcaptcha")) {
             CaptchaSupport captchaSupport = getCaptchaSupport();
             Matcher matcher = PlugUtils.matcher("(http://bagruj.cz/captchas/[^\"]+)", contentAsString);
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info("Captcha URL " + s);
 
-                String captcha = captchaSupport.getCaptcha(s);
+
+                final String captcha;
+                if (captchaCounter < 4) {
+                    ++captchaCounter;
+                    final BufferedImage captchaImage = captchaSupport.getCaptchaImage(s);
+                    captcha = new CaptchaRecognizer().recognize(captchaImage);
+                } else {
+                    captcha = captchaSupport.getCaptcha(s);
+                }
 
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
-
                     client.setReferer(fileURL);
                     final PostMethod postMethod = getPostMethod(fileURL);
                     postMethod.addParameter("op", "download2");

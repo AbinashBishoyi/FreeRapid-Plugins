@@ -1,23 +1,20 @@
 package cz.vity.freerapid.plugins.services.toshared;
 
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
- * @author Tiago Hillebrandt <tiagohillebrandt@gmail.com>
+ * @author Tiago Hillebrandt <tiagohillebrandt@gmail.com>, ntoskrnl
  */
 class ToSharedRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ToSharedRunner.class.getName());
-    private String baseURL;
 
     @Override
     public void runCheck() throws Exception {
@@ -25,11 +22,12 @@ class ToSharedRunner extends AbstractRunner {
 
         final GetMethod getMethod = getGetMethod(fileURL);
 
-        if (makeRequest(getMethod)) {
-            this.checkNameAndSize(getContentAsString());
-            this.checkForProblems(getContentAsString());
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+            checkNameAndSize();
         } else {
-            throw new PluginImplementationException();
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -41,77 +39,41 @@ class ToSharedRunner extends AbstractRunner {
 
         final GetMethod getMethod = getGetMethod(fileURL);
 
-        if (makeRequest(getMethod)) {
-            this.getStartDownloadURL(getContentAsString());
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+            checkNameAndSize();
 
-            this.checkNameAndSize(getContentAsString());
-            this.checkForProblems(getContentAsString());
+            final String downloadURL = PlugUtils.getStringBetween(getContentAsString(), "window.location = \"", "\";");
 
-            if (getContentAsString().contains("<a href=\"javascript:startDownload()\" class=\"dsumm\">click here</a>")) {
-                final GetMethod method = getGetMethod(this.baseURL);
+            final GetMethod method = getGetMethod(downloadURL);
 
-                if (!tryDownloadAndSaveFile(method)) {
-                    this.checkForProblems(getContentAsString());
-
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty.");
-                }
-            } else {
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();
+                logger.warning(getContentAsString());
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
-            throw new PluginImplementationException();
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
-    public void getStartDownloadURL(String content) throws Exception {
-        /* gets the download link */
-        Matcher matcher = PlugUtils.matcher("window.location = \"(.*)\";", content);
+    private void checkNameAndSize() throws Exception {
+        PlugUtils.checkName(httpFile, getContentAsString(), "download", "</title>");
 
-        if (matcher.find()) {
-            this.baseURL = matcher.group(1);
-        }
-    }
+        final String fileSize = PlugUtils.getStringBetween(getContentAsString(), "File size:</span>\n", "&nbsp;");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize.replace(",", "")));
 
-    public void checkNameAndSize(String content) throws Exception {
-        /* verifies the url from service */
-        if ((!content.contains("2shared.com")) || (content.contains("The file link that you requested is not valid."))) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-        }
-
-        /* gets the file name */
-        Matcher matcher = PlugUtils.matcher("download ([^\"]+)</title>", content);
-
-        if (matcher.find()) {
-            final String fileName = matcher.group(1).trim();
-
-            logger.info("File name " + fileName);
-            httpFile.setFileName(fileName.trim());
-        } else {
-            logger.warning("File name was not found" + content);
-        }
-
-        /* gets the file size */
-        matcher = PlugUtils.matcher("(([0-9,.]* .B &nbsp; &nbsp;))", content);
-
-        if (matcher.find()) {
-            final String fileSize = (matcher.group(1)).replaceAll(",", "");
-
-            logger.info("File size " + fileSize);
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-        } else {
-            logger.warning("File size was not found" + content);
-        }
-
-        /* file was checked and exists */
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    public void checkForProblems(String content) throws ServiceConnectionProblemException {
-        if (content.contains("User downloading session limit is reached.")) {
-            throw new ServiceConnectionProblemException("Sorry, your IP address is already downloading a file or your session limit is reached! Try again in few minutes.");
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("The file link that you requested is not valid")) {
+            throw new URLNotAvailableAnymoreException("The file link that you requested is not valid");
+        }
+        if (content.contains("User downloading session limit is reached")) {
+            throw new ServiceConnectionProblemException("Your IP address is already downloading a file or your session limit is reached! Try again in a few minutes.");
         }
     }
 }

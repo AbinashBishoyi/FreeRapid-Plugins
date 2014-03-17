@@ -5,13 +5,14 @@ package cz.vity.freerapid.plugins.services.hulu;
  */
 public class HuluSettingsConfig {
 
-    private String username;
-    private String password;
-    private int qualityHeightIndex;
-    private int videoFormatIndex;
-    private int cdnIndex;
-    private int portIndex;
-    private boolean downloadSubtitles;
+    private String username = null;
+    private String password = null;
+    private int qualityHeightIndex = MAX_HEIGHT_INDEX;
+    private int videoFormatIndex = ANY_VIDEO_FORMAT;
+    private int cdnIndex = 0;
+    private int portIndex = 0;
+    private boolean downloadSubtitles = false;
+    private boolean tunlrEnabled = true;
 
     public static final int MIN_HEIGHT = -2;
     public static final int MAX_HEIGHT = -1;
@@ -101,4 +102,11 @@ public class HuluSettingsConfig {
         this.downloadSubtitles = downloadSubtitles;
     }
 
+    public boolean isTunlrEnabled() {
+        return tunlrEnabled;
+    }
+
+    public void setTunlrEnabled(boolean tunlrEnabled) {
+        this.tunlrEnabled = tunlrEnabled;
+    }
 }

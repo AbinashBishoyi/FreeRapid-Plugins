@@ -43,10 +43,6 @@ public class HuluServiceImpl extends AbstractFileShareService {
             if (config == null) {
                 if (!storage.configFileExists(PLUGIN_CONFIG_FILE)) {
                     config = new HuluSettingsConfig();
-                    config.setQualityHeightIndex(HuluSettingsConfig.MAX_HEIGHT_INDEX); //highest
-                    config.setVideoFormatIndex(HuluSettingsConfig.ANY_VIDEO_FORMAT); //any
-                    config.setCdnIndex(0); //akamai
-                    config.setPortIndex(0); //1935
                 } else {
                     try {
                         config = storage.loadConfigFromFile(PLUGIN_CONFIG_FILE, HuluSettingsConfig.class);

@@ -36,8 +36,6 @@ public class TestApp extends PluginDevApplication {
             //config.setQualityHeightIndex(HuluSettingsConfig.MAX_HEIGHT_INDEX); //highest
             config.setQualityHeightIndex(1); //240
             config.setVideoFormatIndex(1); //h264
-            config.setCdnIndex(0); //akamai
-            config.setPortIndex(0); //1935
             service.setConfig(config);
 
             testRun(service, httpFile, connectionSettings);

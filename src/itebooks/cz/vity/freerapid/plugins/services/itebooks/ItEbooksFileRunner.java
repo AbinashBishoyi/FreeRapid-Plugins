@@ -57,6 +57,7 @@ class ItEbooksFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            fileURL = method.getURI().toString();
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);

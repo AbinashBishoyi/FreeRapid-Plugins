@@ -31,14 +31,16 @@ public class HuluSettingsPanel extends JPanel {
         final JLabel lblPassword = new JLabel("Password:");
         final JPasswordField pswdfldPassword = new JPasswordField(40);
         final JLabel lblQuality = new JLabel("Preferred quality level:");
-        final JComboBox cbbQuality = new JComboBox(qualityStrings);
+        final JComboBox<String> cbbQuality = new JComboBox<String>(qualityStrings);
         final JLabel lblVideoFormat = new JLabel("Preferred video format:");
-        final JComboBox cbbVideoFormat = new JComboBox(videoFormatStrings);
+        final JComboBox<String> cbbVideoFormat = new JComboBox<String>(videoFormatStrings);
         final JLabel lblCdn = new JLabel("Preferred CDN:");
-        final JComboBox cbbCdn = new JComboBox(cdnStrings);
+        final JComboBox<String> cbbCdn = new JComboBox<String>(cdnStrings);
         final JLabel lblPort = new JLabel("RTMP port:");
-        final JComboBox cbbPort = new JComboBox(portStrings);
+        final JComboBox<String> cbbPort = new JComboBox<String>(portStrings);
         final JCheckBox checkSubtitles = new JCheckBox("Download subtitles", config.isDownloadSubtitles());
+        final JCheckBox checkTunlr = new JCheckBox("Enable Tunlr *)", config.isTunlrEnabled());
+        final JLabel lblTunlrDesc = new JLabel("*) Unless you are US user or using US proxy, you should enable Tunlr.");
 
         lblUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtfldUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -53,6 +55,8 @@ public class HuluSettingsPanel extends JPanel {
         lblPort.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbPort.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkSubtitles.setAlignmentX(Component.LEFT_ALIGNMENT);
+        checkTunlr.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblTunlrDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         txtfldUsername.setText(config.getUsername());
         pswdfldPassword.setText(config.getPassword());
@@ -126,6 +130,13 @@ public class HuluSettingsPanel extends JPanel {
             }
         });
 
+        checkTunlr.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(final ActionEvent e) {
+                config.setTunlrEnabled(checkTunlr.isSelected());
+            }
+        });
+
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(lblUsername);
         add(txtfldUsername);
@@ -141,6 +152,9 @@ public class HuluSettingsPanel extends JPanel {
         add(cbbPort);
         add(Box.createRigidArea(new Dimension(0, 5)));
         add(checkSubtitles);
+        add(checkTunlr);
+        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(lblTunlrDesc);
         add(Box.createRigidArea(new Dimension(0, 15)));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }

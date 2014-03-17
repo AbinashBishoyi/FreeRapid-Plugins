@@ -3,7 +3,8 @@
 <plugin class="cz.vity.freerapid.plugins.services.itebooks.ItEbooksServiceImpl"
         id="it-ebooks.info" vendor="tong2shot" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?it-ebooks\.info/book/\d+/?"/>
+        <attribute id="urlRegex"
+                   value="http://(www\.)?it-ebooks\.info/book/\d+.*|http://feedproxy\.google\.com/~r/IT-eBooks/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="it-ebooks.info"/>

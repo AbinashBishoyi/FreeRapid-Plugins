@@ -152,7 +152,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         logger.info("contentSelectUrl = " + contentSelectUrl);
 
         method = getGetMethod(contentSelectUrl);
-        if (!client.getSettings().isProxySet()) {
+        if (!client.getSettings().isProxySet() && config.isTunlrEnabled()) {
             Tunlr.setupMethod(method);
         }
         if (makeRedirectedRequest(method)) {

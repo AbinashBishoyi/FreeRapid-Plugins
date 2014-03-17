@@ -21,10 +21,10 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.hulu.com/profiles/user/public_queue"));//user queue
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/137629#s-p1-so-i0"));
-            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/245224")); // non episode
+            httpFile.setNewURL(new URL("http://www.hulu.com/watch/245224")); // non episode
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/280815")); //has subtitle
             //httpFile.setNewURL(new URL("http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1")); //subtitle
-            httpFile.setNewURL(new URL("http://www.hulu.com/watch/422886"));
+            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/422886"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
@@ -33,8 +33,11 @@ public class TestApp extends PluginDevApplication {
             final HuluSettingsConfig config = new HuluSettingsConfig();
             //config.setUsername("***");
             //config.setPassword("***");
-            config.setQualityHeightIndex(10); //highest
+            //config.setQualityHeightIndex(HuluSettingsConfig.MAX_HEIGHT_INDEX); //highest
+            config.setQualityHeightIndex(1); //240
             config.setVideoFormatIndex(1); //h264
+            config.setCdnIndex(0); //akamai
+            config.setPortIndex(0); //1935
             service.setConfig(config);
 
             testRun(service, httpFile, connectionSettings);

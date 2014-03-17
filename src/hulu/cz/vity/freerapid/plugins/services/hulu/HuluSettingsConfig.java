@@ -8,14 +8,20 @@ public class HuluSettingsConfig {
     private String password;
     private int qualityHeightIndex;
     private int videoFormatIndex;
+    private int cdnIndex;
+    private int portIndex;
 
     public static final int MIN_HEIGHT = -2;
     public static final int MAX_HEIGHT = -1;
+    public static final int MIN_HEIGHT_INDEX = 0;
+    public static final int MAX_HEIGHT_INDEX = 10;
     public static final int ANY_VIDEO_FORMAT = 0;
 
     private final int[] qualityHeightMap = {MIN_HEIGHT, 240, 360, 480, MAX_HEIGHT}; //map of qualityHeight
-    private final static int[] qualityHeightIndexMap = {0, 1, 2, 3, 10}; //map of qualityHeightIndex, to anticipate higher quality (576,720,1080,2160,4320,etc) in the future
+    private final static int[] qualityHeightIndexMap = {MIN_HEIGHT_INDEX, 1, 2, 3, MAX_HEIGHT_INDEX}; //map of qualityHeightIndex, to anticipate higher quality (576,720,1080,2160,4320,etc) in the future
     private final String[] videoFormatMap = {"Any", "h264", "vp6"};
+    private final String[] cdnMap = {"akamai", "limelight", "level3"};
+    private final int[] portMap = {1935, 80};
 
     public String getUsername() {
         return username;
@@ -49,15 +55,40 @@ public class HuluSettingsConfig {
         this.videoFormatIndex = videoFormatIndex;
     }
 
+    public int getPortIndex() {
+        return portIndex;
+    }
+
+    public void setPortIndex(int portIndex) {
+        this.portIndex = portIndex;
+    }
+
+    public int getCdnIndex() {
+        return cdnIndex;
+    }
+
+    public void setCdnIndex(int cdnIndex) {
+        this.cdnIndex = cdnIndex;
+    }
+
     public int getQualityHeight() {
         for (int i = 0; i < qualityHeightIndexMap.length; i++) {
             if (qualityHeightIndexMap[i] == qualityHeightIndex)
                 return qualityHeightMap[i];
         }
-        return qualityHeightIndexMap[4]; //default, the highest
+        return MAX_HEIGHT; //default, the highest
     }
 
     public String getVideoFormat() {
         return videoFormatMap[videoFormatIndex];
     }
+
+    public String getCdn() {
+        return cdnMap[cdnIndex];
+    }
+
+    public int getPort() {
+        return portMap[portIndex];
+    }
+
 }

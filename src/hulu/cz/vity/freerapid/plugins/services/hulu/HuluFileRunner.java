@@ -200,11 +200,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         final List<Stream> list = new LinkedList<Stream>();
         while (matcher.find()) {
             final String cdn = matcher.group(7);
-            if ("level3".equals(cdn)) {
-                logger.info("Ignoring stream served by Level3");
-            } else {
-                list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4)), Integer.parseInt(matcher.group(5)), matcher.group(6), cdn));
-            }
+            list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4)), Integer.parseInt(matcher.group(5)), matcher.group(6), cdn));
         }
         if (list.isEmpty()) {
             throw new PluginImplementationException("No streams found");
@@ -237,7 +233,8 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
         //calc height weight
         //if the same height (quality) doesn't exist, prefer the neareast one (higher or lower doesn't matter).
-        float heightWeightMax = Float.MIN_VALUE; //selected height weight
+        float heightWeightMax = Float.MIN_VALUE;
+        int selectedHeight = configHeight; //pick any value for initialization, will be changed right away anyway
         for (Stream stream : streamList) {
             final int heightDiff = stream.height - configHeight;
             float heightWeight;
@@ -249,14 +246,19 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 heightWeight = (1.0f / heightDiff);
             heightWeight *= 100000;
             stream.heightWeight = heightWeight;
-            if (heightWeight > heightWeightMax) heightWeightMax = heightWeight;
+            if (heightWeight > heightWeightMax) {
+                heightWeightMax = heightWeight;
+                selectedHeight = stream.height;
+            }
         }
+        logger.info("Selected height : " + selectedHeight);
 
-        //calc file type weight
-        float videoFormatWeight = 0f;
+        //calc video format weight
+        logger.info("Config video format : " + config.getVideoFormat());
         if (config.getVideoFormatIndex() != HuluSettingsConfig.ANY_VIDEO_FORMAT) {
             for (Stream stream : streamList) {
-                if (stream.heightWeight == heightWeightMax) { //same height as the selected height
+                float videoFormatWeight = 0f;
+                if (stream.height == selectedHeight) {
                     //same video format > h264 > vp6
                     if (stream.videoFormat.equals(config.getVideoFormat()))
                         videoFormatWeight = 50f;
@@ -270,14 +272,19 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
 
         //calc cdn weight and total weight
-        float cdnWeight = 0f;
+        logger.info("Config cdn : " + config.getCdn());
         for (Stream stream : streamList) {
-            if (stream.heightWeight == heightWeightMax) { //same height as the selected height
-                //akamai > limelight
+            float cdnWeight = 0f;
+            if (stream.height == selectedHeight) {
+                //same cdn > akamai > limelight > level3
+                if (stream.cdn.equals(config.getCdn()))
+                    cdnWeight = 15f;
                 if (stream.cdn.equals("akamai"))
                     cdnWeight = 10f;
                 else if (stream.cdn.equals("limelight"))
                     cdnWeight = 5f;
+                else if (stream.cdn.equals("level3"))
+                    cdnWeight = 2f;
             }
             stream.cdnWeight = cdnWeight;
             stream.calcWeight();
@@ -313,8 +320,10 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
 
         public RtmpSession getSession() {
+            final int port = config.getPort();
+            logger.info("Config port : " + port);
             logger.info("Downloading stream: " + this);
-            return new RtmpSession(server, 1935, app, play, true);
+            return new RtmpSession(server, port, app, play, true);
         }
 
         public void calcWeight() {
@@ -334,7 +343,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                     ", app='" + app + '\'' +
                     ", bitrate=" + bitrate +
                     ", height=" + height +
-                    ", file type=" + videoFormat +
+                    ", videoformat=" + videoFormat +
                     ", cdn='" + cdn + '\'' +
                     ", heightweight=" + heightWeight +
                     ", videoformatweight=" + videoFormatWeight +

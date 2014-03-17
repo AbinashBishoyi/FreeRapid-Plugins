@@ -52,7 +52,9 @@ class EazyUploadNetFileRunner extends AbstractRunner {
                 stepReCaptcha();
             }
             checkProblems();
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
+            final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download");
+            methodBuilder.setAction(methodBuilder.getEscapedURI().replaceFirst("adf\\.ly/.+?/banner/", ""));
+            final HttpMethod httpMethod = methodBuilder.toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

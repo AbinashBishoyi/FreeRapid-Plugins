@@ -34,7 +34,7 @@ class UploadedtoFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.net</title>");
+        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.(?:to|net)</title>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name/size not found");
         }

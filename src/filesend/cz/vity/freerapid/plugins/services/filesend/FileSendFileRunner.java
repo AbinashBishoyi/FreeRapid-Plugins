@@ -7,11 +7,10 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -33,26 +32,11 @@ class FileSendFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("File Name:</strong>\\s*(.+?)\\s*</td>", content);
-        if (matcher.find()) {
-            final String fileName = matcher.group(1).trim(); //method trim removes white characters from both sides of string
-            logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
-            //: <strong>204800</strong>KB<br>
-            matcher = PlugUtils.matcher("File Size:</strong>\\s*(.+?)\\s*</td>", content);
-            if (matcher.find()) {
-                final long size = PlugUtils.getFileSizeFromString(matcher.group(1));
-                httpFile.setFileSize(size);
-            } else {
-                checkProblems();
-                logger.warning("File size was not found\n:");
-                throw new PluginImplementationException();
-            }
-        } else {
-            checkProblems();
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
-        }
+        // a bit long, isn't it? :-) so ...
+        PlugUtils.checkName(httpFile, content, "File Name:</strong>", "</td>");
+        PlugUtils.checkFileSize(httpFile, content, "File Size:</strong>", "</td>");
+        //and now the surprise.... :-)
+        //this part was useless :-) since now :-)
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -65,18 +49,15 @@ class FileSendFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            client.setReferer(fileURL);//prevention - some services checks referers
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Download!", true).toHttpMethod();
+
             //here is the download link extraction
-            final Matcher matcher = getMatcherAgainstContent("method=\"POST\" action=\"(http.+?)\".*><input type=\"hidden\" name=\"(.+?)\"");
-            if (matcher.find()) {
-                final PostMethod postMethod = getPostMethod(matcher.group(1));//we make POST request for file
-                PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{matcher.group(2)});
-                if (!tryDownloadAndSaveFile(postMethod)) {
-                    checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
-                }
-            } else throw new PluginImplementationException("Plugin error: Download link not found");
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();//if downloading failed
+                logger.warning(getContentAsString());//log the info
+                throw new PluginImplementationException();//some unknown problem
+            }
+
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

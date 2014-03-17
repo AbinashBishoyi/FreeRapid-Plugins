@@ -43,6 +43,13 @@ class NovaFileFileRunner extends XFileSharingRunner {
     }
 
     @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("This download link will be ");
+        return downloadPageMarkers;
+    }
+
+    @Override
     protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("can only be downloaded by Premium")) {
             throw new PluginImplementationException("This file is only available to premium users");

@@ -16,14 +16,19 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.filefactory.com/file/1cfblf4u7v8v/n/%5BACX%5DBlade_of_the_Immortal_-_11_-_Wings_%5BSaintDeath%5D_%5B40407F56%5D.mkv"));
-            httpFile.setNewURL(new URL("http://uptobox.com/ndowcvrxt4m3/Blackknight_Anifecta__Sekirei_PE_BD_-_13.mkv"));
-            //httpFile.setNewURL(new URL("http://www.speedyshare.com/SuXtj/Dragonball-038-Five-Murasakis.mkv"));
+            httpFile.setNewURL(new URL("http://freakshare.com/files/csnnrddw/2014-02-26_2060008586.rar.html"));
+            //httpFile.setNewURL(new URL("http://www.gulfup.com/?MAGjMY"));                     //free user
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final Simply_DebridServiceImpl service = new Simply_DebridServiceImpl(); //instance of service - of our plugin
+            /*
+            PremiumAccount pa = new PremiumAccount();
+            pa.setUsername("****");
+            pa.setPassword("****");
+            service.setConfig(pa);
+            //*/
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

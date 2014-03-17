@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.simply_debrid.Simply_DebridServiceImpl"
-        id="simply-debrid.com" vendor="birchie" version="1.0.1">
+        id="simply-debrid.com" vendor="birchie" version="1.0.2">
     <attributes>
         <!--
         <attribute id="urlRegex" value="http://(www\.)?simply-debrid\.com/not_to_be_used_0.9.2"/>
         -->
         <attribute id="urlRegex"
-                   value="(https?://(www\.)?(1st-files\.com|2shared\.com|albafile\.com|asfile\.com|bitshare\.com|cloudzer\.net|clz\.to|crocko\.com|datafilehost\.com|(i-filez|depfile)\.com|easybytez\.com|extmatrix\.com/files|filecloud\.io|filefactory\.com/file|fileflyer\.com/view|fileparadox\.in|filepost\.com/files|filerio\.(?:com|in)|filesflash\.com|filestay\.com|freakshare\.(com|net)hipfile\.com|junocloud\.me|load\.to|lumfile\.com|mediafire\.com|nakido\.com|netload\.in|oteupload\.com|(putlocker|sockshare)\.com/file|rapidgator\.net/file|sanshare\.com|scribd\.com|sendspace\.com/file|share\-online\.biz/dl|slingfile\.com/(dl|file)|speedyshare\.com|speedy.sh|uploaded\.net|uploaded\.to|ul\.to|uploading\.com|uptobox\.com|vip-file\.com)/.+|https?://dl\.free\.fr/.+|https?://(.*?\.)?(1fichier\.com|hotfile\.com/(dl|links)|megashares\.com|shareflare\.net/download|yunfile\.com)/.+)"/>
+                   value="(https?://(www\.)?(2shared\.com|albafile\.com|asfile\.com|bitshare\.com|crocko\.com|datafilehost\.com||easybytez\.com|extmatrix\.com/files|filecloud\.io|fileflyer\.com/view|filepost\.com/files|filerio\.(?:com|in)|filesflash\.com|firedrive\.com/file|freakshare\.(com|net)|gigasize\.com/get|gulfup\.com|hipfile\.com|mediafire\.com|nakido\.com|netload\.in|nowdownload\.(ch|eu)|rapidgator\.net/file|sanshare\.com|scribd\.com|sendspace\.com/file|sockshare\.com/file|speedyshare\.com|speedy.sh|uploadboy\.com|uploaded\.net|uploaded\.to|ul\.to|uploading\.com|uppit\.com|uptobox\.com)/.+|https?://dl\.free\.fr/.+|https?://(.*?\.)?(megashares\.com|yunfile\.com)/.+)"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="see wordrider.net/forum/10/12390"/>
@@ -17,7 +17,10 @@
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
+                plugin-version="1.0" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="simply_debrid.com" path="/" type="code"/>
     </runtime>

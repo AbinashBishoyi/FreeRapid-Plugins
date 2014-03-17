@@ -47,7 +47,7 @@ class MegaApi {
     }
 
     public String request(final String content) throws Exception {
-        final HttpMethod method = new MethodBuilder(client).setAction("https://eu.api.mega.co.nz/cs?id=" + seqno++).toPostMethod();
+        final HttpMethod method = new MethodBuilder(client).setAction("https://g.api.mega.co.nz/cs?id=" + seqno++).toPostMethod();
         ((PostMethod) method).setRequestEntity(new StringRequestEntity(content, "text/plain", "UTF-8"));
         if (client.makeRequest(method, true) != HttpStatus.SC_OK) {
             throw new ServiceConnectionProblemException();

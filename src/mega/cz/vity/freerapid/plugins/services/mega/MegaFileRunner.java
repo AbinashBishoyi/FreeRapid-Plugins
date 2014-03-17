@@ -27,7 +27,7 @@ class MegaFileRunner extends AbstractRunner {
 
     private void init() throws Exception {
         if (api == null) {
-            final Matcher matcher = PlugUtils.matcher("#!([a-zA-Z\\d\\-_]{8})!([a-zA-Z\\d\\-_]{43})", fileURL);
+            final Matcher matcher = PlugUtils.matcher("#!([a-zA-Z\\d]{8})!([a-zA-Z\\d\\-_]{43})", fileURL);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Error parsing file URL");
             }
@@ -69,7 +69,9 @@ class MegaFileRunner extends AbstractRunner {
             logger.warning("Content from API request:\n" + content);
             throw e;
         }
-        final HttpMethod method = getMethodBuilder().setAction(url + "/0-" + httpFile.getFileSize()).toPostMethod();
+        final HttpMethod method = getMethodBuilder()
+                .setAction(url.replaceFirst("https", "http") + "/0")
+                .toPostMethod();
         if (!tryDownloadAndSaveFile(method)) {
             throw new ServiceConnectionProblemException("Error starting download");
         }

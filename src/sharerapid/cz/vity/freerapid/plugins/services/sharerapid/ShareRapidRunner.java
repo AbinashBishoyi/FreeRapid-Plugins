@@ -100,7 +100,7 @@ class ShareRapidRunner extends AbstractRunner {
     private void Login(String serverURL) throws Exception {
         synchronized (ShareRapidRunner.class) {
             ShareRapidServiceImpl service = (ShareRapidServiceImpl) getPluginService();
-            PremiumAccount pa = service.getConfig();pa.setUsername("vdolky");pa.setPassword("123456");
+            PremiumAccount pa = service.getConfig();
             if (!pa.isSet() || badConfig) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {

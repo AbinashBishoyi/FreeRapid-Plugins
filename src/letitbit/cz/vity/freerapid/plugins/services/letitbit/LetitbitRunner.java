@@ -144,7 +144,7 @@ class LetitbitRunner extends AbstractRunner {
 
     private String handleCaptcha(final String pageUrl) throws Exception {
         final String baseUrl = "http://" + new URL(pageUrl).getHost();
-        final String rcKey = PlugUtils.getStringBetween(getContentAsString(), "/challenge?k=", "\"");
+        final String rcKey = "6Lc9zdMSAAAAAF-7s2wuQ-036pLRbM0p8dDaQdAM";
         final String rcControl = PlugUtils.getStringBetween(getContentAsString(), "var recaptcha_control_field = '", "';");
         while (true) {
             final ReCaptcha rc = new ReCaptcha(rcKey, client);

@@ -69,7 +69,7 @@
 
         <copy todir="${build.dir}">
             <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**, **/bouncycastle/**"
-                     excludes="**/TestApp*"/>
+                     excludes="**/Test*"/>
         </copy>
 
         <copy todir="${build.dir}">

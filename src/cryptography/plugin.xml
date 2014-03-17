@@ -3,6 +3,7 @@
 <plugin id="cryptography" version="1.0" vendor="bouncycastle.org"
         class="cz.vity.freerapid.plugins.LibraryPlugin">
     <attributes>
+        <attribute id="libraryPlugin" value="true"/>
         <attribute id="minver" value="0.849"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="cryptography"/>

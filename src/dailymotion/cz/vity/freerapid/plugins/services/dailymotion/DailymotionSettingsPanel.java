@@ -23,8 +23,11 @@ public class DailymotionSettingsPanel extends JPanel {
 
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);
+        final JCheckBox subtitleCheck = new JCheckBox("Download subtitle");
+
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
+        subtitleCheck.setAlignmentX(Component.LEFT_ALIGNMENT);
         int qs = config.getQualitySetting();
         for (int i = 0; i < qualityIndexMap.length; i++) {
             if (qualityIndexMap[i] == qs) {
@@ -32,6 +35,7 @@ public class DailymotionSettingsPanel extends JPanel {
                 break;
             }
         }
+        subtitleCheck.setSelected(config.isSubtitleDownload());
 
         qualityList.addActionListener(new ActionListener() {
             @Override
@@ -39,9 +43,17 @@ public class DailymotionSettingsPanel extends JPanel {
                 config.setQualitySetting(qualityIndexMap[qualityList.getSelectedIndex()]);
             }
         });
+
+        subtitleCheck.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setSubtitleDownload(subtitleCheck.isSelected());
+            }
+        });
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(qualityLabel);
         add(qualityList);
+        add(subtitleCheck);
         add(Box.createRigidArea(new Dimension(0, 15)));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }

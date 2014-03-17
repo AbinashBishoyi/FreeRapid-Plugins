@@ -2,19 +2,16 @@ package cz.vity.freerapid.plugins.services.vidxden;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.net.URL;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,7 +21,6 @@ import java.util.regex.Pattern;
  * @author tong2shot
  */
 class VidXDenFileRunner extends XFileSharingRunner {
-    private final static Logger logger = Logger.getLogger(VidXDenFileRunner.class.getName());
 
     @Override
     protected List<FileNameHandler> getFileNameHandlers() {
@@ -35,7 +31,6 @@ class VidXDenFileRunner extends XFileSharingRunner {
 
     @Override
     protected void checkFileSize() throws ErrorDuringDownloadingException {
-
     }
 
     @Override
@@ -47,38 +42,22 @@ class VidXDenFileRunner extends XFileSharingRunner {
     }
 
     @Override
-    public void run() throws Exception {
-        setLanguageCookie();
-        login();
-        logger.info("Starting download in TASK " + fileURL);
-        GetMethod method = getGetMethod(fileURL);
-        if (!makeRedirectedRequest(method)) {
-            checkFileProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkFileProblems();
-        checkNameAndSize();
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add(0, "eval(function(p,a,c,k,e,d)");
+        return downloadPageMarkers;
+    }
 
-        HttpMethod httpMethod = getMethodBuilder()
-                .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("method_free", true)
-                .setAction(fileURL)
-                .removeParameter("method_premium")
-                .toPostMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkDownloadProblems();
+    @Override
+    //not the real download link, will be modified in doDownload()
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "(http://(?:www\\.)?vidxden\\.com)");
+        return downloadLinkRegexes;
+    }
 
-        final String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
-        final Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
-        if (waitTimematcher.find()) {
-            downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)) + 1);
-        } else {
-            downloadTask.sleep(10);
-        }
-
+    @Override
+    protected void doDownload(HttpMethod method) throws Exception {
         final Matcher jsMatcher = getMatcherAgainstContent("<script type='text/javascript'>\\s*(" + Pattern.quote("eval(function(p,a,c,k,e,d)") + ".+?)\\s*</script>");
         if (!jsMatcher.find()) {
             throw new PluginImplementationException("Content generator javascript not found");
@@ -101,18 +80,10 @@ class VidXDenFileRunner extends XFileSharingRunner {
         } catch (ScriptException e) {
             throw new PluginImplementationException("JavaScript eval failed");
         }
-
-        httpMethod = getMethodBuilder()
+        method = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction(downloadURL)
                 .toGetMethod();
-
-        setFileStreamContentTypes("text/plain");
-        if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkDownloadProblems();
-            throw new ServiceConnectionProblemException("Error starting download");
-        }
+        super.doDownload(method);
     }
-
-
 }

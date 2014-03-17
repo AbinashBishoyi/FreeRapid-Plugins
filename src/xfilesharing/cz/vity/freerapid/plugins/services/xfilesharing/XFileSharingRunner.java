@@ -1,10 +1,7 @@
 package cz.vity.freerapid.plugins.services.xfilesharing;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchaType;
-import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchasCaptchaType;
-import cz.vity.freerapid.plugins.services.xfilesharing.captcha.FourTokensCaptchaType;
-import cz.vity.freerapid.plugins.services.xfilesharing.captcha.ReCaptchaType;
+import cz.vity.freerapid.plugins.services.xfilesharing.captcha.*;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -42,6 +39,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         captchaTypes.add(new ReCaptchaType());
         captchaTypes.add(new FourTokensCaptchaType());
         captchaTypes.add(new CaptchasCaptchaType());
+        captchaTypes.add(new SolveMediaCaptchaType());
         return captchaTypes;
     }
 

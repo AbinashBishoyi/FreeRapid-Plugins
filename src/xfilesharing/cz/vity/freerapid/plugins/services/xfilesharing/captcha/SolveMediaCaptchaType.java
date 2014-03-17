@@ -1,8 +1,7 @@
-package cz.vity.freerapid.plugins.services.fileparadox;
+package cz.vity.freerapid.plugins.services.xfilesharing.captcha;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.services.solvemediacaptcha.SolveMediaCaptcha;
-import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchaType;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;

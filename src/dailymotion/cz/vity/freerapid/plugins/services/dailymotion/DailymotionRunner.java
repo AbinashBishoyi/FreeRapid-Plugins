@@ -12,6 +12,8 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -21,6 +23,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.InflaterInputStream;
 
 /**
  * Class which contains main code
@@ -93,12 +97,34 @@ class DailymotionRunner extends AbstractRunner {
 
     private void downloadVideo() throws Exception {
         checkName();
-        queueSubtitles();
+        setConfig();
+        if (config.isSubtitleDownload()) {
+            queueSubtitles();
+        }
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            setConfig();
-            final String sequence = urlDecode(PlugUtils.getStringBetween(getContentAsString(), "\"sequence\":\"", "\""));
+            final String sequence;
+            if (getContentAsString().contains("\"sequence\":\"")) {
+                sequence = urlDecode(PlugUtils.getStringBetween(getContentAsString(), "\"sequence\":\"", "\""));
+                logger.info("Sequence in page");
+            } else { //download swf, then read sequence from swf
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(String.format("http://www.dailymotion.com/swf/video/%s?autoPlay=1", getVideoIdFromURL()))
+                        .toGetMethod();
+                final InputStream is = client.makeRequestForFile(method);
+                if (is == null) {
+                    throw new ServiceConnectionProblemException("Error downloading SWF");
+                }
+                final String swfStr = swfToString(is);
+                Matcher matcher = PlugUtils.matcher(String.format("(%s%s%s:%s\\p{Graph}+?)%s", Pattern.quote("\\\""), "ldURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote(",\\\"cdn")), swfStr);
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Sequence not found in SWF");
+                }
+                sequence = matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/");
+                logger.info("Sequence in SWF");
+            }
             logger.info("Quality setting : " + config.getQualitySetting());
             final List<DailymotionVideo> dmvList = new LinkedList<DailymotionVideo>();
             for (int i = 0; i < qualityUrlKeyMap.length; i++) {
@@ -123,6 +149,33 @@ class DailymotionRunner extends AbstractRunner {
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private String swfToString(InputStream is) throws Exception {
+        try {
+            final byte[] header = new byte[8];
+            if (8 != is.read(header)) throw new IOException("Failed receiving SWF header");
+            String strHeader = new String(header);
+            if ((!strHeader.contains("FWS")) && (!strHeader.contains("CWS"))) {
+                throw new IOException("Invalid SWF file");
+            }
+            if (strHeader.contains("CWS")) {
+                is = new InflaterInputStream(is);
+            }
+            final byte[] buffer = new byte[1024];
+            final StringBuilder sb = new StringBuilder(8192);
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                sb.append(new String(buffer, 0, len, "utf-8"));
+            }
+            return sb.toString();
+        } finally {
+            try {
+                is.close();
+            } catch (final Exception e) {
+                LogUtils.processException(logger, e);
+            }
         }
     }
 

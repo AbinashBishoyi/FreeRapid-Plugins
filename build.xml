@@ -135,6 +135,7 @@
         <ant dir="${src.dir}/sendspacepl/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/storage/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/multiload/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/file2box/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

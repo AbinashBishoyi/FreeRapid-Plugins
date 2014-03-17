@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.file2box;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -11,6 +8,9 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -51,12 +51,18 @@ class File2BoxFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             final int sleep = PlugUtils.getNumberBetween(getContentAsString(), "countdown\">", "</span>");
 
-            final Matcher matcher = getMatcherAgainstContent("px;'>(\\d)</span>");
+            final Matcher matcher = getMatcherAgainstContent("padding-left: ?(\\d+)px; ?padding-top: ?\\d+px;'>(\\d)</span>");
             int start = 0;
-            StringBuilder builder = new StringBuilder();
+
+            List<CaptchaEntry> list = new ArrayList<CaptchaEntry>(4);
             while (matcher.find(start)) {
-                builder.append(matcher.group(1));
+                list.add(new CaptchaEntry(matcher.group(1), matcher.group(2)));
                 start = matcher.end();
+            }
+            Collections.sort(list);
+            StringBuilder builder = new StringBuilder();
+            for (CaptchaEntry entry : list) {
+                builder.append(entry.value);
             }
             final String captcha = builder.toString();
             if (captcha.isEmpty())
@@ -87,7 +93,7 @@ class File2BoxFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("not found")) {
+        if (contentAsString.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (contentAsString.contains("No such user exist")) {
@@ -95,6 +101,25 @@ class File2BoxFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Wrong captcha")) {
             throw new PluginImplementationException("Wrong captcha");
+        }
+        final Matcher content = getMatcherAgainstContent("You have to wait (\\d+)");
+        if (content.find()) {
+            throw new YouHaveToWaitException(content.group(), Integer.parseInt(content.group(1)));
+        }
+
+    }
+
+    private static class CaptchaEntry implements Comparable<CaptchaEntry> {
+        private Integer position;
+        String value;
+
+        CaptchaEntry(String position, String value) {
+            this.position = new Integer(position);
+            this.value = value;
+        }
+
+        public int compareTo(CaptchaEntry o) {
+            return position.compareTo(o.position);
         }
     }
 

@@ -7,7 +7,7 @@
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="file2box.com"/>
-        <attribute id="faviconImage" value="resources/favicon.png"/>
+        <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
 
     <runtime>

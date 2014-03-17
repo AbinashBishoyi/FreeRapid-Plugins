@@ -65,14 +65,18 @@ class EnteruploadRunner extends AbstractRunner {
                     throw new PluginImplementationException("Captcha not found");
                 }
 
-                HttpMethod finalMethod = stepCaptcha(getContentAsString());
-                if (!tryDownloadAndSaveFile(finalMethod)) {
-                    checkProblems();
-                    if (getContentAsString().contains("Wrong captcha")) continue;
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty.");
+                HttpMethod getlinkMethod = stepCaptcha(getContentAsString());
+                if (makeRequest(getlinkMethod)) {
+                    final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("download-button").toHttpMethod();
+                    if (!tryDownloadAndSaveFile(finalMethod)) {
+                        checkProblems();
+                        if (getContentAsString().contains("Wrong captcha")) continue;
+                        logger.warning(getContentAsString());
+                        throw new IOException("File input stream is empty.");
 
-                } else break;
+                    } else break;
+                } else
+                    throw new ServiceConnectionProblemException();
             }
 
 

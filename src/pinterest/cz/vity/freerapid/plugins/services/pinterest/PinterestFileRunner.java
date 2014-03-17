@@ -43,7 +43,7 @@ class PinterestFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         if (fileURL.contains("/pin/")) {
-            final Matcher match = PlugUtils.matcher("<img src=\".+?/([^/]+?)\" class=\"pinImage\"", content);
+            final Matcher match = PlugUtils.matcher("<img\\s*?src=\".+?/([^/]+?)\"\\s*?class=\"pinImage\"", content);
             if (!match.find())
                 throw new PluginImplementationException("File name not found");
             httpFile.setFileName(match.group(1).trim());
@@ -66,7 +66,7 @@ class PinterestFileRunner extends AbstractRunner {
             final String content = getContentAsString();
             checkNameAndSize(content);//extract file name and size from the page
             if (fileURL.contains("/pin/")) {
-                final Matcher match = PlugUtils.matcher("<img src=\"(.+?)\" class=\"pinImage\"", content);
+                final Matcher match = PlugUtils.matcher("<img\\s*?src=\"(.+?)\"\\s*?class=\"pinImage\"", content);
                 if (!match.find())
                     throw new PluginImplementationException("Download link not found");
                 final String dlLink = match.group(1).trim();
@@ -85,7 +85,7 @@ class PinterestFileRunner extends AbstractRunner {
                     final String source = PlugUtils.getStringBetween(content, "<link rel=\"canonical\" href=\"", "\">");
                     final Matcher matchD1 = PlugUtils.matcher("name\": \"BoardFeedResource\", (\"options\": \\{\"board_id\":.+?)\\},", content);
                     if (!matchD1.find()) throw new PluginImplementationException("Error D1");
-                    final Matcher matchD2 = PlugUtils.matcher("setContext\\((.+?)\\);", content);
+                    final Matcher matchD2 = PlugUtils.matcher("context:(.+?\\}),", content);    // {"ios_deep_link": "pinterest:\/\/board\/XXXX\/XXXX", "app_version": "XXXX", "https_exp": XXXX}
                     if (!matchD2.find()) throw new PluginImplementationException("Error D2");
                     final Matcher matchD3 = PlugUtils.matcher("Footer-\\d+?\"\\}\\], \"errorStrategy\": 1, \"data\": \\{\\}, (\"options\": \\{\"scrollable\": true.+?), \"uid\": \"Grid-\\d", content);
                     if (!matchD3.find()) throw new PluginImplementationException("Error D3");

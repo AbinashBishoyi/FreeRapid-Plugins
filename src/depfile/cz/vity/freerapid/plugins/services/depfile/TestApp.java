@@ -15,7 +15,9 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://depfile.com/downloads/i/799054/f/KoOoRa.CoM_Rey_Mysterio_-_The_Life_of_a_Masked_Man_DVD_3_Discs_By_MASHA_ERA.part01.rar.html"));
+            //httpFile.setNewURL(new URL("http://depfile.com/downloads/i/799054/f/KoOoRa.CoM_Rey_Mysterio_-_The_Life_of_a_Masked_Man_DVD_3_Discs_By_MASHA_ERA.part01.rar.html"));
+            //httpFile.setNewURL(new URL("http://depfile.com/a1Ek8mPCz"));
+            httpFile.setNewURL(new URL("http://depfile.com/fBlxjSXw4"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final DepFileServiceImpl service = new DepFileServiceImpl();

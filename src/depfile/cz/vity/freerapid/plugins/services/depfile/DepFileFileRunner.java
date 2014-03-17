@@ -32,7 +32,7 @@ class DepFileFileRunner extends AbstractRunner {
 
     @Override
     protected String getBaseURL() {
-        return "http://depfile.com/";
+        return fileURL.startsWith("https") ? "https://depfile.com/" : "http://depfile.com/";
     }
 
     @Override
@@ -97,6 +97,7 @@ class DepFileFileRunner extends AbstractRunner {
             captcha = getCaptchaSupport().getCaptcha(captchaURL);
         } else {
             captcha = PlugUtils.recognize(getCaptchaSupport().getCaptchaImage(captchaURL), "-u 1 -C 0-9").replaceAll("\\D", "");
+            logger.info("Captcha : " + captcha);
         }
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
@@ -116,7 +117,7 @@ class DepFileFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File was not found") || contentAsString.contains("0 byte")) {
+        if (contentAsString.contains("File was not found") || contentAsString.contains("Page Not Found") || contentAsString.contains("0 byte")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("File is available only for Premium users")) {

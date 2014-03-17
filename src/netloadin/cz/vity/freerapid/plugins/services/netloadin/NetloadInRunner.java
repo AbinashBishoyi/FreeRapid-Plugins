@@ -80,7 +80,7 @@ class NetloadInRunner extends AbstractRunner {
                     throw new YouHaveToWaitException(String.format("You could download your next file in %s minutes", (time / 60)), time + 1);
                 }
             }
-            matcher = PlugUtils.matcher("href=\"([^\"]*)\" >Click here for the download", getContentAsString());
+            matcher = PlugUtils.matcher("href=\"([^\"]*)\">Click here for the download", getContentAsString());
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info("Found File URL - " + s);
@@ -229,7 +229,7 @@ class NetloadInRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("404 - Not Found")) {
+        if (getContentAsString().contains("404 - Not Found") || getContentAsString().contains("The file was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         Matcher matcher;

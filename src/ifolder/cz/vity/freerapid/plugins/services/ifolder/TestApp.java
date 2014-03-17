@@ -14,7 +14,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://v1.ifolder.ru/16513897"));
+//            httpFile.setNewURL(new URL("http://v1.ifolder.ru/16513897"));
+            httpFile.setNewURL(new URL("http://rusfolder.com/32381280"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081);
             testRun(new IFolderServiceImpl(), httpFile, connectionSettings);

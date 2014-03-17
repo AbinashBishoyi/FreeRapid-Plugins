@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.ifolder;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -56,48 +57,56 @@ class IFolderFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            Matcher matcher = getMatcherAgainstContent("\"location.href\\s*=\\s*'(.+)';\"");
-            if (!matcher.find()) {
-                matcher = getMatcherAgainstContent("<a\\s*href\\s*=\\s*\"(.+/ints/.+)\"");
+
+            if (!getContentAsString().contains("src=\"/random/")) {
+                Matcher matcher = getMatcherAgainstContent("\"location.href\\s*=\\s*'(.+)';\"");
                 if (!matcher.find()) {
-                    throw new PluginImplementationException("Cannot find link on first page");
+                    matcher = getMatcherAgainstContent("<a\\s*href\\s*=\\s*\"(.+/ints/.+)\"");
+                    if (!matcher.find()) {
+                        throw new PluginImplementationException("Cannot find link on first page");
+                    }
                 }
-            }
-
-            method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
-            if (!makeRedirectedRequest(method)) {
-                throw new ServiceConnectionProblemException();
-            }
-            method = getMethodBuilder().setReferer("").setAction(PlugUtils.getStringBetween(getContentAsString(), "<font size=\"+1\"><a href=", ">")).toHttpMethod();
-            if (!makeRedirectedRequest(method)) {
-                throw new ServiceConnectionProblemException();
-            }
-
-            method = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();
-            if (!makeRedirectedRequest(method)) {
-                throw new ServiceConnectionProblemException();
-            }
-            int delay = PlugUtils.getWaitTimeBetween(getContentAsString(), "var delay = ", ";", TimeUnit.SECONDS);
-            downloadTask.sleep(delay);
-            /*
-            * Note: Server sends response with no Status-Line and no headers, Special method must be executed
-            */
-            method = new GetMethodNoStatus("http://ints.ifolder.ru" + method.getPath() + "?" + method.getQueryString());
-            if (!makeRedirectedRequest(method)) {
-                throw new ServiceConnectionProblemException();
+                method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+                method = getMethodBuilder().setReferer("").setAction(PlugUtils.getStringBetween(getContentAsString(), "<font size=\"+1\"><a href=", ">")).toHttpMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+                method = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+                int delay = PlugUtils.getWaitTimeBetween(getContentAsString(), "var delay = ", ";", TimeUnit.SECONDS);
+                downloadTask.sleep(delay);
+                /*
+                * Note: Server sends response with no Status-Line and no headers, Special method must be executed
+                */
+                method = new GetMethodNoStatus("http://ints.ifolder.ru" + method.getPath() + "?" + method.getQueryString());
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
             }
             do {
                 CaptchaSupport captchaSupport = getCaptchaSupport();
                 String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("src=\"/random/").getAction();
                 s = "http://ints.ifolder.ru" + s;
                 logger.info("Captcha URL " + s);
-                String interstitials_session = PlugUtils.getStringBetween(getContentAsString(), "if(tag){tag.value = \"", "\"");
-                String captchaR = captchaSupport.getCaptcha(s);
+                MethodBuilder builder = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true);
+                try {
+                    final String interstitials_session = PlugUtils.getStringBetween(getContentAsString(), "if(tag){tag.value = \"", "\"");
+                    builder.setParameter("interstitials_session", interstitials_session).setBaseURL("http://ints.ifolder.ru/ints/frame/");
+                } catch (Exception e) {
+                    final String hidden_code = PlugUtils.getStringBetween(getContentAsString(), "'hidden_code', '", "'];");
+                    builder.setParameter("hidden_code", hidden_code.substring(2)).setAction(fileURL);
+                }
+                final String captchaR = captchaSupport.getCaptcha(s);
                 if (captchaR == null) {
                     throw new CaptchaEntryInputMismatchException();
                 }
-                method = getMethodBuilder().setReferer("").setActionFromFormByName("form1", true).setParameter("confirmed_number", captchaR).setParameter("interstitials_session", interstitials_session).setBaseURL("http://ints.ifolder.ru/ints/frame/").toHttpMethod();
-                if (!makeRedirectedRequest(method)) {
+                builder.setParameter("confirmed_number", captchaR);
+                if (!makeRedirectedRequest(builder.toPostMethod())) {
                     throw new ServiceConnectionProblemException();
                 }
             } while (getContentAsString().contains("name=\"confirmed_number\""));

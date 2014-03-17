@@ -22,9 +22,9 @@ import java.util.regex.Matcher;
  */
 class GrooveSharkFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(GrooveSharkFileRunner.class.getName());
-    private final static String CLIENT_REVISION = "20120312";
-    private final static String SALT_1 = "reallyHotSauce";
-    private final static String SALT_2 = "circlesAndSquares";
+    private final static String CLIENT_REVISION = "20130520.05";//sniff from requests
+    private final static String SALT_1 = "frenchFriedDogs";//search for 'var r="' in app*.js
+    private final static String SALT_2 = "nuggetsOfBaller";//search for 'secretKey' in decompressed .swf
     private String sessionId;
     private String uuid;
 

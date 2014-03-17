@@ -15,7 +15,7 @@ public class WebshotsServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 10;
+        return 100;
     }
 
     @Override

@@ -115,6 +115,7 @@ class LetitbitRunner extends AbstractRunner {
         String captcha;
         if (useOCR) captcha = readCaptchaImage();
          else captcha = getCaptchaSupport().getCaptcha(getCaptchaImageURL());
+        if (captcha == null)  throw new CaptchaEntryInputMismatchException(); 
         postMethod.addParameter("cap", captcha);
         postMethod.addParameter("fix", "1");
         downloadTask.sleep(4);

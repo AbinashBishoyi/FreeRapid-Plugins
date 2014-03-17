@@ -106,13 +106,14 @@
     <!-- run -->
 
 
-    <target name="dist" depends="build" description="creating release">
-        <zip zipfile="${dist.dir}/${version.name}.frp">
+    <target name="dist0" depends="build" description="creating release">
+        <jar destfile="${dist.dir}/${version.name}-original.frp">
             <fileset dir="${build.dir}" includes="**/*">
                 <!--<include name="${build.dir}/${version.name}"/>-->
                 <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->
             </fileset>
-        </zip>
+            <manifest/>
+        </jar>
         <!--<zip destfile="${dist.dir}/${version.name}-src.frp">-->
         <!--<fileset dir=".">-->
         <!--<include name="${lib.dir}/"/>-->
@@ -123,6 +124,29 @@
         <!--<include name="build.xml"/>-->
         <!--</fileset>-->
         <!--</zip>-->
+    </target>
+
+    <target name="dist" depends="dist0" description="shrinking">
+        <taskdef name="yguard" classname="com.yworks.yguard.YGuardTask" classpath="../../dev/anttasks/yguard.jar"/>
+        <yguard>
+            <inoutpair in="${dist.dir}/${version.name}-original.frp" out="${dist.dir}/${version.name}-shrinked.frp"/>
+            <shrink logfile="${dist.dir}/${version.name}-log.xml">
+                <property name="digests" value="none"/>
+                <keep>
+                    <class classes="private" methods="private" fields="private">
+                        <patternset>
+                            <include name="cz.*"/>
+                        </patternset>
+                    </class>
+                </keep>
+            </shrink>
+        </yguard>
+        <zip destfile="${dist.dir}/${version.name}.frp">
+            <zipfileset src="${dist.dir}/${version.name}-shrinked.frp" excludes="META-INF/**"/>
+        </zip>
+        <delete file="${dist.dir}/${version.name}-original.frp"/>
+        <delete file="${dist.dir}/${version.name}-shrinked.frp"/>
+        <delete file="${dist.dir}/${version.name}-log.xml"/>
     </target>
 
 </project>

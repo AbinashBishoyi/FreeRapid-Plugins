@@ -62,63 +62,51 @@ class UploadJockeyRunner extends AbstractRunner {
 
 
                     dpURL = checkServer(mContent,"DepositFiles");
-                    upURL = checkServer(mContent,"Uploaded");
-                    rsURL = checkServer(mContent,"Rapidshare");
-                    esURL = checkServer(mContent,"Easy");
-                    ffURL = checkServer(mContent,"FileFactory");
-                    muURL = checkServer(mContent,"Megaupload");
+                     if (dpOK.equals("ok")) {
+                        this.httpFile.setNewURL(new URL(dpURL));
+                        this.httpFile.setPluginID("");
+                        this.httpFile.setState(DownloadState.QUEUED);
+                    } else {
 
-                    
-
-                    System.out.println(dpOK);
-                    
-
-                    if (dpOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(dpURL));
-                    }  else
-
-                    if (upOK.equals("ok")) {
+                        upURL = checkServer(mContent,"Uploaded");
+                        if (upOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(upURL));
-                    } else
-
-                    if (rsOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(rsURL));
-                    }  else
-
-                    if (esOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(esURL));
-                    } else
-                    if (ffOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(ffURL));
-                    }  else
-
-                    if (ffOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(muURL));
-                    } else throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-
-
-
-                    this.httpFile.setPluginID("");
-                    this.httpFile.setState(DownloadState.QUEUED);
-                    System.out.println(dpURL);
-                    
-                    
-
-                    
-
-                    
-
-            //Find Deposit Files
-
-            //Find Uploaded.to
-
-            //Find Rapidshare
-
-            //Find Easy-share   >> Captcha
-
-            //Find Megaupload    >> Captcha
-        }
+                            this.httpFile.setPluginID("");
+                            this.httpFile.setState(DownloadState.QUEUED);
+                        } else {
+                            rsURL = checkServer(mContent,"Rapidshare");
+                            if (rsOK.equals("ok")) {
+                                this.httpFile.setNewURL(new URL(rsURL));
+                                this.httpFile.setPluginID("");
+                                this.httpFile.setState(DownloadState.QUEUED);
+                            } else {
+                                esURL = checkServer(mContent,"Easy");
+                                if (esOK.equals("ok")) {
+                                    this.httpFile.setNewURL(new URL(esURL));
+                                    this.httpFile.setPluginID("");
+                                    this.httpFile.setState(DownloadState.QUEUED);
+                                } else {
+                                    ffURL = checkServer(mContent,"FileFactory");
+                                    if (ffOK.equals("ok")) {
+                                        this.httpFile.setNewURL(new URL(ffURL));
+                                        this.httpFile.setPluginID("");
+                                        this.httpFile.setState(DownloadState.QUEUED);
+                                    } else {
+                                        muURL = checkServer(mContent,"Megaupload");
+                                        if (muOK.equals("ok")) {
+                                            this.httpFile.setNewURL(new URL(muURL));
+                                            this.httpFile.setPluginID("");
+                                            this.httpFile.setState(DownloadState.QUEUED);
+                                        } else throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
     }
+
+
 
     //private void checkProblems() throws ErrorDuringDownloadingException {
     //    final String contentAsString = getContentAsString();

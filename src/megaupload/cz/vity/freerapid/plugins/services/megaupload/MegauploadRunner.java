@@ -75,7 +75,7 @@ class MegauploadRunner extends AbstractRunner {
             final Matcher matcher = getMatcherAgainstContent("<a href=\"(http.+?)\" class=\"download_regular_usual\"");
             if (!matcher.find()) {
                 if (loggedIn && makeRedirectedRequest(getGetMethod("/?c=account"))) {
-                    if (getContentAsString().contains("<b>Premium</b>")) {
+                    if (getContentAsString().contains("class=\"account_txt\">(Premium)")) {
                         throw new NotRecoverableDownloadException("Premium account detected, please use premium plugin instead");
                     }
                 }
@@ -127,7 +127,7 @@ class MegauploadRunner extends AbstractRunner {
         if (content.contains("All download slots")) {
             throw new ServiceConnectionProblemException("No free slot for your country.");
         }
-        if (content.contains("to download is larger than")) {
+        if (content.contains("to download is larger than") || content.contains("class=\"download_l_descr\"")) {
             throw new NotRecoverableDownloadException("Only premium users are entitled to download files larger than 1 GB from Megaupload.");
         }
         if (content.contains("the link you have clicked is not available")) {
@@ -164,31 +164,44 @@ class MegauploadRunner extends AbstractRunner {
     }
 
     private boolean isFolder() {
-        return getContentAsString().contains("folderid = \"");
+        return PlugUtils.find("[\\?&]f=", fileURL);
     }
 
     private void stepFolder() throws Exception {
-        final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid = \"", "\";");
-        final String xmlURL = "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
-        final HttpMethod folderHttpMethod = getMethodBuilder().setReferer(fileURL).setAction(xmlURL).toGetMethod();
-        if (makeRedirectedRequest(folderHttpMethod)) {
-            if (getContentAsString().contains("<FILES></FILES>"))
-                throw new URLNotAvailableAnymoreException("No files in folder. Invalid link?");
-
-            final Matcher matcher = getMatcherAgainstContent("url=\"(.+?)\"");
-            final List<URI> uriList = new LinkedList<URI>();
+        final List<URI> list = new LinkedList<URI>();
+        for (int page = 1; ; page++) {
+            final String url = fileURL + "&ajax=1&pa=" + page + "&so=name&di=asc&rnd=" + System.currentTimeMillis();
+            final HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final int total = getTotal();
+            final int previousSize = list.size();
+            final Matcher matcher = getMatcherAgainstContent("\"url\":\"(.+?)\"");
             while (matcher.find()) {
                 try {
-                    uriList.add(new URI(matcher.group(1)));
-                } catch (URISyntaxException e) {
+                    list.add(new URI(matcher.group(1).replace("\\/", "/")));
+                } catch (final URISyntaxException e) {
                     LogUtils.processException(logger, e);
                 }
             }
-            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-            httpFile.getProperties().put("removeCompleted", true);
-        } else {
-            throw new ServiceConnectionProblemException();
+            if (list.size() >= total || list.size() <= previousSize) {
+                break;
+            }
         }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        httpFile.getProperties().put("removeCompleted", true);
+    }
+
+    private int getTotal() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("\"total\":\"(\\d+)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Total number of links not found");
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
     private boolean login() throws Exception {

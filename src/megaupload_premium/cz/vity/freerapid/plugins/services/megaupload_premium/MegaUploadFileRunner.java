@@ -69,7 +69,7 @@ class MegaUploadFileRunner extends AbstractRunner {
             final Matcher matcher = getMatcherAgainstContent("\"(http://www\\d+?\\.mega(?:upload|porn)\\.com/files/[^\"]+?)\"");
             if (!matcher.find()) {
                 if (makeRedirectedRequest(getGetMethod("/?c=account"))) {
-                    if (getContentAsString().contains("<b>Regular</b>")) {
+                    if (getContentAsString().contains("class=\"account_txt\">(Regular)")) {
                         throw new NotRecoverableDownloadException("Account is not premium!");
                     }
                 }
@@ -163,31 +163,44 @@ class MegaUploadFileRunner extends AbstractRunner {
     }
 
     private boolean isFolder() {
-        return getContentAsString().contains("folderid = \"");
+        return PlugUtils.find("[\\?&]f=", fileURL);
     }
 
     private void stepFolder() throws Exception {
-        final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid = \"", "\";");
-        final String xmlURL = "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
-        final HttpMethod folderHttpMethod = getMethodBuilder().setReferer(fileURL).setAction(xmlURL).toGetMethod();
-        if (makeRedirectedRequest(folderHttpMethod)) {
-            if (getContentAsString().contains("<FILES></FILES>"))
-                throw new URLNotAvailableAnymoreException("No files in folder. Invalid link?");
-
-            final Matcher matcher = getMatcherAgainstContent("url=\"(.+?)\"");
-            final List<URI> uriList = new LinkedList<URI>();
+        final List<URI> list = new LinkedList<URI>();
+        for (int page = 1; ; page++) {
+            final String url = fileURL + "&ajax=1&pa=" + page + "&so=name&di=asc&rnd=" + System.currentTimeMillis();
+            final HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final int total = getTotal();
+            final int previousSize = list.size();
+            final Matcher matcher = getMatcherAgainstContent("\"url\":\"(.+?)\"");
             while (matcher.find()) {
                 try {
-                    uriList.add(new URI(matcher.group(1)));
-                } catch (URISyntaxException e) {
+                    list.add(new URI(matcher.group(1).replace("\\/", "/")));
+                } catch (final URISyntaxException e) {
                     LogUtils.processException(logger, e);
                 }
             }
-            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-            httpFile.getProperties().put("removeCompleted", true);
-        } else {
-            throw new ServiceConnectionProblemException();
+            if (list.size() >= total || list.size() <= previousSize) {
+                break;
+            }
         }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        httpFile.getProperties().put("removeCompleted", true);
+    }
+
+    private int getTotal() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("\"total\":\"(\\d+)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Total number of links not found");
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
 }

@@ -39,7 +39,7 @@ class FourShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final String regexRule = "<font size=\"2\".+?<b>(.+?)</b>.*?\\((.+?)\\)</font>";
+        final String regexRule = "Downloading: <strong>(.+?)<.+?<strong>(.+?)<";
         final Matcher matcher = PlugUtils.matcher(regexRule, content);
         if (matcher.find()) {
             httpFile.setFileName(matcher.group(1).trim());
@@ -56,35 +56,35 @@ class FourShareFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
+            final String contentAsString = getContentAsString();//check for response
+            checkProblems();//check problems
             if (PlugUtils.matcher("http://(?:www\\.)?up\\.4share\\.vn/d/.+", fileURL).find()) { //list URL
-                final String contentAsString = getContentAsString();
-                checkProblems();
-                final String urlListRegex = "<a href='(http://up\\.4share\\.vn/[fd]/.+?)'";
-                final Matcher urlListMatcher = getMatcherAgainstContent(urlListRegex);
                 final List<java.net.URI> uriList = new LinkedList<java.net.URI>();
-                while (urlListMatcher.find()) {
-                    uriList.add(new java.net.URI(new URI(urlListMatcher.group(1),false,"UTF-8").toString()));
-                }
+                stepBuildList("<a href='(http://up\\.4share\\.vn/[fd]/.+?)'", uriList);
                 getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
                 httpFile.getProperties().put("removeCompleted", true);
 
+            } else if (PlugUtils.matcher("http://(?:www\\.)?up\\.4share\\.vn/dlist/.+", fileURL).find()) { //list URL
+                final List<java.net.URI> uriList = new LinkedList<java.net.URI>();
+                stepBuildList(">(http://up\\.4share\\.vn/[fd]/.+?)<", uriList);
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+                httpFile.getProperties().put("removeCompleted", true);
             } else if (PlugUtils.matcher("http://(?:www\\.)?up\\.4share\\.vn/f/.+", fileURL).find()) {  //file URL
-                final String contentAsString = getContentAsString();//check for response
-                checkProblems();//check problems
                 checkNameAndSize(contentAsString);//extract file name and size from the page
 
                 if (contentAsString.contains("var counter=")) {
-                    Matcher matcher = getMatcherAgainstContent("var counter=(\\d+)\\s+");
-                    matcher.find();
-                    final int waitTime = Integer.parseInt(matcher.group(1));
-                    downloadTask.sleep(waitTime);
+                    Matcher matcher = getMatcherAgainstContent("var counter=(\\d+);");
+                    if (matcher.find()) {
+                        final int waitTime = Integer.parseInt(matcher.group(1));
+                        downloadTask.sleep(waitTime);
+                    }
                 }
 
                 MethodBuilder methodBuilder = getMethodBuilder()
                         .setReferer(fileURL)
                         .setActionFromFormWhereTagContains("absmiddle", true)
                         .setAction(fileURL);
-
+                logger.info("########" + getContentAsString());
                 methodBuilder = stepCaptcha(methodBuilder);
 
                 final HttpMethod httpMethod = methodBuilder.toPostMethod();
@@ -101,9 +101,16 @@ class FourShareFileRunner extends AbstractRunner {
         }
     }
 
+    private void stepBuildList(String urlListRegex, List<java.net.URI> uriList) throws Exception {
+        final Matcher urlListMatcher = getMatcherAgainstContent(urlListRegex);
+        while (urlListMatcher.find()) {
+            uriList.add(new java.net.URI(new URI(urlListMatcher.group(1), false, "UTF-8").toString()));
+        }
+    }
+
     private MethodBuilder stepCaptcha(MethodBuilder methodBuilder) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("absmiddle").getEscapedURI();
+        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("security_code").getEscapedURI();
         final String captcha = captchaSupport.getCaptcha(captchaSrc);
         if (captcha == null) throw new CaptchaEntryInputMismatchException();
         return methodBuilder.setParameter("security_code", captcha);

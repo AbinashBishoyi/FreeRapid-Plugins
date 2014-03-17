@@ -36,9 +36,9 @@ class xHamsterFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1 >", "</h1>");
+        PlugUtils.checkName(httpFile, content, "<title>", " - xHamster.com");
         httpFile.setFileName(httpFile.getFileName() + ".flv");
-        PlugUtils.checkFileSize(httpFile, content, "Download this video (", ")");
+        PlugUtils.checkFileSize(httpFile, content, "video (", ")");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

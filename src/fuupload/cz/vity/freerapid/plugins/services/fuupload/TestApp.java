@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.fourshare;
+package cz.vity.freerapid.plugins.services.fuupload;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author tong2shot
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,16 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://up.4share.vn/f/3405030602040407/Dragon%20Ball%20Kai%20-%20Ep%2001.avi.file"));
-            //httpFile.setNewURL(new URL("http://up.4share.vn/f/3b090a0c080f0a0f/Xilisoft%20Video%20Converter%20Ultimate%207.0.1build%201219.rar"));
-            //httpFile.setNewURL(new URL("http://up.4share.vn/d/6b5a5c595e595a5d"));
-            //httpFile.setNewURL(new URL("http://up.4share.vn/d/5a6b6d686c696a69"));
-            httpFile.setNewURL(new URL("http://up.4share.vn/dlist/6b595c535d525e52"));
+            httpFile.setNewURL(new URL("http://fuupload.com/mtxjhsykkpnu/DEAN-IDFL.us.OUAT.S02E09.480p.HDTV.X264-mRS.rar.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final FourShareServiceImpl service = new FourShareServiceImpl(); //instance of service - of our plugin
+            final FuUploadServiceImpl service = new FuUploadServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set premium account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

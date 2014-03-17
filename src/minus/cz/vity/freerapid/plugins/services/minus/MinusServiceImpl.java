@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.minus;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
+import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,11 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author Tommy
  */
-public class MinusServiceImpl extends XFileSharingServiceImpl {
+public class MinusServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
         return "minus.com";
-    }
-
-    @Override
-    public String getServiceTitle() {
-        return "Minus";
     }
 
     @Override

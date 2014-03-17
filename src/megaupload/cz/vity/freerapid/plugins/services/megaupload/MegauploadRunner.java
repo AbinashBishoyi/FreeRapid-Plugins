@@ -61,12 +61,7 @@ class MegauploadRunner extends AbstractRunner {
                 }
 
                 String downloadURL = matcher.group(1);
-                final int i = downloadURL.lastIndexOf('/');
-                if (i > 0) {
-                    final String toEncode = downloadURL.substring(i + 1);
-                    httpFile.setFileName(toEncode);
-                    downloadURL = downloadURL.substring(0, i + 1) + encodeURL(toEncode);
-                }
+                downloadURL = encodeURL(downloadURL); 
                 final GetMethod method = getGetMethod(downloadURL);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();

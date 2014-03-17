@@ -62,7 +62,7 @@ class FaceBookFileRunner extends AbstractRunner {
                 final String content = getContentAsString().replaceAll("[\\u202A\\u202B\\u202C]", "");
                 final String name = PlugUtils.getStringBetween(content, "<title id=\"pageTitle\">", "| Facebook</title>");
                 httpFile.setFileName(name + ".mp4");
-                final String videoData = URLDecoder.decode(PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"video\",\"", "\"")), "UTF-8");
+                final String videoData = URLDecoder.decode(PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"params\",\"", "\"")), "UTF-8");
                 final String videoUrl;
                 if (!videoData.contains("\"hd_src\":null")) {  //high quality as default
                     videoUrl = PlugUtils.getStringBetween(videoData, "\"hd_src\":\"", "\"");

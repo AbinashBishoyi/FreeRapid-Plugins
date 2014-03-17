@@ -15,8 +15,8 @@ public class TestApp extends PluginApplication {
 
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setFileUrl(new URL("http://rapidshare.com/files/145378634/DSCF5628.JPG.html"));
-			httpFile.setFileUrl(new URL("http://rapidshare.com/files/141950563/pb.04.02.720.part01.rar"));
+            //httpFile.setNewURL(new URL("http://rapidshare.com/files/145378634/DSCF5628.JPG.html"));
+            httpFile.setNewURL(new URL("http://rapidshare.com/files/141950563/pb.04.02.720.part01.rar"));
 
             run(new RapidShareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
@@ -27,6 +27,6 @@ public class TestApp extends PluginApplication {
     }
 
     public static void main(String[] args) {
-		Application.launch(TestApp.class, args);
+        Application.launch(TestApp.class, args);
     }
 }

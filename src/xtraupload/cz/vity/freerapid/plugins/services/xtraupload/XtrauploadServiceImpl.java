@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.xtraupload;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author Ladislav Vitasek
@@ -17,9 +17,8 @@ public class XtrauploadServiceImpl extends AbstractFileShareService {
         return 4;
     }
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
-        new XtrauploadRunner().run(downloader);
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new XtrauploadRunner();
     }
-
 }

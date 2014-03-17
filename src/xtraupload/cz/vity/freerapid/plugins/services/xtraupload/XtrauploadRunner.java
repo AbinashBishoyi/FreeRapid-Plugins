@@ -3,13 +3,12 @@ package cz.vity.freerapid.plugins.services.xtraupload;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,13 +16,14 @@ import java.util.regex.Pattern;
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
-class XtrauploadRunner {
+class XtrauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XtrauploadRunner.class.getName());
     private HttpDownloadClient client;
     private HttpFileDownloader downloader;
     private String initURL;
 
     public void run(HttpFileDownloader downloader) throws Exception {
+        super.run(downloader);
         this.downloader = downloader;
         HttpFile httpFile = downloader.getDownloadFile();
         client = downloader.getClient();
@@ -38,7 +38,7 @@ class XtrauploadRunner {
             if (matcher.find()) {
                 Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
                 logger.info("File size " + a);
-                 httpFile.setFileSize(a);
+                httpFile.setFileSize(a);
             }
             matcher = Pattern.compile("File name:((<[^>]*>)|\\s)*([^<]+)<", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
@@ -93,7 +93,7 @@ class XtrauploadRunner {
             Matcher matcher = Pattern.compile("captcha", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 String s = "http://www.xtraupload.de/captcha.php";
-                String captcha = downloader.getCaptcha(s);
+                String captcha = this.getCaptchaSupport().getCaptcha(s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
@@ -108,8 +108,8 @@ class XtrauploadRunner {
                     postMethod.addParameter("captchacode", captcha);
 
                     client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
-                     if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
-                          return true;
+                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                        return true;
                     }
                 }
             } else {

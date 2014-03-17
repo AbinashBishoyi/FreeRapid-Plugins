@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.circlecaptcha.Circle;
 import cz.vity.freerapid.plugins.services.circlecaptcha.CircleCaptcha;
 import cz.vity.freerapid.plugins.services.circlecaptcha.CircleHoughTransform;
+import cz.vity.freerapid.plugins.services.keycaptcha.KeyCaptcha;
 import cz.vity.freerapid.plugins.services.linkcrypt.captcha.CaptchaPreparer;
 import cz.vity.freerapid.plugins.services.linkcrypt.captcha.CaptchaRecognizer;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -83,7 +84,14 @@ class LinkCryptFileRunner extends AbstractRunner {
 
     private boolean stepCaptcha(final String content) throws Exception {
         if (content.contains("KeyCAPTCHA")) {
-            throw new PluginImplementationException("KeyCaptcha is not supported");
+            final KeyCaptcha kc = new KeyCaptcha(getDialogSupport(), client);
+            do {
+                final HttpMethod method = kc.recognize(content, fileURL);
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+            } while (getContentAsString().contains("KeyCAPTCHA"));
+            return true;
         }
         Matcher matcher = PlugUtils.matcher("src=\"(http://linkcrypt\\.ws/(captx|textx)\\.html.*?)\"", content);
         if (matcher.find()) {
@@ -107,9 +115,8 @@ class LinkCryptFileRunner extends AbstractRunner {
                     }
                 }
             }
-        } else {
-            return false;
         }
+        return false;
     }
 
     private BufferedImage getCaptchaImage(final String url) throws Exception {

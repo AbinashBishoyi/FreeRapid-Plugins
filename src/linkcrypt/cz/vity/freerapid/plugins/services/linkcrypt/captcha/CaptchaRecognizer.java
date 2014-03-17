@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 public class CaptchaRecognizer {
     private final static Logger logger = Logger.getLogger(CaptchaRecognizer.class.getName());
 
-    public static Point recognizeTextxCaptcha(final BufferedImage image) throws Exception {
+    public static Point recognizeTextxCaptcha(final BufferedImage image) {
         final String problem = getProblem(image);
         if (problem != null) {
             logger.info("problem = " + problem);

@@ -43,21 +43,21 @@ public class CaptchaPreparer {
         final BufferedImage output = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
         final Graphics2D g = output.createGraphics();
 
-        final int segmentWidth = w / 10;
-        for (int x0 = 0; x0 < w; x0 += segmentWidth) {
-            final int maxX = Math.min(x0 + segmentWidth, w);
+        final int maxSegmentWidth = w / 10;
+        for (int x0 = 0; x0 < w; x0 += maxSegmentWidth) {
+            final int segmentWidth = Math.min(x0 + maxSegmentWidth, w) - x0;
             final List<Frame> list = new LinkedList<Frame>();
             for (final BufferedImage frame : frames) {
                 int totalIntensity = 0;
                 for (int y = 0; y < h; y++) {
-                    for (int x = x0; x < maxX; x++) {
+                    for (int x = x0; x < x0 + segmentWidth; x++) {
                         totalIntensity += intensity(frame.getRGB(x, y));
                     }
                 }
-                list.add(new Frame(frame, totalIntensity / (maxX * h)));
+                list.add(new Frame(frame, totalIntensity / (segmentWidth * h)));
             }
-            final BufferedImage segment = Collections.max(list).getImage().getSubimage(x0, 0, maxX - x0, h);
-            g.drawImage(segment, x0, 0, null);
+            final BufferedImage frame = Collections.max(list).getImage();
+            g.drawImage(frame, x0, 0, x0 + segmentWidth, h, x0, 0, x0 + segmentWidth, h, null);
         }
 
         g.dispose();

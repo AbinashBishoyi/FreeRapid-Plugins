@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.HttpStatus;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -22,7 +23,8 @@ class MediafireRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        int result = client.makeRequest(getMethod, true);
+        if (result == HttpStatus.SC_OK || result == HttpStatus.SC_NOT_FOUND) {
             checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException();
@@ -33,7 +35,8 @@ class MediafireRunner extends AbstractRunner {
 
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (makeRedirectedRequest(getMethod)) {
+        int result = client.makeRequest(getMethod, true);
+        if (result == HttpStatus.SC_OK || result == HttpStatus.SC_NOT_FOUND) {
             checkNameAndSize(getContentAsString());
             if (getContentAsString().contains("cu(")) {
                 Matcher matcher = getMatcherAgainstContent("cu\\('([^']+)','([^']+)','([^']+)'\\)");

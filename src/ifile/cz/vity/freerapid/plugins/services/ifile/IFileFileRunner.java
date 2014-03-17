@@ -47,7 +47,7 @@ class IFileFileRunner extends AbstractRunner {
         final HttpMethod method = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
         makeRedirectedRequest(method);
         //another link contains "download" too so we can't use setActionFromAHrefWhereATagContains()
-        final String finalURL = PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn2\" target=\"_blank\" href=\"", "\"");
+        final String finalURL = PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn\" target=\"_blank\" href=\"", "\"");
         final HttpMethod finalMethod = getMethodBuilder().setAction(finalURL).setReferer(REDIRECT_URL).toHttpMethod();
         if (!tryDownloadAndSaveFile(finalMethod)) {
             logger.warning(getContentAsString());

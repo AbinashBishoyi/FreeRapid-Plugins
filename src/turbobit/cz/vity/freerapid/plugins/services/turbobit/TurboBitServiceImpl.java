@@ -16,7 +16,7 @@ public class TurboBitServiceImpl extends AbstractFileShareService {
 
     public int getMaxDownloadsFromOneIP() {
         //don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 2;
+        return 1;
     }
 
     @Override

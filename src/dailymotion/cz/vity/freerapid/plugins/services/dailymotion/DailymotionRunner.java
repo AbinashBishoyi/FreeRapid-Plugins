@@ -10,7 +10,6 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -29,8 +28,8 @@ class DailymotionRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
         } else {
@@ -51,16 +50,14 @@ class DailymotionRunner extends AbstractRunner {
         super.run();
         addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
-
-            final String sequence = PlugUtils.getStringBetween(getContentAsString(), "so.addVariable(\"sequence\",  \"", "\"");
+            final String sequence = PlugUtils.getStringBetween(getContentAsString(), ".addVariable(\"sequence\",  \"", "\"");
             final String url = PlugUtils.getStringBetween(sequence, "%22hqURL%22%3A%22", "%22");//change "hqURL" to "sdURL" for low quality
-            final HttpMethod finalMethod = getGetMethod(urlDecode(url).replace("\\", ""));
-
-            if (!tryDownloadAndSaveFile(finalMethod)) {
+            method = getGetMethod(urlDecode(url).replace("\\", ""));
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }

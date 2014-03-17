@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.youtube;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
@@ -39,6 +40,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/ 20120405 Firefox/14.0.1");
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -54,6 +56,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/ 20120405 Firefox/14.0.1");
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         setConfig();
 
@@ -63,6 +66,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            bypassAgeVerification(method);
             checkProblems();
             fileURL = method.getURI().toString();
             checkName();
@@ -77,7 +81,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
             final String fmtStreamMap = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
             logger.info(fmtStreamMap);
-            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + fmt + "[^,]*|[^,]*itag="+ fmt + "\\\\u0026[^,]*)", fmtStreamMap);
+            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + fmt + "[^,]*|[^,]*itag=" + fmt + "\\\\u0026[^,]*)", fmtStreamMap);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
             }
@@ -107,7 +111,14 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Cannot find stream URL");
                 }
-                method = getGetMethod(URLDecoder.decode(URLDecoder.decode(matcher.group(1), "UTF-8"), "UTF-8"));
+                String videoURL = matcher.group(1);
+                if (!videoURL.contains("signature")) {
+                    matcher = PlugUtils.matcher("sig=(.+?)(?:\\\\u0026.+)?$", formatContent);
+                    if (matcher.find()) {
+                        videoURL = videoURL + "&signature=" + matcher.group(1);
+                    }
+                }
+                method = getGetMethod(URLDecoder.decode(URLDecoder.decode(videoURL, "UTF-8"), "UTF-8"));
                 setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
@@ -120,14 +131,10 @@ class YouTubeRunner extends AbstractRtmpRunner {
         }
     }
 
+
     private void checkProblems() throws Exception {
-        if (getContentAsString().contains("I confirm that I am 18 years of age or older")) {
-            if (!makeRedirectedRequest(getGetMethod(fileURL + "&has_verified=1"))) {
-                throw new ServiceConnectionProblemException();
-            }
-        }
-        if (getContentAsString().contains("Sign in to view this video")) {
-            throw new PluginImplementationException("YouTube account not supported : Sign in to view this video");
+        if (getContentAsString().contains("video you have requested is not available") || getContentAsString().contains("video is no longer available")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
         /* Causes false positives
         final Matcher matcher = getMatcherAgainstContent("<div\\s+?class=\"yt-alert-content\">\\s*([^<>]+?)\\s*</div>");
@@ -349,6 +356,33 @@ class YouTubeRunner extends AbstractRtmpRunner {
             }
         }
         return false;
+    }
+
+    private void bypassAgeVerification(HttpMethod method) throws Exception {
+        if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_age.*")) {
+            setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)");
+            method = getGetMethod(fileURL);
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_controversy.*") || getContentAsString().contains("verify_controversy?action_confirm=1")) {
+                method = getMethodBuilder()
+                        .setBaseURL("http://www.youtube.com")
+                        .setActionFromFormWhereActionContains("verify_controversy", true)
+                        .toPostMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+            }
+            setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/ 20120405 Firefox/14.0.1");
+        } else if (getContentAsString().contains("I confirm that I am 18 years of age or older")) {
+            if (!makeRedirectedRequest(getGetMethod(fileURL + "&has_verified=1"))) {
+                throw new ServiceConnectionProblemException();
+            }
+        }
+        if (getContentAsString().contains("Sign in to view this video")) {  //just in case they change age verification mechanism
+            throw new PluginImplementationException("YouTube account is not supported : Sign in to view this video");
+        }
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareServiceImpl.java 981 2008-12-07 12:00:52Z Vity $
+ * $Id: RapidShareServiceImpl.java 987 2008-12-07 13:22:39Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -53,9 +53,13 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
 
     @Override
     public void showOptions() throws Exception {
-        this.config = showAccountDialog(getConfig(), "RapidShare", PLUGIN_CONFIG_FILE);
+        PremiumAccount pa = showConfigDialog();
+        if (pa != null) config = pa;
     }
 
+    public PremiumAccount showConfigDialog() throws Exception {
+        return showAccountDialog(getConfig(), "RapidShare", PLUGIN_CONFIG_FILE);
+    }
 
     PremiumAccount getConfig() throws Exception {
         if (config == null) {

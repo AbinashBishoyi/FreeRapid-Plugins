@@ -11,11 +11,12 @@ public class IFileServiceImpl extends AbstractFileShareService {
     private final static String SERVICE_NAME = "ifile.it (login)";
     private static final String PLUGIN_CONFIG_FILE = "plugin_IFileItLogin.xml";
 
-
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 2;
     }

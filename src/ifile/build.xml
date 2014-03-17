@@ -2,7 +2,7 @@
 <project name="iFile.it" default="all" basedir=".">
     <property name="application" value="ifile"/>
 
-    <property name="version" value="0.6.5"/>
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="ifile.jar"/>

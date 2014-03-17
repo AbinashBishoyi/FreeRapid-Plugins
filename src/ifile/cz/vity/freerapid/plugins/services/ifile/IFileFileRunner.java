@@ -21,9 +21,7 @@ class IFileFileRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(IFileFileRunner.class.getName());
     private final static String BASE_URL = "http://ifile.it/";
-    private final static String REDIRECT_URL = "";
     private String __alias_id;
-    //    private String __x_c;
     private String __esn;
     private String __recaptcha_public;
 
@@ -41,11 +39,11 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void finalRequest() throws Exception {
-        final HttpMethod httpMethod = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setReferer(fileURL).toHttpMethod();
         //yes, the page needs to be downloaded twice
         makeRedirectedRequest(httpMethod);
         makeRedirectedRequest(httpMethod);
-        final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("click here").setReferer(REDIRECT_URL).toHttpMethod();
+        final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("click here").setReferer(fileURL).toHttpMethod();
         if (!tryDownloadAndSaveFile(finalMethod)) {
             logger.warning(getContentAsString());
             throw new IOException("File input stream is empty.");
@@ -66,7 +64,7 @@ class IFileFileRunner extends AbstractRunner {
             try {
                 is = method.getResponseBodyAsStream();
                 if (is != null) {
-                    int i = 0;
+                    int i;
                     while ((i = is.read()) != -1) {
                         content += (char) i;
                     }
@@ -89,7 +87,6 @@ class IFileFileRunner extends AbstractRunner {
 
     private void makeUrl(String type, String extra) throws Exception {
         String c = BASE_URL + "download:dl_request?alias_id=" + __alias_id + "&type=" + type + "&esn=" + __esn + extra;
-        //c += "&" + __x_fs + additional;
         HttpMethod method = getMethodBuilder().setAction(c).toHttpMethod();
         method.addRequestHeader("X-Requested-With", "XMLHttpRequest"); //We use AJAX :-)
 
@@ -180,16 +177,4 @@ class IFileFileRunner extends AbstractRunner {
         }
     }
 
-//    private void stepCaptchaSimple() throws Exception {
-//        final CaptchaSupport captchaSupport = getCaptchaSupport();
-//        final String captchaSrc = BASE_URL + "download:captcha";
-//        logger.info("Simple captcha URL " + captchaSrc);
-//        final String captcha = captchaSupport.getCaptcha(captchaSrc);
-//
-//        if (captcha == null) {
-//            throw new CaptchaEntryInputMismatchException();
-//        } else {
-//            makeUrl("simple", "&" + __x_c + "=" + captcha);
-//        }
-//    }
 }

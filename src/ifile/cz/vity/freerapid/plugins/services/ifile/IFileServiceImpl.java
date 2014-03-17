@@ -9,10 +9,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class IFileServiceImpl extends AbstractFileShareService {
     private final static String SERVICE_NAME = "ifile.it";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 2;
     }

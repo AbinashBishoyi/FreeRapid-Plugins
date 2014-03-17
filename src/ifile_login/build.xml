@@ -2,7 +2,7 @@
 <project name="iFile.it Login plugin" default="all" basedir=".">
     <property name="application" value="ifile_login"/>
 
-    <property name="version" value="0.6.5"/>
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="ifile_login.jar"/>

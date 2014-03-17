@@ -65,7 +65,7 @@ class NowVideoEuFileRunner extends AbstractRunner {
 
             String fileId = fileURL.replaceFirst("http://.+?/video/", "");
             String fileKey;
-            String content = findParameterContent();
+            String content = getContentAsString().contains(".file=") ? getContentAsString() : findParameterContent();
             Matcher matcher = PlugUtils.matcher("\\.filekey=[\"']?(.+?)[\"']?;", content);
             if (matcher.find()) {
                 fileKey = matcher.group(1);

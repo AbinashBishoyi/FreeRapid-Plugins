@@ -19,9 +19,6 @@ class ShareNXSFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        if (!fileURL.contains("&size=large")) {
-            fileURL += "&size=large";
-        }
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -32,7 +29,24 @@ class ShareNXSFileRunner extends AbstractRunner {
                 }
             }
             checkProblems();
+
             HttpMethod httpMethod;
+            fileURL = method.getURI().toString();
+            if (!fileURL.endsWith("original")) {
+                try {
+                    httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("original").toGetMethod();
+                } catch (BuildMethodException e) {
+                    throw new PluginImplementationException("Unable to get original image");
+                }
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();
+                fileURL = httpMethod.getURI().toString();
+            }
+
+
             try {
                 httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromImgSrcWhereTagContains("/images/").toGetMethod();
             } catch (BuildMethodException e) {

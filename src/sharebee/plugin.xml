@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.sharebee.SharebeeServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?sharebee\.com/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="sharebee.com"/>
         <attribute id="faviconImage" value=""/>
     </attributes>

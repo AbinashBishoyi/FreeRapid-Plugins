@@ -16,11 +16,6 @@ public class Tube8ServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

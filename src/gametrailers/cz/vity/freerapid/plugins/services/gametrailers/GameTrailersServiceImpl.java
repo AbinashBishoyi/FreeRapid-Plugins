@@ -14,10 +14,6 @@ public class GameTrailersServiceImpl extends AbstractFileShareService {
         return "gametrailers.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//ok

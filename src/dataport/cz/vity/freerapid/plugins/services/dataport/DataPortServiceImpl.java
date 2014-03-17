@@ -13,10 +13,6 @@ public class DataPortServiceImpl extends AbstractFileShareService {
         return "dataport.cz";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 5;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

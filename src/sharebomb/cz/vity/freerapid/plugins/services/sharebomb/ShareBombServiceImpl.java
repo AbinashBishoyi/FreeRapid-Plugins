@@ -13,10 +13,6 @@ public class ShareBombServiceImpl extends AbstractFileShareService {
         return "sharebomb.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

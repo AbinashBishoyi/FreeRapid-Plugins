@@ -13,10 +13,6 @@ public class UserCashServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;

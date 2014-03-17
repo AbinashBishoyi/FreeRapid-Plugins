@@ -15,11 +15,6 @@ public class MovieLibraryServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return false;
     }

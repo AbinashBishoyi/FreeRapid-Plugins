@@ -14,10 +14,6 @@ public class SpeedyShareServiceImpl extends AbstractFileShareService {
         return "speedyshare.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

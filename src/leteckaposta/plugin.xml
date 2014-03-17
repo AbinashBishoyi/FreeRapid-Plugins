@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.leteckaposta.LeteckaPostaServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(leteckaposta\.cz|sharegadget\.com)/[0-9]+/?"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="leteckaposta.cz sharegadget.com"/>
+        <attribute id="maxDownloads" value="2"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
 

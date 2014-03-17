@@ -5,8 +5,8 @@
     <attributes>
         <attribute id="urlRegex"
                    value="http://(www\.)?hellshare\.com/.+|http://(download\.[a-z]+\.)?hellshare\.com/.+|http://download\.hellshare\.hu/.+|http://download\.hellshare\.sk/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="hellshare.com"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

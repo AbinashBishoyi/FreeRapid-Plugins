@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.blogspot.BlogSpotServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://[0-9]\.bp\.blogspot\.com/.+s1600-h/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="blogspot.com"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

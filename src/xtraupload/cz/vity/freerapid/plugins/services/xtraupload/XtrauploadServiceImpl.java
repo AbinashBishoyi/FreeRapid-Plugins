@@ -13,10 +13,6 @@ public class XtrauploadServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
     @Override
     protected PluginRunner getPluginRunnerInstance() {
         return new XtrauploadRunner();

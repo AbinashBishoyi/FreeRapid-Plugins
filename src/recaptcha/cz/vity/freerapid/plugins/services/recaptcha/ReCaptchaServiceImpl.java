@@ -17,11 +17,6 @@ public class ReCaptchaServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 0;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

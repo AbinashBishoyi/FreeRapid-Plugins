@@ -14,10 +14,6 @@ public class RemixShareServiceImpl extends AbstractFileShareService {
         return "remixshare.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

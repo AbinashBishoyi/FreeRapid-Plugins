@@ -14,10 +14,6 @@ public class IlixServiceImpl extends AbstractFileShareService {
         return "ilix.in";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;

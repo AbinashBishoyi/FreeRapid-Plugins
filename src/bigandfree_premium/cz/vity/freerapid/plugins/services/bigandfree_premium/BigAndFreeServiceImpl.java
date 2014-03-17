@@ -17,10 +17,6 @@ public class BigAndFreeServiceImpl extends AbstractFileShareService {
         return "bigandfree.com_premium";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 100;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

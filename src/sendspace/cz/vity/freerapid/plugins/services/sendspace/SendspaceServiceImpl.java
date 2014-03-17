@@ -13,10 +13,6 @@ public class SendspaceServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;

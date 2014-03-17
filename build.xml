@@ -176,7 +176,6 @@
         <ant dir="${src.dir}/linksave" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/lixin" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/loadto" antfile="build.xml" inheritall="false"/>
-        <ant dir="${src.dir}/localhost" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/mega1280" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/megashare" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/megashares" antfile="build.xml" inheritall="false"/>
@@ -308,8 +307,6 @@
         <ant dir="${src.dir}/ziddu" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/zippyshare" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/zshare" antfile="build.xml" inheritall="false"/>
-
-
     </target>
 
     <target name="manualBuild" description="building">

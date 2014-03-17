@@ -17,10 +17,6 @@ public class TuneScoopServiceImpl extends AbstractFileShareService {
         return "tunescoop.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;

@@ -5,8 +5,8 @@
     <!-- They changed the URL of the site. TODO: rename plugin completely when possible -->
     <attributes>
         <attribute id="urlRegex" value="http://trailers\.apple\.com/(trailers|movies)/.+?/.+?/(.+?\.mov)?"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="trailers.apple.com"/>
         <attribute id="maxDownloads" value="9"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

@@ -14,10 +14,6 @@ public class ImagevenueServiceImpl extends AbstractFileShareService {
         return "imagevenue.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

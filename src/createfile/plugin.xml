@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.createfile.CreateFileServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?creafile\.com/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="creafile.com"/>
         <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="1"/>

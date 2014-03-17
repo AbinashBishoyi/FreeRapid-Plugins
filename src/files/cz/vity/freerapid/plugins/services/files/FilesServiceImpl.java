@@ -13,10 +13,6 @@ public class FilesServiceImpl extends AbstractFileShareService {
         return "files.fm";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

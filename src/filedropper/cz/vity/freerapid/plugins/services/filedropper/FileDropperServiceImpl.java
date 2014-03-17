@@ -14,10 +14,6 @@ public class FileDropperServiceImpl extends AbstractFileShareService {
         return "filedropper.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -13,10 +13,6 @@ public class RsmonkeyServiceImpl extends AbstractFileShareService {
         return "rsmonkey.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//Check not supported

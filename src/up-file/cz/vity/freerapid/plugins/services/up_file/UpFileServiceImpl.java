@@ -13,10 +13,6 @@ public class UpFileServiceImpl extends AbstractFileShareService {
         return "up-file.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

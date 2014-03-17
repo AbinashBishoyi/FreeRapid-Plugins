@@ -14,10 +14,6 @@ public class SharePlaceServiceImpl extends AbstractFileShareService {
         return "shareplace.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

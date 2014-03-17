@@ -17,10 +17,6 @@ public class MegaVideoServiceImpl extends AbstractFileShareService {
         return "megavideo.com_premium";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 100;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;

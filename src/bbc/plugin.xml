@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.bbc.BbcServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bbc\.co\.uk/(iplayer|i)/.+"/>
-        <attribute id="minver" value="0.849"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="bbc.co.uk"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

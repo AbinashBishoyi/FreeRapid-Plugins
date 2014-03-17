@@ -14,10 +14,6 @@ public class AnonymServiceImpl extends AbstractFileShareService {
         return "anonym.to";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 100;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//Check not supported

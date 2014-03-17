@@ -14,10 +14,6 @@ public class StorageServiceImpl extends AbstractFileShareService {
         return "storage.to";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author #author#
  */
 public class #fullWithoutDot#ServiceImpl extends AbstractFileShareService {
@@ -16,7 +17,7 @@ public class #fullWithoutDot#ServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return true;
     }
 
     @Override

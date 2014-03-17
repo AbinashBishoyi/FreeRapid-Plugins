@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.storeplace.StoreplaceFilesShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?storeplace\.org/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="storeplace.org"/>
+        <attribute id="maxDownloads" value="2"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <runtime>

@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.uploadcomua.UploadComUaServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?upload\.com\.ua/get/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="upload.com.ua"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

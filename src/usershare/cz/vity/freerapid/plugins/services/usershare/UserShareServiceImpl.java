@@ -14,10 +14,6 @@ public class UserShareServiceImpl extends AbstractFileShareService {
         return "usershare.net";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 3;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.yourfiles.YourFilesServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?yourfiles\.(biz|to)/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="yourfiles.biz"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>

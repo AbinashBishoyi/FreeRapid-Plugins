@@ -14,10 +14,6 @@ public class EgoshareShareServiceImpl extends AbstractFileShareService {
     public String getName() {
         return SERVICE_NAME;
     }
-
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
     /*
     public void run() throws Exception {
         super.run();

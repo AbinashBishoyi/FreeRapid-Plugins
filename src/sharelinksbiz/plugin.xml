@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.sharelinksbiz.SharelinksBizServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(?:share-links|s2l).biz/([_a-zA-Z0-9]+)"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="share-links.biz"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

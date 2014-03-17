@@ -13,10 +13,6 @@ public class TurboshareServiceImpl extends AbstractFileShareService {
         return "turboshare.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.flyshare.FlyshareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www|new)\.flyshare\.cz/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="flyshare.cz"/>
+        <attribute id="maxDownloads" value="2"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
 

@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.dataup.DataUpServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?dataup\.(de|to)/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="dataup.de"/>
+        <attribute id="maxDownloads" value="9"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
 

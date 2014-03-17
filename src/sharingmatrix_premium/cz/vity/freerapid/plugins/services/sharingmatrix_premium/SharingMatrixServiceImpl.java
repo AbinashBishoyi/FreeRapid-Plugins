@@ -17,10 +17,6 @@ public class SharingMatrixServiceImpl extends AbstractFileShareService {
         return "sharingmatrix.com_premium";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 100;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//ok

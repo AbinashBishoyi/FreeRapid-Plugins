@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.file2box.File2BoxServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?file2box\.com/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="file2box.com"/>
+        <attribute id="maxDownloads" value="4"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
 

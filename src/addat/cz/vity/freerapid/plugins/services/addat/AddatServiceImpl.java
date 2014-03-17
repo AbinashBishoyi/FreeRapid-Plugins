@@ -14,10 +14,6 @@ public class AddatServiceImpl extends AbstractFileShareService {
         return "addat.hu";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//ok

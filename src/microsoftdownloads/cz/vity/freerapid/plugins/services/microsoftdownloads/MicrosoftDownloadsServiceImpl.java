@@ -16,11 +16,6 @@ public class MicrosoftDownloadsServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

@@ -19,11 +19,6 @@ public class OronServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 100;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;
     }

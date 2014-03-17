@@ -16,10 +16,6 @@ public class MultiShareServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;

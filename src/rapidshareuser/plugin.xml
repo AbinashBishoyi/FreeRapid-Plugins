@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.rapidshareuser.RapidshareUserServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://([0-9a-z\-]+\.)?rapidshare\.com/users/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="rapidshareUser"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="removeCompleted" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>

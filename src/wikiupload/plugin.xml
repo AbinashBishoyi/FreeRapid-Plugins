@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.wikiupload.WikiuploadServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?wikiupload\.com/(middle_page|download_page).+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="wikiupload.com"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>

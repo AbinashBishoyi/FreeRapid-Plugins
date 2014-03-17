@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.ifolder.IFolderServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(.*\.)?ifolder\.ru/[0-9]+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="ifolder.ru"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

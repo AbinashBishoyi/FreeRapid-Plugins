@@ -3,8 +3,8 @@
 <plugin id="recaptcha.com" version="1.0.1" vendor="Vity+Team"
         class="cz.vity.freerapid.plugins.LibraryPlugin">
     <attributes>
-        <attribute id="minver" value="0.849"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="recaptcha.com"/>
         <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="0"/>

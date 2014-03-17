@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.easysharews.EasyShareWSServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?easyshare\.ws/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="easyshare_ws"/>
     </attributes>
 

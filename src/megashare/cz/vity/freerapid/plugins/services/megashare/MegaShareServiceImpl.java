@@ -16,11 +16,6 @@ public class MegaShareServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

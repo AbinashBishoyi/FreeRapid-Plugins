@@ -13,10 +13,6 @@ public class QShareServiceImpl extends AbstractFileShareService {
         return "qshare.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;

@@ -13,10 +13,6 @@ public class GigaPetaServiceImpl extends AbstractFileShareService {
         return "gigapeta.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.dataport.DataPortServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?dataport\.cz/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="dataport.cz"/>
         <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="5"/>

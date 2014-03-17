@@ -14,10 +14,6 @@ public class UploadComUaServiceImpl extends AbstractFileShareService {
         return "upload.com.ua";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.megavideo_premium.MegaVideoServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(megavideo\.com|megaporn\.com/video)/\?[vd]=.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="megavideo.com megaporn.com/video"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>

@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.hellspy.HellSpyServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://([a-z]+?\.)?hellspy\.([a-z]{2,3})/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="hellspy.com"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>

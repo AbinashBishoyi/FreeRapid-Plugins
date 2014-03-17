@@ -13,10 +13,6 @@ public class WikiuploadServiceImpl extends AbstractFileShareService {
         return "wikiupload.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

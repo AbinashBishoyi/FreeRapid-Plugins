@@ -13,10 +13,6 @@ public class FastLoadServiceImpl extends AbstractFileShareService {
         return "fastload.net";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

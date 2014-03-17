@@ -13,10 +13,6 @@ public class VipFileServiceImpl extends AbstractFileShareService {
         return "vip-file.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

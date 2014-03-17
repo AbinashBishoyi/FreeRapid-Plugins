@@ -16,11 +16,6 @@ public class FileStoreUaServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 8;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;
     }

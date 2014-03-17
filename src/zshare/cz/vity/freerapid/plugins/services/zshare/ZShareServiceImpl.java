@@ -9,16 +9,9 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class ZShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "zshare.net";
-    
-    //zshare allows unlimited downloads simaltaniously
-    private static final int MAX_DOWNLOADS_FROM_THIS_IP = 1000;//think this is as unlimited :-)
 
     public String getName() {
         return SERVICE_NAME;
-    }
-
-    public int getMaxDownloadsFromOneIP() {
-        return MAX_DOWNLOADS_FROM_THIS_IP;
     }
 
     @Override

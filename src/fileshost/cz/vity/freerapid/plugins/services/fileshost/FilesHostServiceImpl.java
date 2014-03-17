@@ -14,10 +14,6 @@ public class FilesHostServiceImpl extends AbstractFileShareService {
         return "fileshost.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -14,10 +14,6 @@ public class FilesTubeServiceImpl extends AbstractFileShareService {
         return "filestube.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

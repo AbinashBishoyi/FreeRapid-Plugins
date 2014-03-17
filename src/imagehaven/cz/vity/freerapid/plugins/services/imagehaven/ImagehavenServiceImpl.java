@@ -13,10 +13,6 @@ public class ImagehavenServiceImpl extends AbstractFileShareService {
         return "imagehaven.net";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//ok

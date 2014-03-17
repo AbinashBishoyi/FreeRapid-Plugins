@@ -14,10 +14,6 @@ public class ExtraShareServiceImpl extends AbstractFileShareService {
         return "extrashare.us";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

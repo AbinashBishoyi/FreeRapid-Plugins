@@ -13,10 +13,6 @@ public class EasyShareWSServiceImpl extends AbstractFileShareService {
         return "easyshare.ws";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

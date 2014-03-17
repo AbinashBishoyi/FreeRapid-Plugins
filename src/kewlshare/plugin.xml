@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.kewlshare.KewlshareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?kewlshare\.com/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="kewlshare.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

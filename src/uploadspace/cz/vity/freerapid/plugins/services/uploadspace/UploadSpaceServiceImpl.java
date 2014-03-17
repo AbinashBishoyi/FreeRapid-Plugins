@@ -13,10 +13,6 @@ public class UploadSpaceServiceImpl extends AbstractFileShareService {
         return "uploadspace.eu";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

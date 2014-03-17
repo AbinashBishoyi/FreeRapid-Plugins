@@ -13,10 +13,6 @@ public class TitulkyServiceImpl extends AbstractFileShareService {
         return "titulky.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;

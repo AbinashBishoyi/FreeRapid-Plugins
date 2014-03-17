@@ -20,7 +20,6 @@ import java.util.logging.Logger;
 class #fullWithoutDot#FileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(#fullWithoutDot#FileRunner.class.getName());
 
-
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
@@ -54,8 +53,7 @@ class #fullWithoutDot#FileRunner extends AbstractRunner {
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
+                throw new throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else {
             checkProblems();

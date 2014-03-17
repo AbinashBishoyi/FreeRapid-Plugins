@@ -14,10 +14,6 @@ public class CoServiceImpl extends AbstractFileShareService {
         return "co.cc";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//ok

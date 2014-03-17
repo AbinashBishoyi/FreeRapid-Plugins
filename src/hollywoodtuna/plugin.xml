@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.hollywoodtuna.HollywoodtunaServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?hollywoodtuna\.com/photo(_gallery)?\.php.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="hollywoodtuna.com"/>
+        <attribute id="maxDownloads" value="3"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

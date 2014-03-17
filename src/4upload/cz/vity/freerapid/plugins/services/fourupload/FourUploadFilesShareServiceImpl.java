@@ -13,10 +13,6 @@ public class FourUploadFilesShareServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;
@@ -26,6 +22,5 @@ public class FourUploadFilesShareServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new FourUploadFilesRunner();
     }
-
 
 }

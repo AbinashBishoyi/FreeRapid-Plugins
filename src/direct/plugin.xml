@@ -3,8 +3,8 @@
 <plugin id="direct" version="1.0.0" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.services.direct.DirectDownloadServiceImpl">
     <attributes>
-        <attribute id="minver" value="0.849"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="direct"/>
         <attribute id="maxDownloads" value="100"/>
     </attributes>

@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.anonym.AnonymServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?anonym\.to/\?.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="rsmonkey.com"/>
+        <attribute id="maxDownloads" value="100"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

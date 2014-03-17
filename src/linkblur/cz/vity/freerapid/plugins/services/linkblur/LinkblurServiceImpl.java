@@ -13,10 +13,6 @@ public class LinkblurServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 5;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;

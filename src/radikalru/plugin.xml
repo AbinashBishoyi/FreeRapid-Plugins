@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.radikalru.RadikalruShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://[0-9a-z]+\.radikal\.ru/(.+/)?(.+?t\.jpg)"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="radikal.ru"/>
+        <attribute id="maxDownloads" value="3"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

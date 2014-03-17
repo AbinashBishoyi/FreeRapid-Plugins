@@ -16,11 +16,6 @@ public class SerienjunkiesServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return false;
     }

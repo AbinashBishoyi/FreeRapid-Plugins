@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.multishare_premium.MultiShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?multishare\.cz/stahnout/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="multishare.cz"/>
+        <attribute id="maxDownloads" value="9"/>
         <!-- ID pluginu, pro ktere je to premium -->
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>

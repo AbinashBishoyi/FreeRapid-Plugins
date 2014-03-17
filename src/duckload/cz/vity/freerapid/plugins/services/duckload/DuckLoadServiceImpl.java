@@ -16,11 +16,6 @@ public class DuckLoadServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

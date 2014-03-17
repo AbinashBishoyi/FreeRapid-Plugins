@@ -13,10 +13,6 @@ public class XUN6ServiceImpl extends AbstractFileShareService {
         return "xun6.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

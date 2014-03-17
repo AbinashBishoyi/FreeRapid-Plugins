@@ -14,10 +14,6 @@ public class SlingFileServiceImpl extends AbstractFileShareService {
         return "slingfile.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

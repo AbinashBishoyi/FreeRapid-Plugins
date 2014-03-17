@@ -14,11 +14,6 @@ public class ToSharedServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
 
     @Override
     public boolean supportsRunCheck() {

@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.bebasupload.BebasUploadServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bebasupload\.com/.+"/>
-        <attribute id="minver" value="0.82"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="bebasupload.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
         <attribute id="resumeSupported" value="true"/>

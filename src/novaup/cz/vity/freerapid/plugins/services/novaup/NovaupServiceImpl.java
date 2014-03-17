@@ -14,10 +14,6 @@ public class NovaupServiceImpl extends AbstractFileShareService {
         return "novaup.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 6;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

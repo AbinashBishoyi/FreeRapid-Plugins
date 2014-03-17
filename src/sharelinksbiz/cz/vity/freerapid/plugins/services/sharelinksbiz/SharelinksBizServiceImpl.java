@@ -15,11 +15,6 @@ public class SharelinksBizServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
-    @Override
     public String getName() {
         return SERVICE_NAME;
     }

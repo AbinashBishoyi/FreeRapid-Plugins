@@ -13,10 +13,6 @@ public class MetadivxServiceImpl extends AbstractFileShareService {
         return "metadivx.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 2;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;

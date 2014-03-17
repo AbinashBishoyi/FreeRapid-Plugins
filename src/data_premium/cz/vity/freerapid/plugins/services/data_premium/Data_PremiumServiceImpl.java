@@ -17,10 +17,6 @@ public class Data_PremiumServiceImpl extends AbstractFileShareService {
         return "data.hu_premium";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 6;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

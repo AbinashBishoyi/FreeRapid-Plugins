@@ -16,11 +16,6 @@ public class u115ServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 20;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

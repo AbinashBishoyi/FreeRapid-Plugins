@@ -14,10 +14,6 @@ public class VideoWeedServiceImpl extends AbstractFileShareService {
         return "videoweed.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

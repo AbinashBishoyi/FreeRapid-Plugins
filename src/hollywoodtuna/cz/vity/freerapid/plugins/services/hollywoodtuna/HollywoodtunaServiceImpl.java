@@ -13,10 +13,6 @@ public class HollywoodtunaServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 3;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;

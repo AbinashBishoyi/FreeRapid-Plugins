@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.x7.X7ServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://x7\.to/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="x7.to"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

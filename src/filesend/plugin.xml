@@ -4,9 +4,10 @@
         class="cz.vity.freerapid.plugins.services.filesend.FileSendServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filesend\.net/download.php.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="filesend.net"/>
+        <attribute id="maxDownloads" value="8"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

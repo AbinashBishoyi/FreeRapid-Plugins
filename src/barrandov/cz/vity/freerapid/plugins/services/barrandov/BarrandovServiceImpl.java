@@ -13,10 +13,6 @@ public class BarrandovServiceImpl extends AbstractFileShareService {
         return "barrandov.tv";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

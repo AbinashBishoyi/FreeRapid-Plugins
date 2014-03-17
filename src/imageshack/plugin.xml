@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.imageshack.ImageShackServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(img\d+?\.imageshack\.us/(i/|my\.php\?).+|yfrog\.com/[a-z\d]+)"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="imageshack.us"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

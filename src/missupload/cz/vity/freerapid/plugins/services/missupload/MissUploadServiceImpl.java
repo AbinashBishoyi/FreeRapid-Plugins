@@ -14,10 +14,6 @@ public class MissUploadServiceImpl extends AbstractFileShareService {
         return "missupload.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

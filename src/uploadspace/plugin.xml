@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.uploadspace.UploadSpaceServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?uploadspace\.eu/[a-z0-9]+/[^\?]+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="uploadspace.eu"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

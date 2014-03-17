@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.channel4.Channel4ServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?channel4\.com/programmes/[^/]+?/4od(#|/player/)\d+"/>
-        <attribute id="minver" value="0.849"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="channel4.com"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

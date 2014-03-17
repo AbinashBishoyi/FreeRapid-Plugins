@@ -14,10 +14,6 @@ public class File2BoxServiceImpl extends AbstractFileShareService {
         return "file2box.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 4;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

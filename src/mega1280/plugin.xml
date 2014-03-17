@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.mega1280.Mega1280ServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?mega\.1280\.com/file/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="mega.1280.com"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

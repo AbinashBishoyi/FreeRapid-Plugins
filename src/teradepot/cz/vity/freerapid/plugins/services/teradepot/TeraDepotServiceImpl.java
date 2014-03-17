@@ -14,10 +14,6 @@ public class TeraDepotServiceImpl extends AbstractFileShareService {
         return "teradepot.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

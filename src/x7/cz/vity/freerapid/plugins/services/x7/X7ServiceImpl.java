@@ -14,10 +14,6 @@ public class X7ServiceImpl extends AbstractFileShareService {
         return "x7.to";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

@@ -13,10 +13,6 @@ public class ForUsToServiceImpl extends AbstractFileShareService {
         return "4us.to";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

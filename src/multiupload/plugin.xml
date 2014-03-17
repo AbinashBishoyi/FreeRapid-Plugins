@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.multiupload.MultiUploadServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?multiupload\.com/.+"/>
-        <attribute id="minver" value="0.849"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="multiupload.com"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="maxDownloads" value="9"/>

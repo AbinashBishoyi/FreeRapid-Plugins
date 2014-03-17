@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import java.io.IOException;
+import java.io.InputStream;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
@@ -51,13 +52,54 @@ class IFileFileRunner extends AbstractRunner {
         }
     }
 
+    private String forcedGetContentAsString(HttpMethod method) {
+
+        String content = null;
+        try {
+            content = method.getResponseBodyAsString();
+        } catch (IOException ex) {
+            //ignore
+        }
+        if (content == null) {
+            content = "";
+            InputStream is = null;
+            try {
+                is = method.getResponseBodyAsStream();
+                if(is!=null){
+                    int i = 0;
+                    while ((i = is.read()) != -1) {
+                        content += (char) i;
+                    }
+                }
+            } catch (IOException ex) {
+                //ignore
+            } finally {
+                if (is != null) {
+                    try {
+                        is.close();
+                    } catch (IOException ex) {
+                        //ignore
+                    }
+                }
+            }
+
+        }
+        return content;
+    }
+
     private void makeUrl(String a, String b) throws Exception {
         String c = BASE_URL + "download:dl_request?" + __x_fsa + "&type=" + a + "&esn=" + __esn + b;
         c += "&" + __x_fs;
         HttpMethod method = getMethodBuilder().setAction(c).toHttpMethod();
         method.addRequestHeader("X-Requested-With", "XMLHttpRequest"); //We use AJAX :-)
-        if (makeRedirectedRequest(method)) {
-            String content = getContentAsString();
+
+        /**
+         * Note:
+         * Because server response content type is json,
+         * internal function getContentAsString does not work.
+         */
+        if (client.getHTTPClient().executeMethod(method)==200) {
+            String content = forcedGetContentAsString(method);           
             //Response looks like this: {"status":"ok","captcha":"none","retry":"none"}
             String respStatus = PlugUtils.getStringBetween(content, "\"status\":\"", "\"");
             String respCaptcha = PlugUtils.getStringBetween(content, "\"captcha\":\"", "\"");
@@ -88,11 +130,13 @@ class IFileFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            __x_fsa = PlugUtils.getStringBetween(getContentAsString(), "var __x_fsa = '", "';");
-            __x_fs = PlugUtils.getStringBetween(getContentAsString(), "var __x_fs = '", "';");
-            __x_c = PlugUtils.getStringBetween(getContentAsString(), "var __x_c = '", "';");
-            __esn = PlugUtils.getStringBetween(getContentAsString(), "var	__esn = ", ";");
-            __recaptcha_public = PlugUtils.getStringBetween(getContentAsString(), "var __recaptcha_public		=	'", "';");
+            String content = getContentAsString();
+            __x_fsa = PlugUtils.getStringBetween(content, "var __x_fsa = '", "';");
+            __x_fs = PlugUtils.getStringBetween(content, "var __x_fs = '", "';");
+            __x_c = PlugUtils.getStringBetween(content, "var __x_c = '", "';");
+//            __esn = PlugUtils.getStringBetween(getContentAsString(), "var	__esn = ", ";");
+            __esn = "0";
+            __recaptcha_public = PlugUtils.getStringBetween(content, "var __recaptcha_public		=	'", "';");
             makeUrl("na", "");
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");

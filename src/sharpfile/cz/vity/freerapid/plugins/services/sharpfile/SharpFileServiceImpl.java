@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.sharpfile;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
+import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class SharpFileServiceImpl extends XFileSharingServiceImpl {
-
-    @Override
-    public String getServiceTitle() {
-        return "SharpFile";
-    }
+public class SharpFileServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
         return "sharpfile.com";
+    }
+
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
     }
 
     @Override

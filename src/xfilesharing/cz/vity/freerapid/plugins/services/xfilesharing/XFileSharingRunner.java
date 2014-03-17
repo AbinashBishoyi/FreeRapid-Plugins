@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
  * @author tong2shot
  * @author ntoskrnl
  * @author birchie
+ * @author Abinash Bishoyi
  */
 public abstract class XFileSharingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XFileSharingRunner.class.getName());
@@ -301,7 +302,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("File Not Found")
                 || content.contains("file was removed")
-                || content.contains("file has been removed")) {
+                || content.contains("file has been removed")
+                || content.contains("The file you were looking for could not be found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("server is in maintenance mode")) {

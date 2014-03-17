@@ -8,14 +8,15 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author CrazyCoder
+ * @author CrazyCoder, Abinash Bishoyi
  */
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://prefiles.com/lcwluokw8h5q/Packtpub.Visual.Studio.2010.Best.Practices.Aug.2012.rar"));
+            //httpFile.setNewURL(new URL("http://prefiles.com/lcwluokw8h5q/Packtpub.Visual.Studio.2010.Best.Practices.Aug.2012.rar"));
+            httpFile.setNewURL(new URL("http://prefiles.com/ykauetqx0mh4/MK.Analyzing.the.Social.Web.Mar.2013.rar"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             final PreFilesServiceImpl service = new PreFilesServiceImpl();
             testRun(service, httpFile, connectionSettings);

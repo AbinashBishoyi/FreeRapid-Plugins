@@ -17,7 +17,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://shareflare.net/download/76849.76d21d2528f62b25c3de425c088ca4688/logovq.zip.html"));
+
+            httpFile.setNewURL(new URL("http://shareflare.net/download/5978.54cfc9fa9a3b2495a671e860a000/Maksimal_Drive.rar.html"));
+
+            // httpFile.setNewURL(new URL("http://shareflare.net/download/76849.76d21d2528f62b25c3de425c088ca4688/logovq.zip.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

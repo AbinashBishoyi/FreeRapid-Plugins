@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -24,6 +25,8 @@ class UploadingRunner extends AbstractRunner {
 
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".uploading.com", "setlang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploading.com", "_lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -33,7 +36,8 @@ class UploadingRunner extends AbstractRunner {
 
     public void run() throws Exception {
         super.run();
-
+        addCookie(new Cookie(".uploading.com", "setlang", "en", "/", 86400, false));
+        addCookie(new Cookie(".uploading.com", "_lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {

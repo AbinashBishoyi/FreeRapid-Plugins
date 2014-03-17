@@ -165,6 +165,7 @@
         <ant dir="${src.dir}/gigapeta/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/vip-file/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/up-file/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/biggerupload/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

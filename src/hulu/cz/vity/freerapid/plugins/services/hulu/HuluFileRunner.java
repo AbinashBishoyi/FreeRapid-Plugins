@@ -6,14 +6,13 @@ import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -26,33 +25,12 @@ import java.util.regex.Matcher;
 class HuluFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(HuluFileRunner.class.getName());
 
-    private final static String SWF_URL = "http://www.hulu.com/site-player/82388/player.swf?cb=82388";
+    private final static String SWF_URL = "http://download.hulu.com/huludesktop.swf";
     //private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
-    private final static String CID_KEY = "48555bbbe9f41981df49895f44c83993a09334d02d17e7a76b237d04c084e342";
-    private final static String EID_CONST = "MAZxpK3WwazfARjIpSXKQ9cmg9nPe5wIOOfKuBIfz7bNdat6gQKHj69ZWNWNVB1";
-    private final static String MD5_SALT = "yumUsWUfrAPraRaNe2ru2exAXEfaP6Nugubepreb68REt7daS79fase9haqar9sa";
-    private final static String DECRYPT_KEY_STR = "625298045c1db17fe3489ba7f1eba2f208b3d2df041443a72585038e24fc610b";
-    private final static String DECRYPT_IV_STR = "V@6i`q6@FTjdwtui";
-    private final static byte[] DECRYPT_KEY;
-    private final static byte[] DECRYPT_IV;
-
-    static {
-        try {
-            final byte[] key = Hex.decodeHex(DECRYPT_KEY_STR.toCharArray());
-            final byte[] iv = DECRYPT_IV_STR.getBytes("UTF-8");
-            for (int i = 0; i < key.length; i++) {
-                key[i] = (byte) (key[i] ^ 42);
-            }
-            for (int i = 0; i < iv.length; i++) {
-                iv[i] = (byte) (iv[i] ^ 1);
-            }
-            DECRYPT_KEY = key;
-            DECRYPT_IV = iv;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private final static String HMAC_KEY = "f6daaa397d51f568dd068709b0ce8e93293e078f7dfc3b40dd8c32d36d2b3ce1";
+    private final static String DECRYPT_KEY = "40A757F83B2348A7B5F7F41790FDFFA02F72FC8FFD844BA6B28FD5DFD8CFC82F";
+    private final static String DECRYPT_IV = "NnemTiVU0UA5jVl0";
 
     private final String sessionId = getSessionId();
 
@@ -95,48 +73,22 @@ class HuluFileRunner extends AbstractRtmpRunner {
             checkProblems();
             checkNameAndSize();
             final String cid = PlugUtils.getStringBetween(getContentAsString(), "\"content_id\", ", ")");
-            final String eidUrl = "http://r.hulu.com/videos?eid=" + cidToEid(parseContentId(getContentId(cid)));
-            logger.info("eidUrl = " + eidUrl);
-            method = getGetMethod(eidUrl);
+            final String contentSelectUrl = getContentSelectUrl(cid);
+            logger.info("contentSelectUrl = " + contentSelectUrl);
+            method = getGetMethod(contentSelectUrl);
             if (makeRedirectedRequest(method)) {
-                final String pid = Security.decrypt(PlugUtils.getStringBetween(getContentAsString(), "<pid>", "</pid>"));
-                logger.info("pid = " + pid);
-                final String contentSelectUrl = getContentSelectUrl(pid);
-                logger.info("contentSelectUrl = " + contentSelectUrl);
-                method = getGetMethod(contentSelectUrl);
-                if (makeRedirectedRequest(method)) {
-                    final String content = decryptContentSelect(getContentAsString());
-                    logger.info("Content select:\n" + content);
-                    if (content.contains("we noticed you are trying to access Hulu through")) {
-                        throw new NotRecoverableDownloadException("Hulu noticed that you are trying to access them through a proxy");
-                    }
-                    if (!client.getSettings().isProxySet()) {
-                        // Do not perform geocheck if using a proxy.
-                        // The geocheck server detects proxies better than the stream server,
-                        // which may cause issues.
-                        if (content.contains("allowInternational=\"false\"")) {
-                            logger.info("Performing geocheck");
-                            method = getGetMethod("http://releasegeo.hulu.com/geoCheck");
-                            if (makeRedirectedRequest(method)) {
-                                if (getContentAsString().contains("not-valid")) {
-                                    throw new NotRecoverableDownloadException("This video can only be streamed in the US");
-                                }
-                            } else {
-                                checkProblems();
-                                throw new ServiceConnectionProblemException();
-                            }
-                        }
-                    }
-                    final Stream stream = getStream(content);
-                    final RtmpSession rtmpSession = new RtmpSession(stream.getServer(), 80, stream.getApp(), stream.getPlay(), true);
-                    rtmpSession.getConnectParams().put("pageUrl", fileURL);
-                    rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
-                    //helper.setSwfVerification(rtmpSession, client);
-                    tryDownloadAndSaveFile(rtmpSession);
-                } else {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
+                final String content = decryptContentSelect(getContentAsString());
+                logger.info("Content select:\n" + content);
+                if (content.contains("we noticed you are trying to access Hulu through")) {
+                    throw new NotRecoverableDownloadException("Hulu noticed that you are trying to access them through a proxy");
                 }
+                geoCheck(content);
+                final Stream stream = getStream(content);
+                final RtmpSession rtmpSession = new RtmpSession(stream.getServer(), 80, stream.getApp(), stream.getPlay(), true);
+                rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
+                rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
+                //helper.setSwfVerification(rtmpSession, client);
+                tryDownloadAndSaveFile(rtmpSession);
             } else {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -151,6 +103,26 @@ class HuluFileRunner extends AbstractRtmpRunner {
         final String content = getContentAsString();
         if (content.contains("The page you were looking for doesn't exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+    }
+
+    private void geoCheck(final String content) throws Exception {
+        if (!client.getSettings().isProxySet()) {
+            // Do not perform geocheck if using a proxy.
+            // The geocheck server detects proxies better than the stream server,
+            // which may cause issues.
+            if (content.contains("allowInternational=\"false\"")) {
+                logger.info("Performing geocheck");
+                final HttpMethod method = getGetMethod("http://releasegeo.hulu.com/geoCheck");
+                if (makeRedirectedRequest(method)) {
+                    if (getContentAsString().contains("not-valid")) {
+                        throw new NotRecoverableDownloadException("This video can only be streamed in the US");
+                    }
+                } else {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            }
         }
     }
 
@@ -203,37 +175,62 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private static String getContentId(final String text) {
-        if (text.length() > 12) {
-            Thing _local3 = R.AK();
-            R.sdk(CID_KEY, CID_KEY.length() * 4, _local3);
-            String _local2 = R.e(text, _local3);
-            _local2 = R.h2s(_local2);
-            return _local2.split("~")[0];
-        } else {
-            return text;
+    private static String getContentSelectUrl(final String cid) throws Exception {
+        final Parameters parameters = new Parameters()
+                .add("video_id", cid)
+                .add("v", "850037518")
+                .add("ts", String.valueOf(System.currentTimeMillis()))
+                .add("np", "1")
+                .add("vp", "1")
+                .add("pp", "Desktop")
+                .add("dp_id", "Hulu")
+                .add("region", "US")
+                .add("language", "en");
+        final StringBuilder sb = new StringBuilder("http://s.hulu.com/select?");
+        for (final Map.Entry<String, String> e : parameters) {
+            sb.append(e.getKey()).append('=').append(e.getValue()).append('&');
         }
+        sb.append("bcs=").append(getBcs(parameters));
+        return sb.toString();
     }
 
-    public static String parseContentId(final String _arg1) {
-        if (_arg1.charAt(0) == 'm') {
-            return new BigInteger(_arg1.substring(1), 36).xor(BigInteger.valueOf(3735928559L)).toString();
+    private static String getBcs(final Parameters parameters) throws Exception {
+        parameters.sort();
+        final StringBuilder sb = new StringBuilder();
+        for (final Map.Entry<String, String> e : parameters) {
+            sb.append(e.getKey()).append(e.getValue());
         }
-        return _arg1;
+        final Mac mac = Mac.getInstance("HmacMD5");
+        mac.init(new SecretKeySpec(HMAC_KEY.getBytes("UTF-8"), "HmacMD5"));
+        return new String(Hex.encodeHex(mac.doFinal(sb.toString().getBytes("UTF-8"))));
     }
 
-    private static String cidToEid(final String cid) throws Exception {
-        return new String(Base64.encodeBase64(DigestUtils.md5(cid + EID_CONST), false, true), "UTF-8");
-    }
+    private static class Parameters implements Iterable<Map.Entry<String, String>> {
+        private final List<Map.Entry<String, String>> parameters = new LinkedList<Map.Entry<String, String>>();
 
-    private static String getContentSelectUrl(final String pid) {
-        final String auth = DigestUtils.md5Hex(pid + MD5_SALT);
-        return "http://s.hulu.com/select.ashx?pid=" + pid + "&auth=" + auth + "&v=713434170&np=1&pp=hulu&dp_id=hulu&cb=" + new Random().nextInt(1000);
+        public Parameters add(final String key, final String value) {
+            parameters.add(new AbstractMap.SimpleImmutableEntry<String, String>(key, value));
+            return this;
+        }
+
+        public void sort() {
+            Collections.sort(parameters, new Comparator<Map.Entry<String, String>>() {
+                @Override
+                public int compare(final Map.Entry<String, String> o1, final Map.Entry<String, String> o2) {
+                    return o1.getKey().compareTo(o2.getKey());
+                }
+            });
+        }
+
+        @Override
+        public Iterator<Map.Entry<String, String>> iterator() {
+            return parameters.iterator();
+        }
     }
 
     private static String decryptContentSelect(final String toDecrypt) throws Exception {
         final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(DECRYPT_KEY, "AES"), new IvParameterSpec(DECRYPT_IV));
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(Hex.decodeHex(DECRYPT_KEY.toCharArray()), "AES"), new IvParameterSpec(DECRYPT_IV.getBytes("UTF-8")));
         return new String(cipher.doFinal(Hex.decodeHex(toDecrypt.toCharArray())), "UTF-8");
     }
 

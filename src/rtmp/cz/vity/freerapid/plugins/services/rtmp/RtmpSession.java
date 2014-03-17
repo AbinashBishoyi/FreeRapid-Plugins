@@ -49,7 +49,7 @@ public class RtmpSession {
     private int port;
     private LinkedList<PacketHandler> packetHandlers;
     private boolean encrypted;
-    private boolean type8;
+    private HandshakeType handshakeType;
     private KeyAgreement keyAgreement;
     private byte[] clientPublicKey;
     private Cipher cipherIn;
@@ -348,12 +348,12 @@ public class RtmpSession {
         this.encrypted = encrypted;
     }
 
-    public boolean isType8() {
-        return type8;
+    public HandshakeType getHandshakeType() {
+        return handshakeType;
     }
 
-    public void setType8(boolean type8) {
-        this.type8 = type8;
+    public void setHandshakeType(final HandshakeType handshakeType) {
+        this.handshakeType = handshakeType;
     }
 
     public List<PacketHandler> getPacketHandlers() {

@@ -37,7 +37,7 @@ class Handshake {
     /**
      * SHA 256 digest length
      */
-    private static final int SHA256_LEN = 32;
+    public static final int SHA256_LEN = 32;
 
     private static final byte[] SERVER_CONST = "Genuine Adobe Flash Media Server 001".getBytes();
 
@@ -206,22 +206,15 @@ class Handshake {
         in.get(serverResponse);
         session.setServerResponse(serverResponse);
 
-        int type = serverResponse[0];
-        logger.finest("Server sent RTMP type " + type);
-        // 3 - RTMP
-        // 6 - RTMPE
-        // 8 - FPv10 RTMPE
-        if (type != 3 && type != 6 && type != 8) {
-            throw new RuntimeException("RTMP type " + type + " not supported");
-        }
-        if (!session.isEncrypted() && (type == 6 || type == 8)) {
+        int typeNum = serverResponse[0];
+        logger.finest("Server sent RTMP type " + typeNum);
+        HandshakeType type = HandshakeType.valueOf(typeNum);
+        session.setHandshakeType(type);
+        if (!session.isEncrypted() && type.isEncrypted()) {
             logger.warning("Server wants RTMPE");
             session.setEncrypted(true);
         }
-        if (type == 8) {
-            session.setType8(true);
-        }
-        if (session.isEncrypted() && type == 3) {
+        if (session.isEncrypted() && !type.isEncrypted()) {
             logger.warning("Server refused encryption");
             session.setEncrypted(false);
         }
@@ -329,9 +322,7 @@ class Handshake {
             byte[] digest = Utils.sha256(session.getClientDigest(), SERVER_CONST_CRUD);
             byte[] signature = Utils.sha256(message, digest);
 
-            if (session.isType8()) {
-                rtmpe8_crypt(digest, signature);
-            }
+            session.getHandshakeType().specialEncryption(digest, signature);
 
             byte[] serverSignature = new byte[SHA256_LEN];
             partTwo.get(serverSignature);
@@ -378,9 +369,7 @@ class Handshake {
             buf.get(message);
             byte[] signature = Utils.sha256(message, digest);
 
-            if (session.isType8()) {
-                rtmpe8_crypt(digest, signature);
-            }
+            session.getHandshakeType().specialEncryption(digest, signature);
 
             buf.put(signature);
             buf.rewind();
@@ -406,62 +395,6 @@ class Handshake {
             hs.data = buf;
             return hs;
         }
-    }
-
-    private final static int[][] RTMPE8_KEYS = {
-            {0xbff034b2, 0x11d9081f, 0xccdfb795, 0x748de732},
-            {0x086a5eb6, 0x1743090e, 0x6ef05ab8, 0xfe5a39e2},
-            {0x7b10956f, 0x76ce0521, 0x2388a73a, 0x440149a1},
-            {0xa943f317, 0xebf11bb2, 0xa691a5ee, 0x17f36339},
-            {0x7a30e00a, 0xb529e22c, 0xa087aea5, 0xc0cb79ac},
-            {0xbdce0c23, 0x2febdeff, 0x1cfaae16, 0x1123239d},
-            {0x55dd3f7b, 0x77e7e62e, 0x9bb8c499, 0xc9481ee4},
-            {0x407bb6b4, 0x71e89136, 0xa7aebf55, 0xca33b839},
-            {0xfcf6bdc3, 0xb63c3697, 0x7ce4f825, 0x04d959b2},
-            {0x28e091fd, 0x41954c4c, 0x7fb7db00, 0xe3a066f8},
-            {0x57845b76, 0x4f251b03, 0x46d45bcd, 0xa2c30d29},
-            {0x0acceef8, 0xda55b546, 0x03473452, 0x5863713b},
-            {0xb82075dc, 0xa75f1fee, 0xd84268e8, 0xa72a44cc},
-            {0x07cf6e9e, 0xa16d7b25, 0x9fa7ae6c, 0xd92f5629},
-            {0xfeb1eae4, 0x8c8c3ce1, 0x4e0064a7, 0x6a387c2a},
-            {0x893a9427, 0xcc3013a2, 0xf106385b, 0xa829f927}
-    };
-
-    /*
-     * RTMPE type 8 uses XTEA on the regular signature
-     * http://en.wikipedia.org/wiki/XTEA
-     */
-
-    private static void rtmpe8_crypt(byte[] digest, byte[] signature0) {
-        IoBuffer signature = IoBuffer.wrap(signature0);
-        for (int i = 0; i < SHA256_LEN; i += 8) {
-            int[] v = {
-                    Utils.readInt32Reverse(signature),
-                    Utils.readInt32Reverse(signature)
-            };
-            int[] k = RTMPE8_KEYS[(digest[i] & 0xff) % 15];
-
-            XTEA_encrypt(v, k);
-
-            signature.position(signature.position() - 8);
-            Utils.writeInt32Reverse(signature, v[0]);
-            Utils.writeInt32Reverse(signature, v[1]);
-        }
-    }
-
-    private final static int DELTA = 0x9E3779B9;
-    private final static int NUM_ROUNDS = 32;
-
-    private static void XTEA_encrypt(int[] v, int[] k) {
-        int v0 = v[0], v1 = v[1];
-        int sum = 0;
-        for (int i = 0; i < NUM_ROUNDS; i++) {
-            v0 += (((v1 << 4) ^ (v1 >>> 5)) + v1) ^ (sum + k[sum & 3]);
-            sum += DELTA;
-            v1 += (((v0 << 4) ^ (v0 >>> 5)) + v0) ^ (sum + k[(sum >>> 11) & 3]);
-        }
-        v[0] = v0;
-        v[1] = v1;
     }
 
 }

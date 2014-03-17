@@ -28,8 +28,8 @@ class LetitBitFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size of file::</span>", "</h1>");
             PlugUtils.checkName(httpFile, getContentAsString(), "File::</span>", "</h1>");
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size of file::</span>", "</h1>");
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
@@ -41,7 +41,7 @@ class LetitBitFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".letitbit.net", "lang", "EN", "/", 86400, false));
 
         login();
 

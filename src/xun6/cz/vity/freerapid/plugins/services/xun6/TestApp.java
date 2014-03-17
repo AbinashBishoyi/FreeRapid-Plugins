@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
-            //we set file URL
+            //we set file URL  
             httpFile.setNewURL(new URL("http://www.xun6.net/file/4ff42d615/05.K-ON2_CMusic_Included_Vol.3.rar.html"));//"http://xun6.com/file/a97e82ac8/tunneler-ss1.gif.html"));//TODO
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

@@ -10,11 +10,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -25,15 +21,6 @@ import java.util.regex.Matcher;
  */
 class MediafireRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
-
-    /**
-     * MediaFire asks for a captcha if it detects a lot of downloads from an IP.
-     * The captcha has to be solved only once; after that, several downloads can
-     * proceed normally without entering further captchas. These states are used
-     * to ensure that a captcha only has to be solved once per IP, and that
-     * downloads without a captcha can still be processed in parallel.
-     */
-    private final static ConcurrentMap<ConnectionSettings, CaptchaState> STATES = new ConcurrentHashMap<ConnectionSettings, CaptchaState>(1);
 
     @Override
     public void runCheck() throws Exception {
@@ -81,7 +68,7 @@ class MediafireRunner extends AbstractRunner {
              * atomic operation for strict thread safety, but getting the wrong
              * state only results in one redundant page load in the worst case.
              */
-            final CaptchaState captchaState = getCaptchaState();
+            final CaptchaState captchaState = CaptchaState.getFor(client.getSettings());
 
             final HttpMethod method = getGetMethod(fileURL);
             if (!makeRedirectedRequest(method)) {
@@ -105,16 +92,18 @@ class MediafireRunner extends AbstractRunner {
                  * We were the first to notice the captcha.
                  * Solve it and signal others that we did so.
                  */
-                stepCaptcha();
-                removeCaptchaState();
-                captchaState.getLatch().countDown();
-                break;
+                try {
+                    stepCaptcha();
+                    break;
+                } finally {
+                    captchaState.signalSolved();
+                }
             } else {
                 /**
                  * Somebody else is already solving the captcha.
                  * Wait for that and reload the page.
                  */
-                captchaState.getLatch().await();
+                captchaState.awaitSolved();
             }
         }
 
@@ -126,23 +115,34 @@ class MediafireRunner extends AbstractRunner {
         }
     }
 
-    private CaptchaState getCaptchaState() {
-        final CaptchaState newState = new CaptchaState();
-        final CaptchaState oldState = STATES.putIfAbsent(client.getSettings(), newState);
-        if (oldState == null) {
-            return newState;
-        } else {
-            return oldState;
-        }
-    }
-
-    private void removeCaptchaState() {
-        STATES.remove(client.getSettings());
-    }
-
+    /**
+     * MediaFire asks for a captcha if it detects a lot of downloads from an IP.
+     * The captcha has to be solved only once; after that, several downloads can
+     * proceed normally without entering further captchas. These states are used
+     * to ensure that a captcha only has to be solved once per IP, and that
+     * downloads without a captcha can still be processed in parallel.
+     */
     private static class CaptchaState {
+        private final static Map<ConnectionSettings, CaptchaState> STATES = new WeakHashMap<ConnectionSettings, CaptchaState>(1);
+
+        private final ConnectionSettings connectionSettings;
         private final AtomicBoolean solved = new AtomicBoolean();
         private final CountDownLatch latch = new CountDownLatch(1);
+
+        private CaptchaState(final ConnectionSettings connectionSettings) {
+            this.connectionSettings = connectionSettings;
+        }
+
+        public static CaptchaState getFor(final ConnectionSettings connectionSettings) {
+            synchronized (STATES) {
+                CaptchaState state = STATES.get(connectionSettings);
+                if (state == null) {
+                    state = new CaptchaState(connectionSettings);
+                    STATES.put(connectionSettings, state);
+                }
+                return state;
+            }
+        }
 
         /**
          * Sets the state of this captcha to solved.
@@ -155,8 +155,15 @@ class MediafireRunner extends AbstractRunner {
             return !solved.getAndSet(true);
         }
 
-        public CountDownLatch getLatch() {
-            return latch;
+        public void signalSolved() {
+            synchronized (STATES) {
+                STATES.remove(connectionSettings);
+            }
+            latch.countDown();
+        }
+
+        public void awaitSolved() throws InterruptedException {
+            latch.await();
         }
     }
 

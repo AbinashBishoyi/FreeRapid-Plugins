@@ -1,39 +1,46 @@
 package cz.vity.freerapid.plugins.services.mediafire;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.mediafire.js.JsDocument;
+import cz.vity.freerapid.plugins.services.mediafire.js.JsElement;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
+import sun.org.mozilla.javascript.internal.Context;
+import sun.org.mozilla.javascript.internal.Scriptable;
+import sun.org.mozilla.javascript.internal.ScriptableObject;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
  */
-class MediafireRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
+public class MediafireRunner extends AbstractRunner {
+    public final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
 
-    public MediafireRunner() {
-        super();
-    }
+    private final static String SCRIPT_HEADER =
+            "function alert(s) { Packages.cz.vity.freerapid.plugins.services.mediafire.MediafireRunner.logger.warning('JS: ' + s); }\n" +
+                    "function aa(s) { alert(s); }\n" +
+                    "var document = new JsDocument();\n" +
+                    "function dummyparent() {\n" +
+                    "    this.document = document;\n" +
+                    "}\n" +
+                    "var parent = new dummyparent();\n";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -43,18 +50,14 @@ class MediafireRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-
-        final HttpMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-
             if (isList()) {
                 runList();
                 return;
             }
-
-            checkNameAndSize(getContentAsString());
-
+            checkNameAndSize();
             while (getContentAsString().contains("dh('');")) { //handle password
                 HttpMethod postPwd = getMethodBuilder()
                         .setReferer(fileURL)
@@ -66,115 +69,158 @@ class MediafireRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("Some issue while posting password");
                 }
             }
-
-            downloadTask.sleep(5);
-            if (getContentAsString().contains("unescape")) {
-                String cont = processUnescapeSection(getContentAsString());
-
-                Matcher match = PlugUtils.matcher("([0-9A-Za-z]*)\\('([^']*)','([^']*)','([^']*)'\\)", cont);
-
-                if (!match.find()) {
-                    throw new PluginImplementationException();
-                }
-                String function = match.group(1);
-                String qk = match.group(2);
-                String pk = match.group(3);
-                String r = match.group(4);
-                String url = "http://www.mediafire.com/dynamic/download.php?qk=" + qk + "&pk=" + pk + "&r=" + r;
-                logger.info("Script target URL " + url);
-                client.setReferer(fileURL);
-                GetMethod method = getGetMethod(url);
-
-                int functionStart = getContentAsString().indexOf("function " + function);
-                String regToId = "getElementById\\('([^']*)'\\).innerHTML";
-                Matcher match2 = getMatcherAgainstContent(regToId);
-                if (!match2.find(functionStart)) {
-                    throw new PluginImplementationException();
-                }
-                String posID = match2.group(1);
-                logger.info("posID=" + posID);
-
-                if (makeRedirectedRequest(method)) {
-                    String rec = processUnescapeSection(getContentAsString());
-
-                    Matcher matcher = PlugUtils.matcher(Pattern.quote(posID) + "'\\)\\.innerHTML = '.+?';\" href=\"(http://.+?)\">", rec);
-                    if (!matcher.find()) {
-                        throw new ServiceConnectionProblemException("Download link not found, retrying...");
-                    }
-                    String rawlink = matcher.group(1);
-                    logger.info("Raw URL " + rawlink);
-                    String finalLink = parseLink(rawlink);
-                    logger.info("Final URL " + finalLink);
-
-                    client.setReferer(fileURL);
-                    GetMethod method2 = getGetMethod(finalLink);
-                    client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
-                    downloadTask.sleep(5);
-                    if (!tryDownloadAndSaveFile(method2)) {
-                        checkProblems();
-                        logger.warning(getContentAsString());
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
-
-                } else {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-            } else {
+            method = findDownloadUrl();
+            downloadTask.sleep(10);//they won't send the file if this part is done too fast
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
-
     }
 
-    private String processUnescapeSection(String cont) throws Exception {
-        String regx = "[a-zA-Z0-9\\s]+=\\s*?unescape\\('([^']*)'\\);[a-zA-Z0-9\\s]+=\\s*?([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
-        Boolean loop = true;
-        String tuReturn = "";
-        while (loop) {
-            cont = cont.replace("\\", "");
-            Matcher matcher = PlugUtils.matcher(regx, cont);
-            int findTime = 0;
-            while (matcher.find()) {
-                if (findTime++ == 0) cont = "";
-                String esc = matcher.group(1);
-                String shift = matcher.group(3);
-                String shiftA[] = shift.split("\\^");
-                int nax = Integer.parseInt((shiftA[0]));
-                for (int i = 1; i < shiftA.length; i++) {
-                    nax = nax ^ Integer.parseInt(shiftA[i]);
-                }
-                String new_cont = "";
-                esc = URLDecoder.decode(esc, "UTF-8");
-                int toFor = esc.length();
-                for (int i = 0; i < toFor; i++) {
-                    new_cont = new_cont + ((char) (esc.codePointAt(i) ^ nax));
-                }
-                cont = cont + "\n" + new_cont.replace("\\", "");
+    private HttpMethod findDownloadUrl() throws Exception {
+        final List<String> elementsOnPage = findElementsOnPage();
+        final Context context = Context.enter();
+        try {
+            final Scriptable scope = prepareContext(context);
+            final HttpMethod method = findFirstUrl(context, scope);
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
-
-            tuReturn = tuReturn + "\n" + cont;
-            if (findTime == 0) loop = false;
-
+            return findSecondUrl(elementsOnPage, context, scope);
+        } finally {
+            Context.exit();
         }
-        logger.info(tuReturn);
-        return tuReturn;
     }
 
-    private void checkNameAndSize(String content) throws Exception {
+    private Scriptable prepareContext(final Context context) throws ErrorDuringDownloadingException {
+        final Scriptable scope = context.initStandardObjects();
+        try {
+            ScriptableObject.defineClass(scope, JsDocument.class);
+            ScriptableObject.defineClass(scope, JsElement.class);
+            context.evaluateString(scope, SCRIPT_HEADER, "<script>", 1, null);
+        } catch (Exception e) {
+            throw new PluginImplementationException("Script header execution failed", e);
+        }
+        return scope;
+    }
+
+    private List<String> findElementsOnPage() throws ErrorDuringDownloadingException {
+        final List<String> list = new LinkedList<String>();
+        final Matcher matcher = getMatcherAgainstContent("<div[^<>]*?id=\"([^\"]+?)\"[^<>]*?>Preparing download");
+        while (matcher.find()) {
+            list.add(matcher.group(1));
+        }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("Element IDs not found");
+        }
+        return list;
+    }
+
+    private HttpMethod findFirstUrl(final Context context, final Scriptable scope) throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("(?s)value=\"download\">\\s*?<script[^<>]*?>(?:<!\\-\\-)?(.+?)</script>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("First JavaScript not found");
+        }
+        final String rawScript = matcher.group(1);
+        //logger.info(rawScript);
+
+        final int lastFunctionIndex = rawScript.lastIndexOf("function ");
+        if (lastFunctionIndex < 0) {
+            logger.warning(rawScript);
+            throw new PluginImplementationException("Last function in first JavaScript not found");
+        }
+        // gysl8luzk='';oq1w66x=unescape(......;   var cb=Math.random();
+        //(......................................) <-- this part is what we want
+        matcher = PlugUtils.matcher("((?:eval\\(\")?[a-z\\d]+?\\s*?=\\s*?\\\\?'\\\\?';\\s*?[a-z\\d]+?\\s*?=\\s*?unescape\\(.+?;)[^;]+?Math\\.random\\(\\)", rawScript);
+        if (!matcher.find(lastFunctionIndex)) {
+            logger.warning(rawScript);
+            throw new PluginImplementationException("Error parsing last function in first JavaScript");
+        }
+        final String partOfFunction = matcher.group(1);
+        //logger.info(partOfFunction);
+
+        final String preparedScript = rawScript.replace("setTimeout(", "return '/dynamic/download.php?qk=' + qk + '&pk1=' + pk1 + '&r=' + pKr; setTimeout(");
+        final String script = new StringBuilder(preparedScript.length() + 1 + partOfFunction.length())
+                .append(preparedScript)
+                .append('\n')
+                .append(partOfFunction)
+                .toString();
+        //logger.info(script);
+
+        final String result;
+        try {
+            context.evaluateString(scope, "var pk = 0;", "<script>", 1, null);
+            result = Context.toString(context.evaluateString(scope, script, "<script>", 1, null));
+        } catch (Exception e) {
+            logger.warning(script);
+            throw new PluginImplementationException("Script 1 execution failed", e);
+        }
+        logger.info(result);
+        return getMethodBuilder().setReferer(fileURL).setAction(result).toGetMethod();
+    }
+
+    private HttpMethod findSecondUrl(final List<String> elementsOnPage, final Context context, final Scriptable scope) throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>(?:<!\\-\\-)?(.+?)</script>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Second JavaScript not found");
+        }
+        final String rawScript = matcher.group(1);
+        //logger.info(rawScript);
+
+        matcher = getMatcherAgainstContent("<body[^<>]*?onload=[\"'](.+?)[\"']");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing second page");
+        }
+        final String functionToCall = matcher.group(1);
+        //logger.info(functionToCall);
+
+        final String script = new StringBuilder(rawScript.length() + 1 + functionToCall.length())
+                .append(rawScript)
+                .append('\n')
+                .append(functionToCall)
+                .toString();
+        //logger.info(script);
+
+        final JsDocument document;
+        try {
+            context.evaluateString(scope, script, "<script>", 1, null);
+            document = (JsDocument) context.evaluateString(scope, "document;", "<script>", 1, null);
+        } catch (Exception e) {
+            logger.warning(script);
+            throw new PluginImplementationException("Script 2 execution failed", e);
+        }
+
+        for (final String id : elementsOnPage) {
+            final JsElement element = document.getElements().get(id);
+            if (element != null && element.isVisible()) {
+                return findThirdUrl(element.getText());
+            }
+        }
+        throw new PluginImplementationException("Download link element not found");
+    }
+
+    private HttpMethod findThirdUrl(final String text) throws ErrorDuringDownloadingException {
+        logger.info(text);
+        return getMethodBuilder(text).setReferer(fileURL).setActionFromAHrefWhereATagContains("").toGetMethod();
+    }
+
+    private void checkNameAndSize() throws Exception {
         if (isList()) return;
+        final String content = getContentAsString();
         PlugUtils.checkFileSize(httpFile, content, "sharedtabsfileinfo1-fs\" value=\"", "\">");
         PlugUtils.checkName(httpFile, content, "sharedtabsfileinfo1-fn\" value=\"", "\">");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("The key you provided for file download was invalid") || contentAsString.contains("How can MediaFire help you?")) {
+        final String content = getContentAsString();
+        if (content.contains("The key you provided for file download was invalid")
+                || content.contains("How can MediaFire help you?")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
@@ -182,7 +228,7 @@ class MediafireRunner extends AbstractRunner {
     private void runList() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("src=\"(/js/myfiles.php[^\"]+?)\"");
         if (!matcher.find()) throw new PluginImplementationException("URL to list not found");
-        final HttpMethod listMethod = getMethodBuilder().setBaseURL("http://www.mediafire.com").setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
+        final HttpMethod listMethod = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
 
         if (makeRedirectedRequest(listMethod)) {
             parseList();
@@ -192,68 +238,31 @@ class MediafireRunner extends AbstractRunner {
         }
     }
 
-
-    private String parseLink(String rawlink) throws Exception {
-        String link = "";
-
-        Matcher matcher = PlugUtils.matcher("([^'\"]*)(?:'|\")([^'\"]*)'", rawlink);
-        while (matcher.find()) {
-            link = link + matcher.group(1);
-            Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(2));
-            while (matcher1.find()) {
-                link = link + (getVar(matcher1.group(1), getContentAsString()));
-            }
-        }
-        matcher = PlugUtils.matcher("([^'\"]*)$", rawlink);
-        if (matcher.find()) {
-            link = link + (matcher.group(1));
-        }
-
-        return link;
-    }
-
-    private String getVar(String s, String content) throws PluginImplementationException {
-
-        Matcher matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*'([^']*)'", content);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*([0-9]+)", content);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-
-        throw new PluginImplementationException("Parameter " + s + " was not found");
-    }
-
-
     private void parseList() {
         final Matcher matcher = getMatcherAgainstContent("oe\\[[0-9]+\\]=Array\\('([^']+?)'");
-        int start = 0;
         final List<URI> uriList = new LinkedList<URI>();
-        while (matcher.find(start)) {
+        while (matcher.find()) {
             final String link = "http://www.mediafire.com/download.php?" + matcher.group(1);
             try {
                 uriList.add(new URI(link));
             } catch (URISyntaxException e) {
                 LogUtils.processException(logger, e);
             }
-            start = matcher.end();
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
-
 
     private boolean isList() {
         return (fileURL.contains("?sharekey="));
     }
 
     private String getPassword() throws Exception {
-        MediafirePasswordUI ps = new MediafirePasswordUI();
-        if (getDialogSupport().showOKCancelDialog(ps, "Secured file on Mediafire")) {
-            return (ps.getPassword());
-        } else throw new NotRecoverableDownloadException("This file is secured with a password");
-
+        final String password = getDialogSupport().askForPassword("MediaFire");
+        if (password == null) {
+            throw new NotRecoverableDownloadException("This file is secured with a password");
+        } else {
+            return password;
+        }
     }
 
 }

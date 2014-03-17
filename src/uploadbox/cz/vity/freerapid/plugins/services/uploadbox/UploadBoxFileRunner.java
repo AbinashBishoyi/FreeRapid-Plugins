@@ -90,14 +90,14 @@ class UploadBoxFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("You allready download some file")) {
-            throw new YouHaveToWaitException("You allready download some file. Please finish download and try again", 2 * 60);
+            throw new YouHaveToWaitException("You already download some file. Please finish download and try again", 2 * 60);
         }
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "File name:</b>", "<");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "File size:</b>", "<");
+        PlugUtils.checkName(httpFile, contentAsString, "<b>", "</b>");
+        PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</td>\n<td>\n<b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

@@ -8,7 +8,13 @@ import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.ImageProducer;
+import java.awt.image.RGBImageFilter;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -46,12 +52,19 @@ class ZidduFileRunner extends AbstractRunner {
             final String redirectURL = methodBuilder.getAction();
 
             if (makeRedirectedRequest(httpMethod)) {
-                httpMethod = stepCaptcha(redirectURL);
-
-                if (!tryDownloadAndSaveFile(httpMethod)) {
-                    checkAllProblems();
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty");
+                int counter = 0;
+                String content = getContentAsString();
+                while (counter < 5) {
+                    httpMethod = stepCaptcha(redirectURL, content);
+                    if (!tryDownloadAndSaveFile(httpMethod)) {
+                        if (getContentAsString().contains("captchaform")) {
+                            counter++;
+                            continue;
+                        }
+                        checkAllProblems();
+                        logger.warning(getContentAsString());
+                        throw new IOException("File input stream is empty");
+                    } else break;
                 }
             } else {
                 throw new ServiceConnectionProblemException();
@@ -85,16 +98,60 @@ class ZidduFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private HttpMethod stepCaptcha(String redirectURL) throws ErrorDuringDownloadingException {
+    private HttpMethod stepCaptcha(String redirectURL, String contentAsString) throws Exception, IOException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = SERVICE_WEB + PlugUtils.getStringBetween(getContentAsString(), "\"", "\" align=\"absmiddle\" id=\"image\" name=\"image\"");
+        String captchaSrc = SERVICE_WEB + PlugUtils.getStringBetween(contentAsString, "\"", "\" align=\"absmiddle\" id=\"image\" name=\"image\"");
         logger.info("Captcha URL " + captchaSrc);
-        final String captcha = captchaSupport.getCaptcha(captchaSrc);
+        captchaSrc = captchaSrc.replaceAll("width=\\d+", "width=150");
+        captchaSrc = captchaSrc.replaceAll("height=\\d+", "height=70");
+        captchaSrc = captchaSrc.replaceAll("characters=\\d+", "characters=2");
 
+        final BufferedImage image = captchaSupport.getCaptchaImage(captchaSrc);
+        ImageProducer producer = new FilteredImageSource(image.getSource(), new RGBGrayFilter(88));
+        Image imge = Toolkit.getDefaultToolkit().createImage(producer);
+
+        final BufferedImage bufferedImage = GraphicUtils.toBufferedImage(imge, false);
+        String captcha = PlugUtils.recognize(bufferedImage, "-C A-z-0-9");
+        //captcha = captchaSupport.getCaptcha(captchaSrc);
+        logger.info("Recognized captcha " + captcha);
+
+        captchaSupport.askForCaptcha(bufferedImage);
+
+        if (captcha == null || captcha.isEmpty() || captcha.length() != 2)
+            captcha = captchaSupport.getCaptcha(captchaSrc);
+        else captcha = captcha.toLowerCase(Locale.ENGLISH);
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            return getMethodBuilder().setReferer(redirectURL).setActionFromFormByName("securefrm", true).setBaseURL(SERVICE_WEB).setParameter("securitycode", captcha).toHttpMethod();
+            return getMethodBuilder(contentAsString).setReferer(redirectURL).setActionFromFormByName("securefrm", true).setBaseURL(SERVICE_WEB).setParameter("securitycode", captcha).toHttpMethod();
         }
     }
+
+    private static class RGBGrayFilter extends RGBImageFilter {
+        private final int limit;
+        //        private final boolean letGray;
+        private static final int whiteRGB = new Color(255, 255, 255, 255).getRGB();
+//        private static final int blackRGB = new Color(0, 0, 0, 255).getRGB();
+
+        public RGBGrayFilter(int limit) {
+            this.limit = limit;
+            canFilterIndexColorModel = true;
+        }
+
+        public int filterRGB(int x, int y, int rgb) {
+            int a = rgb & 0xff000000;
+            int r = (rgb >> 16) & 0xff;
+            int g = (rgb >> 8) & 0xff;
+            int b = rgb & 0xff;
+//		rgb = (r + g + b) / 3;	// simple average
+            rgb = (r * 77 + g * 151 + b * 28) >> 8;    // NTSC luma
+
+            if ((rgb & 0xFF) > limit) {
+                return whiteRGB;
+            } else {
+                return a | (rgb << 16) | (rgb << 8) | rgb;
+            }
+        }
+    }
+
 }

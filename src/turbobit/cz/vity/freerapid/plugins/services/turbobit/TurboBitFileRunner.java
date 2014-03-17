@@ -8,6 +8,8 @@ import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -36,13 +38,31 @@ class TurboBitFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<b>(?:<br>|&nbsp;)(.+?)</b></h1>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
+    /**
+     * This method remove all HTML entry, and find next text after found parameter
+     *
+     * @param search text
+     * @return next text after parameter
+     */
+    private String findNextTextAfter(String text) {
+        String contentWithOutHTML[] = getContentAsString().replaceAll("&[^;]{4,4};", "").split("<[^>]*>");
+        boolean found = false;
+        for(String x : contentWithOutHTML) {
+            if( !found && x.toLowerCase().contains(text.toLowerCase()) ) {
+                found = true;
+                continue;
+            }
+            if( found && x != null && !x.trim().equals("") )
+                return x.trim();
         }
-        httpFile.setFileName(matcher.group(1));
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "</b> ", "</div>");
+        return null;
+    }
+
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        httpFile.setFileName( findNextTextAfter("File name:") );
+        long size = PlugUtils.getFileSizeFromString( findNextTextAfter("File size:") );
+        httpFile.setFileSize( size );
+
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

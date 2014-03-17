@@ -45,7 +45,9 @@ class MediafireRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        if (!isFolder()) {
+        if (isFolder()) {
+            httpFile.setFileName("MediaFire Folder >>");
+        } else {
             final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('.+?','(.+?)','(\\d+?)'");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File name/size not found");
@@ -63,6 +65,12 @@ class MediafireRunner extends AbstractRunner {
                 || content.contains("File Removed for Violation")
                 || content.contains("File Belongs to Suspended Account")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("Unknown or invalid Folder")) {
+            throw new URLNotAvailableAnymoreException("Folder not found");
+        }
+        if (content.contains("This folder is empty")) {
+            throw new NotRecoverableDownloadException("This folder is empty");
         }
     }
 
@@ -188,7 +196,7 @@ class MediafireRunner extends AbstractRunner {
     }
 
     private boolean isFolder() {
-        return getContentAsString().contains("<body class=\"myfiles\">");
+        return getContentAsString().contains("<body class=\"myfiles");
     }
 
     private void parseFolder() throws Exception {
@@ -200,15 +208,17 @@ class MediafireRunner extends AbstractRunner {
             }
         } else {
             final HttpMethod method = getMethodBuilder()
-                    .setAction("http://www.mediafire.com/api/folder/get_info.php")
-                    .setParameter("recursive", "yes")
-                    .setParameter("content_filter", "files")
+                    .setAction("http://www.mediafire.com/api/folder/get_content.php")
+                    .setParameter("r", "ying")
+                    .setParameter("content_type", "files")
+                    .setParameter("filter", "all")
                     .setParameter("folder_key", id)
                     .setParameter("response_format", "json")
-                    .setParameter("version", "1")
+                    .setParameter("version", "2")
                     .toGetMethod();
             setFileStreamContentTypes(new String[0], new String[]{"application/json"});
             if (!makeRedirectedRequest(method)) {
+                checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             final Matcher matcher = getMatcherAgainstContent("\"quickkey\":\"(.+?)\",\"filename\":\"(.+?)\"");

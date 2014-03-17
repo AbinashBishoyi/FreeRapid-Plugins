@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.rtmp;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.HttpMethod;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -62,7 +63,9 @@ public class SwfVerificationHelper {
     public synchronized void setSwfVerification(final RtmpSession session, final HttpDownloadClient client) throws Exception {
         if (System.currentTimeMillis() >= lastRefreshTime + REFRESH_INTERVAL) {
             logger.info("Refreshing SWF hash");
-            InputStream is = client.makeRequestForFile(client.getGetMethod(swfURL));
+            HttpMethod method = client.getGetMethod(swfURL);
+            method.setFollowRedirects(true);
+            InputStream is = client.makeRequestForFile(method);
             if (is == null) {
                 throw new ServiceConnectionProblemException("Error downloading SWF");
             }
@@ -122,7 +125,7 @@ public class SwfVerificationHelper {
             }
             length += 8;
             mac.update(b, 0, 8);
-            for (int i; (i = is.read(b)) > -1;) {
+            for (int i; (i = is.read(b)) > -1; ) {
                 length += i;
                 mac.update(b, 0, i);
             }

@@ -18,7 +18,7 @@ class RtmpeIoFilter extends IoFilterAdapter {
     @Override
     public void messageReceived(NextFilter nextFilter, IoSession ioSession, Object message) throws Exception {
         RtmpSession session = RtmpSession.getFrom(ioSession);
-        final int bytesReadSoFar = (int) ioSession.getReadBytes();    // TODO what if bigger than int ?
+        final long bytesReadSoFar = ioSession.getReadBytes();
         if (bytesReadSoFar > session.getBytesReadLastSent() + 600 * 1024) {
             logger.info("sending bytes read " + bytesReadSoFar);
             session.send(Packet.bytesRead(bytesReadSoFar));

@@ -35,7 +35,7 @@ public class RtmpSession {
     private Map<Long, String> invokedMethods = new ConcurrentHashMap<Long, String>();
     private int chunkSize = 128;
     private long nextInvokeId;
-    private int bytesReadLastSent;
+    private long bytesReadLastSent;
     private Map<String, Object> connectParams;
     private String playName;
     private int playStart;
@@ -434,11 +434,11 @@ public class RtmpSession {
         this.connectParams = connectParams;
     }
 
-    public int getBytesReadLastSent() {
+    public long getBytesReadLastSent() {
         return bytesReadLastSent;
     }
 
-    public void setBytesReadLastSent(int bytesReadLastSent) {
+    public void setBytesReadLastSent(long bytesReadLastSent) {
         this.bytesReadLastSent = bytesReadLastSent;
     }
 

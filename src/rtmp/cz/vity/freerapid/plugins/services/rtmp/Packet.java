@@ -76,10 +76,10 @@ public class Packet {
         data = IoBuffer.allocate(dataSize);
     }
 
-    public static Packet bytesRead(int value) {
+    public static Packet bytesRead(long value) {
         Header header = new Header(MEDIUM, 2, Type.BYTES_READ);
         IoBuffer body = IoBuffer.allocate(4);
-        body.putInt(value);
+        body.putInt((int) value);
         return new Packet(header, body);
     }
 

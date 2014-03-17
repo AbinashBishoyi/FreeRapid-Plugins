@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Random;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
@@ -114,6 +115,14 @@ class UploadingRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("Service Not Available")) {
             throw new ServiceConnectionProblemException("Service Not Available");
+        }
+        if (getContentAsString().contains("Download Limit")) {
+            Matcher matcher = getMatcherAgainstContent("Sorry[\\D]*(\\d)* minutes");
+            int pause = 5;
+            if( matcher.find() ) {
+                pause = Integer.parseInt( matcher.group(1) );
+            }
+            throw new YouHaveToWaitException("Download Limit", 60 * pause );
         }
 
     }

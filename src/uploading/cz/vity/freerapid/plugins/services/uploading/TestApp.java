@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://uploading.com/files/ebc91a1c/0632044187_Microbiology.part1.rar/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final UploadingServiceImpl service = new UploadingServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

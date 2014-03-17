@@ -3,9 +3,9 @@ package cz.vity.freerapid.plugins.services.ulozto;
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
-import java.io.IOException;
 import org.jdesktop.application.Application;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -20,7 +20,9 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             httpFile.setNewURL(new URL("http://www.uloz.to/xkNQ3TJ/madonna-frozen-mp3"));
-            testRun(new UlozToServiceImpl(), httpFile, new ConnectionSettings());
+            final ConnectionSettings settings = new ConnectionSettings();
+            //settings.setProxy("localhost", 8081);
+            testRun(new UlozToServiceImpl(), httpFile, settings);
         } catch (Exception e) {
             e.printStackTrace();
         }

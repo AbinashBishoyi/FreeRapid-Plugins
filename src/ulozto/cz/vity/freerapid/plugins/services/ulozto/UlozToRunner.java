@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.ulozto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.ulozto.captcha.SoundReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, JPEXS (captcha)
@@ -162,20 +164,20 @@ class UlozToRunner extends AbstractRunner {
         MethodBuilder captchaMethod = getMethodBuilder().setAction("http://img.uloz.to/captcha/"+ a +".png");
         */
         String captcha = "";
-        /* //precteni
-           if (captchaCount++ < 6) {
+        //precteni
+        if (captchaCount++ < 6) {
             logger.warning("captcha url:" + captchaMethod.getAction());
             Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
             if (m.find()) {
                 String number = m.group(1);
-                SoundReader captchaReader = new SoundReader();          
+                SoundReader captchaReader = new SoundReader();
                 HttpMethod methodSound = getMethodBuilder().setAction("http://img.uloz.to/captcha/sound/" + number + ".mp3").toGetMethod();
                 captcha = captchaReader.parse(client.makeRequestForFile(methodSound));
                 methodSound.releaseConnection();
             }
-        } else {*/
-        captcha = captchaSupport.getCaptcha(captchaMethod.getAction());
-        //}
+        } else {
+            captcha = captchaSupport.getCaptcha(captchaMethod.getAction());
+        }
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
@@ -193,7 +195,7 @@ class UlozToRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
-        if (content.contains("Soubor byl sma")) {
+        if (content.contains("Soubor byl sma") || content.contains("Soubor byl zak")) {
             throw new URLNotAvailableAnymoreException("Soubor byl smazan");
         }
         if (content.contains("soubor nebyl nalezen")) {

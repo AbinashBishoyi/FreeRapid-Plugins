@@ -39,7 +39,7 @@ public class MediafireRunner extends AbstractRunner {
             final String content = getContentAsString();
             PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
             if (!isPassworded()) {
-                PlugUtils.checkFileSize(httpFile, content, ">(", ")<");
+                PlugUtils.checkFileSize(httpFile, content, "<span class='dlFileSize'>(", ")</span>");
             }
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -49,7 +49,8 @@ public class MediafireRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("The key you provided for file download")
                 || content.contains("How can MediaFire help you?")
-                || content.contains("File Removed for Violation")) {
+                || content.contains("File Removed for Violation")
+                || content.contains("File Belongs to Suspended Account")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
@@ -69,11 +70,7 @@ public class MediafireRunner extends AbstractRunner {
                 stepPassword();
                 checkNameAndSize();
             }
-            final Matcher matcher = getMatcherAgainstContent("(<div class=\"download_link\".+?</div>)");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Download link not found");
-            }
-            method = getMethodBuilder(matcher.group(1)).setActionFromAHrefWhereATagContains("").toGetMethod();
+            method = getMethodBuilder().setActionFromAHrefWhereATagContains("Download <span class='dlFileSize'>").toGetMethod();
             setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();

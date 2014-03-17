@@ -28,8 +28,12 @@ class CzshareRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
             checkCaptcha();
-        } else
+        } else {
+            checkProblems();
+            makeRedirectedRequest(getMethod);
+            checkProblems();
             throw new PluginImplementationException();
+        }
     }
 
     @Override
@@ -202,6 +206,10 @@ class CzshareRunner extends AbstractRunner {
         matcher = getMatcherAgainstContent("Soubor nenalezen");
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("<b>Soubor nenalezen</b><br>");
+        }
+        matcher = getMatcherAgainstContent("Soubor byl smaz.n jeho odesilatelem</strong>");
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException("<b>Soubor byl smazán jeho odesilatelem</b><br>");
         }
         matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
         if (matcher.find()) {

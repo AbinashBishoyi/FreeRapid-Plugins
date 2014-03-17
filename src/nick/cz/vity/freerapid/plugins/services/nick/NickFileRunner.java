@@ -96,22 +96,17 @@ class NickFileRunner extends AbstractRtmpRunner {
     }
 
     private String getMgid() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("type\\s*:\\s*\"(.+?)\"");
+        Matcher matcher = getMatcherAgainstContent("site\\s*:\\s*\"(.+?)\"");
         if (!matcher.find()) {
-            throw new PluginImplementationException("type not found");
-        }
-        final String type = matcher.group(1);
-        matcher = getMatcherAgainstContent("site\\s*:\\s*\"(.+?)\"");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("site not found");
+            throw new PluginImplementationException("'site' not found");
         }
         final String site = matcher.group(1);
         matcher = getMatcherAgainstContent("cmsId\\s*:\\s*(\\d+)");
         if (!matcher.find()) {
-            throw new PluginImplementationException("cmsId not found");
+            throw new PluginImplementationException("'cmsId' not found");
         }
         final String cmsId = matcher.group(1);
-        return "mgid:cms:" + type + ":" + site + ":" + cmsId;
+        return "mgid:cms:video:" + site + ":" + cmsId;
     }
 
     private List<URI> getVideoItems() throws ErrorDuringDownloadingException {

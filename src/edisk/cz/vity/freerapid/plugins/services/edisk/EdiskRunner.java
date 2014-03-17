@@ -2,13 +2,13 @@ package cz.vity.freerapid.plugins.services.edisk;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -24,9 +24,9 @@ class EdiskRunner extends AbstractRunner {
 
     public void runCheck() throws Exception {
         super.runCheck();
-        fileURL = checkURL(fileURL);
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+
+        if (makeRedirectedRequest(httpMethod)) {
             checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException();
@@ -34,17 +34,20 @@ class EdiskRunner extends AbstractRunner {
 
     public void run() throws Exception {
         super.run();
-        fileURL = checkURL(fileURL);
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            if (getContentAsString().contains("te text z obr")) {
+        final HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+        if (makeRedirectedRequest(httpMethod)) {
+            if (getContentAsString().contains("text z obr")) {
                 checkNameAndSize(getContentAsString());
-                //    while (getContentAsString().contains("te text z obr")) {
-                PostMethod method = hackCaptcha(getContentAsString());
-                //    method.setFollowRedirects(true);
+
+                PostMethod method = stepCaptcha(getContentAsString(), true);
                 makeRequest(method);
 
-                //   }
+                while (getContentAsString().contains("text z obr")) {
+                    PostMethod method2 = stepCaptcha(getContentAsString(), false);
+
+                    makeRequest(method2);
+
+                }
                 String finalURL = getContentAsString();
                 GetMethod finalMethod = getGetMethod(finalURL);
 
@@ -63,14 +66,6 @@ class EdiskRunner extends AbstractRunner {
             throw new PluginImplementationException();
     }
 
-    private String sicherName(String s) throws UnsupportedEncodingException {
-        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)_[0-9.]+\\.html", s);
-        if (matcher.find()) {
-            return matcher.group(2);
-        }
-        return "file01";
-    }
-
     private String checkURL(String fileURL) {
         return fileURL.replaceFirst("edisk.sk", "edisk.cz");
 
@@ -85,73 +80,41 @@ class EdiskRunner extends AbstractRunner {
         if (content.contains("neexistuje z ")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
-
-        Matcher matcher = PlugUtils.matcher(": ([^ ]+) \\(([0-9.]+ .B)\\)</h2>", content);
-        // odebiram jmeno
-        String fn;
-        if (matcher.find()) {
-            fn = matcher.group(1);
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(2));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else fn = sicherName(fileURL);
-        logger.info("File name " + fn);
-        httpFile.setFileName(fn);
-        // konec odebirani jmena
-
+        PlugUtils.checkFileSize(httpFile, content, "Velikost souboru:", "<br");
+        PlugUtils.checkName(httpFile, content, "ut soubor:", "(");
 
     }
 
-    /*
-  private PostMethod stepCaptcha(String contentAsString) throws Exception {
-      if (contentAsString.contains("te text z obr")) {
-          CaptchaSupport captchaSupport = getCaptchaSupport();
-          Matcher matcher = PlugUtils.matcher("img src=\"([^\"]*captcha[^\"]*)\"", contentAsString);
-          if (matcher.find()) {
-              String host = "http://" + httpFile.getFileUrl().getHost();
-              String s = host + matcher.group(1);
 
-              logger.info("Captcha URL " + s);
-              String captcha = captchaSupport.getCaptcha(s);
-              if (captcha == null) {
-                  throw new CaptchaEntryInputMismatchException();
-              } else {
+    private PostMethod stepCaptcha(String contentAsString, boolean hack) throws Exception {
+        if (contentAsString.contains("text z obr")) {
+            String captcha;
+            Matcher matcher;
 
-                  matcher = PlugUtils.matcher("form method=\"post\" action=\"([^\"]*)\"", contentAsString);
-                  if (!matcher.find()) {
-                      logger.info(getContentAsString());
-                      throw new PluginImplementationException();
-                  }
-                  String postTargetURL;
-                  postTargetURL = matcher.group(1);
-                  postTargetURL = postTargetURL.replace("stahnout-soubor", "x-download");
-                  logger.info("Captcha target URL " + postTargetURL);
-                  client.setReferer(fileURL);
-                  final PostMethod postMethod = getPostMethod(postTargetURL);
-                  postMethod.addParameter("captchaCode", captcha);
-                  postMethod.addParameter("type", "member");
-                  return postMethod;
+            if (hack) {
+                captcha = "5414";
+                downloadTask.sleep(5);
+            } else {
 
-              }
-          } else {
-              logger.warning(contentAsString);
-              throw new PluginImplementationException("Captcha picture was not found");
-          }
-      }
-      return null;
-  }
-    */
-    private PostMethod hackCaptcha(String contentAsString) throws Exception {
-        if (contentAsString.contains("te text z obr")) {
-            downloadTask.sleep(5);
-            Matcher matcher = PlugUtils.matcher("form method=\"post\"\\s*action=\"([^\"]*)\"", contentAsString);
+                CaptchaSupport captchaSupport = getCaptchaSupport();
+                String host = "http://" + httpFile.getFileUrl().getHost();
+                String s = getMethodBuilder(contentAsString).setActionFromImgSrcWhereTagContains("captcha").getAction();
+                s = host + s;
+                logger.info("Captcha URL " + s);
+                String captchaR = captchaSupport.getCaptcha(s);
+                if (captchaR == null) {
+                    throw new CaptchaEntryInputMismatchException();
+                }
+                captcha = captchaR;
+            }
+            matcher = PlugUtils.matcher("form method=\"post\"\\s*action=\"([^\"]*)\"", contentAsString);
             if (!matcher.find()) {
                 logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
             String postTargetURL;
             postTargetURL = matcher.group(1);
+            client.setReferer(postTargetURL);
             String type = "";
             if (postTargetURL.contains("stahnout-soubor")) {
                 postTargetURL = postTargetURL.replace("stahnout-soubor", "x-download");
@@ -163,16 +126,20 @@ class EdiskRunner extends AbstractRunner {
             }
 
             logger.info("Captcha target URL " + postTargetURL);
-            client.setReferer(fileURL);
+            //   client.setReferer(fileURL);
             final PostMethod postMethod = getPostMethod(postTargetURL);
-            postMethod.addParameter("captchaCode", "5415");
+            postMethod.addParameter("captchaCode", captcha);
             postMethod.addParameter("type", type);
+            postMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             return postMethod;
 
-
+        } else {
+            logger.warning(contentAsString);
+            throw new PluginImplementationException("Captcha picture was not found");
         }
-        return null;
+
     }
+
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         if (getContentAsString().contains("neexistuje z ")) {

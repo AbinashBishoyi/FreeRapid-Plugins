@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.URI;
@@ -108,6 +109,8 @@ class IndowebsterRunner extends AbstractRunner {
                     client.makeRequest(method3, false);
                     logger.info(method3.getResponseHeader("location").getValue());
                     URI finalURI = new URI(method3.getResponseHeader("location").getValue().replace("[", "%5B").replace("]", "%5D"), true, method3.getParams().getUriCharset());
+                    
+                    client.getHTTPClient().getParams().setParameter(DownloadClientConsts.CONSIDER_AS_STREAM,"text/plain");
 
                     final HttpMethod finalMethod = getMethodBuilder()
                             .setAction(finalURI.toString())
@@ -138,26 +141,30 @@ class IndowebsterRunner extends AbstractRunner {
 
 
     private void checkProblems() throws ServiceConnectionProblemException, InvalidURLOrServiceProblemException, URLNotAvailableAnymoreException {
+        final String contentAsString = getContentAsString();
         /*
         if (!content.contains("indowebster.com")) {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         */
-        if (getContentAsString().contains("Storage Maintenance, Back Later")) {
+        if (contentAsString.contains("Storage Maintenance, Back Later")) {
             throw new InvalidURLOrServiceProblemException("Storage Maintenance, Back Later");
         }
-        if (getContentAsString().contains("reported and removed")) {
+        if (contentAsString.contains("reported and removed")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Indowebster Error:</b><br>This files has been reported and removed due to terms of use violation"));
         }
-        if (getContentAsString().contains("File doesn")) {
+        if (contentAsString.contains("File doesn")) {
             throw new URLNotAvailableAnymoreException("<b>Indowebster error:</b><br>File doesn't exist");
         }
-        if (getContentAsString().contains("already downloading")) {
+        if (contentAsString.contains("already downloading")) {
             throw new ServiceConnectionProblemException(String.format("<b>Indowebster Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
         }
-        if (getContentAsString().contains("Currently a lot of users")) {
+        if (contentAsString.contains("Currently a lot of users")) {
             throw new ServiceConnectionProblemException(String.format("<b>Indowebster Error:</b><br>Currently a lot of users are downloading files."));
+        }
+        if (contentAsString.contains("504 Gateway Time-out")) {
+            throw new ServiceConnectionProblemException("Gateway Time-out");
         }
     }
 

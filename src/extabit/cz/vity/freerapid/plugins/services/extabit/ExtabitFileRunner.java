@@ -50,6 +50,7 @@ class ExtabitFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkDownloadProblems();
             checkNameAndSize();
+            fileURL = method.getURI().toString();
 
             Matcher matcher;
             final String contentAsString = getContentAsString(); //get page content that contains captcha
@@ -112,6 +113,11 @@ class ExtabitFileRunner extends AbstractRunner {
                 .setParameter("link", "1")
                 .setParameter("capture", captcha)
                 .toGetMethod();
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://extabit.com";
     }
 
 }

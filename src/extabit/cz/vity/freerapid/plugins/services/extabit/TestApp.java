@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://extabit.com/file/28dhkgg6qwcpq"));
-            httpFile.setNewURL(new URL("http://extabit.com/file/2dvq5gkq6c04y"));
+            httpFile.setNewURL(new URL("http://u32.extabit.com/go/28cjr1tl1c2a1/?upld=1"));
             //httpFile.setNewURL(new URL("http://extabit.com/file/2dvq5ibmdftqa"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

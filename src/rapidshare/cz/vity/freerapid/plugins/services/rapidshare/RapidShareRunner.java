@@ -106,7 +106,7 @@ class RapidShareRunner extends AbstractRunner {
         return chooser.getPreferredURL(getContentAsString());
     }
 
-    private void enterCheck() throws NotRecoverableDownloadException, InvalidURLOrServiceProblemException, ServiceConnectionProblemException {
+    private void enterCheck() throws NotRecoverableDownloadException, InvalidURLOrServiceProblemException, ServiceConnectionProblemException, YouHaveToWaitException {
         Matcher matcher;
         if (!getContentAsString().contains("form id=\"ff\" action=")) {
 
@@ -132,6 +132,13 @@ class RapidShareRunner extends AbstractRunner {
                 throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>To download this file, the uploader either needs to transfer this file into his/her Collector's Account, or upload the file again. The file can later be moved to a Collector's Account. The uploader just needs to click the delete link of the file to get further information.");
             if (getContentAsString().contains("This file is larger than")) {
                 throw new NotRecoverableDownloadException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
+            }
+            if (getContentAsString().contains("Currently a lot of users") || getContentAsString().contains("We regret")) {
+                matcher = getMatcherAgainstContent("Please try again in ([0-9]+) minute");
+                if (matcher.find()) {
+                    throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);
+                }
+                throw new ServiceConnectionProblemException("<b>RapidShare error:</b><br>Currently a lot of users are downloading files.");
             }
             if (getContentAsString().contains("no more download slots")) {
                 throw new ServiceConnectionProblemException("There are no more download slots available for free users right now");

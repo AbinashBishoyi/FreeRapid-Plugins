@@ -59,7 +59,7 @@ class MediafireRunner extends AbstractRunner {
                     logger.info("Final URL " + finalLink);
 
                     GetMethod method2 = getGetMethod(finalLink);
-
+                    client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                     if (!tryDownloadAndSaveFile(method2)) {
                         checkProblems();
                         logger.info(getContentAsString());

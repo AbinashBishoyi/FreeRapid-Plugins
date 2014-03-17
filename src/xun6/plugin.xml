@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="xun6.com" version="1.01" vendor="JPEXS"
+<plugin id="xun6.com" version="1.02" vendor="JPEXS"
         class="cz.vity.freerapid.plugins.services.xun6.XUN6ServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?xun6\.com/file/.+"/>

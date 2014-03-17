@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -55,7 +54,8 @@ class XUN6FileRunner extends AbstractRunner {
 
             CaptchaSupport captchaSupport = getCaptchaSupport();
             do {
-                String captchaR = captchaSupport.getCaptcha("http://xun6.com/captcha.php?rand=" + ((new Random()).nextInt(98) + 1));
+                String captchaURL=PlugUtils.getStringBetween(getContentAsString(), "<img id=\"dynimg\" src=\"", "\"");
+                String captchaR = captchaSupport.getCaptcha(captchaURL);
                 if (captchaR == null) {
                     throw new CaptchaEntryInputMismatchException();
                 }

@@ -8,6 +8,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.io.IOException;
 
 /**
  * @author Kajda
@@ -32,9 +33,9 @@ class NahrajFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL);
+        GetMethod getMethod = getGetMethod(fileURL);
         
-        if (makeRedirectedRequest(method)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();
             
@@ -43,15 +44,16 @@ class NahrajFileRunner extends AbstractRunner {
             if (matcher.find()) {
                 String finalURL = matcher.group(1);
                 client.setReferer(finalURL);
-                GetMethod getMethod = getGetMethod(finalURL);
+                //client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
+                getMethod = getGetMethod(finalURL);
                 
                 if (!tryDownloadAndSaveFile(getMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
-                    throw new ServiceConnectionProblemException();
+                    throw new IOException("File input stream is empty");
                 }
             } else {
-                throw new PluginImplementationException();
+                throw new PluginImplementationException("Download link was not found");
             }
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -83,15 +85,14 @@ class NahrajFileRunner extends AbstractRunner {
             matcher = getMatcherAgainstContent("class=\"size\">(.+?)<");
             
             if (matcher.find()) {
-                final long size = PlugUtils.getFileSizeFromString(matcher.group(1));
-                httpFile.setFileSize(size);
+                final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
+                logger.info("File size " + fileSize);
+                httpFile.setFileSize(fileSize);
             } else {
-                checkProblems();
-                logger.warning("File size was not found\n:");
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            checkProblems();
             logger.warning("File name was not found");
             throw new PluginImplementationException();
         }

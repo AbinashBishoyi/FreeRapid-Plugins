@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Kajda
  */
 public class SuboryServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "subory.sk";
@@ -14,7 +14,7 @@ public class SuboryServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 5;
+        return 9;
     }
 
     @Override

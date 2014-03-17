@@ -2,7 +2,7 @@
 <project name="wiiUpload.net" default="all" basedir=".">
     <property name="application" value="wiiupload"/>
 
-    <property name="version" value="0.5"/>
+    <property name="version" value="0.5.1"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="wiiupload.jar"/>

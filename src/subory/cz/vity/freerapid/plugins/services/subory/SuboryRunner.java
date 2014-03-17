@@ -13,112 +13,113 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Kajda
  */
 class SuboryRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SuboryRunner.class.getName());
-    private final static String WEB = "http://www.subory.sk";
+    private final static String SERVICE_WEB = "http://www.subory.sk";
 
-    public SuboryRunner() {
-        super();
-    }
-
+    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            checkNameAndSize(getContentAsString());
-        } else
-            throw new ServiceConnectionProblemException();
-    }
-
-    public void run() throws Exception {
-        super.run();
-        final GetMethod getMethod = getGetMethod(fileURL);
+        
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
-            client.setReferer(fileURL);
+            checkNameAndSize();
+        } else {
+            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
+    }
+
+    @Override
+    public void run() throws Exception {
+        super.run();
+        logger.info("Starting download in TASK " + fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
+
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+            checkNameAndSize();
 
             if (getContentAsString().contains("captcha")) {
-                PostMethod method = new PostMethod();
-
+                client.setReferer(fileURL);
+                //client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
+                PostMethod postMethod = new PostMethod();
+                
                 while (getContentAsString().contains("captcha")) {
-                    method = stepCaptcha(getContentAsString());
-                    makeRequest(method);
+                    postMethod = stepCaptcha();
+                    makeRequest(postMethod);
                 }
-
-                if (!tryDownloadAndSaveFile(method)) {
+                
+                if (!tryDownloadAndSaveFile(postMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty.");
+                    throw new IOException("File input stream is empty");
                 }
             } else {
-                checkProblems();
-                logger.info(getContentAsString());
+                throw new PluginImplementationException("Download link was not found");
+            }
+        } else {
+            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("Neplatn. odkaz");
+
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException("Neplatný odkaz");
+        }
+    }
+
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("class=\"down-filename\">(?:(?:.|\\s)+?)>\\s*(.+?)<");
+
+        if (matcher.find()) {
+            final String fileName = matcher.group(1).trim();
+            logger.info("File name " + fileName);
+            httpFile.setFileName(fileName);
+
+            matcher = getMatcherAgainstContent("Ve.kos. s.boru:</strong></td><td\\s*class=desc>(.+?)<");
+            
+            if (matcher.find()) {
+                final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
+                logger.info("File size " + fileSize);
+                httpFile.setFileSize(fileSize);
+            } else {
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
-        } else
-            throw new ServiceConnectionProblemException();
-    }
-
-
-    private void checkNameAndSize(String content) throws Exception {
-
-        if (!content.contains("subory.sk")) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+        } else {
+            logger.warning("File name was not found");
+            throw new PluginImplementationException();
         }
 
-        Matcher matcher = getMatcherAgainstContent("class=\"down-filename\">(?:(?:.|\\s)+?)>\\s*(.+?)<");
-        if (matcher.find()) {
-            String fn = matcher.group(1).trim();
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else logger.warning("File name not found");
-
-        matcher = getMatcherAgainstContent("Ve.kos. s.boru:</strong></td><td\\s*class=desc>(.+?)<");
-        if (matcher.find()) {
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else logger.warning("File size not found");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
+    
+    private PostMethod stepCaptcha() throws Exception {
+        CaptchaSupport captchaSupport = getCaptchaSupport();
 
+        Matcher matcher = getMatcherAgainstContent("class=captcha src=\"(.+?)\"");
 
-    private PostMethod stepCaptcha(String contentAsString) throws Exception {
-        if (contentAsString.contains("captcha")) {
-            CaptchaSupport captchaSupport = getCaptchaSupport();
-            Matcher matcher = PlugUtils.matcher("class=captcha src=\"(.+?)\"", contentAsString);
-            if (matcher.find()) {
-                String s = matcher.group(1);
-                logger.info("Captcha URL " + s);
-                String captcha = captchaSupport.getCaptcha(WEB + s);
+        if (matcher.find()) {
+            String captchaSrc = matcher.group(1);
+            logger.info("Captcha URL " + captchaSrc);
+            String captcha = captchaSupport.getCaptcha(SERVICE_WEB + captchaSrc);
 
-                if (captcha == null) {
-                    throw new CaptchaEntryInputMismatchException();
-                } else {
-
-                    final PostMethod postMethod = getPostMethod(fileURL);
-                    postMethod.addParameter("submitted", "1");
-                    postMethod.addParameter("str", captcha);
-                    return postMethod;
-
-                }
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
             } else {
-                logger.warning(contentAsString);
-                throw new PluginImplementationException("Captcha picture was not found");
+                final PostMethod postMethod = getPostMethod(fileURL);
+                postMethod.addParameter("submitted", "1");
+                postMethod.addParameter("str", captcha);
+
+                return postMethod;
             }
-        }
-        return null;
-    }
-
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        if (getContentAsString().contains("red;\">Neplatn")) {
-            throw new URLNotAvailableAnymoreException(String.format("Neplatný odkaz"));
+        } else {
+            throw new PluginImplementationException("Captcha picture was not found");
         }
     }
-
 }

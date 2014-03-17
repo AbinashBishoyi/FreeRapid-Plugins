@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Vity
+ * @author kajda
  */
 public class UltraShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "ultrashare.net";

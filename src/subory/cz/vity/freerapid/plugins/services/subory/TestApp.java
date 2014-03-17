@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
+ * @author Kajda
  */
 public class TestApp extends PluginDevApplication {
     protected void startup() {
@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
 
-           httpFile.setNewURL(new URL("http://www.subory.sk/download/127761/Bezvavejska.part2.rar"));
+           httpFile.setNewURL(new URL("http://www.subory.sk/download/257989/Cesky.test.txt"));
             testRun(new SuboryServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

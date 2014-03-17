@@ -14,7 +14,7 @@ public class NahrajServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 5;
+        return 9;
     }
 
     @Override

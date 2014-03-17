@@ -9,10 +9,11 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.io.UnsupportedEncodingException;
+import java.io.IOException;
 import java.net.URLEncoder;
 
 /**
- * @author Vity
+ * @author Kajda
  */
 class UltraShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UltraShareFileRunner.class.getName());
@@ -21,26 +22,80 @@ class UltraShareFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(encodeURL(fileURL));
+
         if (makeRedirectedRequest(getMethod)) {
-            checkNameAndSize(getContentAsString());
-        } else
-            throw new PluginImplementationException();
+            checkProblems();
+            checkNameAndSize();
+        } else {
+            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("Download</span>\\s(.+?)\\s\\(<", content);
+   @Override
+    public void run() throws Exception {
+        super.run();
+        fileURL = encodeURL(fileURL);
+        logger.info("Starting download in TASK " + fileURL);
+        GetMethod getMethod = getGetMethod(fileURL);
+
+        if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+            checkNameAndSize();
+
+            Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Download This File");
+
+            if (matcher.find()) {
+                String URL = matcher.group(1);
+                client.setReferer(URL);
+                getMethod = getGetMethod(encodeURL(matcher.group(1)));
+
+                if (!makeRedirectedRequest(getMethod)) {
+                    throw new ServiceConnectionProblemException();
+                }
+
+                checkProblems();
+
+                matcher = getMatcherAgainstContent("href=\"(.+?)\" class=\"download_url\">click here");
+
+                if (matcher.find()) {
+                    String finalURL = matcher.group(1);
+                    client.setReferer(finalURL);
+                    getMethod = getGetMethod(finalURL);
+                    
+                    if (!tryDownloadAndSaveFile(getMethod)) {
+                        checkProblems();
+                        logger.warning(getContentAsString());
+                        throw new IOException("File input stream is empty");
+                    }
+                }
+                else {
+                    throw new PluginImplementationException("Download link was not found");
+                }
+            } else {
+                throw new PluginImplementationException();
+            }
+        } else {
+            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
+    }
+
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("Download</span> (.+?) \\(<");
+
         if (matcher.find()) {
-            final String fileName = matcher.group(1).trim(); //method trim removes white characters from both sides of string
+            final String fileName = matcher.group(1).trim();
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
-            matcher = PlugUtils.matcher("\\(<i>(.+?)</i>\\)", content);
+            matcher = getMatcherAgainstContent("\\(<i>(.+?)</i>\\)");
+
             if (matcher.find()) {
-                final long size = PlugUtils.getFileSizeFromString(matcher.group(1));
-                httpFile.setFileSize(size);
+                final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
+                logger.info("File size " + fileSize);
+                httpFile.setFileSize(fileSize);
             } else {
                 checkProblems();
-                logger.warning("File size was not found\n:");
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
@@ -48,58 +103,29 @@ class UltraShareFileRunner extends AbstractRunner {
             logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
 
-    @Override
-    public void run() throws Exception {
-        super.run();
-        logger.info("Starting download in TASK " + encodeURL(fileURL));
-        final GetMethod method = getGetMethod(encodeURL(fileURL));
-        if (makeRedirectedRequest(method)) {
-            String contentAsString = getContentAsString();
-            checkProblems();
-            checkNameAndSize(contentAsString);
-            client.setReferer(encodeURL(fileURL));
-            Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Download This File");
-            if (matcher.find()) {
-                GetMethod getMethod = getGetMethod(encodeURL(matcher.group(1)));
-                if (!makeRedirectedRequest(getMethod)) {
-                    throw new ServiceConnectionProblemException();
-                }
-                checkProblems();
-                matcher = getMatcherAgainstContent("href=\"(.+?)\" class=\"download_url\">click here");
-                if (matcher.find()) {
-                    getMethod = getGetMethod(matcher.group(1));
-                    if (!tryDownloadAndSaveFile(getMethod)) {
-                        checkProblems();
-                        logger.warning(getContentAsString());
-                        throw new ServiceConnectionProblemException();
-                    }
-                }
-                else throw new PluginImplementationException();
-            } else throw new PluginImplementationException();
-        } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
+
         if (contentAsString.contains("This file doesn't exist or has been removed")) {
             throw new URLNotAvailableAnymoreException("This file doesn't exist or has been removed");
         }
+        
         if (contentAsString.contains("All downloading slots are currently filled")) {
             throw new YouHaveToWaitException("All downloading slots are currently filled", 60);
         }
     }
 
-    private String encodeURL(String s) throws UnsupportedEncodingException {
-        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
+    private String encodeURL(String string) throws UnsupportedEncodingException {
+        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", string);
+
         if (matcher.find()) {
             return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
         }
-        return s;
+        
+        return string;
     }
 }

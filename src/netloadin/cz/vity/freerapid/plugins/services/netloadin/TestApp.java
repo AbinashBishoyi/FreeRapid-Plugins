@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://netload.in/dateilDBscvwZ9d.htm"));
+            httpFile.setNewURL(new URL("https://netload.in/dateixY77QPviRV/asd_0.txt.htm"));
             testRun(new NetloadInShareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

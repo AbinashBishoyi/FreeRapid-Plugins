@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.restfile.RestFileServiceImpl"
-        id="restfile.com" vendor="tong2shot" version="2.0.1">
+<plugin class="cz.vity.freerapid.plugins.services.ortofiles.OrtoFilesServiceImpl"
+        id="ortofiles.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?restfile\.(com|ca)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?ortofiles\.com/.+"/>
         <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="restfile.com restfile.ca"/>
-        <attribute id="maxDownloads" value="10"/>
+        <attribute id="services" value="ortofiles.com"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="defaultDownloads" value="1"/>
+        <attribute id="premium" value="false"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
@@ -16,6 +18,6 @@
                 plugin-version="1.0.5" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="restfile.com" path="/" type="code"/>
+        <library id="ortofiles.com" path="/" type="code"/>
     </runtime>
 </plugin>

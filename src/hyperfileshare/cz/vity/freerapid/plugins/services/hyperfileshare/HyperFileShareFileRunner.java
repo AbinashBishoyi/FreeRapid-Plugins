@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.hyperfileshare;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -25,8 +28,10 @@ class HyperFileShareFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
@@ -44,17 +49,20 @@ class HyperFileShareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("downloadkn.gif").toHttpMethod();
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download_btm_site.gif").toGetMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 final String url = PlugUtils.getStringBetween(getContentAsString(), "window.location = \"", "\";");
-                httpMethod = getMethodBuilder().setAction(url).toHttpMethod();
+                httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setAction(url).toGetMethod();
                 //here is the download link extraction
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();//if downloading failed
                     logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
+                    throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
                 }
-            } else throw new ServiceConnectionProblemException();
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

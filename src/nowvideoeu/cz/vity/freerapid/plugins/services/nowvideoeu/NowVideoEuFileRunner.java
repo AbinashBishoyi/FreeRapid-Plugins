@@ -5,10 +5,12 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -60,12 +62,30 @@ class NowVideoEuFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String fileId = PlugUtils.getStringBetween(getContentAsString(), "flashvars.file=\"", "\";");
-            final String fileKey = PlugUtils.getStringBetween(getContentAsString(), "flashvars.filekey=\"", "\";");
-            HttpMethod httpMethod = getVideoMethod(getNowVideoMethodBuilder(fileId, fileKey), true);
+
+            String fileId = fileURL.replaceFirst("http://.+?/video/", "");
+            String fileKey;
+            String content = findParameterContent();
+            Matcher matcher = PlugUtils.matcher("\\.filekey=[\"']?(.+?)[\"']?;", content);
+            if (matcher.find()) {
+                fileKey = matcher.group(1);
+                if (fileKey.contains("\"") || fileKey.contains("'")) { //filekey is string
+                    fileKey = fileKey.replace("\"", "").replace("'", "");
+                } else { //filekey param is stored in variable
+                    matcher = PlugUtils.matcher(String.format("var %s\\s*=\\s*[\"'](.+?)[\"']\\s*;", fileKey), content);
+                    if (!matcher.find()) {
+                        throw new PluginImplementationException("Error parsing file key");
+                    }
+                    fileKey = matcher.group(1);
+                }
+            } else {
+                throw new PluginImplementationException("File key not found");
+            }
+
+            HttpMethod httpMethod = getVideoMethod(getPlayerApiMethodBuilder(fileId, fileKey), true);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
-                MethodBuilder mb = getNowVideoMethodBuilder(fileId, fileKey)
+                MethodBuilder mb = getPlayerApiMethodBuilder(fileId, fileKey)
                         .setParameter("numOfErrors", "1")
                         .setParameter("errorCode", "404")
                         .setParameter("errorUrl", httpMethod.getURI().toString());
@@ -80,7 +100,7 @@ class NowVideoEuFileRunner extends AbstractRunner {
         }
     }
 
-    private MethodBuilder getNowVideoMethodBuilder(String fileId, String fileKey) throws BuildMethodException {
+    private MethodBuilder getPlayerApiMethodBuilder(String fileId, String fileKey) throws BuildMethodException {
         return getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction("http://www.nowvideo.eu/api/player.api.php")
@@ -101,7 +121,7 @@ class NowVideoEuFileRunner extends AbstractRunner {
         checkProblems();
         String videoUrl;
         try {
-            videoUrl = PlugUtils.getStringBetween(getContentAsString(), "url=", "&title=");
+            videoUrl = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "url=", "&title="), "UTF-8");
         } catch (PluginImplementationException e) {
             throw new PluginImplementationException("Video URL not found");
         }
@@ -119,9 +139,34 @@ class NowVideoEuFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("file no longer exists")) {
+        if (contentAsString.contains("file no longer exists") || contentAsString.contains("<h1>404 - Not Found</h1>")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (contentAsString.contains("The file is being converted")) {
+            throw new ServiceConnectionProblemException("The file is being converted");
+        }
+    }
+
+    private String findParameterContent() throws Exception {
+        final Matcher matcher = getMatcherAgainstContent("eval([^\r\n]+)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Parameters not found (1)");
+        }
+        String content = ScriptUtils.evaluateJavaScriptToString(matcher.group(1));
+
+        String[] split = content.split("eval");
+        if (split.length != 2) {
+            throw new PluginImplementationException("Parameters not found (2)");
+        }
+        content = ScriptUtils.evaluateJavaScriptToString(split[1]);
+
+        split = content.split("eval");
+        if (split.length != 3) {
+            throw new PluginImplementationException("Parameters not found (3)");
+        }
+        content = ScriptUtils.evaluateJavaScriptToString(split[2]);
+
+        return content;
     }
 
 }

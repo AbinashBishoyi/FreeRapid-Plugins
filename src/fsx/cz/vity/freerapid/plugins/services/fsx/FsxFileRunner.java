@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -161,18 +162,28 @@ class FsxFileRunner extends AbstractRunner {
             Pattern pat = Pattern.compile("\\<strong\\>(\\d+)\\<\\/strong\\>\\<\\/font\\> felhaszn");
 
             // Now wait until the Download button activates i.e. "button-letoltes2.gif" is available
+            httpFile.setState(DownloadState.WAITING);
             do {
                 Matcher m = pat.matcher(contents);
                 if (m.find()) {
                     String s = m.group(1);
                     logger.info("Users to wait for: " + s);
+                    // How to write into the "Progress" column?
+                    // ??????? httpFile.setDescription(s + " users");
                 } else {
                     throw new ServiceConnectionProblemException("Number of waiting users not found.");
                 }
                 // !!! The argument for sleep should be taken from the response header
                 // there you see:
                 // <META HTTP-EQUIV="Refresh" CONTENT="15; URL=download.php">
-                Thread.sleep(15 * 1000);
+                // Now the Progress Column counts down from 15, and this is repeated
+                // until the number of waiting users is low enough.
+                // It would be nice to overload the Progress Cell so,
+                // that the number of waiting users would be displayed
+                downloadTask.sleep(15);
+                // Instead of the line above it would be
+                // myProgressCell.setValue(s + " users");
+                // Thread.sleep(15 * 1000);
                 makeRequest(method);
                 contents = getContentAsString();
                 // Get the background gif image, to make happy the server
@@ -212,6 +223,7 @@ class FsxFileRunner extends AbstractRunner {
             httpMethod.removeRequestHeader("Content-Length");
 
             //here is the download link extraction
+            httpFile.setState(DownloadState.GETTING);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

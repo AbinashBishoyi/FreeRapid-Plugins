@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.fsx.FsxServiceImpl"
-        id="fsx.hu" vendor="Hosszu" version="1.0.1">
+        id="fsx.hu" vendor="Hosszu" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?fsx\.hu/.+|http://s\d\.fsx\.hu/.+"/>
         <attribute id="minver" value="0.851"/>
@@ -9,7 +9,7 @@
         <attribute id="services" value="fsx.hu"/>
         <!-- Max count of parallel downloads -->
         <attribute id="maxDownloads" value="1"/>
-        <attribute id="faviconImage" value="resources/fsx.png"/>
+        <attribute id="faviconImage" value="resources/fsx_free.png"/>
     </attributes>
 
     <runtime>

@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="filestore.com.ua" version="0.0.5" vendor="Saikek"
+        class="cz.vity.freerapid.plugins.services.filestoreua.FileStoreUaServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?filestore\.com\.ua/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="filestore.com.ua"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <requires>
+        <import plugin-id="recaptcha.com" plugin-version="1.0" match="greater-or-equal"/>
+    </requires>
+    <runtime>
+        <library id="filestore.com.ua" path="/" type="code"/>
+    </runtime>
+</plugin>

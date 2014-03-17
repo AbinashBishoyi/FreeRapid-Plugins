@@ -26,6 +26,7 @@ class #fullWithoutDot#FileRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else
             throw new PluginImplementationException();

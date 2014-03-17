@@ -68,6 +68,9 @@ class TurtleShareFileRunner extends AbstractRunner {
         if (contentAsString.contains("File Not Found") || contentAsString.contains("We do not know this file")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if (contentAsString.contains("Bandwidth Limit Reached")) {
+            throw new ErrorDuringDownloadingException("You have reached your download limit or this file is too large to download within your limit");
+        }
     }
 
 }

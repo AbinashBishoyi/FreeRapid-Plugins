@@ -35,7 +35,7 @@ class FilePostFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "/\">", " - ");
-        PlugUtils.checkFileSize(httpFile, content, " - ", "[/url]\" class=\"inp_text\"/>");
+        PlugUtils.checkFileSize(httpFile, content, "<span>Size:</span>", "</li>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

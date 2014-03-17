@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -23,6 +24,7 @@ import java.util.regex.Matcher;
  * @author tong2shot
  */
 public class SolveMediaCaptcha {
+    public final static String THEME_UNDEFINED = "solvemedia_theme_undefined";
     private final static Logger logger = Logger.getLogger(SolveMediaCaptcha.class.getName());
     private final static String SOLVEMEDIA_CAPTCHA_URL = "http://api.solvemedia.com/papi";
     private final static String SOLVEMEDIA_CAPTCHA_SECURE_URL = "https://api-secure.solvemedia.com/papi";
@@ -35,28 +37,32 @@ public class SolveMediaCaptcha {
     private String response;
     private String mediaType;
 
-    public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport, boolean secure) throws Exception {
+    public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport, boolean secure, String theme) throws Exception {
         this.client = client;
         this.captchaSupport = captchaSupport;
         baseUrl = secure ? SOLVEMEDIA_CAPTCHA_SECURE_URL : SOLVEMEDIA_CAPTCHA_URL;
 
+        Matcher matcher;
+        if (theme.equals(THEME_UNDEFINED)) {
+            matcher = Pattern.compile("var ACPuzzleOptions = \\{.*?theme:\\s*'(.+?)'", Pattern.DOTALL).matcher(client.getContentAsString());
+            if (!matcher.find()) {
+                theme = "white";
+            } else {
+                theme = matcher.group(1);
+            }
+        }
+
         //challange.script can be challange.ajax
-        HttpMethod httpMethod = new MethodBuilder(client)
-                .setAction(baseUrl + "/challenge.script?k=" + publicKey)
-                .toGetMethod();
-        setDefaultsForMethod(httpMethod);
+        HttpMethod httpMethod = getSolveMediaGetMethod(baseUrl + "/challenge.script?k=" + publicKey);
         client.makeRequest(httpMethod, true);
 
         final String magic = findString("magic:\\s*'(.+?)',", "Magic", client.getContentAsString());
-        final String chalApi = findString("chalapi:\\s*'(.+?)',", "Challange API", client.getContentAsString());
-        final String chalStamp = findString("chalstamp:\\s*(\\d+),", "Challange Stamp", client.getContentAsString());
+        final String chalApi = findString("chalapi:\\s*'(.+?)',", "Challenge API", client.getContentAsString());
+        final String chalStamp = findString("chalstamp:\\s*(\\d+),", "Challenge Stamp", client.getContentAsString());
         final String size = findString("size:\\s*'(.+?)',", "Size", client.getContentAsString());
 
         /* The actual method is requesting _puzzle.js to construct fwv and ts params, but we construct them manually instead.
-        httpMethod = new MethodBuilder(client)
-                .setAction(baseUrl + "/_puzzle.js")
-                .toGetMethod();
-        setDefaultsForMethod(httpMethod);
+        httpMethod = getSolveMediaGetMethod(baseUrl + "/_puzzle.js");
         client.makeRequest(httpMethod, true);
 
         final String puzzleJsContent = client.getContentAsString();
@@ -74,15 +80,11 @@ public class SolveMediaCaptcha {
         //chJsParams.put("ts", findString("ts=(\\d+)'", "ts", puzzleJsContent));
         chJsParams.put("ts", String.valueOf(System.currentTimeMillis() / 1000));
         chJsParams.put("ct", chalStamp);
-        chJsParams.put("th", "red");
+        chJsParams.put("th", theme);
         chJsParams.put("r", String.valueOf(Math.random()));
-        Matcher matcher;
         int mediaTypeCounter = 0;
         do {
-            httpMethod = new MethodBuilder(client)
-                    .setAction(baseUrl + "/_challenge.js?" + chJsParamsToString(chJsParams))
-                    .toGetMethod();
-            setDefaultsForMethod(httpMethod);
+            httpMethod = getSolveMediaGetMethod(baseUrl + "/_challenge.js?" + chJsParamsToString(chJsParams));
             client.makeRequest(httpMethod, true);
             matcher = PlugUtils.matcher("\"mediatype\"\\s*:\\s*\"(.+?)\",", client.getContentAsString());
             if (!matcher.find()) {
@@ -103,6 +105,10 @@ public class SolveMediaCaptcha {
         }
         challenge = matcher.group(1);
         askForCaptcha();
+    }
+
+    public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport, boolean secure) throws Exception {
+        this(publicKey, client, captchaSupport, secure, THEME_UNDEFINED);
     }
 
     public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport) throws Exception {
@@ -138,24 +144,15 @@ public class SolveMediaCaptcha {
 
     private void askForCaptcha() throws Exception {
         final String imgUrl = baseUrl + "/media?c=" + challenge + ";w=300;h=150;fg=000000;bg=f8f8f8";
-        HttpMethod httpMethod = new MethodBuilder(client)
-                .setAction(imgUrl)
-                .toGetMethod();
-        setDefaultsForMethod(httpMethod);
+        final HttpMethod httpMethod = getSolveMediaGetMethod(imgUrl);
         try {
-            final InputStream stream = client.makeRequestForFile(httpMethod);
-            if (stream == null) {
-                throw new FailedToLoadCaptchaPictureException();
-            }
             if (mediaType.equals("img") || mediaType.equals("imgmap")) {
-                response = captchaSupport.askForCaptcha(captchaSupport.loadCaptcha(stream));
-                if (response == null) {
-                    throw new CaptchaEntryInputMismatchException("No Input");
+                final InputStream stream = client.makeRequestForFile(httpMethod);
+                if (stream == null) {
+                    throw new FailedToLoadCaptchaPictureException();
                 }
+                response = captchaSupport.askForCaptcha(captchaSupport.loadCaptcha(stream));
             } else if (mediaType.equals("html")) {
-                httpMethod = new MethodBuilder(client)
-                        .setAction(imgUrl)
-                        .toGetMethod();
                 client.makeRequest(httpMethod, true);
                 logger.info(client.getContentAsString());
                 if (client.getContentAsString().contains("var slog =")) { // cryptic HTML captcha + recognizer
@@ -171,12 +168,12 @@ public class SolveMediaCaptcha {
                     response = new String(captchaResponse);
                 } else { // canvas HTML captcha
                     response = captchaSupport.askForCaptcha(drawHTMLCaptcha(client.getContentAsString(), 300, 150, Color.blue));
-                    if (response == null) {
-                        throw new CaptchaEntryInputMismatchException("No Input");
-                    }
                 }
             } else {
                 throw new ServiceConnectionProblemException("Captcha media type 'img' or 'html' not found");
+            }
+            if (response == null) {
+                throw new CaptchaEntryInputMismatchException("No Input");
             }
         } finally {
             httpMethod.abort();
@@ -228,7 +225,10 @@ public class SolveMediaCaptcha {
         return matcher.group(1);
     }
 
-    private void setDefaultsForMethod(HttpMethod method) {
+    private HttpMethod getSolveMediaGetMethod(String action) throws BuildMethodException {
+        final HttpMethod method = new MethodBuilder(client)
+                .setAction(action)
+                .toGetMethod();
         method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20100101 Firefox/17.0");
         method.setRequestHeader("Accept", "*/*");
         method.setRequestHeader("Accept-Language", "en-US,en;q=0.5");
@@ -236,6 +236,7 @@ public class SolveMediaCaptcha {
         method.removeRequestHeader("Accept-Charset");
         method.removeRequestHeader("Keep-Alive");
         method.removeRequestHeader("Referer");
+        return method;
     }
 
     public String getChallenge() {

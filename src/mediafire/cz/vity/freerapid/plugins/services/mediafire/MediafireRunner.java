@@ -63,12 +63,13 @@ class MediafireRunner extends AbstractRunner {
 
 
                 if (makeRequest(method)) {
-                    matcher = getMatcherAgainstContent("href=.\"http://\"([^\"]*)\"");
 
-                    if (!matcher.find()) {
-                        throw new PluginImplementationException();
-                    }
-                    String finalLink = "http://" + parseLink(matcher.group(1));
+                    String u2 = PlugUtils.getStringBetween(getContentAsString(), "key to support (", ")\"");
+                    String ml = PlugUtils.getStringBetween(getContentAsString(), "var mL='", "';");
+                    String mh = PlugUtils.getStringBetween(getContentAsString(), "var mH='" , "';");
+                    String my = PlugUtils.getStringBetween(getContentAsString(), "var mY='" , "';");
+
+                    String finalLink = "http://" + ml + "/" + u2 + "g/" + mh + "/" + my;
                     logger.info("Final URL " + finalLink);
 
                     GetMethod method2 = getGetMethod(finalLink);

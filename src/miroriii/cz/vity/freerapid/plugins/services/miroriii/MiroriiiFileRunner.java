@@ -34,6 +34,7 @@ class MiroriiiFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        fileURL = fileURL.replace("miroriii", "miroriii");
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -47,34 +48,35 @@ class MiroriiiFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        fileURL = fileURL.replace("miroriii", "miroriii");
         logger.info("Starting download in TASK " + fileURL);
         setConfig();
         prepareMaps();
-        parseWebsite();
-        /*final GetMethod getMethod = getGetMethod(fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();
-            for (final String service : config.getServices()) {
-                if (checkService(service)) return;
+            if (parseWebsite()) {
+                return;
             }
             throw new URLNotAvailableAnymoreException("File not available anymore; All links expired");
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
-        }*/
+        }
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Désolé ce fichier est introuvable.") || content.contains("Please select file") || content.contains("<h1>Not Found</h1>")) {
+        if (content.contains("Désolé ce fichier est introuvable.")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String content = getContentAsString().replace("mo", "mb");
-        PlugUtils.checkName(httpFile, content, "<span class=\"fichier\">", "</span></h1>");
+        final String content = getContentAsString().replace(" go", " gb").replace(" mo", " mb").replace(" ko", " kb");
+        PlugUtils.checkName(httpFile, content, "Nom du fichier :</td>\n" +
+                "    <td class=\"right\">", "</td>");
         PlugUtils.checkFileSize(httpFile, content, "Taille du fichier :</td>\n" +
                 "    <td  class=\"right\">\n" +
                 "      ", "    </td>");
@@ -140,12 +142,14 @@ class MiroriiiFileRunner extends AbstractRunner {
     }
 
     //Add
-    private void parseWebsite() throws Exception {
+    private boolean parseWebsite() throws Exception {
         final String codehtml = getContentAsString();
-        List<URI> links = new LinkedList<URI>();
-        List<String> matchList = new ArrayList<String>();
+        final List<URI> links = new LinkedList<URI>();
+        final List<String> matchList = new ArrayList<String>();
         boolean found = false;
         try {
+            links.clear();
+            matchList.clear();
             Pattern regex = Pattern.compile("\\b(https?|ftp)://([-A-Z0-9.]+)(/[-A-Z0-9+&@#/%=~_|!:,.;]*)?(\\?[A-Z0-9+&@#/%=~_|!:,.;]*)?", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
             Matcher regexMatcher = regex.matcher(codehtml);
             while (regexMatcher.find()) {
@@ -159,12 +163,13 @@ class MiroriiiFileRunner extends AbstractRunner {
                     while (regexMatcher.find()) {
                         if (checkService(service, test)) {
                             logger.info("New URL: " + test);
-                            if (!config.getAddLink()) {
+                            if (config.getAddLink() || service.contains("RapidShare.com")) {
+                                links.add(new URI(test));
+                            } else {
                                 httpFile.setNewURL(new URL(test));
                                 httpFile.setPluginID("");
                                 httpFile.setState(DownloadState.QUEUED);
-                            } else {
-                                links.add(new URI(test));
+                                return true;
                             }
                             found = true;
                         }
@@ -178,10 +183,10 @@ class MiroriiiFileRunner extends AbstractRunner {
         }
         if (found) {
             getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, links);
-        } else {
-            throw new URLNotAvailableAnymoreException("File not available anymore; All links expired");
-            //throw new PluginImplementationException("Cannot parse links");
+            links.clear();
+            return true;
         }
+        return false;
     }
     //End Add
 

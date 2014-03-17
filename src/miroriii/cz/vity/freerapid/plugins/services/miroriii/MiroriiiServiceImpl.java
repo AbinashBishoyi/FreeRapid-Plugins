@@ -18,7 +18,7 @@ public class MiroriiiServiceImpl extends AbstractFileShareService {
 
     @Override
     public int getMaxDownloadsFromOneIP() {
-        return 9;
+        return 1;
     }
 
     @Override

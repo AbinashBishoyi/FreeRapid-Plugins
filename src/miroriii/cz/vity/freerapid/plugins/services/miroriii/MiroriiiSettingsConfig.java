@@ -5,7 +5,7 @@ package cz.vity.freerapid.plugins.services.miroriii;
  */
 public class MiroriiiSettingsConfig {
     private boolean checkDownloadService;
-    private boolean addLink;
+    private boolean AddLink;
     private String[] services;
 
     public void setDefault() {
@@ -18,8 +18,8 @@ public class MiroriiiSettingsConfig {
         this.checkDownloadService = checkDownloadService;
     }
 
-    public void setAddLink(final boolean addLink) {
-        this.addLink = addLink;
+    public void setAddLink(final boolean AddLink) {
+        this.AddLink = AddLink;
     }
 
     public boolean getCheckDownloadService() {
@@ -27,7 +27,7 @@ public class MiroriiiSettingsConfig {
     }
 
     public boolean getAddLink() {
-        return this.addLink;
+        return this.AddLink;
     }
 
     public void setServices(final String[] services) {

@@ -194,6 +194,7 @@
         <ant dir="${src.dir}/metadivx" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/microsoftdownloads" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/mimima" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/minus" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/miroriii" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/missupload" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/movielibrary" antfile="build.xml" inheritall="false"/>

@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="uloz.cz" version="1.01" vendor="thonda"
+        class="cz.vity.freerapid.plugins.services.ulozcz.UlozCzServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?uloz\.cz/show/file/.+"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="uloz.cz"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="uloz.cz" path="/" type="code"/>
+    </runtime>
+</plugin>

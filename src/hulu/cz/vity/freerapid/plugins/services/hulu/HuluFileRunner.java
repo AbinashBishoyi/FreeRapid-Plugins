@@ -1,10 +1,6 @@
 package cz.vity.freerapid.plugins.services.hulu;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.cryptography.CryptographySupport;
-import cz.vity.freerapid.plugins.services.cryptography.Engine;
-import cz.vity.freerapid.plugins.services.cryptography.Mode;
-import cz.vity.freerapid.plugins.services.cryptography.Padding;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
@@ -12,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.utilities.LogUtils;
+import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.io.UnsupportedEncodingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -40,22 +36,23 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
     private final static String CID_KEY = "48555bbbe9f41981df49895f44c83993a09334d02d17e7a76b237d04c084e342";
     private final static String EID_CONST = "MAZxpK3WwazfARjIpSXKQ9cmg9nPe5wIOOfKuBIfz7bNdat6gQKHj69ZWNWNVB1";
     private final static String MD5_SALT = "yumUsWUfrAPraRaNe2ru2exAXEfaP6Nugubepreb68REt7daS79fase9haqar9sa";
-    private final static String DECRYPT_KEY = "625298045c1db17fe3489ba7f1eba2f208b3d2df041443a72585038e24fc610b";
-    private final static String DECRYPT_IV = "V@6i`q6@FTjdwtui";
-
-    private final static CryptographySupport crypto;
+    private final static String DECRYPT_KEY_STR = "625298045c1db17fe3489ba7f1eba2f208b3d2df041443a72585038e24fc610b";
+    private final static String DECRYPT_IV_STR = "V@6i`q6@FTjdwtui";
+    private final static byte[] DECRYPT_KEY;
+    private final static byte[] DECRYPT_IV;
 
     static {
         try {
-            final byte[] key = Hex.decodeHex(DECRYPT_KEY.toCharArray());
-            final byte[] iv = DECRYPT_IV.getBytes("UTF-8");
+            final byte[] key = Hex.decodeHex(DECRYPT_KEY_STR.toCharArray());
+            final byte[] iv = DECRYPT_IV_STR.getBytes("UTF-8");
             for (int i = 0; i < key.length; i++) {
                 key[i] = (byte) (key[i] ^ 42);
             }
             for (int i = 0; i < iv.length; i++) {
                 iv[i] = (byte) (iv[i] ^ 1);
             }
-            crypto = new CryptographySupport().setEngine(Engine.AES).setMode(Mode.CBC).setPadding(Padding.PKCS7).setKey(key).setIV(iv);
+            DECRYPT_KEY = key;
+            DECRYPT_IV = iv;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -215,19 +212,6 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
         }
     }
 
-    private static byte[] md5(final String data) {
-        try {
-            final MessageDigest digest = MessageDigest.getInstance("MD5");
-            digest.update(data.getBytes("UTF-8"));
-            return digest.digest();
-        } catch (NoSuchAlgorithmException e) {
-            LogUtils.processException(logger, e);
-        } catch (UnsupportedEncodingException e) {
-            LogUtils.processException(logger, e);
-        }
-        return null;
-    }
-
     private static String getContentId(final String text) {
         Thing _local3 = R.AK();
         R.sdk(CID_KEY, CID_KEY.length() * 4, _local3);
@@ -244,22 +228,22 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
     }
 
     private static String cidToEid(final String cid) throws Exception {
-        return new String(Base64.encodeBase64(md5(cid + EID_CONST)), "UTF-8").replace('+', '-').replace('/', '_').replace("=", "");
+        return new String(Base64.encodeBase64(DigestUtils.md5(cid + EID_CONST), false, true), "UTF-8");
     }
 
     private static String getContentSelectUrl(final String pid) {
-        final byte[] hash = md5(pid + MD5_SALT);
-        final String auth = new String(Hex.encodeHex(hash));
+        final String auth = DigestUtils.md5Hex(pid + MD5_SALT);
         return "http://s.hulu.com/select.ashx?pid=" + pid + "&auth=" + auth + "&v=713434170&np=1&pp=hulu&dp_id=hulu&cb=" + new Random().nextInt(1000);
     }
 
     private static String decryptContentSelect(final String toDecrypt) throws Exception {
-        return crypto.decrypt(toDecrypt);
+        final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(DECRYPT_KEY, "AES"), new IvParameterSpec(DECRYPT_IV));
+        return new String(cipher.doFinal(Hex.decodeHex(toDecrypt.toCharArray())), "UTF-8");
     }
 
     private static String getSessionId() {
-        final byte[] hash = md5(String.valueOf(System.currentTimeMillis() + new Random().nextInt()));
-        return new String(Hex.encodeHex(hash)).toUpperCase(Locale.ENGLISH);
+        return DigestUtils.md5Hex(String.valueOf(System.currentTimeMillis() + new Random().nextInt())).toUpperCase(Locale.ENGLISH);
     }
 
 }

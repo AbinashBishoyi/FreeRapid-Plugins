@@ -1,16 +1,16 @@
 package cz.vity.freerapid.plugins.services.channel4;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.cryptography.CryptographySupport;
-import cz.vity.freerapid.plugins.services.cryptography.Engine;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 class Channel4FileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(Channel4FileRunner.class.getName());
     private final static byte[] DECRYPT_KEY = "STINGMIMI".getBytes(Charset.forName("UTF-8"));
-    private final static CryptographySupport crypto = new CryptographySupport().setEngine(Engine.Blowfish).setKey(DECRYPT_KEY);
     private static SwfVerificationHelper helper;
 
     @Override
@@ -128,8 +127,10 @@ class Channel4FileRunner extends AbstractRtmpRunner {
 
     private static String getAuthParams(final String content, final boolean ak) throws Exception {
         final String token = PlugUtils.getStringBetween(content, "<token>", "</token>");
-        final byte[] decrypted = crypto.decrypt(Base64.decodeBase64(token.getBytes("UTF-8")));
-        final String h = new String(decrypted, "UTF-8").trim().replace('+', '-').replace('/', '_').replace("=", "");
+        final Cipher cipher = Cipher.getInstance("Blowfish/ECB/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(DECRYPT_KEY, "Blowfish"));
+        final byte[] decrypted = cipher.doFinal(Base64.decodeBase64(token));
+        final String h = new String(decrypted, "UTF-8").replace('+', '-').replace('/', '_').replace("=", "");
         logger.info("h = " + h);
         if (ak) {
             final String aifp = PlugUtils.getStringBetween(content, "<fingerprint>", "</fingerprint>");

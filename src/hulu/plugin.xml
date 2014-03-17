@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hulu.com" version="1.0.3" vendor="ntoskrnl"
+<plugin id="hulu.com" version="1.0.4" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.services.hulu.HuluServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?hulu\.com/watch/.+"/>
@@ -11,8 +11,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import plugin-id="rtmp" plugin-version="1.0.8" match="greater-or-equal"/>
-        <import plugin-id="cryptography" plugin-version="1.0" match="greater-or-equal"/>
+        <import plugin-id="rtmp" plugin-version="2.0.0" match="greater-or-equal"/>
     </requires>
     <runtime>
         <library id="hulu.com" path="/" type="code"/>

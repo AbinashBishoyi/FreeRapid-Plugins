@@ -98,10 +98,11 @@ class ZippyShareFileRunner extends AbstractRunner {
             httpFile.setFileName(matcher.group(1));
         }
         matcher = getMatcherAgainstContent("Size:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File size not found");
+        if (matcher.find()) {
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+        } else {
+            logger.info("File size not found");
         }
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

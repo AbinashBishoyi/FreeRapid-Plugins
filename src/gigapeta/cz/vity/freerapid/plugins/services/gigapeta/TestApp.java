@@ -16,9 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL(/*"http://gigapeta.com/dl/392427ad2d5f7"*/
+            //httpFile.setNewURL(new URL(/*"http://gigapeta.com/dl/392427ad2d5f7"*/
             		/*"http://gigapeta.com/dl/71696a9dfea1"*/
-            		"http://gigapeta.com/dl/520551a25c404"));
+            //		"http://gigapeta.com/dl/520551a25c404"));
+            httpFile.setNewURL(new URL("http://gigapeta.com/dl/1958272a2b3b68"));
+            //httpFile.setNewURL(new URL("http://gigapeta.com/dl/557999ad11dd7"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

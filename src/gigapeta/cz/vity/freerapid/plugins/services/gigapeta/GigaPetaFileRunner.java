@@ -22,8 +22,8 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -33,102 +33,112 @@ import java.util.regex.Matcher;
  * @author Thumb
  */
 class GigaPetaFileRunner extends AbstractRunner {
-	private final static Logger logger = Logger.getLogger(GigaPetaFileRunner.class.getName());
+    private final static Logger logger = Logger.getLogger(GigaPetaFileRunner.class.getName());
 
 
-	@Override
-	public void runCheck() throws Exception { //this method validates file
-		super.runCheck();
-		final GetMethod getMethod = getGetMethod(fileURL);//make first request
-		if (!makeRedirectedRequest(getMethod))
-			throw new ServiceConnectionProblemException();
+    @Override
+    public void runCheck() throws Exception { //this method validates file
+        super.runCheck();
 
-		checkFileProblems();
-		checkNameAndSize();//ok let's extract file name and size from the page
-	}
+        HttpMethod getMethod = getGetMethod(fileURL);//make first request
+        if (!makeRedirectedRequest(getMethod))
+            throw new ServiceConnectionProblemException();
 
-	private void checkNameAndSize() throws ErrorDuringDownloadingException {
-		final Matcher name_match=PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>", getContentAsString());
-		if(!name_match.find())
-			unimplemented();
+        getMethod = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction("http://gigapeta.com/?lang=ru") //make request in RU
+                .toGetMethod();
 
-		httpFile.setFileName(name_match.group(1));
+        if (!makeRedirectedRequest(getMethod))
+            throw new ServiceConnectionProblemException();
 
-		final Matcher size_match=PlugUtils.matcher("Size(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
-		if(!size_match.find())
-			unimplemented();
+        checkFileProblems();
+        checkNameAndSize();//ok let's extract file name and size from the page
+    }
 
-		httpFile.setFileSize(PlugUtils.getFileSizeFromString(size_match.group(1)));
-		httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-	}
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final Matcher name_match = PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>", getContentAsString());
+        if (!name_match.find())
+            unimplemented();
 
-	/**
-	 * @throws PluginImplementationException
-	 *
-	 */
-	private void unimplemented() throws PluginImplementationException {
-		logger.warning(getContentAsString());
-		throw new PluginImplementationException();
-	}
+        httpFile.setFileName(name_match.group(1));
 
-	@Override
-	public void run() throws Exception {
-		super.run();
-		logger.info("Starting download in TASK " + fileURL);
-		runCheck();
-		checkDownloadProblems();
+        final Matcher size_match = PlugUtils.matcher("Размер(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
+        if (!size_match.find())
+            unimplemented();
 
-		downloadTask.sleep(10);
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size_match.group(1)));
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
 
-		String captcha_id=String.format("%d", (int)Math.ceil(Math.random()*1e8));
+    /**
+     * @throws PluginImplementationException
+     */
+    private void unimplemented() throws PluginImplementationException {
+        logger.warning(getContentAsString());
+        throw new PluginImplementationException();
+    }
 
-		final HttpMethod httpMethod = getMethodBuilder()
-			.setParameter("captcha_key", captcha_id)
-			.setParameter("captcha", getCaptcha(captcha_id))
-			.setParameter("download", "Скачать")
-			.setAction(fileURL)
-			.toPostMethod();
+    @Override
+    public void run() throws Exception {
+        super.run();
+        logger.info("Starting download in TASK " + fileURL);
+        runCheck();
+        checkDownloadProblems();
 
-		//here is the download link extraction
-		if (!tryDownloadAndSaveFile(httpMethod)) {
-			checkProblems();//if downloading failed
-			unimplemented();
-		}
-	}
+        String contentAsString = getContentAsString();
+        final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "Ждите, осталось <b>", "</b>", TimeUnit.SECONDS);
+        downloadTask.sleep(waitTime);
 
-	private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-		final String contentAsString = getContentAsString();
-		if (contentAsString.contains("<div id=\"page_error\">")) {
-			if(contentAsString.contains("Цифры с картинки введены неверно"))
-				throw new CaptchaEntryInputMismatchException();
-			if(PlugUtils.matcher("Все потоки для IP [0-9.]* заняты", contentAsString).find())
-				throw new YouHaveToWaitException("Download streams for your IP exhausted", 1800);
-			if(contentAsString.contains("Внимание! Данный файл был удален"))
-				throw new URLNotAvailableAnymoreException("File was deleted");
-			unimplemented();
-		}
-	}
+        String captcha_id = String.format("%d", (int) Math.ceil(Math.random() * 1e8));
 
-	private void checkFileProblems() throws ErrorDuringDownloadingException {
-		Matcher err_match=PlugUtils.matcher("<h1 class=\"big_error\">([^>]+)</h1>", getContentAsString());
-		if(err_match.find()) {
-			if(err_match.group(1).equals("404"))
-				throw new URLNotAvailableAnymoreException("File not found");
-			unimplemented();
-		}
-	}
+        final HttpMethod httpMethod = getMethodBuilder(contentAsString)
+                .setParameter("captcha_key", captcha_id)
+                .setParameter("captcha", getCaptcha(captcha_id))
+                .setParameter("download", "Скачать")
+                .setAction(fileURL)
+                .toPostMethod();
 
-	private void checkProblems() throws ErrorDuringDownloadingException {
-		checkFileProblems();
-		checkDownloadProblems();
-	}
+        //here is the download link extraction
+        if (!tryDownloadAndSaveFile(httpMethod)) {
+            checkProblems();//if downloading failed
+            unimplemented();
+        }
+    }
 
-	private String getCaptcha(String id) throws ErrorDuringDownloadingException {
-		final CaptchaSupport captchas=getCaptchaSupport();
-		final String ret=captchas.getCaptcha("http://gigapeta.com/img/captcha.gif?x="+id);
-		if (ret==null)
-			throw new CaptchaEntryInputMismatchException();
-		return ret;
-	}
+    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        final String contentAsString = getContentAsString();
+        if (contentAsString.contains("<div id=\"page_error\">")) {
+            if (contentAsString.contains("Цифры с картинки введены неверно"))
+                throw new CaptchaEntryInputMismatchException();
+            if (PlugUtils.matcher("Все потоки для IP [0-9.]* заняты", contentAsString).find())
+                throw new YouHaveToWaitException("Download streams for your IP exhausted", 1800);
+            if (contentAsString.contains("Внимание! Данный файл был удален"))
+                throw new URLNotAvailableAnymoreException("File was deleted");
+            unimplemented();
+        }
+    }
+
+    private void checkFileProblems() throws ErrorDuringDownloadingException {
+        Matcher err_match = PlugUtils.matcher("<h1 class=\"big_error\">([^>]+)</h1>", getContentAsString());
+        if (err_match.find()) {
+            if (err_match.group(1).equals("404"))
+                throw new URLNotAvailableAnymoreException("File not found");
+            unimplemented();
+        }
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        checkFileProblems();
+        checkDownloadProblems();
+    }
+
+    private String getCaptcha(String id) throws ErrorDuringDownloadingException {
+        final CaptchaSupport captchas = getCaptchaSupport();
+        final String ret = captchas.getCaptcha("http://gigapeta.com/img/captcha.gif?x=" + id);
+        if (ret == null)
+            throw new CaptchaEntryInputMismatchException();
+        return ret;
+    }
 
 }

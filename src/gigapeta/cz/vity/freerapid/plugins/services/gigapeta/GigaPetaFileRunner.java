@@ -32,17 +32,19 @@ class GigaPetaFileRunner extends AbstractRunner {
 	}
 
 	private void checkNameAndSize() throws ErrorDuringDownloadingException {
-		final Matcher name_match=PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>", getContentAsString());
-		if(!name_match.find())
+		//final Matcher name_match=PlugUtils.matcher("<tr class=\"name\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>", getContentAsString());
+		final Matcher namefile_match=PlugUtils.matcher("<table id=\"download\">(?:\\s|<[^>]*>)*(.+?)\\s*</t[rd]>(?:\\s|<[^>]*>)*(?:[^<>]+)\\s*(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
+		if(!namefile_match.find())
 			unimplemented();
 
-		httpFile.setFileName(name_match.group(1));
+		httpFile.setFileName(namefile_match.group(1));
 
+		/* This code is not necessary - new regex cat file size
 		final Matcher size_match=PlugUtils.matcher("Размер(?:\\s|<[^>]*>)*([^<>]+)\\s*<", getContentAsString());
 		if(!size_match.find())
 			unimplemented();
-
-		httpFile.setFileSize(PlugUtils.getFileSizeFromString(size_match.group(1)));
+		/**/
+		httpFile.setFileSize(PlugUtils.getFileSizeFromString(namefile_match.group(2)));
 		httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 	}
 
@@ -69,7 +71,7 @@ class GigaPetaFileRunner extends AbstractRunner {
 		final HttpMethod httpMethod = getMethodBuilder()
 			.setParameter("captcha_key", captcha_id)
 			.setParameter("captcha", getCaptcha(captcha_id))
-			.setParameter("download", "Скачать")
+			.setParameter("download", "Ð¡ÐºÐ°Ñ‡Ð°Ñ‚ÑŒ")
 			.setAction(fileURL)
 			.toPostMethod();
 
@@ -83,11 +85,11 @@ class GigaPetaFileRunner extends AbstractRunner {
 	private void checkDownloadProblems() throws ErrorDuringDownloadingException {
 		final String contentAsString = getContentAsString();
 		if (contentAsString.contains("<div id=\"page_error\">")) {
-			if(contentAsString.contains("Цифры с картинки введены неверно"))
+			if(contentAsString.contains("Ð¦Ð¸Ñ„Ñ€Ñ‹ Ñ� ÐºÐ°Ñ€Ñ‚Ð¸Ð½ÐºÐ¸ Ð²Ð²ÐµÐ´ÐµÐ½Ñ‹ Ð½ÐµÐ²ÐµÑ€Ð½Ð¾"))
 				throw new CaptchaEntryInputMismatchException();
-			if(PlugUtils.matcher("Все потоки для IP [0-9.]* заняты", contentAsString).find())
+			if(PlugUtils.matcher("Ð’Ñ�Ðµ Ð¿Ð¾Ñ‚Ð¾ÐºÐ¸ Ð´Ð»Ñ� IP [0-9.]* Ð·Ð°Ð½Ñ�Ñ‚Ñ‹", contentAsString).find())
 				throw new YouHaveToWaitException("Download streams for your IP exhausted", 1800);
-			if(contentAsString.contains("Внимание! Данный файл был удален"))
+			if(contentAsString.contains("Ð’Ð½Ð¸Ð¼Ð°Ð½Ð¸Ðµ! Ð”Ð°Ð½Ð½Ñ‹Ð¹ Ñ„Ð°Ð¹Ð» Ð±Ñ‹Ð» ÑƒÐ´Ð°Ð»ÐµÐ½"))
 				throw new URLNotAvailableAnymoreException("File was deleted");
 			unimplemented();
 		}

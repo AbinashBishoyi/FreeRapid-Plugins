@@ -55,23 +55,32 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String playName = getPlayName();
-            final Random rnd = new Random();
-            method = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction("http://embed.livebox.cz/iprimaplay/player-embed-v2.js")
-                    .setParameter("__tok" + rnd.nextInt(0x40000000) + "__", String.valueOf(rnd.nextInt(0x40000000)))
-                    .toGetMethod();
-            if (!makeRedirectedRequest(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
+            if (getContentAsString().contains("http://flash.stream.cz/")) {
+                final String id = PlugUtils.getStringBetween(getContentAsString(), "&cdnID=", "&");
+                method = getGetMethod("http://cdn-dispatcher.stream.cz/?id=" + id);
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+            } else {
+                final String playName = getPlayName();
+                final Random rnd = new Random();
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction("http://embed.livebox.cz/iprimaplay/player-embed-v2.js")
+                        .setParameter("__tok" + rnd.nextInt(0x40000000) + "__", String.valueOf(rnd.nextInt(0x40000000)))
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                final String auth = PlugUtils.getStringBetween(getContentAsString(), "'?auth='+\"\"+'", "';", 2);
+                final RtmpSession rtmpSession = new RtmpSession("bcastmw.livebox.cz", 80, "iprima_token?auth=" + auth, playName);
+                rtmpSession.getConnectParams().put("pageUrl", fileURL);
+                rtmpSession.getConnectParams().put("swfUrl", "http://embed.livebox.cz/iprimaplay/flash/LiveboxPlayer.swf?nocache=" + System.currentTimeMillis());
+                rtmpSession.disablePauseWorkaround();
+                tryDownloadAndSaveFile(rtmpSession);
             }
-            final String auth = PlugUtils.getStringBetween(getContentAsString(), "'?auth='+\"\"+'", "';", 2);
-            final RtmpSession rtmpSession = new RtmpSession("bcastmw.livebox.cz", 80, "iprima_token?auth=" + auth, playName);
-            rtmpSession.getConnectParams().put("pageUrl", fileURL);
-            rtmpSession.getConnectParams().put("swfUrl", "http://embed.livebox.cz/iprimaplay/flash/LiveboxPlayer.swf?nocache=" + System.currentTimeMillis());
-            rtmpSession.disablePauseWorkaround();
-            tryDownloadAndSaveFile(rtmpSession);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

@@ -54,14 +54,14 @@ class BadongoFileRunner extends AbstractRunner {
             final URI fileURI = new URI(fileURL);
             final String[] filePath = fileURI.getPath().split("/");
 
-            if (getContentAsString().contains("This file has been split into") && filePath.length <= 4) { // More files
+            if (getContentAsString().contains("This file has been split into") && filePath.length <= 5) { // More files
                 processCaptchaForm();
                 parseWebsite();
                 httpFile.getProperties().put("removeCompleted", true);
             } else { // One file
                 final Matcher matcher;
 
-                if (filePath[1].equals("pic")) {
+                if (filePath[2].equals("pic")) {
                     if (makeRedirectedRequest(getGetMethod(fileURL + "?size=original"))) {
                         matcher = getMatcherAgainstContent("<img src=\"(.+?)\" border=\"0\">");
 
@@ -98,14 +98,18 @@ class BadongoFileRunner extends AbstractRunner {
         }
 
         final URI fileURI = new URI(fileURL);
-        final String[] filePath = fileURI.getPath().split("/");
+        final String filePath = fileURI.getPath();
 
-        if (filePath.length == 3) {
-            fileURL = fileURL.replaceFirst("/" + filePath[1], "/en/" + filePath[1]);
-        }
+        final Matcher matcher = PlugUtils.matcher("^/([a-zA-Z]{2})/", filePath);
 
-        if (filePath.length == 4 && !filePath[1].equals("en")) {
-            fileURL = fileURL.replaceFirst("/" + filePath[1], "/en");
+        if (matcher.find()) {
+            final String language = matcher.group(1);
+
+            if (!language.equals("en")) {
+                fileURL = fileURL.replaceFirst("/" + language + "/", "/en/");
+            }
+        } else {
+            fileURL = fileURL.replaceFirst(filePath, "/en" + filePath);
         }
 
         return fileURL;
@@ -215,7 +219,7 @@ class BadongoFileRunner extends AbstractRunner {
     }
 
     private void parseWebsite() {
-        final Matcher matcher = getMatcherAgainstContent("href=\"(" + fileURL.replaceFirst("/en", "") + "/.+?)\"");
+        final Matcher matcher = getMatcherAgainstContent("href=\"(" + fileURL.replaceFirst("/en/", "/") + "/.+?)\"");
         int start = 0;
         final List<URI> uriList = new LinkedList<URI>();
 

@@ -70,7 +70,7 @@ public class MediafireRunner extends AbstractRunner {
                 }
             }
             method = findDownloadUrl();
-            downloadTask.sleep(10);//they won't send the file if this part is done too fast
+            setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -135,7 +135,7 @@ public class MediafireRunner extends AbstractRunner {
             throw new PluginImplementationException("Last function in first JavaScript not found");
         }
         // gysl8luzk='';oq1w66x=unescape(......;   var cb=Math.random();
-        //(......................................) <-- this part is what we want
+        //(.....................................) <-- this part is what we want
         matcher = PlugUtils.matcher("((?:eval\\(\")?[a-z\\d]+?\\s*?=\\s*?\\\\?'\\\\?';\\s*?[a-z\\d]+?\\s*?=\\s*?unescape\\(.+?;)[^;]+?Math\\.random\\(\\)", rawScript);
         if (!matcher.find(lastFunctionIndex)) {
             logger.warning(rawScript);
@@ -154,7 +154,7 @@ public class MediafireRunner extends AbstractRunner {
 
         final String result;
         try {
-            context.evaluateString(scope, "var pk = 0;", "<script>", 1, null);
+            scope.put("pk", scope, 0);
             result = Context.toString(context.evaluateString(scope, script, "<script>", 1, null));
         } catch (Exception e) {
             logger.warning(script);
@@ -189,7 +189,7 @@ public class MediafireRunner extends AbstractRunner {
         final JsDocument document;
         try {
             context.evaluateString(scope, script, "<script>", 1, null);
-            document = (JsDocument) context.evaluateString(scope, "document;", "<script>", 1, null);
+            document = (JsDocument) scope.get("document", scope);
         } catch (Exception e) {
             logger.warning(script);
             throw new PluginImplementationException("Script 2 execution failed", e);

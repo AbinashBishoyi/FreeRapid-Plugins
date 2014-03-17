@@ -51,6 +51,7 @@ class MegauploadRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
+
             if (tryManagerDownload(fileURL)) return;
             Matcher matcher;
             captchaCount = 0;
@@ -89,7 +90,7 @@ class MegauploadRunner extends AbstractRunner {
             }
 
         } else
-            throw new PluginImplementationException();
+            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
     }
 
     private void checkNameAndSize(String content) throws Exception {
@@ -255,9 +256,18 @@ class MegauploadRunner extends AbstractRunner {
                     final String toEncode = downloadURL.substring(i + 1);
                     httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
                 }
+                final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer("").toHttpMethod();
+                return tryDownloadAndSaveFile(method);
+
+            } else {
+                final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+                getMethod.setFollowRedirects(true);
+                if (!makeRequest(getMethod)) {
+                    throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+                }
+                return false;
             }
-            final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer("").toHttpMethod();
-            return tryDownloadAndSaveFile(method);
+
         } else {
             makeRedirectedRequest(methodCheck);
             return false;

@@ -65,11 +65,13 @@ class File2BoxFileRunner extends AbstractRunner {
                 builder.append(entry.value);
             }
             final String captcha = builder.toString();
-            if (captcha.isEmpty())
-                throw new PluginImplementationException("Captcha not found");
-            logger.info("Captcha:" + captcha);
-            logger.info("File url:" + fileURL);
+            if (!captcha.isEmpty()) {
+                //   throw new PluginImplementationException("Captcha not found");
+                logger.info("Captcha:" + captcha);
+                logger.info("File url:" + fileURL);
+            }
             final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("F1", true).setAction(fileURL);
+
 
             methodBuilder.setParameter("code", captcha);
             methodBuilder.setParameter("referer", fileURL);

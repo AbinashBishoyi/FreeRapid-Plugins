@@ -40,7 +40,7 @@ public class TurboBitFileRunner extends AbstractRunner {
     }
 
     private String checkFileURL(final String fileURL) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("^http://(?:www\\.)?((?:turbobit|hitfile)\\.net)/(?:download/free/)?(\\w+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("^http://(?:www\\.)?(turbobit\\.net|hitfile\\.net|files\\.uz-translations\\.uz)/(?:download/free/)?(\\w+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing download link");
         }

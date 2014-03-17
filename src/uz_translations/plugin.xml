@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.uz_translations.Uz_TranslationsServiceImpl"
+        id="Uz-Translations.uz" vendor="birchie" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://files\.uz-translations\.uz/.+"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="files.uz-translations.uz"/>
+        <attribute id="maxDownloads" value="1"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="turbobit.net"
+                plugin-version="1.5.2" reverse-lookup="false"/>
+    </requires>
+    <runtime>
+        <library id="uz_translations.uz" path="/" type="code"/>
+    </runtime>
+</plugin>

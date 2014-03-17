@@ -81,12 +81,11 @@ class FilesMonsterFileRunner extends AbstractRunner {
         if (!makeRedirectedRequest(postMethodForTicket)) {
             checkContentOrConnectionProblems();
         }
-        String reserveTicket = PlugUtils.getStringBetween(getContentAsString(),
-                "reserve_ticket('", "');");
+        final String reserveTicket = PlugUtils.getStringBetween(getContentAsString(), "rftUrl = '", "';");
 
         final String referer = "http://filesmonster.com" + postMethodForTicket.getPath();
         final String dlPrefix = postMethodForTicket.getPath()
-                .substring(0, postMethodForTicket.getPath().indexOf("free/") + "free".length())
+                .substring(0, postMethodForTicket.getPath().indexOf("free/") + "free" .length())
                 + "/";
 
         final HttpMethod getMethodForFiles = getMethodBuilder()
@@ -127,6 +126,7 @@ class FilesMonsterFileRunner extends AbstractRunner {
                 "url\":\"", "\",").replace("\\", "");
         String fileRequest = PlugUtils.getStringBetween(getContentAsString(),
                 "file_request\":\"", "\"");
+        httpFile.setFileName(finalLink.substring(1 + finalLink.lastIndexOf("/")));
 
         final HttpMethod postMethodForDownload = getMethodBuilder()
                 .setAction(finalLink).setReferer(fileURL)
@@ -149,7 +149,7 @@ class FilesMonsterFileRunner extends AbstractRunner {
                 FileInfo fileInfo = new FileInfo(new URL(urlPrefix + 2 + "/" +
                         PlugUtils.getStringBetween(fileString, "dlcode\":\"", "\"")));
                 fileInfo.setFileName(PlugUtils.getStringBetween(fileString, "name\":\"", "\""));
-                fileInfo.setFileSize(PlugUtils.getNumberBetween(fileString, "size\":", ","));
+                fileInfo.setFileSize(PlugUtils.getNumberBetween(fileString, "size\":\"", "\""));
                 fileInfo.setDescription(referer);
                 files.add(fileInfo);
             } catch (PluginImplementationException e) {

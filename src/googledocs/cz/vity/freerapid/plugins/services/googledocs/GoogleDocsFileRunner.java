@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -32,6 +33,9 @@ class GoogleDocsFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize(getContentAsString());
         } else {
+            if (getMethod.getStatusCode() / 100 == 4) {
+                throw new URLNotAvailableAnymoreException("File not found");
+            }
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -86,12 +90,17 @@ class GoogleDocsFileRunner extends AbstractRunner {
                         .setBaseURL(baseUrl)
                         .setAction(downloadLink)
                         .toGetMethod();
+                setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
+                httpFile.setResumeSupported(true);
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
         } else {
+            if (method.getStatusCode() / 100 == 4) {
+                throw new URLNotAvailableAnymoreException("File not found");
+            }
             checkProblems();
             throw new ServiceConnectionProblemException();
         }

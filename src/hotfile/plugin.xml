@@ -1,20 +1,19 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hotfile.com" version="0.6.18" vendor="Kajda+Arthur+JPEXS"
+<plugin id="hotfile.com" version="0.6.19" vendor="Kajda+Arthur+JPEXS"
         class="cz.vity.freerapid.plugins.services.hotfile.HotfileServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="https?://.*?hotfile\.com/(dl|links)/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="hotfile.com"/>
+        <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
         <import plugin-id="recaptcha.com" plugin-version="1.0" match="greater-or-equal"/>
     </requires>
-
     <runtime>
-        <library id="hotfile.com" path="/" type="code">
-        </library>
+        <library id="hotfile.com" path="/" type="code"/>
     </runtime>
 </plugin>

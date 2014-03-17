@@ -1,10 +1,8 @@
 package cz.vity.freerapid.plugins.services.brutalsha;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
-import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
-import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandlerNoSize;
-
-import java.util.List;
+import cz.vity.freerapid.plugins.webclient.FileState;
 
 /**
  * Class which contains main code
@@ -14,10 +12,15 @@ import java.util.List;
 class BrutalShaFileRunner extends XFileSharingRunner {
 
     @Override
-    protected List<FileSizeHandler> getFileSizeHandlers() {
-        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
-        fileSizeHandlers.add(new FileSizeHandlerNoSize());
-        return fileSizeHandlers;
+    protected void checkNameAndSize() throws ErrorDuringDownloadingException {
+        try {
+            if (makeRedirectedRequest(getXFSMethodBuilder().toPostMethod())) {
+                checkFileProblems();
+                checkFileName();
+                checkFileSize();
+            }
+        } catch (Exception e) { /**/ }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
 }

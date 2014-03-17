@@ -67,7 +67,7 @@ class LetitbitRunner extends AbstractRunner {
                 //Russian IPs may see a different page here, let's handle it
                 httpMethod = getMethodBuilder()
                         .setReferer(pageUrl)
-                        .setActionFromFormWhereActionContains("letitbit.net", true)
+                        .setActionFromFormWhereTagContains("\u0421\u043F\u0430\u0441\u0438\u0431\u043E", true)
                         .toPostMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
@@ -129,11 +129,6 @@ class LetitbitRunner extends AbstractRunner {
                 || (content.contains("Request file ") && content.contains(" Deleted"))) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
-    }
-
-    @Override
-    protected String getBaseURL() {
-        return "http://letitbit.net";
     }
 
 }

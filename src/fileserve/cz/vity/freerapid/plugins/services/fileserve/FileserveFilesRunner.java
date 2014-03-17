@@ -14,7 +14,6 @@ import java.util.regex.Matcher;
  */
 class FileserveFilesRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileserveFilesRunner.class.getName());
-    private final static String URI_BASE = "http://www.fileserve.com";
 
     @Override
     public void runCheck() throws Exception {
@@ -70,7 +69,9 @@ class FileserveFilesRunner extends AbstractRunner {
                     throw new CaptchaEntryInputMismatchException();
                 }
 
-                HttpMethod postMethod = getMethodBuilder().setAction(URI_BASE + "/checkReCaptcha.php").setReferer(fileURL)
+                HttpMethod postMethod = getMethodBuilder()
+                        .setAction("/checkReCaptcha.php")
+                        .setReferer(fileURL)
                         .setEncodePathAndQuery(true)
                         .setParameter("recaptcha_challenge_field", recaptcha_challenge_field)
                         .setParameter("recaptcha_response_field", captcha)
@@ -79,7 +80,7 @@ class FileserveFilesRunner extends AbstractRunner {
                 if (!makeRedirectedRequest(postMethod)) {
                     throw new ServiceConnectionProblemException();
                 }
-            } while (!getContentAsString().trim().equalsIgnoreCase("success"));
+            } while (!getContentAsString().contains("success"));
 
             HttpMethod pMethod = getMethodBuilder().setAction(fileURL).setReferer(fileURL)
                     .setParameter("downloadLink", "wait")
@@ -87,11 +88,12 @@ class FileserveFilesRunner extends AbstractRunner {
             if (!makeRedirectedRequest(pMethod)) {
                 throw new ServiceConnectionProblemException();
             }
-            try {
-                downloadTask.sleep(Integer.parseInt(getContentAsString().trim()) + 1);
-            } catch (NumberFormatException e) {
-                throw new PluginImplementationException("Waiting time problem", e);
+            matcher = getMatcherAgainstContent("(\\d+)");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Waiting time not found");
             }
+            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
+
             pMethod = getMethodBuilder().setAction(fileURL).setReferer(fileURL)
                     .setParameter("downloadLink", "show")
                     .toPostMethod();

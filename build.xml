@@ -4,6 +4,7 @@
     <!-- input data directories -->
     <property name="src.dir" value="src"/>
     <property name="etc.dir" value="etc"/>
+    <property name="dist.dir" value="dist"/>
     <property name="doc.dir" value="doc"/>
     <property name="lib.dir" value="lib"/>
     <property name="dev.dir" value="dev"/>
@@ -58,7 +59,7 @@
         <ant dir="${src.dir}/netloadin/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/uploadedto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/egoshare/" antfile="build.xml" inheritall="false"/>
-        <!--<ant dir="${src.dir}/letitbit/" antfile="build.xml" inheritall="false"/>-->
+        <ant dir="${src.dir}/letitbit/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/shareonline/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/easyshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/xtraupload/" antfile="build.xml" inheritall="false"/>
@@ -82,12 +83,34 @@
 
     <target name="init" description="initialization">
         <tstamp/>
+        <mkdir dir="${dist.dir}"/>
     </target>
 
     <target name="clean" description="clean up">
+        <delete dir="${dist.dir}"/>
     </target>
 
     <target name="all" depends="clean,init,build" description="build all"/>
 
+
+    <target name="dist" depends="build" description="creating release">
+        <!--<zip zipfile="${dist.dir}/${version.name}.zip" level="9" compress="true">-->
+        <!--<fileset dir=".">-->
+        <!--<include name="${build.dir}/"/>-->
+        <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->
+        <!--</fileset>-->
+        <!--</zip>-->
+        <zip destfile="${dist.dir}/freerapid-plugintools-src.zip" level="9" compress="true">
+            <fileset dir=".">
+                <include name="${lib.dir}/"/>
+                <include name="${lib-src.dir}/"/>
+                <include name="${etc.dir}/"/>
+                <include name="${src.dir}/"/>
+                <include name="${dev.dir}/"/>
+                <include name="${doc.dir}/"/>
+                <include name="build.xml"/>
+            </fileset>
+        </zip>
+    </target>
 
 </project>

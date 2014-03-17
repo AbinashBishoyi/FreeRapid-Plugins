@@ -4,9 +4,15 @@ import cz.vity.freerapid.plugins.container.ContainerPlugin;
 import cz.vity.freerapid.plugins.container.ContainerPluginImpl;
 import cz.vity.freerapid.plugins.container.FileInfo;
 import cz.vity.freerapid.plugins.container.impl.Cnl2;
-import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.linkcrypt.captcha.CaptchaPanel;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.services.circlecaptcha.Circle;
+import cz.vity.freerapid.plugins.services.circlecaptcha.CircleCaptcha;
+import cz.vity.freerapid.plugins.services.circlecaptcha.CircleHoughTransform;
 import cz.vity.freerapid.plugins.services.linkcrypt.captcha.CaptchaPreparer;
+import cz.vity.freerapid.plugins.services.linkcrypt.captcha.CaptchaRecognizer;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
@@ -35,6 +41,9 @@ import java.util.regex.Matcher;
  */
 class LinkCryptFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LinkCryptFileRunner.class.getName());
+
+    private final static int CAPTCHA_MAX = 5;
+    private int captchaCounter = 0;
 
     @Override
     public void run() throws Exception {
@@ -76,35 +85,25 @@ class LinkCryptFileRunner extends AbstractRunner {
         if (content.contains("KeyCAPTCHA")) {
             throw new PluginImplementationException("KeyCaptcha is not supported");
         }
-        Matcher matcher = PlugUtils.matcher("src=\"(http://linkcrypt\\.ws/(?:captx|textx)\\.html.*?)\"", content);
+        Matcher matcher = PlugUtils.matcher("src=\"(http://linkcrypt\\.ws/(captx|textx)\\.html.*?)\"", content);
         if (matcher.find()) {
             final String captchaUrl = matcher.group(1);
-            String message = "";
-            matcher = PlugUtils.matcher("<b>(Please .+?)</b>", content);
-            if (matcher.find()) {
-                message = matcher.group(1);
-            }
-            synchronized (LinkCryptFileRunner.class) {
-                while (true) {
-                    final BufferedImage image = getCaptchaImage(captchaUrl);
-                    final CaptchaPanel panel = new CaptchaPanel(image, message);
-                    if (!getDialogSupport().showOKCancelDialog(panel, "Captcha")) {
-                        throw new CaptchaEntryInputMismatchException();
+            final String type = matcher.group(2);
+            while (true) {
+                final BufferedImage image = getCaptchaImage(captchaUrl);
+                final Point p = getCaptcha(image, type);
+                if (p != null) {
+                    final HttpMethod method = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setAction(fileURL)
+                            .setParameter("x", String.valueOf(p.x))
+                            .setParameter("y", String.valueOf(p.y))
+                            .toPostMethod();
+                    if (!makeRedirectedRequest(method)) {
+                        throw new ServiceConnectionProblemException();
                     }
-                    final Point p = panel.getClickLocation();
-                    if (p != null) {
-                        final HttpMethod method = getMethodBuilder()
-                                .setReferer(fileURL)
-                                .setAction(fileURL)
-                                .setParameter("x", String.valueOf(p.x))
-                                .setParameter("y", String.valueOf(p.y))
-                                .toPostMethod();
-                        if (!makeRedirectedRequest(method)) {
-                            throw new ServiceConnectionProblemException();
-                        }
-                        if (!getContentAsString().contains("Warning.png")) {
-                            return true;
-                        }
+                    if (!getContentAsString().contains("Warning.png")) {
+                        return true;
                     }
                 }
             }
@@ -127,6 +126,33 @@ class LinkCryptFileRunner extends AbstractRunner {
                     LogUtils.processException(logger, e);
                 }
             }
+        }
+    }
+
+    private Point getCaptcha(final BufferedImage image, final String type) throws Exception {
+        final boolean captx = "captx".equals(type);
+        if (captchaCounter < CAPTCHA_MAX) {
+            captchaCounter++;
+            final Point result;
+            if (captx) {
+                final CircleHoughTransform cht = new CircleHoughTransform(image, 0xFFFFFF, 12, 22, 1);
+                cht.performHoughTransform();
+                final Circle circle = cht.findOpenCircle(0.7);
+                if (circle != null) {
+                    result = new Point(circle.x(), circle.y());
+                } else {
+                    result = null;
+                }
+            } else {
+                result = CaptchaRecognizer.recognizeTextxCaptcha(image);
+            }
+            logger.info("Automatic recognition attempt " + captchaCounter + " of " + CAPTCHA_MAX + ": " + result);
+            return result;
+        } else {
+            final String message = captx ? "Please click on the open circle" : "Please click on the circle with the result";
+            final Point result = CircleCaptcha.showClickLocationDialog(image, message, getDialogSupport());
+            logger.info("Manual recognition: " + result);
+            return result;
         }
     }
 

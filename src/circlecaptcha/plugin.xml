@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.LibraryPlugin"
+        id="circlecaptcha" vendor="ntoskrnl" version="1.0.0">
+    <attributes>
+        <attribute id="libraryPlugin" value="true"/>
+        <attribute id="minver" value="0.852"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="circlecaptcha"/>
+    </attributes>
+
+    <runtime>
+        <library id="circlecaptcha" path="/" type="code">
+            <export prefix="*"/>
+        </library>
+    </runtime>
+</plugin>

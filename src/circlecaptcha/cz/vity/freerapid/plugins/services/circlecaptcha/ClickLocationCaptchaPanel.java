@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.ncrypt.captcha;
+package cz.vity.freerapid.plugins.services.circlecaptcha;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,11 +8,11 @@ import java.awt.event.MouseListener;
 /**
  * @author ntoskrnl
  */
-public class CaptchaPanel extends JPanel {
+class ClickLocationCaptchaPanel extends JPanel {
 
     private final CaptchaImageComponent captchaImageComponent;
 
-    public CaptchaPanel(final Image image, final String message) {
+    public ClickLocationCaptchaPanel(final Image image, final String message) {
         final JLabel labelMessage = new JLabel(message, JLabel.CENTER);
         captchaImageComponent = new CaptchaImageComponent(image);
 
@@ -70,7 +70,7 @@ public class CaptchaPanel extends JPanel {
         @Override
         public void mousePressed(final MouseEvent e) {
             clickLocation = e.getPoint();
-            RepaintManager.currentManager(this).addDirtyRegion(this, 0, 0, getWidth(), getHeight());
+            repaint();
         }
 
         @Override

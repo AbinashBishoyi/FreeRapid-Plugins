@@ -4,11 +4,11 @@ import cz.vity.freerapid.plugins.container.ContainerPlugin;
 import cz.vity.freerapid.plugins.container.ContainerPluginImpl;
 import cz.vity.freerapid.plugins.container.FileInfo;
 import cz.vity.freerapid.plugins.container.impl.Cnl2;
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.services.relink.captcha.CaptchaPanel;
+import cz.vity.freerapid.plugins.services.circlecaptcha.CircleCaptcha;
+import cz.vity.freerapid.plugins.services.relink.captcha.CaptchaPreparer;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -65,26 +65,22 @@ class RelinkFileRunner extends AbstractRunner {
             final String captchaUrl = getMethodBuilder()
                     .setAction(matcher.group(1))
                     .getEscapedURI();
-            synchronized (RelinkFileRunner.class) {
-                while (true) {
-                    final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaUrl);
-                    final CaptchaPanel panel = new CaptchaPanel(captchaImage, "Please click on the open circle");
-                    if (!getDialogSupport().showOKCancelDialog(panel, "Captcha")) {
-                        throw new CaptchaEntryInputMismatchException();
+            final CircleCaptcha captcha = new CircleCaptcha(getDialogSupport(), 12, 28, 0xFFFFFF, 0.8);
+            while (true) {
+                final BufferedImage captchaImage = CaptchaPreparer.getPreparedImage(
+                        getCaptchaSupport().getCaptchaImage(captchaUrl));
+                final Point p = captcha.recognize(captchaImage);
+                if (p != null) {
+                    mb.setParameter("button", "Send")
+                            .setParameter("button.x", String.valueOf(p.x))
+                            .setParameter("button.y", String.valueOf(p.y));
+                    final HttpMethod method = mb.toPostMethod();
+                    if (!makeRedirectedRequest(method)) {
+                        throw new ServiceConnectionProblemException();
                     }
-                    final Point p = panel.getClickLocation();
-                    if (p != null) {
-                        mb.setParameter("button", "Send")
-                                .setParameter("button.x", String.valueOf(p.x))
-                                .setParameter("button.y", String.valueOf(p.y));
-                        final HttpMethod method = mb.toPostMethod();
-                        if (!makeRedirectedRequest(method)) {
-                            throw new ServiceConnectionProblemException();
-                        }
-                        if (!getContentAsString().contains("<p class=\"msg_error\">")) {
-                            fileURL = method.getURI().toString();
-                            return;
-                        }
+                    if (!getContentAsString().contains("<p class=\"msg_error\">")) {
+                        fileURL = method.getURI().toString();
+                        return;
                     }
                 }
             }

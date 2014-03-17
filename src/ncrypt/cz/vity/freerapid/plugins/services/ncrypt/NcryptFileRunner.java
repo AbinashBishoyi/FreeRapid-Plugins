@@ -5,7 +5,7 @@ import cz.vity.freerapid.plugins.container.ContainerPluginImpl;
 import cz.vity.freerapid.plugins.container.FileInfo;
 import cz.vity.freerapid.plugins.container.impl.Cnl2;
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.ncrypt.captcha.CaptchaPanel;
+import cz.vity.freerapid.plugins.services.circlecaptcha.CircleCaptcha;
 import cz.vity.freerapid.plugins.services.ncrypt.captcha.CaptchaPreparer;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -35,6 +35,8 @@ import java.util.regex.Matcher;
 class NcryptFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NcryptFileRunner.class.getName());
 
+    private CircleCaptcha circleCaptcha = null;
+
     @Override
     public void run() throws Exception {
         super.run();
@@ -62,16 +64,14 @@ class NcryptFileRunner extends AbstractRunner {
     }
 
     private void stepCaptcha() throws Exception {
-        synchronized (NcryptFileRunner.class) {
-            while (getContentAsString().contains("captcha")) {
-                final MethodBuilder mb = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setActionFromFormByName("protected", true)
-                        .setAction(fileURL);
-                getCaptcha(mb);
-                if (!makeRedirectedRequest(mb.toPostMethod())) {
-                    throw new ServiceConnectionProblemException();
-                }
+        while (getContentAsString().contains("captcha")) {
+            final MethodBuilder mb = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromFormByName("protected", true)
+                    .setAction(fileURL);
+            getCaptcha(mb);
+            if (!makeRedirectedRequest(mb.toPostMethod())) {
+                throw new ServiceConnectionProblemException();
             }
         }
     }
@@ -96,12 +96,12 @@ class NcryptFileRunner extends AbstractRunner {
             }
             mb.setParameter("captcha", captcha);
         } else if (getContentAsString().contains("circlecaptcha")) {
-            final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage("http://ncrypt.in/classes/captcha/circlecaptcha.php");
-            final CaptchaPanel panel = new CaptchaPanel(captchaImage, "Please click on the open circle");
-            if (!getDialogSupport().showOKCancelDialog(panel, "Captcha")) {
-                throw new CaptchaEntryInputMismatchException();
+            if (circleCaptcha == null) {
+                circleCaptcha = new CircleCaptcha(getDialogSupport(), 12, 25, 0xFFFFFF, 0.8);
             }
-            final Point p = panel.getClickLocation();
+            final BufferedImage captchaImage = CaptchaPreparer.getPreparedCirclecaptchaImage(
+                    getCaptchaSupport().getCaptchaImage("http://ncrypt.in/classes/captcha/circlecaptcha.php"));
+            final Point p = circleCaptcha.recognize(captchaImage);
             if (p != null) {
                 mb.setParameter("circle", "Continue+to+folder")
                         .setParameter("circle.x", String.valueOf(p.x))

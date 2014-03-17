@@ -104,14 +104,14 @@ class FlvStreamWriter implements OutputWriter {
             }
         }
         if(packetType==Packet.Type.AUDIO_DATA){
-           if(time<=lastAudioTime){ 
+           if(time<lastAudioTime){ //  "<=" does not work
               logger.info("Skipping duplicate audio data packet");
               return;
            }
            lastAudioTime=time;
         }
         if(packetType==Packet.Type.VIDEO_DATA){
-           if(time<=lastVideoTime){
+           if(time<lastVideoTime){  //  "<=" does not work
               logger.info("Skipping duplicate video data packet");
               return;
            }

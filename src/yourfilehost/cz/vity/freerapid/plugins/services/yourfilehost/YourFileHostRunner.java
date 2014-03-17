@@ -72,10 +72,10 @@ class YourFileHostRunner extends AbstractRunner {
                             } 
 
                         } else throw new InvalidURLOrServiceProblemException("Can't find download link 2");
-                    } else throw new InvalidURLOrServiceProblemException("Can't find download link 3");
+                    } else throw new InvalidURLOrServiceProblemException("Can't load download link 3");
                 } else throw new InvalidURLOrServiceProblemException("Can't find download link 4");
             } else throw new InvalidURLOrServiceProblemException("Can't find download link 5");
-        } else throw new InvalidURLOrServiceProblemException("Can't find download link 6");
+        } else throw new InvalidURLOrServiceProblemException("Can't load download link 6");
     }
 
     private void checkNameandSize(String content) throws Exception {

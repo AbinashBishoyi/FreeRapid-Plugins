@@ -73,6 +73,7 @@
         <ant dir="${src.dir}/mediafire/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/savefile/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/upnito/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/flyshare/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

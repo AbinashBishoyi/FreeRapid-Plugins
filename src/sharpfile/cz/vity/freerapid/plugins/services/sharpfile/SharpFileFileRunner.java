@@ -96,9 +96,8 @@ class SharpFileFileRunner extends AbstractRunner {
             Matcher match = getMatcherAgainstContent("<a href=\"(.+" + httpFile.getFileName() + "[^\"]*)\">");
             if (!match.find())
                 throw new PluginImplementationException("Unable to find download link");
-            methodBuilder.setAction(match.group(1));
 
-            if (!tryDownloadAndSaveFile(methodBuilder.toGetMethod())) {
+            if (!tryDownloadAndSaveFile(getGetMethod(match.group(1)))) {
                 checkDownloadProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }

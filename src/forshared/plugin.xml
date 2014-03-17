@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.forshared.ForSharedServiceImpl"
-        id="4shared.com" vendor="Alex+ntoskrnl+Vity" version="1.4.4">
+        id="4shared.com" vendor="Alex+ntoskrnl+Vity" version="1.4.5">
     <attributes>
         <attribute id="urlRegex" value="https?://(www\.)?4shared(\-china)?\.com/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="4shared.com"/>
         <attribute id="maxDownloads" value="10"/>

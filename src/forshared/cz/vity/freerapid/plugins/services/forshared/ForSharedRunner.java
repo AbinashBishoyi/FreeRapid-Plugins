@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.forshared;
 
-import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -55,9 +52,8 @@ class ForSharedRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            if (fileURL.contains("/dir/")) {
-                parseWebsite();
-                httpFile.getProperties().put("removeCompleted", true);
+            if (isFolder()) {
+                parseFolder();
             } else {
                 method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
                 if (makeRedirectedRequest(method)) {
@@ -80,15 +76,13 @@ class ForSharedRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        if (fileURL.contains("/dir/")) {
-            PlugUtils.checkName(httpFile, getContentAsString(), "<b style=\"font-size:larger;\">", "</b>");
-        } else {
+        if (!isFolder()) {
             PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- 4shared");
             final Matcher matcher = Pattern.compile("\"fileInfo.+?([\\d,\\.]+ (?:KB|MB|GB))", Pattern.DOTALL).matcher(getContentAsString());
             if (!matcher.find()) {
                 throw new PluginImplementationException("File size not found");
             }
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replace(",","")));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replace(",", "")));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -110,18 +104,39 @@ class ForSharedRunner extends AbstractRunner {
         }
     }
 
-    private void parseWebsite() throws Exception {
-        final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://.+?)\" target=\"_blank\" >");
+    private boolean isFolder() {
+        return fileURL.contains("/dir/") || fileURL.contains("/folder/");
+    }
+
+    private void parseFolder() throws Exception {
+        final HttpMethod method = getMethodBuilder()
+                .setAction("http://www.4shared.com/web/accountActions/changeDir")
+                .setParameter("dirId", getFolderId())
+                .setAjax()
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException();
+        }
+        final Matcher matcher = getMatcherAgainstContent("\"id\":\"(.+?)\"");
         final List<URI> uriList = new LinkedList<URI>();
         while (matcher.find()) {
+            final String url = "http://www.4shared.com/file/" + matcher.group(1);
             try {
-                uriList.add(new URI(matcher.group(1)));
+                uriList.add(new URI(url));
             } catch (URISyntaxException e) {
                 LogUtils.processException(logger, e);
             }
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
         httpFile.getProperties().put("removeCompleted", true);
+    }
+
+    private String getFolderId() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("/(dir|folder)/([^/]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Folder ID not found");
+        }
+        return matcher.group(1);
     }
 
 }

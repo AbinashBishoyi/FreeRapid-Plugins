@@ -37,7 +37,7 @@ class ToSharedRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("window.location ='", "';").toGetMethod();
+            method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("name=\"d3link\" value=\"", "\"").toGetMethod();
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

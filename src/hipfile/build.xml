@@ -78,6 +78,7 @@
             <sourcepath location="../recaptcha"/>
             <sourcepath location="../xfilesharing/"/>
             <sourcepath location="../devapp"/>
+            <sourcepath location="../solvemediacaptcha"/>
         </javac>
         <!-- zkopirovani resourcu -->
 

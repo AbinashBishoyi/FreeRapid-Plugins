@@ -154,6 +154,9 @@ class SendSpaceRunner extends AbstractRunner {
         if (getContentAsString().contains("Currently a lot of users")) {
             throw new ServiceConnectionProblemException(String.format("<b>SendSpace Error:</b><br>Currently a lot of users are downloading files."));
         }
+        if (getContentAsString().contains("the free service is at full capacity")) {
+            throw new ServiceConnectionProblemException(String.format("<b>SendSpace Error:</b><br>The free service is at full capacity."));
+        }
     }
 
 }

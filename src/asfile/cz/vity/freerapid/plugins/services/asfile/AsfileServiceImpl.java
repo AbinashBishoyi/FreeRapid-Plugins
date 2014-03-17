@@ -15,14 +15,10 @@ public class AsfileServiceImpl extends AbstractFileShareService {
         return "alfa-files.com";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 1;
-    }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return true;
     }
 
     @Override

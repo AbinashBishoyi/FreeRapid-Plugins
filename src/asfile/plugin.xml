@@ -1,17 +1,19 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="asfile.com" version="0.1.0" vendor="RickCL"
+<plugin id="asfile.com" version="1.0.1" vendor="RickCL"
         class="cz.vity.freerapid.plugins.services.asfile.AsfileServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?asfile\.com/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="asfile.com"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
+                plugin-version="1.0" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="asfile.com" path="/" type="code"/>
     </runtime>

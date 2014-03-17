@@ -78,8 +78,8 @@
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6"
                encoding="utf-8">
-
             <sourcepath location="../devapp"/>
+            <sourcepath location="../recaptcha"/>
         </javac>
         <!-- zkopirovani resourcu -->
 

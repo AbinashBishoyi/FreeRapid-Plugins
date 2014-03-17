@@ -1,9 +1,10 @@
 package cz.vity.freerapid.plugins.services.asfile;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -24,15 +25,17 @@ class AsfileFileRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             checkNameAndSize(getContentAsString());
         } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Download: <strong>", "</strong>");
-        PlugUtils.checkFileSize(httpFile, content, "<br/> (", ")");
+        PlugUtils.checkName(httpFile, content, "Download:</div><div class=\"div_variable\"><strong>", "</strong>");
+        PlugUtils.checkFileSize(httpFile, content, "File size:</div><div class=\"div_variable\">", "</");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -40,51 +43,103 @@ class AsfileFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-
+        logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
-        if(!makeRedirectedRequest(getMethod)) {
+        if (!makeRedirectedRequest(getMethod)) {
+            checkProblems();
             throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+        int waitingTime = getWaitingTime();
+        //they have weird waiting time handling
+        if (waitingTime > (5 * 60)) {
+            //90 minutes waiting time
+            //downloadTask.sleep(waitingTime + 1);
+            throw new YouHaveToWaitException("You have to wait " + waitingTime + 1 + " seconds", waitingTime + 1);
+        } else {
+            //downloadTask.sleep(waitingTime + 1);  //skippable
+        }
+        while (!getContentAsString().contains("redirected to download page")) {
+            stepCaptcha();
         }
 
-        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
-                        .setActionFromAHrefWhereATagContains("Regular download")
-                        .toGetMethod();
-        if(!makeRedirectedRequest(httpMethod)) {
+        //second waiting time
+        waitingTime = getWaitingTime();
+        downloadTask.sleep(waitingTime + 1);
+        HttpMethod httpMethod = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromAHrefWhereATagContains("Slow download")
+                .toGetMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
-        int wait = 160;
-        try {
-            String sWait = PlugUtils.getStringBetween(getContentAsString(), "Waiting, please", "seconds");
-            sWait = sWait.replaceAll("<[^<>]+>", "").trim();
-            wait = Integer.parseInt(sWait);
-        } catch (NumberFormatException ignored) {}
-        downloadTask.sleep(wait + 1);
-        //http://asfile.com/en/index/convertHashToLink
-        //hash=7de06d35bcede0fc45a03686233589ed  path=Lw27o6I  storage=s13.asfile.com  name=13032303.rar
+        final String referer = httpMethod.getURI().toString();
+
+        checkProblems();
         final String hash = PlugUtils.getStringBetween(getContentAsString(), "hash: '", "'");
         final String path = PlugUtils.getStringBetween(getContentAsString(), "path: '", "'");
         final String storage = PlugUtils.getStringBetween(getContentAsString(), "storage: '", "'");
         final String name = PlugUtils.getStringBetween(getContentAsString(), "name: '", "'");
-        httpMethod = getMethodBuilder().setReferer(fileURL)
-                .setActionFromTextBetween("$.post('", "'")
+        final String convertHashToLinkAction = PlugUtils.getStringBetween(getContentAsString(), "$.post('", "'");
+        //third waiting time
+        waitingTime = getWaitingTime();
+        downloadTask.sleep(waitingTime + 1);
+        httpMethod = getMethodBuilder()
+                .setReferer(referer)
+                .setAction(convertHashToLinkAction)
                 .setParameter("hash", hash)
                 .setParameter("path", path)
                 .setParameter("storage", storage)
                 .setParameter("name", name)
+                .setAjax()
                 .toPostMethod();
-        if(!makeRedirectedRequest(httpMethod)) {
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
+        checkProblems();
         final String downloadURL = PlugUtils.getStringBetween(getContentAsString(), "{\"url\":\"", "\"").replaceAll("\\\\/", "/");
-        logger.info( downloadURL );
-
-        httpMethod = getMethodBuilder().setReferer(fileURL)
+        httpMethod = getMethodBuilder()
+                .setReferer(referer)
                 .setAction(downloadURL)
                 .toGetMethod();
         if (!tryDownloadAndSaveFile(httpMethod)) {
+            checkProblems();
             throw new ServiceConnectionProblemException("Error starting download:" + downloadURL);
         }
+    }
 
+    private int getWaitingTime() throws PluginImplementationException {
+        return PlugUtils.getNumberBetween(getContentAsString(), "var timer =", ";");
+    }
+
+    private void stepCaptcha() throws Exception {
+        final MethodBuilder methodBuilder = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("form_cap", true)
+                .setAction(fileURL + "#top");
+        final String publicKey = PlugUtils.getStringBetween(getContentAsString(), "/api/challenge?k=", "\"");
+        final ReCaptcha reCaptcha = new ReCaptcha(publicKey, client);
+        final String captcha = getCaptchaSupport().getCaptcha(reCaptcha.getImageURL());
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
+        reCaptcha.setRecognized(captcha);
+        if (!makeRedirectedRequest(reCaptcha.modifyResponseMethod(methodBuilder).toPostMethod())) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+    }
+
+    public void checkProblems() throws ErrorDuringDownloadingException {
+        if (fileURL.contains("/file_is_unavailable/")
+                || getContentAsString().contains("Delete Reason")
+                || getContentAsString().contains("File is deleted")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("available only to premium")) {
+            throw new PluginImplementationException("This file is available only to premium users");
+        }
     }
 
 }

@@ -5,7 +5,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -17,11 +16,10 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Thumb
+ * @author Thumb, ntoskrnl
  */
 class ExtabitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ExtabitFileRunner.class.getName());
-
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -29,44 +27,39 @@ class ExtabitFileRunner extends AbstractRunner {
         if (makeFirstPossiblyRedirectedRequest()) {
             checkFileProblems();
             checkNameAndSize();//ok let's extract file name and size from the page
-        } else
+        } else {
+            checkFileProblems();
             throw new ServiceConnectionProblemException();
+        }
     }
 
-		/**
-		 * @return
-		 * @throws IOException
-		 * @throws ServiceConnectionProblemException
-		 */
-		private boolean makeFirstPossiblyRedirectedRequest() throws IOException {
-			final GetMethod getMethod = getGetMethod(fileURL);//make first request
-			downloadTask.getClient().getHTTPClient().getState().addCookie(new Cookie("extabit.com", "language", "ru", "/", -1, false));
-			if (!makeRequest(getMethod)) {
-				if(getMethod.getStatusCode()/100==3) {
-					fileURL = getMethod.getResponseHeader("Location").getValue();
-					logger.info(String.format("Redirected, changing URL to %s", fileURL));
-					GetMethod m2 = getGetMethod(fileURL);
-					return makeRequest(m2);
-				}
-				return false;
-			}
-			return true;
-		}
+    private boolean makeFirstPossiblyRedirectedRequest() throws IOException {
+        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        addCookie(new Cookie("extabit.com", "language", "en", "/", 86400, false));
+        if (!makeRequest(getMethod)) {
+            if (getMethod.getStatusCode() / 100 == 3) {
+                fileURL = getMethod.getResponseHeader("Location").getValue();
+                logger.info(String.format("Redirected, changing URL to %s", fileURL));
+                GetMethod m2 = getGetMethod(fileURL);
+                return makeRequest(m2);
+            }
+            return false;
+        }
+        return true;
+    }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-    	Matcher nameMatcher = PlugUtils.matcher("<[^>]*id=\"download_filename\"[^>]*>([^<>]+)<", getContentAsString());
-    	if(!nameMatcher.find())
-    		unimplemented();
-    	httpFile.setFileName(nameMatcher.group(1).trim());
+        final Matcher nameMatcher = getMatcherAgainstContent("<div id=\"download_filename\"[^<>]*?>\\s*(.+?)\\s*</div>");
+        if (!nameMatcher.find())
+            unimplemented();
+        httpFile.setFileName(nameMatcher.group(1));
 
-    	Matcher sizeMatcher = PlugUtils.matcher("Размер файла:(?:\\s|<[^<>]*>)*([^<>]+)<", getContentAsString());
-    	if(!sizeMatcher.find()) {
-    	    sizeMatcher = getMatcherAgainstContent("<[^>]*class=\"download_filesize\"[^>]*>([^<>]+)<");
-            if(!sizeMatcher.find())
-                unimplemented();
-    	}
-    	httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1).trim().replace("[", "").replace("]", "")));
-    	httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        final Matcher sizeMatcher = getMatcherAgainstContent("<div class=\"download_filesize_en\">\\s*\\[(.+?)\\]\\s*</div>");
+        if (!sizeMatcher.find())
+            unimplemented();
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1)));
+
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
@@ -76,74 +69,53 @@ class ExtabitFileRunner extends AbstractRunner {
         runCheck();
         checkDownloadProblems();
 
-        final HttpMethod req1 = getMethodBuilder()
-        	.setAction("?go")
-        	.setBaseURL(fileURL)
-        	.toHttpMethod();
-        if(!makeRequest(req1))
-        	throw new ServiceConnectionProblemException();
-        checkProblems();
-
-        final HttpMethod req2 = getMethodBuilder()
-        	.setActionFromFormByName("cmn_form", true)
-        	.setParameter("capture", getCaptchaCode())
-        	.setBaseURL("http://extabit.com/")
-        	.toHttpMethod();
-        if(!makeRequest(req2))
-            if( !getContentAsString().trim().equals("") )
+        while (getContentAsString().contains("cmn_form")) {
+            final HttpMethod req2 = getMethodBuilder()
+                    .setActionFromFormByName("cmn_form", true)
+                    .setParameter("capture", getCaptchaCode())
+                    .setBaseURL("http://extabit.com/")
+                    .toPostMethod();
+            if (!makeRequest(req2))
                 throw new ServiceConnectionProblemException();
-        checkProblems();
+            checkProblems();
+        }
 
-        if(!getContentAsString().trim().equals("") && !getContentAsString().contains("\"?af\""))
-        	throw new CaptchaEntryInputMismatchException();
-
-        final HttpMethod req3 = getMethodBuilder()
-        	.setAction("?af")
-        	.setBaseURL(fileURL)
-        	.toHttpMethod();
-        if(!makeRequest(req3))
-        	throw new ServiceConnectionProblemException();
-        checkProblems();
-
-        // Converted to Unicode: Older text is: Скачать
-        HttpMethod req4 = getMethodBuilder().setActionFromAHrefWhereATagContains("\u0421\u043a\u0430\u0447\u0430\u0442\u044c").toHttpMethod();
+        final HttpMethod req4 = getMethodBuilder()
+                .setActionFromAHrefWhereATagContains("click here to download")
+                .toGetMethod();
 
         if (!tryDownloadAndSaveFile(req4)) {
-        	checkProblems();//if downloading failed
-    			logger.warning(getContentAsString());//log the info
+            checkProblems();//if downloading failed
+            logger.warning(getContentAsString());//log the info
 
-    			/* Since the server doesn't properly indicate
-    			 * multiple downloads condition, just assume it here
-    			 */
-    			throw new YouHaveToWaitException("Unknown problem - will try again", 1800);
+            /* Since the server doesn't properly indicate
+             * multiple downloads condition, just assume it here
+             */
+            throw new ServiceConnectionProblemException("Unknown problem - will try again");
         }
     }
 
-		/**
-		 * @return
-		 * @throws PluginImplementationException
-		 * @throws ErrorDuringDownloadingException
-		 */
-		private String getCaptchaCode() throws ErrorDuringDownloadingException {
-			CaptchaSupport cs=getCaptchaSupport();
-			Matcher captchaMatcher=PlugUtils.matcher("<img src=\"(/cap[^\"]*)\"", getContentAsString());
-			if(!captchaMatcher.find())
-				unimplemented();
+    private String getCaptchaCode() throws ErrorDuringDownloadingException {
+        final CaptchaSupport cs = getCaptchaSupport();
+        final Matcher captchaMatcher = PlugUtils.matcher("<img src=\"(/cap[^\"]*)\"", getContentAsString());
+        if (!captchaMatcher.find())
+            unimplemented();
 
-			return cs.getCaptcha("http://extabit.com"+captchaMatcher.group(1));
-		}
+        final String captcha = cs.getCaptcha("http://extabit.com" + captchaMatcher.group(1));
+        if (captcha == null)
+            throw new CaptchaEntryInputMismatchException();
 
-		/**
-		 * @throws PluginImplementationException
-		 */
-		private void unimplemented() throws PluginImplementationException {
-			logger.warning(getContentAsString());//log the info
-			throw new PluginImplementationException();//some unknown problem
+        return captcha;
+    }
+
+    private void unimplemented() throws PluginImplementationException {
+        //logger.warning(getContentAsString());//PluginImplementationException automatically logs the page content
+        throw new PluginImplementationException();//some unknown problem
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("<h1>Файл не найден</h1>")) {
+        if (contentAsString.contains("<h1>File not found</h1>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }
@@ -152,8 +124,8 @@ class ExtabitFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-    	checkFileProblems();
-    	checkDownloadProblems();
+        checkFileProblems();
+        checkDownloadProblems();
     }
 
 }

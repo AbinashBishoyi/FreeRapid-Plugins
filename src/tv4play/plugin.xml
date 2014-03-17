@@ -4,7 +4,7 @@
         id="tv4play.se" vendor="ntoskrnl" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?tv4play\.se/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="tv4play.se"/>
         <attribute id="maxDownloads" value="10"/>

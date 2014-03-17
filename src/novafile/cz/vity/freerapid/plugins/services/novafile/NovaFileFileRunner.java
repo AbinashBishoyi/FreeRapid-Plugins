@@ -2,10 +2,12 @@ package cz.vity.freerapid.plugins.services.novafile;
 
 import cz.vity.freerapid.plugins.exceptions.BadLoginException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -38,6 +40,26 @@ class NovaFileFileRunner extends XFileSharingRunner {
             }
         });
         return fileNameHandlers;
+    }
+
+    @Override
+    protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("can only be downloaded by Premium")) {
+            throw new PluginImplementationException("This file is only available to premium users");
+        }
+        super.checkDownloadProblems();
+    }
+
+    @Override
+    protected MethodBuilder getXFSMethodBuilder() throws Exception {
+        final MethodBuilder methodBuilder = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("method_", true)
+                .setAction(fileURL);
+        if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
+            methodBuilder.removeParameter("method_premium");
+        }
+        return methodBuilder;
     }
 
     @Override

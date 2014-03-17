@@ -11,7 +11,10 @@ import org.apache.commons.codec.binary.Hex;
 
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -66,47 +69,6 @@ public class Rsdf implements ContainerFormat {
                     "CCF: ".concat(file.getFileUrl().toString()).getBytes("UTF-8")
             ))).getBytes("UTF-8"));
             os.write(rn);
-        }
-    }
-
-    private static class HexInputStream extends FilterInputStream {
-        public HexInputStream(final InputStream is) {
-            super(is);
-        }
-
-        @Override
-        public int read() throws IOException {
-            final byte[] b = new byte[2];
-            final int len = read(b, 0, 2);
-            if (len <= 0) {
-                return -1;
-            }
-            return b[0];
-        }
-
-        @Override
-        public int read(final byte[] b) throws IOException {
-            return read(b, 0, b.length);
-        }
-
-        @Override
-        public int read(final byte[] b, final int off, int len) throws IOException {
-            len = in.read(b, off, len);
-            if (len <= 0) {
-                return len;
-            }
-            final char[] c = new char[len];
-            for (int i = 0, j = off; i < len; i++, j++) {
-                c[i] = (char) b[j];
-            }
-            final byte[] hex;
-            try {
-                hex = Hex.decodeHex(c);
-            } catch (Exception e) {
-                throw new IOException("Invalid hex stream", e);
-            }
-            System.arraycopy(hex, 0, b, off, hex.length);
-            return hex.length;
         }
     }
 

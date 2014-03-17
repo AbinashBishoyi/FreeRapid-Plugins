@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.container;
 
-import cz.vity.freerapid.plugins.container.impl.Ccf;
-import cz.vity.freerapid.plugins.container.impl.Dlc;
-import cz.vity.freerapid.plugins.container.impl.Rsdf;
-import cz.vity.freerapid.plugins.container.impl.Txt;
+import cz.vity.freerapid.plugins.container.impl.*;
 import cz.vity.freerapid.utilities.LogUtils;
 
 import java.io.BufferedInputStream;
@@ -26,10 +23,11 @@ public final class ContainerPluginImpl extends ContainerPlugin {
     private final static List<String[]> SUPPORTED_FILES_LIST;
 
     static {
-        SUPPORTED_FILES = new LinkedHashMap<String[], Class<? extends ContainerFormat>>(4, 1.0f);
+        SUPPORTED_FILES = new LinkedHashMap<String[], Class<? extends ContainerFormat>>(5, 1.0f);
         SUPPORTED_FILES.put(Txt.getSupportedFiles(), Txt.class);
         SUPPORTED_FILES.put(Ccf.getSupportedFiles(), Ccf.class);
         SUPPORTED_FILES.put(Dlc.getSupportedFiles(), Dlc.class);
+        SUPPORTED_FILES.put(Jdc.getSupportedFiles(), Jdc.class);
         SUPPORTED_FILES.put(Rsdf.getSupportedFiles(), Rsdf.class);
         SUPPORTED_FILES_LIST = new ArrayList<String[]>(SUPPORTED_FILES.keySet());
     }

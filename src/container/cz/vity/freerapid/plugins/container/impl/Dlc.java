@@ -102,7 +102,6 @@ public class Dlc implements ContainerFormat {
         logger.info("key = " + key);
         final String keyFromServer = getKeyFromServer("jd=1&srcType=plain&data=" + key);
         logger.info("keyFromServer = " + keyFromServer);
-        logger.info(String.valueOf(keyFromServer.length()));
 
         final byte[] keyBytes = key.getBytes("UTF-8");
         final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
@@ -154,12 +153,18 @@ public class Dlc implements ContainerFormat {
             handler.startElement("", "", "url", attributes);
             addString(handler, file.getFileUrl().toString());
             handler.endElement("", "", "url");
-            handler.startElement("", "", "filename", attributes);
-            addString(handler, file.getFileName());
-            handler.endElement("", "", "filename");
-            handler.startElement("", "", "size", attributes);
-            addString(handler, String.valueOf(file.getFileSize()));
-            handler.endElement("", "", "size");
+            final String name = file.getFileName();
+            if (name != null) {
+                handler.startElement("", "", "filename", attributes);
+                addString(handler, name);
+                handler.endElement("", "", "filename");
+            }
+            final long size = file.getFileSize();
+            if (size >= 0) {
+                handler.startElement("", "", "size", attributes);
+                addString(handler, String.valueOf(size));
+                handler.endElement("", "", "size");
+            }
             handler.endElement("", "", "file");
         }
         handler.endElement("", "", "package");

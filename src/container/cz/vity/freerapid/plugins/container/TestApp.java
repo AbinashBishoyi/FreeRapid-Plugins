@@ -18,8 +18,8 @@ import java.util.logging.Logger;
 public final class TestApp extends PluginDevApplication {
     private final static Logger logger = Logger.getLogger(TestApp.class.getName());
 
-    private final static String FILE = "E:\\Apps\\CryptLoad\\cont\\test.ccf";
-    private final static String FILE2 = "C:\\Users\\Administrator\\Desktop\\test2.dlc";
+    private final static String FILE = "E:\\Apps\\CryptLoad\\cont\\test.jdc";
+    private final static String FILE2 = "C:\\Users\\Administrator\\Desktop\\test2.jdc";
 
     @Override
     protected void startup() {

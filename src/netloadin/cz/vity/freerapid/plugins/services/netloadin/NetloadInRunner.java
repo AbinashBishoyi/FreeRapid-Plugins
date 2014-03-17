@@ -100,6 +100,10 @@ class NetloadInRunner extends AbstractRunner {
     }
 
     private boolean stepEnterPage(String contentAsString) throws Exception {
+        if (contentAsString.contains("This file is secured with a password")) {
+            stepPasswordPage();
+            contentAsString = getContentAsString();
+        }
         Matcher matcher = PlugUtils.matcher("class=\"Free_dl\">(.|\\W)*?<a href=\"([^\"]*)\"", contentAsString);
         //logger.info(contentAsString);       
         if (!matcher.find()) {
@@ -164,10 +168,41 @@ class NetloadInRunner extends AbstractRunner {
         if (fileURL.toLowerCase().contains("www.netload.in")) HTTP_NETLOAD = "http://www.netload.in";
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("This file is secured with a password!")) {
-            throw new NotRecoverableDownloadException("This file is secured with a password!");
+    private void stepPasswordPage() throws Exception {
+        while (getContentAsString().contains("This file is secured with a password")) {
+
+            Matcher matcher = getMatcherAgainstContent("name=\"form\" method=\"post\" action=\"([^\"]*)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Invalid URL or unindentified service");
+            }
+            String tar = HTTP_NETLOAD + "/" + matcher.group(1);
+            logger.info("Post url to - " + tar);
+            PostMethod post1 = getPostMethod(tar);
+            matcher = getMatcherAgainstContent("value=\"([^\"]*)\" name=\"file_id\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Invalid URL or unindentified service");
+            }
+            String file_id = matcher.group(1);
+            post1.addParameter("file_id", file_id);
+            post1.addParameter("password", getPassword());
+
+            if (!makeRedirectedRequest(post1)) {
+                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            }
+
         }
+
+    }
+
+    private String getPassword() throws Exception {
+        NetloadPasswordUI ps = new NetloadPasswordUI();
+        if (getDialogSupport().showOKCancelDialog(ps, "Enter password")) {
+            return (ps.getPassword());
+        } else throw new NotRecoverableDownloadException("This file is secured with a password!");
+
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
         Matcher matcher;
         matcher = getMatcherAgainstContent("You could download your next file in.*countdown\\(([0-9]+)");
         if (matcher.find()) {

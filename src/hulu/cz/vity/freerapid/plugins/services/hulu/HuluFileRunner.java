@@ -75,16 +75,17 @@ class HuluFileRunner extends AbstractRtmpRunner {
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
             return;
         }
-        Matcher matcher = getMatcherAgainstContent("window\\._preloadedFastStartVideo = ([^\r\n]+)");
+        final Matcher matcher = getMatcherAgainstContent("window\\._preloadedFastStartVideo = ([^\r\n]+?)\\\\n");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name content not found");
         }
+        final String data = matcher.group(1).replace("\\\"", "\"").replace("\\\\", "\\");
         try {
             final ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
             if (engine == null) {
                 throw new RuntimeException("JavaScript engine not found");
             }
-            engine.eval("var data = " + matcher.group(1));
+            engine.eval("var data = " + data);
 
             final String show = engine.eval("data[\"show\"][\"name\"]").toString();
             final String title = engine.eval("data[\"title\"]").toString();
@@ -107,7 +108,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
             contentId = engine.eval("data[\"content_id\"]").toString();
         } catch (final Exception e) {
-            logger.warning("data = " + matcher.group(1));
+            logger.warning("data = " + data);
             throw new PluginImplementationException("Error getting file name", e);
         }
     }

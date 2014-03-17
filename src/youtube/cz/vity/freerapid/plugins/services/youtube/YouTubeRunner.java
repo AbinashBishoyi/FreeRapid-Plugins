@@ -28,8 +28,8 @@ import java.util.regex.Matcher;
  * @author Kajda, JPEXS, ntoskrnl
  * @since 0.82
  */
-class YouTubeFileRunner extends AbstractRtmpRunner {
-    private static final Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
+class YouTubeRunner extends AbstractRtmpRunner {
+    private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.youtube.com";
     private static final URI SERVICE_URI = URI.create(SERVICE_WEB);
     private YouTubeSettingsConfig config;
@@ -73,9 +73,8 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
                 checkFmtParameter();
                 checkName();
 
-                String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "&amp;fmt_url_map=", "&");
-                fmt_url_map = URLDecoder.decode(fmt_url_map, "UTF-8");
-                Matcher matcher = PlugUtils.matcher("," + fmt + "\\|(http[^\\|]+)(,[0-9]+\\||$)", "," + fmt_url_map);
+                String fmt_url_map = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\""), "UTF-8");
+                Matcher matcher = PlugUtils.matcher("url=([^,]+?)\\\\u0026[^,]+?itag=" + fmt, fmt_url_map);
 
                 if (matcher.find()) {
                     setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
@@ -143,12 +142,7 @@ class YouTubeFileRunner extends AbstractRtmpRunner {
     }
 
     private void processConfig() throws ErrorDuringDownloadingException {
-        String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "&amp;fmt_map=", "&");
-        try {
-            fmt_map = URLDecoder.decode(fmt_map, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            LogUtils.processException(logger, e);
-        }
+        String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "\"fmt_list\": \"", "\"").replace("\\/", "/");
         //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
         String[] formats = fmt_map.split(",");
         String[][] formatParts = new String[formats.length][];

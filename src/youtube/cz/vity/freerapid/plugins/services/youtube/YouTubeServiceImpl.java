@@ -58,7 +58,7 @@ public class YouTubeServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new YouTubeFileRunner();
+        return new YouTubeRunner();
     }
 
     @Override

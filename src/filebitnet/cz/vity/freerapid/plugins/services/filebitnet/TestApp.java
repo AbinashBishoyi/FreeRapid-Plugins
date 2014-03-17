@@ -15,7 +15,9 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://file-bit.net/3upw6g7e7zsj/PIER999-081031-Selena_Veronica-Set_01-125.rar.html"));
+            //httpFile.setNewURL(new URL("http://file-bit.net/3upw6g7e7zsj/PIER999-081031-Selena_Veronica-Set_01-125.rar.html"));
+            //httpFile.setNewURL(new URL("http://file-bit.net/wk5rhhz23m6y"));
+            httpFile.setNewURL(new URL("http://file-bit.net/ebkcqnw3xelr"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             // connectionSettings.setProxy("localhost", 8081);
             testRun(new FilebitNetFilesShareServiceImpl(), httpFile, connectionSettings);

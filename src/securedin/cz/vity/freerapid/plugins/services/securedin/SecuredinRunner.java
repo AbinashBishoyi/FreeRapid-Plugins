@@ -17,6 +17,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.services.securedin.cypher.Cypher;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -84,7 +85,7 @@ class SecuredinRunner extends AbstractRunner {
         if (makeRequest(pMethod)) {
             String content = getContentAsString();
 
-            String newUrl = cypher(content);
+            String newUrl = Cypher.cypher(content);
             queye.add(new URI(newUrl));
         } else
             throw new PluginImplementationException("Can't load ajax command");
@@ -98,6 +99,8 @@ class SecuredinRunner extends AbstractRunner {
      *
      * TODO: I don't know, why not work with GetMethod jsMethod = getGetMethod(HTTP_JAVASCRIPT );
      *       if (makeRequest(jsMethod)) { String jsContent = jsMethod.getResponseBodyAsString(); }
+     *
+     * @deprecated
      */
     private String cypher(String key) throws PluginImplementationException {
         try {

@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.ddlstorage;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -17,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.ddlstorage.com/8gaqzz5s43jt"));
-            httpFile.setNewURL(new URL("http://www.ddlstorage.com/it6sajo9ksm1/DRK.SHDWS.12.80.TRL.part069.rar.htm"));
+            //httpFile.setNewURL(new URL("http://www.ddlstorage.com/it6sajo9ksm1/DRK.SHDWS.12.80.TRL.part069.rar.htm"));
+            httpFile.setNewURL(new URL("http://www.ddlstorage.com/mqnvaza37f56/ATTENTI_AI_BUONI.rar.htm"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("118.99.80.98", 8080); //eg we can use local proxy to sniff HTTP communication
             final DdlStorageServiceImpl service = new DdlStorageServiceImpl();

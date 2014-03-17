@@ -1,9 +1,13 @@
 package cz.vity.freerapid.plugins.services.ddlstorage;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
+import java.util.List;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -25,5 +29,20 @@ class DdlStorageFileRunner extends XFileSharingRunner {
     protected boolean stepCaptcha(final MethodBuilder methodBuilder) throws Exception {
         super.stepCaptcha(methodBuilder);
         return false; // unskip waiting time
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "parent\\.location='(http.+?" + Pattern.quote(httpFile.getFileName()) + ")'");
+        return downloadLinkRegexes;
+    }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("temporarily unavailable from your region")) {
+            throw new PluginImplementationException("DDLStorage temporarily unavailable from your region");
+        }
+        super.checkFileProblems();
     }
 }

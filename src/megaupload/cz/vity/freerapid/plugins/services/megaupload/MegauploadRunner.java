@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.megaupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.megaupload.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
@@ -10,7 +9,6 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.awt.image.BufferedImage;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -25,8 +23,6 @@ import java.util.regex.Matcher;
  */
 class MegauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
-    private final static int CAPTCHA_MAX = 5;
-    private int captchaCount = 0;
 
     @Override
     public void runCheck() throws Exception {
@@ -75,12 +71,8 @@ class MegauploadRunner extends AbstractRunner {
             if (getContentAsString().contains("download is password protected")) {
                 stepPasswordPage();
             }
-            while (getContentAsString().contains("Enter this")) {
-                stepCaptcha();
-                checkProblems();
-            }
 
-            final Matcher matcher = getMatcherAgainstContent("id=\"downloadlink\"><a href=\"(http.+?)\"");
+            final Matcher matcher = getMatcherAgainstContent("<a href=\"(http.+?)\" class=\"download_regular_usual\"");
             if (!matcher.find()) {
                 if (loggedIn && makeRedirectedRequest(getGetMethod("/?c=account"))) {
                     if (getContentAsString().contains("<b>Premium</b>")) {
@@ -113,8 +105,8 @@ class MegauploadRunner extends AbstractRunner {
         if (getContentAsString().contains("link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("The file is not available");
         }
-        PlugUtils.checkName(httpFile, getContentAsString(), "<span class=\"down_txt2\">", "</span>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "ize:</strong>", "<");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<div class=\"download_file_name\">", "</div>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<div class=\"download_file_size\">", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -151,37 +143,6 @@ class MegauploadRunner extends AbstractRunner {
         final String host = httpFile.getFileUrl().getHost();
         if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
             fileURL = fileURL.replace("megarotic.com", "megaporn.com").replace("sexuploader.com", "megaporn.com");
-        }
-    }
-
-    private void stepCaptcha() throws Exception {
-        final String captchaUrl = getMethodBuilder().setActionFromImgSrcWhereTagContains("gencap.php").getEscapedURI();
-        logger.info("Captcha URL: " + captchaUrl);
-        final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaUrl);
-
-        String captcha;
-        if (captchaCount++ < CAPTCHA_MAX) {
-            captcha = CaptchaReader.read(captchaImage);
-            if (captcha == null) {
-                logger.warning("Cant read captcha");
-                captcha = "aaaa";
-            } else {
-                logger.info("Read captcha: " + captcha);
-            }
-        } else {
-            captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-        }
-        if (captcha == null)
-            throw new CaptchaEntryInputMismatchException();
-
-        final HttpMethod postMethod = getMethodBuilder()
-                .setReferer(fileURL)
-                .setActionFromFormByName("captchaform", true)
-                .setParameter("captcha", captcha)
-                .setAction(fileURL)
-                .toPostMethod();
-        if (!makeRedirectedRequest(postMethod)) {
-            throw new ServiceConnectionProblemException();
         }
     }
 

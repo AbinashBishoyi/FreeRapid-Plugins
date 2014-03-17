@@ -95,8 +95,8 @@ class MegaUploadFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<span class=\"down_txt2\">", "</span>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "ize:</strong>", "<");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<div class=\"download_file_name\">", "</div>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<div class=\"download_file_size\">", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

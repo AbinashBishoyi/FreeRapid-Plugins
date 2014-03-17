@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.services.cryptography.Mode;
 import cz.vity.freerapid.plugins.services.cryptography.Padding;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
@@ -32,6 +33,9 @@ import java.util.regex.Matcher;
  */
 class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer {
     private final static Logger logger = Logger.getLogger(HuluFileRunner.class.getName());
+
+    private final static String SWF_URL = "http://www.hulu.com/site-player/playback.swf";
+    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     private final static String CID_KEY = "48555bbbe9f41981df49895f44c83993a09334d02d17e7a76b237d04c084e342";
     private final static String EID_CONST = "MAZxpK3WwazfARjIpSXKQ9cmg9nPe5wIOOfKuBIfz7bNdat6gQKHj69ZWNWNVB1";
@@ -137,13 +141,11 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
                         list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
                     }
                     if (list.isEmpty()) throw new PluginImplementationException("No streams found");
-                    Collections.sort(list);
-                    final Stream stream = list.get(0);
+                    final Stream stream = Collections.min(list);
                     final RtmpSession rtmpSession = new RtmpSession(stream.getServer(), 80, stream.getApp(), stream.getPlay(), true);
                     rtmpSession.getConnectParams().put("pageUrl", fileURL);
-                    rtmpSession.getConnectParams().put("swfUrl", "http://www.hulu.com/site-player/playback.swf");
-                    //SWF verification is not necessary at the moment
-                    //rtmpSession.initSwfVerification("C:\\Users\\Administrator\\Desktop\\playback.swf");
+                    rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
+                    helper.setSwfVerification(rtmpSession, client);
                     tryDownloadAndSaveFile(rtmpSession);
                 } else {
                     checkProblems();

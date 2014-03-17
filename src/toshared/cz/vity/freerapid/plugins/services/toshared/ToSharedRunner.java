@@ -9,9 +9,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.util.Calendar;
-import java.util.Locale;
-import java.util.TimeZone;
 import java.util.logging.Logger;
 
 /**
@@ -41,7 +38,7 @@ class ToSharedRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String url = getUrl(PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',"));
+            final String url = PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',");
             method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setAction(url).toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (makeRedirectedRequest(method)) {
@@ -81,6 +78,7 @@ class ToSharedRunner extends AbstractRunner {
         }
     }
 
+    /*
     private static String getUrl(String url) throws ErrorDuringDownloadingException {
         try {
             String l2surl = url.substring(Math.max(0, url.length() - 32));
@@ -95,5 +93,6 @@ class ToSharedRunner extends AbstractRunner {
             throw new PluginImplementationException("Error parsing download URL: " + e.getLocalizedMessage());
         }
     }
+    */
 
 }

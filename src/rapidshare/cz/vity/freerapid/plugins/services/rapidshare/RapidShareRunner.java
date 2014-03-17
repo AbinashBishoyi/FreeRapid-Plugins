@@ -94,6 +94,9 @@ class RapidShareRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)) + 10);
         }
+        if (getContentAsString().contains("All free download slots are full")) {
+            throw new ServiceConnectionProblemException("All free download slots are full");
+        }
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {

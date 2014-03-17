@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.mediafire;
+package cz.vity.freerapid.plugins.services.brutalsha;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author ntoskrnl
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,16 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/?ofll36ptol2g3x0"));  //direct download
-            httpFile.setNewURL(new URL("http://www.mediafire.com/?4nby1h7o71eoweg"));
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/?bjegtrkfv9inn5f"));//password is "coplay"
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/?4i65rqry7h78y"));//folder
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/?lrr6mv33a67s8pb,ogxiipdtc34gzh7,kte3dr6d62i3p83,cnk1yaandyuder7,dssonwaaclcwopw,g74urguvuvjb0a1,7dxzppwfrne38i2,yzynzwzdyfe7gkz,q3bcstafuccq4ng,eyb2ktbzxr5ales,c0d8qfnv7j6l101,ehmasgbwgirdiik,yo85f5payma55ws,un6ebgiovase89a,whcdo271dx7dtx7,bkp6e507b1rpj22"));//multi link
+            httpFile.setNewURL(new URL("http://brutalsha.re/u4yi5snlne9e"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final MediafireServiceImpl service = new MediafireServiceImpl(); //instance of service - of our plugin
+            final BrutalShaServiceImpl service = new BrutalShaServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set premium account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

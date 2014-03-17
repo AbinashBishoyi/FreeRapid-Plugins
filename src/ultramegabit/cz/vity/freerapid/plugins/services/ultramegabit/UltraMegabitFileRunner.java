@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.Date;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -69,6 +70,7 @@ class UltraMegabitFileRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("File Not Found")
                 || content.contains("file was removed")
+                || content.contains("File not available")
                 || content.contains("file has been removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
@@ -101,6 +103,12 @@ class UltraMegabitFileRunner extends AbstractRunner {
         }
         if (content.contains("You can download files up to")) {
             throw new NotRecoverableDownloadException(PlugUtils.getStringBetween(content, "<div class=\"err\">", "<br>"));
+        }
+        if (content.contains("Your download has been limited")) {
+            final int wait = PlugUtils.getNumberBetween(content, "ts = (", " +") + 60 * 60;
+            final long now = (new Date()).getTime() / 1000;
+            final int delay = wait - (int) now;
+            throw new YouHaveToWaitException("Your download has been limited, you need to wait " + (delay / 60) + ":" + (delay % 60), delay);
         }
         if (content.contains("have reached the download-limit")) {
             throw new YouHaveToWaitException("You have reached the download limit", 10 * 60);

@@ -28,7 +28,10 @@ class MediafireRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        final int httpStatus = client.makeRequest(method, false);
+        if (httpStatus / 100 == 3) {
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        } else if (httpStatus == 200) {
             checkProblems();
             checkNameAndSize();
         } else {
@@ -73,7 +76,16 @@ class MediafireRunner extends AbstractRunner {
             final CaptchaState captchaState = CaptchaState.getFor(client.getSettings());
 
             final HttpMethod method = getGetMethod(fileURL);
-            if (!makeRedirectedRequest(method)) {
+
+            final int httpStatus = client.makeRequest(method, false);
+            if (httpStatus / 100 == 3) {
+                setFileStreamContentTypes("text/plain");
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+                return;
+            } else if (httpStatus != 200) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }

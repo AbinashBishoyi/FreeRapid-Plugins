@@ -57,7 +57,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         fileSizeHandlers.add(new FileSizeHandlerB());
         fileSizeHandlers.add(new FileSizeHandlerC());
         fileSizeHandlers.add(new FileSizeHandlerD());
-        //fileSizeHandlers.add(new FileSizeHandlerNoSize();
         return fileSizeHandlers;
     }
 
@@ -108,8 +107,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         HttpMethod method = getGetMethod(fileURL);
         int httpStatus = client.makeRequest(method, false);
         if (httpStatus / 100 == 3) {
-            if (handleDirectDownload(method))
+            if (handleDirectDownload(method)) {
                 return;
+            }
         } else if (httpStatus != 200) {
             checkFileProblems();
             throw new ServiceConnectionProblemException();
@@ -126,14 +126,15 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             final int waitTime = getWaitTime();
             final long startTime = System.currentTimeMillis();
             stepPassword(methodBuilder);
-            if (!stepCaptcha(methodBuilder)) {                // skip the wait timer if its on the same page
-                sleepWaitTime(waitTime, startTime);           //   as a captcha of type ReCaptcha
+            //skip the wait time if it is on the same page as a captcha of type ReCaptcha
+            if (!stepCaptcha(methodBuilder)) {
+                sleepWaitTime(waitTime, startTime);
             }
             method = methodBuilder.toPostMethod();
             httpStatus = client.makeRequest(method, false);
             if (httpStatus / 100 == 3) {
                 //redirect to download file location
-                method = stepRedirectToFileLocation(method);
+                method = redirectToLocation(method);
                 break;
             } else if (checkDownloadPageMarker()) {
                 //page containing download link
@@ -163,18 +164,20 @@ public abstract class XFileSharingRunner extends AbstractRunner {
      * Handle direct download
      *
      * @param method HttpMethod to be passed on to the next step
-     * @return If want to download the file/handle the direct download, return true. If don't want to download the file/redirected to another page, return false.
+     * @return true if the file was downloaded, false otherwise
      * @throws Exception
      */
     protected boolean handleDirectDownload(HttpMethod method) throws Exception {
         logger.info("Direct download");
         if (httpFile.getFileName() == null) {
+            //if runCheck hasn't been run yet, we need to do it here, without login cookies
             final Cookie[] cookies = client.getHTTPClient().getState().getCookies();
             client.getHTTPClient().getState().clearCookies();
             runCheck();
+            client.getHTTPClient().getState().clearCookies();
             client.getHTTPClient().getState().addCookies(cookies);
         }
-        method = stepRedirectToFileLocation(method);
+        method = redirectToLocation(method);
         doDownload(method);
         return true;
     }
@@ -282,7 +285,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         throw new PluginImplementationException("Download link not found");
     }
 
-    protected HttpMethod stepRedirectToFileLocation(HttpMethod method) throws Exception {
+    protected HttpMethod redirectToLocation(final HttpMethod method) throws Exception {
         final Header locationHeader = method.getResponseHeader("Location");
         if (locationHeader == null) {
             throw new PluginImplementationException("Invalid redirect");

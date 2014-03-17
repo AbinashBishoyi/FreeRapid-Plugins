@@ -122,7 +122,7 @@ class YunFileFileRunner extends AbstractRunner {
                 } else {
                     fileId = matcher.group(1);
                 }
-                matcher = getMatcherAgainstContent("vid\\.value\\s*=\\s*([\"']?.+?[\"']?)\\s*;");
+                matcher = getMatcherAgainstContent("^(?!.*?//)(?:.+?)?vid\\.value\\s*=\\s*([\"']?.+?[\"']?)\\s*;");
                 if (!matcher.find()) throw new PluginImplementationException("Vid value not found");
                 if (matcher.group(1).contains("\"") || matcher.group(1).contains("'")) { //vid is string
                     vid = matcher.group(1).replace("\"", "").replace("'", "");

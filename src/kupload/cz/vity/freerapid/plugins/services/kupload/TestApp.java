@@ -16,8 +16,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             httpFile.setNewURL(new URL("http://kupload.org/zwl1zkw8f6u6.html"));
+            //httpFile.setNewURL(new URL("http://kupload.org/qeyf52zziac6.html"));
+            //httpFile.setNewURL(new URL("http://kupload.org/p3wfchwz3c2b.html"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("202.137.22.183", 8080); //eg we can use local proxy to sniff HTTP communication
             final KUploadServiceImpl service = new KUploadServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {

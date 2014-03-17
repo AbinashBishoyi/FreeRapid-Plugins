@@ -78,10 +78,7 @@ class WuploadFileRunner extends AbstractRunner {
                     .setParameter("password", pa.getPassword())
                     .setParameter("rememberMe", "1")
                     .toPostMethod();
-            if (!makeRedirectedRequest(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
+            makeRequest(method);
 
             if (getContentAsString().contains("No user found with such email") || getContentAsString().contains("Provided password does not match"))
                 throw new BadLoginException("Invalid Wupload account login information!");

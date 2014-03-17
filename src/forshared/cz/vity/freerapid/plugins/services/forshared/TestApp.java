@@ -25,6 +25,10 @@ public class TestApp extends PluginDevApplication {
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final ForSharedServiceImpl service = new ForSharedServiceImpl(); //instance of service - of our plugin
+            //PremiumAccount pa = new PremiumAccount();
+            //pa.setUsername("***");
+            //pa.setPassword("***");
+            //service.setConfig(pa);
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

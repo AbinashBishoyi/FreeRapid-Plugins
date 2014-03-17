@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.secureupload.eu/2jb8y8dgxzv5/CounterStrike_For_Android_CS__v2.44_Final.apk"));
+            httpFile.setNewURL(new URL("http://www.secureupload.eu/bk5dw6tb8bte/Gritty_Scene_1.mp4"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

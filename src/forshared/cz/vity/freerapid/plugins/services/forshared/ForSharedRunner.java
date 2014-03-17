@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.forshared;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -12,20 +13,22 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Alex, ntoskrnl
+ * @author Alex, ntoskrnl, tong2shot
  */
 class ForSharedRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ForSharedRunner.class.getName());
+    private final static Map<Class<?>, LoginData> LOGIN_CACHE = new WeakHashMap<Class<?>, LoginData>(2);
+
 
     private void checkUrl() {
         fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
         addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
-        addCookie(new Cookie(".4shared.com", "Login", "385087947", "/", 86400, false));
-        addCookie(new Cookie(".4shared.com", "Password", "c27a64bbc7de9649e94dcae8d45ca709", "/", 86400, false));
     }
 
     @Override
@@ -47,6 +50,7 @@ class ForSharedRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         checkUrl();
+        login();
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -142,6 +146,84 @@ class ForSharedRunner extends AbstractRunner {
             throw new PluginImplementationException("Folder ID not found");
         }
         return matcher.group(1);
+    }
+
+    protected boolean login() throws Exception {
+        synchronized (getClass()) {
+            final ForSharedServiceImpl service = (ForSharedServiceImpl) getPluginService();
+            final PremiumAccount pa = service.getConfig();
+            if (pa == null || !pa.isSet()) {
+                LOGIN_CACHE.remove(getClass());
+                addCookie(new Cookie(".4shared.com", "Login", "385087947", "/", 86400, false));
+                addCookie(new Cookie(".4shared.com", "Password", "c27a64bbc7de9649e94dcae8d45ca709", "/", 86400, false));
+                logger.info("No account data set, skipping login");
+                return false;
+            }
+            final LoginData loginData = LOGIN_CACHE.get(getClass());
+            if (loginData == null || !pa.equals(loginData.getPa()) || loginData.isStale()) {
+                logger.info("Logging in");
+                doLogin(pa);
+                final Cookie[] cookies = new Cookie[2];
+                final Cookie loginCookie = getCookieByName("Login");
+                if (loginCookie != null) {
+                    cookies[0] = loginCookie;
+                }
+                final Cookie passwdCookie = getCookieByName("Password");
+                if (passwdCookie != null) {
+                    cookies[1] = passwdCookie;
+                }
+                if (cookies.length != 2) {
+                    throw new PluginImplementationException("Login cookies not found");
+                }
+                LOGIN_CACHE.put(getClass(), new LoginData(pa, cookies));
+            } else {
+                logger.info("Login data cache hit");
+                client.getHTTPClient().getState().addCookies(loginData.getCookies());
+            }
+            return true;
+        }
+    }
+
+
+    private void doLogin(final PremiumAccount pa) throws Exception {
+        HttpMethod method = getMethodBuilder()
+                .setAction("https://www.4shared.com/web/login")
+                .setAjax()
+                .setParameter("returnTo", fileURL)
+                .setParameter("login", pa.getUsername())
+                .setParameter("password", pa.getPassword())
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException("Error posting login info");
+        }
+        if (getContentAsString().contains("Invalid e-mail address or password")) {
+            throw new BadLoginException("Invalid 4Shared account login information");
+        }
+    }
+
+    private static class LoginData {
+        private final static long MAX_AGE = 86400000;//1 day
+        private final long created;
+        private final PremiumAccount pa;
+        private final Cookie[] cookies;
+
+        public LoginData(final PremiumAccount pa, final Cookie[] cookies) {
+            this.created = System.currentTimeMillis();
+            this.pa = pa;
+            this.cookies = cookies;
+        }
+
+        public boolean isStale() {
+            return System.currentTimeMillis() - created > MAX_AGE;
+        }
+
+        public PremiumAccount getPa() {
+            return pa;
+        }
+
+        public Cookie[] getCookies() {
+            return cookies;
+        }
     }
 
 }

@@ -28,8 +28,6 @@ public class HuluSettingsPanel extends JPanel {
         final JLabel lblQuality = new JLabel("Preferred quality level:");
         final JComboBox<VideoQuality> cbbVideoQuality = new JComboBox<VideoQuality>(VideoQuality.getItems());
         final JCheckBox checkSubtitles = new JCheckBox("Download subtitles", config.isDownloadSubtitles());
-        final JCheckBox checkTunlr = new JCheckBox("Enable Tunlr *)", config.isTunlrEnabled());
-        final JLabel lblTunlrDesc = new JLabel("*) Unless you are in the US or using US proxy, you should enable Tunlr.");
 
         lblUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtfldUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -38,8 +36,6 @@ public class HuluSettingsPanel extends JPanel {
         lblQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbVideoQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkSubtitles.setAlignmentX(Component.LEFT_ALIGNMENT);
-        checkTunlr.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lblTunlrDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         txtfldUsername.setText(config.getUsername());
         pswdfldPassword.setText(config.getPassword());
@@ -83,12 +79,6 @@ public class HuluSettingsPanel extends JPanel {
             }
         });
 
-        checkTunlr.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                config.setTunlrEnabled(checkTunlr.isSelected());
-            }
-        });
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(lblUsername);
@@ -99,9 +89,6 @@ public class HuluSettingsPanel extends JPanel {
         add(cbbVideoQuality);
         add(Box.createRigidArea(new Dimension(0, 5)));
         add(checkSubtitles);
-        add(checkTunlr);
-        add(Box.createRigidArea(new Dimension(0, 15)));
-        add(lblTunlrDesc);
         add(Box.createRigidArea(new Dimension(0, 15)));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }

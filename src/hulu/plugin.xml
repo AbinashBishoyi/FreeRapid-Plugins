@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.hulu.HuluServiceImpl"
-        id="hulu.com" vendor="ntoskrnl+tong2shot" version="1.4.4">
-<attributes>
+        id="hulu.com" vendor="ntoskrnl+tong2shot" version="1.4.5">
+    <attributes>
         <attribute id="urlRegex"
                    value="http://(www\.)?hulu\.com/(watch/.+|profiles/.+?/public_queue|captions\.xml\?content_id=\d+/.+)"/>
         <attribute id="minver" value="0.854"/>

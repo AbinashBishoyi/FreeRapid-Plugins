@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -21,7 +22,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -45,6 +45,9 @@ class HuluFileRunner extends AbstractRtmpRunner {
     private final static String DECRYPT_IV = "27b9bedf75ccA2eC";
     private final static String SUBTITLE_DECRYPT_KEY = "4878b22e76379b55c962b18ddbc188d82299f8f52e3e698d0faf29a40ed64b21";
     private final static String SUBTITLE_DECRYPT_IV = "WA7hap7AGUkevuth";
+    private final static Map<Class<?>, LoginData> LOGIN_CACHE = new WeakHashMap<Class<?>, LoginData>(2);
+    private final static String SWF_URL = "http://download.hulu.com/huludesktop.swf";
+    //private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     private final String sessionId = getSessionId();
 
@@ -163,10 +166,9 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
             final Stream stream = getStream(getStreamList(content));
             final RtmpSession rtmpSession = getSession(stream);
-            final String SwfUrl = (stream.cdn.equalsIgnoreCase("level3") ? "http://www.hulu.com/site-player/205906/player.swf?cb=205906" : "http://download.hulu.com/huludesktop.swf");
-            final SwfVerificationHelper helper = new SwfVerificationHelper(SwfUrl);
-            rtmpSession.getConnectParams().put("pageUrl", SwfUrl);
-            rtmpSession.getConnectParams().put("swfUrl", SwfUrl);
+            final SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
+            rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
+            rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
             helper.setSwfVerification(rtmpSession, client);
             tryDownloadAndSaveFile(rtmpSession);
         } else {
@@ -197,7 +199,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         return new RtmpSession(stream.server, stream.cdn.equalsIgnoreCase("edgecast") ? 80 : 1935, stream.app, stream.play, true); //edgecast uses port 80
     }
 
-    private List<Stream> getStreamList(String content) throws ErrorDuringDownloadingException, UnsupportedEncodingException {
+    private List<Stream> getStreamList(String content) throws ErrorDuringDownloadingException {
         final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? height=\"(\\d+?)\".*? file-type=\"\\d+_(.+?)\".*? cdn=\"(?:darwin\\-)?(.+?)\"", content);
         final List<Stream> streamList = new ArrayList<Stream>();
         logger.info("Available streams : ");
@@ -215,8 +217,8 @@ class HuluFileRunner extends AbstractRtmpRunner {
             final int bitrate = Integer.parseInt(matcher.group(4));
             final int videoQuality = Integer.parseInt(matcher.group(5)); //height as video quality
             final String videoFormat = matcher.group(6);
-            if (!(cdn.equalsIgnoreCase("akamai") || cdn.equalsIgnoreCase("limelight") || cdn.equalsIgnoreCase("level3") || cdn.equalsIgnoreCase("edgecast")) //downloadable CDN: akamai, limelight, level3, edgecast
-                    || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-limelight, non-level3, non-edgecast, non-h264
+            if (!(cdn.equalsIgnoreCase("akamai") || cdn.equalsIgnoreCase("limelight") || cdn.equalsIgnoreCase("edgecast")) //downloadable CDN: akamai, limelight, edgecast
+                    || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-limelight, non-edgecast, non-h264
                 continue;
             }
             Stream stream = new Stream(server, app, play, bitrate, videoQuality, videoFormat, cdn);
@@ -260,14 +262,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
             if (stream.videoQuality == selectedVideoQuality) {
                 int tempWeight = 0;
                 String cdn = stream.cdn;
-                if (cdn.equalsIgnoreCase("akamai")) { //akamai > limelight > level3 > edgecast
+                if (cdn.equalsIgnoreCase("akamai")) { //akamai > limelight > edgecast
                     tempWeight = 50;
                 } else if (cdn.equalsIgnoreCase("limelight")) {
                     tempWeight = 49;
-                } else if (cdn.equalsIgnoreCase("level3")) {
-                    tempWeight = 48;
                 } else if (cdn.equalsIgnoreCase("edgecast")) {
-                    tempWeight = 47;
+                    tempWeight = 48;
                 }
                 if (tempWeight > weight) {
                     weight = tempWeight;
@@ -399,28 +399,6 @@ class HuluFileRunner extends AbstractRtmpRunner {
         httpFile.getProperties().put("removeCompleted", true);
     }
 
-    private boolean login() throws Exception {
-        logger.info("Entering login subroutine...");
-        if (config.getUsername() == null || config.getUsername().isEmpty()) {
-            logger.info("No account data set, skipping login");
-            return false;
-        }
-        setFileStreamContentTypes(new String[0], new String[]{"application/x-www-form-urlencoded"});
-        final HttpMethod method = getMethodBuilder()
-                .setAction("https://secure.hulu.com/account/authenticate")
-                .setParameter("login", config.getUsername())
-                .setParameter("password", config.getPassword())
-                .setParameter("sli", "1")
-                .toPostMethod();
-        if (!makeRedirectedRequest(method)) {
-            throw new ServiceConnectionProblemException("Error posting login info");
-        }
-        if (!getContentAsString().contains("ok=1")) {
-            throw new BadLoginException("Invalid Hulu account login information");
-        }
-        return true;
-    }
-
     private boolean isSubtitle() {
         return fileURL.matches("http://(www\\.)?hulu\\.com/captions\\.xml\\?content_id=\\d+/.+");
     }
@@ -473,6 +451,82 @@ class HuluFileRunner extends AbstractRtmpRunner {
             if (!tryDownloadAndSaveFile(method)) {
                 throw new PluginImplementationException("Error saving subtitle");
             }
+        }
+    }
+
+    protected boolean login() throws Exception {
+        synchronized (getClass()) {
+            String username = config.getUsername();
+            String password = config.getPassword();
+            if (username == null || username.isEmpty()) {
+                LOGIN_CACHE.remove(getClass());
+                logger.info("No account data set, skipping login");
+                return false;
+            }
+            final LoginData loginData = LOGIN_CACHE.get(getClass());
+            if (loginData == null || !username.equals(loginData.getUsername()) || loginData.isStale()) {
+                logger.info("Logging in");
+                doLogin(username, password);
+                final Cookie[] cookies = getCookies(); //Hulu cookies expired in 3 years
+                if ((cookies == null) || (cookies.length == 0)) {
+                    throw new PluginImplementationException("Login cookies not found");
+                }
+                LOGIN_CACHE.put(getClass(), new LoginData(username, password, cookies));
+            } else {
+                logger.info("Login data cache hit");
+                client.getHTTPClient().getState().addCookies(loginData.getCookies());
+            }
+            return true;
+        }
+    }
+
+
+    private boolean doLogin(final String username, final String password) throws Exception {
+        setFileStreamContentTypes(new String[0], new String[]{"application/x-www-form-urlencoded"});
+        final HttpMethod method = getMethodBuilder()
+                .setAction("https://secure.hulu.com/account/authenticate")
+                .setParameter("login", username)
+                .setParameter("password", password)
+                .setParameter("sli", "1")
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException("Error posting login info");
+        }
+        if (!getContentAsString().contains("ok=1")) {
+            logger.warning(getContentAsString());
+            throw new BadLoginException("Invalid Hulu account login information");
+        }
+        return true;
+    }
+
+    private static class LoginData {
+        private final static long MAX_AGE = 86400000;//1 day
+        private final long created;
+        private final String username;
+        private final String password;
+        private final Cookie[] cookies;
+
+        public LoginData(final String username, final String password, final Cookie[] cookies) {
+            this.created = System.currentTimeMillis();
+            this.username = username;
+            this.password = password;
+            this.cookies = cookies;
+        }
+
+        public boolean isStale() {
+            return System.currentTimeMillis() - created > MAX_AGE;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public Cookie[] getCookies() {
+            return cookies;
         }
     }
 

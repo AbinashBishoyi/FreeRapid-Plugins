@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.secureupload.SecureUploadServiceImpl"
-        id="secureupload.eu" vendor="birchie" version="1.0.2">
+        id="secureupload.eu" vendor="birchie" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?secureupload\.eu/.+"/>
         <attribute id="minver" value="0.854"/>
@@ -15,7 +15,7 @@
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.13" reverse-lookup="false"/>
+                plugin-version="1.0.14" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="secureupload.eu" path="/" type="code"/>

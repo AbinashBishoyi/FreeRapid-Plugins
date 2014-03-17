@@ -323,9 +323,7 @@
     </target>
 
     <target name="run" description="Runs TestApp of the given plugin">
-        <input message="Insert plugin folder name to build" addproperty="input.plugin" defaultvalue="rapidshare"/>
-        <!--suppress AntResolveInspection -->
-        <ant dir="${src.dir}/${input.plugin}/" antfile="build.xml" inheritall="false" target="clean"/>
+        <input message="Insert plugin folder name to run" addproperty="input.plugin" defaultvalue="rapidshare"/>
         <!--suppress AntResolveInspection -->
         <ant dir="${src.dir}/${input.plugin}/" antfile="build.xml" inheritall="false" target="compile"/>
         <java dir="${classes.dir}" classname="cz.vity.freerapid.plugins.services.${input.plugin}.TestApp"

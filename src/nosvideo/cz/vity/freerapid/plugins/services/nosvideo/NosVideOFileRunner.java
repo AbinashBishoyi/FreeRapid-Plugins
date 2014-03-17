@@ -18,7 +18,7 @@ class NosVideOFileRunner extends XFileSharingRunner {
     @Override
     protected void setLanguageCookie() throws Exception {
         if (fileURL.contains("nosvideo.com/"))
-            fileURL = fileURL.replaceFirst("nosvideo.com/\\?v", "nosupload.com/?d");
+            fileURL = fileURL.replaceFirst("nosvideo\\.com/(?:\\?v=)?([^/]+)(?:/.+)?", "nosupload.com/?d=$1");
         super.setLanguageCookie();
     }
 
@@ -41,7 +41,7 @@ class NosVideOFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add("location.href='(http.+?" + Pattern.quote(httpFile.getFileName()) + ")'");
+        downloadLinkRegexes.add("location.href='(http.+?" + Pattern.quote(httpFile.getFileName()) + "(?:\\..{3})?)'");  //sometimes there is no file ext in filename, but added in download link later.
         return downloadLinkRegexes;
     }
 

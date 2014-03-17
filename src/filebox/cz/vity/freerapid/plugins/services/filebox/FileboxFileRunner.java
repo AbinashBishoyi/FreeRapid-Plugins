@@ -36,6 +36,8 @@ class FileboxFileRunner extends XFileSharingRunner {
         downloadPageMarkers.add(0, "product_download_url");
         downloadPageMarkers.add(0, ">> Download File <<");
         downloadPageMarkers.add(0, ">Download File<");
+        downloadPageMarkers.add(0, "flowplayer(");
+        downloadPageMarkers.add(0, "\" value='Download'");
         return downloadPageMarkers;
     }
 
@@ -51,13 +53,13 @@ class FileboxFileRunner extends XFileSharingRunner {
     @Override
     protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("product_file_name=") && getContentAsString().contains("&product_download_url")) {
-            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "product_file_name=", "&product_download_url"));
+            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "product_file_name=", "&product_download_url").trim());
         } else if (getContentAsString().contains("File Name : <span>")) {
-            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "File Name : <span>", "</>"));
+            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "File Name : <span>", "</>").trim());
         } else if (getContentAsString().contains("File Name : </strong>")) {
-            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "File Name : </strong>", "<br"));
-        } else if (getContentAsString().contains("<a href=\"" + fileURL + ">")) {
-            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "<a href=\"" + fileURL + ">", "</a>"));
+            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "File Name : </strong>", "<br").trim());
+        } else if (getContentAsString().contains("<a href=\"" + fileURL + "\">")) {
+            httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "<a href=\"" + fileURL + "\">", "</a>").trim());
         } else throw new PluginImplementationException("File name not found");
         return super.getDownloadLinkFromRegexes();
     }

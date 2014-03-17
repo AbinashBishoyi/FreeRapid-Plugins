@@ -110,7 +110,7 @@ class FileFactoryRunner {
             String contentAsString = client.getContentAsString();
             Matcher matcher = Pattern.compile("Size: ([0-9-\\.]*) MB", Pattern.MULTILINE).matcher(contentAsString);
             if (!matcher.find()) {
-                if (contentAsString.contains("This file has been deleted")) {
+                if (contentAsString.contains("file has been deleted") || contentAsString.contains("file is no longer available")) {
                     throw new URLNotAvailableAnymoreException("This file has been deleted.");
                 } else {
                     if (contentAsString.contains("no free download slots")) {
@@ -215,6 +215,14 @@ class FileFactoryRunner {
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Limit for free users reached", Integer.parseInt(matcher.group(1)) * 60);
             }
+            matcher = Pattern.compile("for free users.  Please wait ([0-9]*?) seconds", Pattern.MULTILINE).matcher(contentAsString);
+            if (matcher.find()) {
+                throw new YouHaveToWaitException("Limit for free users reached", Integer.parseInt(matcher.group(1)) + 1);
+            }
+
+        }
+        if (contentAsString.contains("no free download slots")) {
+            throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server.", 120);
         }
         return false;
     }

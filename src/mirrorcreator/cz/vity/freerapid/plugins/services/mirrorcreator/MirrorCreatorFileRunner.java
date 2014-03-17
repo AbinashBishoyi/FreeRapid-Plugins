@@ -55,15 +55,13 @@ class MirrorCreatorFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize();
             fileURL = method.getURI().toString();
-            final String uid = PlugUtils.getStringBetween(contentAsString, "/status.php?uid=", "\"");
             method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAjax()
-                    .setAction("/status.php?uid=" + uid)
+                    .setActionFromTextBetween(".open(\"GET\", \"", "\"")
                     .toGetMethod();
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
@@ -81,19 +79,22 @@ class MirrorCreatorFileRunner extends AbstractRunner {
     }
 
     private List<URI> getMirrors() throws Exception {
-        final Matcher matcher = getMatcherAgainstContent("<a href=\"(/redirect/.+?)\"");
+        final Matcher matcher = getMatcherAgainstContent("(<a\\b[^<>]+?>)");
         final List<URI> list = new LinkedList<URI>();
         while (matcher.find()) {
-            final HttpMethod method = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(matcher.group(1))
-                    .toGetMethod();
-            if (makeRedirectedRequest(method)) {
-                final String url = PlugUtils.getStringBetween(getContentAsString(), "redirecturl\">", "</div>");
-                try {
-                    list.add(new URI(url));
-                } catch (final URISyntaxException e) {
-                    LogUtils.processException(logger, e);
+            final String a = matcher.group(1);
+            if (a.contains("target=\"_blank\"")) {
+                final HttpMethod method = getMethodBuilder(a + "</a>")
+                        .setReferer(fileURL)
+                        .setActionFromAHrefWhereATagContains("")
+                        .toGetMethod();
+                if (makeRedirectedRequest(method)) {
+                    final String url = PlugUtils.getStringBetween(getContentAsString(), "redirecturl\">", "</div>");
+                    try {
+                        list.add(new URI(url));
+                    } catch (final URISyntaxException e) {
+                        LogUtils.processException(logger, e);
+                    }
                 }
             }
         }

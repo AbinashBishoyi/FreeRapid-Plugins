@@ -10,7 +10,6 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -87,7 +86,7 @@ class TurboBitFileRunner extends AbstractRunner {
             }
             checkProblems();
 
-            final Matcher matcher = getMatcherAgainstContent("limit: (\\d+),");
+            Matcher matcher = getMatcherAgainstContent("limit\\s*:\\s*(\\d+)");
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Download limit reached", Integer.parseInt(matcher.group(1)));
             }
@@ -100,15 +99,22 @@ class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
             }
 
-            int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "minTimeLimit : ", ",", TimeUnit.SECONDS);
-            if (getContentAsString().contains("Timeout.minTimeLimit = Timeout.minTimeLimit/")) { // there is divider
-                final int waitTimeDivider = PlugUtils.getNumberBetween(getContentAsString(), "Timeout.minTimeLimit = Timeout.minTimeLimit/", ";");
+            matcher = getMatcherAgainstContent("(min(?:Time)?Limit)\\s*:\\s*(\\d+)");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Wait time not found");
+            }
+            final String timeVariable = matcher.group(1);
+            int waitTime = Integer.parseInt(matcher.group(2));
+
+            matcher = getMatcherAgainstContent("Timeout\\." + timeVariable + "\\s*=\\s*Timeout\\." + timeVariable + "\\s*/\\s*(\\d+)");
+            if (matcher.find()) { // there is a divisor
+                final int waitTimeDivider = Integer.parseInt(matcher.group(1));
                 waitTime = waitTime / waitTimeDivider;
             }
 
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
-                    .setActionFromTextBetween(".load(\"", "\"")
+                    .setActionFromTextBetween("var url = \"", "\"")
                     .toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
 

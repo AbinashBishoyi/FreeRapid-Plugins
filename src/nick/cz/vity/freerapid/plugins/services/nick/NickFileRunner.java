@@ -64,6 +64,7 @@ class NickFileRunner extends AbstractRtmpRunner {
             final String mgid = getMgid();
             logger.info("mgid = " + mgid);
             method = getGetMethod("http://www.nick.com/dynamo/video/data/mrssGen.jhtml?type=normal&demo=nill&mgid=" + mgid);
+            method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -74,6 +75,7 @@ class NickFileRunner extends AbstractRtmpRunner {
                 httpFile.getProperties().put("removeCompleted", true);
             } else {
                 method = getGetMethod("http://www.nick.com/dynamo/video/data/mediaGen.jhtml?mgid=" + mgid);
+                method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
                 if (!makeRedirectedRequest(method)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();

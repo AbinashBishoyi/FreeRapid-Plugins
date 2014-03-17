@@ -2,7 +2,10 @@ package cz.vity.freerapid.plugins.services.putio;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -22,6 +25,18 @@ import java.util.regex.Matcher;
 class PutIoFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(PutIoFileRunner.class.getName());
 
+    private String getFileIdFromUrl() throws PluginImplementationException{
+        final Matcher matcher = PlugUtils.matcher("/file/(\\d+)",fileURL);
+        if (!matcher.find()) throw new PluginImplementationException("Unable to get file id");
+        return matcher.group(1);
+    }
+
+    private void checkName() throws ErrorDuringDownloadingException {
+        final String fileId = getFileIdFromUrl();
+        PlugUtils.checkName(httpFile, getContentAsString(),"\"renameInput\" value=\"",String.format("\" data-file-id=\"%s\"",fileId));
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
     @Override
     public void run() throws Exception {
         super.run();
@@ -34,11 +49,13 @@ class PutIoFileRunner extends AbstractRunner {
                 parseCollection();
                 return;
             }
+            checkName();
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromAHrefWhereATagContains("Download")
                     .toHttpMethod();
             setFileStreamContentTypes("text/plain");
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME,true);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

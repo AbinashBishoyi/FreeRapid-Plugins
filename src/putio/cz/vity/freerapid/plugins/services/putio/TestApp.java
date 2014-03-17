@@ -19,15 +19,16 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://put.io/file/44421846"));
             //httpFile.setNewURL(new URL("http://put.io/your-files/44420707")); //collection
             //httpFile.setNewURL(new URL("https://put.io/file/44420710"));
-            httpFile.setNewURL(new URL("https://put.io/file/44441573")); //srt
+            //httpFile.setNewURL(new URL("https://put.io/file/44441573")); //srt
+            httpFile.setNewURL(new URL("https://put.io/file/45305550"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final PutIoServiceImpl service = new PutIoServiceImpl();
 
             //we set premium account details
             final PremiumAccount config = new PremiumAccount();
-            config.setUsername("freerapid");
-            config.setPassword("freerapid");
+            config.setUsername("***");
+            config.setPassword("***");
             service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {

@@ -15,12 +15,14 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://fiberupload.com/lnqp1xl8y6cp/LECGVIDBTS.zip"));
+            //httpFile.setNewURL(new URL("http://fiberupload.com/lnqp1xl8y6cp/LECGVIDBTS.zip"));
             //httpFile.setNewURL(new URL("http://fiberupload.com/tdwnzoiwci72/1852334312_Prob.rar"));
+            //httpFile.setNewURL(new URL("http://fiberupload.com/8b213iacf623/0486449688_MathEarnest.rar"));
+            httpFile.setNewURL(new URL("http://fiberupload.com/1dbwycuuv1ia/0486207897_MathFun.rar"));
             //httpFile.setNewURL(new URL("http://bulletupload.com/kjex768f3nfv"));
             //httpFile.setNewURL(new URL("http://bulletupload.com/lnqp1xl8y6cp/LECGVIDBTS.zip"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            connectionSettings.setProxy("103.3.221.154", 8080); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("118.97.107.82", 8080); //eg we can use local proxy to sniff HTTP communication
             final FiberUploadServiceImpl service = new FiberUploadServiceImpl();
 
             //for testing purpose

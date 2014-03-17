@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="indowebster.com" version="1.2.2" vendor="Alex+JPEXS+zid+tong2shot"
+<plugin id="indowebster.com" version="1.2.3" vendor="Alex+JPEXS+zid+tong2shot"
         class="cz.vity.freerapid.plugins.services.indowebster.IndowebsterServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?indowebster\.com(?:/download)?/.+"/>

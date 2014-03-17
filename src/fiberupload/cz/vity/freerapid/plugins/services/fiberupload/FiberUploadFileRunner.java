@@ -5,7 +5,9 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandl
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URL;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Class which contains main code
@@ -13,6 +15,7 @@ import java.util.List;
  * @author tong2shot
  */
 class FiberUploadFileRunner extends XFileSharingRunner {
+    private final static Logger logger = Logger.getLogger(FiberUploadFileRunner.class.getName());
 
     @Override
     protected List<FileSizeHandler> getFileSizeHandlers() {
@@ -31,7 +34,7 @@ class FiberUploadFileRunner extends XFileSharingRunner {
     @Override
     public void runCheck() throws Exception {
         if (fileURL.matches("http://(?:www\\.)?bulletupload\\.com/.+")) {
-            fileURL = fileURL.replaceFirst("bulletupload\\.com", "fiberupload.com");
+            httpFile.setNewURL(new URL(fileURL.replaceFirst("bulletupload\\.com", "fiberupload.com")));
         }
         super.runCheck();
     }
@@ -43,7 +46,16 @@ class FiberUploadFileRunner extends XFileSharingRunner {
 
     @Override
     protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
-        downloadTask.sleep(6);
-        return super.tryDownloadAndSaveFile(method) || super.tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString().replace(httpFile.getFileName(), "GO/" + httpFile.getFileName())).toGetMethod());
+        for (int i = 0; i < 3; i++) { //retry to save file if the file not ready/being prepared. 
+            downloadTask.sleep(6);
+            if (super.tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString()).toGetMethod())) //"cloning" method, to prevent method being aborted.
+                return true;
+            logger.warning(getContentAsString());
+            downloadTask.sleep(6);
+            if (super.tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString().replace(httpFile.getFileName(), "GO/" + httpFile.getFileName())).toGetMethod()))
+                return true;
+            logger.warning(getContentAsString());
+        }
+        return false;
     }
 }

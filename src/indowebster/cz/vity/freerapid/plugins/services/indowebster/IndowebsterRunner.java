@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.indowebster;
 
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -39,57 +36,78 @@ class IndowebsterRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method1 = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method1)) {
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            fileURL = method1.getURI().toString();
+            fileURL = method.getURI().toString();
             if (isPassworded()) {
                 stepPasswordPage();
             }
-            String contentAsString = getContentAsString();
             checkNameAndSize();
-            final String secondURLRule = "<a href=\"(.*?)\" class=\"downloadBtn";
-            Matcher secondURLRuleMatcher = PlugUtils.matcher(secondURLRule, contentAsString);
-            secondURLRuleMatcher.find();
-            final String secondURL = secondURLRuleMatcher.group(1);
-            final HttpMethod method2 = getMethodBuilder()
+            Matcher matcher = getMatcherAgainstContent("<a href=\"(.*?)\" class=\"downloadBtn");
+            if (!matcher.find()) {
+                checkProblems();
+                throw new PluginImplementationException("Tautan halaman kedua tidak ditemukan");
+            }
+            HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction(secondURL)
+                    .setAction(matcher.group(1))
                     .toGetMethod();
             setPageEncoding("utf-8");
-            setClientParameter("X-Requested-With", "XMLHttpRequest");
-            if (makeRedirectedRequest(method2)) {
-                contentAsString = getContentAsString();
-                final String filename = PlugUtils.getStringBetween(contentAsString, "<strong id=\"filename\">", "</strong>");
-                httpFile.setFileName(filename);
-                final int waitTime = PlugUtils.getNumberBetween(contentAsString, "var s = ", ";");
-                downloadTask.sleep(waitTime);
-                final String strAjax = PlugUtils.getStringBetween(contentAsString, "$.post('http://www.indowebster.com/ajax/downloads/gdl',{", "},function");
-                final String ajaxRule = "([^,]*?):'(.*?)'";
-                Matcher ajaxMatcher = PlugUtils.matcher(ajaxRule, strAjax);
-
-                final PostMethod ajaxMethod = getPostMethod(PlugUtils.getStringBetween(contentAsString, "$.post('", "',{"));
-                while (ajaxMatcher.find()) {
-                    ajaxMethod.setParameter(ajaxMatcher.group(1), ajaxMatcher.group(2));
-                }
-                if (makeRequest(ajaxMethod)) {
-                    contentAsString = getContentAsString();
-                    final GetMethod method3 = getGetMethod(contentAsString.replace("[", "%5B").replace("]", "%5D"));
-                    client.makeRequest(method3, false);
-                    URI finalURI = new URI(method3.getResponseHeader("location").getValue().replace("[", "%5B").replace("]", "%5D"), true, method3.getParams().getUriCharset());
-                    setFileStreamContentTypes("text/plain");
-                    final HttpMethod finalMethod = getMethodBuilder()
-                            .setAction(finalURI.toString())
-                            .setReferer(fileURL)
-                            .toGetMethod();
-                    if (!tryDownloadAndSaveFile(finalMethod)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
-                }
+            httpMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
-
+            final String filename = PlugUtils.getStringBetween(getContentAsString(), "<strong id=\"filename\">", "</strong>");
+            final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "var s = ", ";");
+            final PostMethod ajaxMethod = getPostMethod(PlugUtils.getStringBetween(getContentAsString(), "$.post('", "',{"));
+            httpFile.setFileName(filename.replace("[www.indowebster.com]", ""));
+            downloadTask.sleep(waitTime);
+            matcher = PlugUtils.matcher("([^,]*?):'(.*?)'", PlugUtils.getStringBetween(getContentAsString(), "$.post('http://www.indowebster.com/ajax/downloads/gdl',{", "},function"));
+            while (matcher.find()) {
+                ajaxMethod.setParameter(matcher.group(1), matcher.group(2));
+            }
+            ajaxMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            if (!makeRequest(ajaxMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(getContentAsString().replace("[", "%5B").replace("]", "%5D"))
+                    .toGetMethod();
+            client.makeRequest(httpMethod, false);  //will be redirected to new location
+            if (httpMethod.getResponseHeader("location") == null) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Download link not found");
+            }
+            final URI finalURI = new URI(httpMethod.getResponseHeader("location").getValue().replace("[", "%5B").replace("]", "%5D"), true, httpMethod.getParams().getUriCharset());
+            httpMethod = getMethodBuilder()
+                    .setAction(finalURI.toString())
+                    .setReferer(fileURL)
+                    .toGetMethod();
+            setFileStreamContentTypes("text/plain");
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Terjadi kesalahan di proses pengunduhan");
+            }
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
+    }
+
+    @Override
+    protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
+        for (int i = 0; i < 3; i++) { //give it a couple of more tries if error occurs
+            downloadTask.sleep(6);
+            if (super.tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString()).toGetMethod()))  //"cloning" method, to prevent method being aborted
+                return true;
+            logger.warning(method.getURI().toString());
+            logger.warning(getContentAsString());
+        }
+        return false;
     }
 
     private void checkNameAndSize() throws Exception {
@@ -101,16 +119,10 @@ class IndowebsterRunner extends AbstractRunner {
 
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, InvalidURLOrServiceProblemException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws Exception {
         final String contentAsString = getContentAsString();
-        /*
-        if (!content.contains("indowebster.com")) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-        }
-        */
         if (contentAsString.contains("Storage Maintenance, Back Later")) {
-            throw new InvalidURLOrServiceProblemException("Storage Maintenance, Back Later");
+            throw new YouHaveToWaitException("Storage Maintenance, Back Later", 15 * 60);
         }
         if (contentAsString.contains("reported and removed")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Indowebster Error:</b><br>This files has been reported and removed due to terms of use violation"));
@@ -127,6 +139,12 @@ class IndowebsterRunner extends AbstractRunner {
         if (contentAsString.contains("504 Gateway Time-out")) {
             throw new ServiceConnectionProblemException("Gateway Time-out");
         }
+        if (contentAsString.contains("502 Bad Gateway")) {
+            throw new ServiceConnectionProblemException("Bad Gateway");
+        }
+        if (contentAsString.contains("di curi si Buaya Jahat")) {
+            throw new YouHaveToWaitException("Server sibuk, tunggu beberapa saat..", 5 * 60);
+        }
     }
 
     private boolean isPassworded() {
@@ -138,10 +156,10 @@ class IndowebsterRunner extends AbstractRunner {
         while (isPassworded()) {
             String pwdparam = PlugUtils.getStringBetween(getContentAsString(), "<input type=\"password\" name=\"", "\" AUTOCOMPLETE = \"OFF\"");
             if (!pwdparam.equals("")) {
-                PostMethod post1 = getPostMethod(fileURL);
-                post1.addParameter(pwdparam, getPassword());
+                final PostMethod postMethod = getPostMethod(fileURL);
+                postMethod.addParameter(pwdparam, getPassword());
                 logger.info("Posting password to url - " + fileURL);
-                if (!makeRedirectedRequest(post1)) {
+                if (!makeRedirectedRequest(postMethod)) {
                     throw new ServiceConnectionProblemException();
                 }
             } else throw new ServiceConnectionProblemException("Error posting password");

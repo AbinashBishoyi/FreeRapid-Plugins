@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class PhotoBucketServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "photobucket.com";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 10;
     }

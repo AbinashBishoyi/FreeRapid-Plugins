@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             httpFile.setNewURL(new URL("http://s265.photobucket.com/albums/ii203/mm_vr/ntoskrnl/?action=view&current=logovq.jpg"));//image
-            //httpFile.setNewURL(new URL("http://media.photobucket.com/video/water/HalusRen/NC_Trip1/Pictures207.flv"));//video
+            //httpFile.setNewURL(new URL("http://media.photobucket.com/video/water/pilar_christian/Video0007.flv?o=2"));//video
             //httpFile.setNewURL(new URL("http://gs174.photobucket.com/groups/w118/JX009ZP8UE/"));//album1
             //httpFile.setNewURL(new URL("http://s562.photobucket.com/albums/ss70/mango-star/Photography/"));//album2
             //the way we connect to the internet

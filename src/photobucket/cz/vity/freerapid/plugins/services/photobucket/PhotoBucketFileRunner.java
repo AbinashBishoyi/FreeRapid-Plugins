@@ -42,13 +42,14 @@ class PhotoBucketFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Share this album")) {
-            this.httpFile.setFileName("Album: " + PlugUtils.getStringBetween(contentAsString, "<title>", "- Photobucket"));
+            httpFile.setFileName("Album: " + PlugUtils.getStringBetween(contentAsString, "<title>", "- Photobucket"));
 
         } else {
             final Matcher name = getMatcherAgainstContent("File Name: <span id=\"photoPathTitle\".*?>(.+?)</span><span id=\"photoPathExtension\">(.+?)</span>");
             if (name.find()) {
-                logger.info("File name " + name.group(1) + name.group(2));
-                this.httpFile.setFileName(name.group(1) + name.group(2));
+                final String filename = name.group(1) + name.group(2);
+                logger.info("File name " + filename);
+                httpFile.setFileName(filename);
             } else {
                 logger.warning("File name not found");
                 throw new PluginImplementationException("File name not found");
@@ -56,15 +57,18 @@ class PhotoBucketFileRunner extends AbstractRunner {
 
             final Matcher size = getMatcherAgainstContent("File Size: (.+?)(?: -.*?)?</p>");
             if (size.find()) {
-                logger.info("File size " + size.group(1));
-                PlugUtils.getFileSizeFromString(size.group(1));
+                final String filesize = size.group(1);
+                logger.info("File size " + filesize);
+                if (!filesize.contains("unknown")) {
+                    httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesize));
+                }
             } else {
                 logger.warning("File size not found");
                 //throw new PluginImplementationException("File size not found");
             }
         }
 
-        this.httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -123,7 +127,7 @@ class PhotoBucketFileRunner extends AbstractRunner {
         int start = 0;
         final List<URI> uriList = new LinkedList<URI>();
         while (matcher.find(start)) {
-            String link = matcher.group(1).replace("&amp;", "&");
+            final String link = PlugUtils.replaceEntities(matcher.group(1));
             try {
                 uriList.add(new URI(link));
             } catch (URISyntaxException e) {

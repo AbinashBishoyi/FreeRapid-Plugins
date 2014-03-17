@@ -39,9 +39,6 @@ import java.util.regex.Pattern;
 class HuluFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(HuluFileRunner.class.getName());
 
-    private final static String SWF_URL = "http://www.hulu.com/site-player/205906/player.swf?cb=205906";
-    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
-
     private final static String V_PARAM = "888324234";
     private final static String HMAC_KEY = "f6daaa397d51f568dd068709b0ce8e93293e078f7dfc3b40dd8c32d36d2b3ce1";
     private final static String DECRYPT_KEY = "d6dac049cc944519806ab9a1b5e29ccfe3e74dabb4fa42598a45c35d20abdd28";
@@ -164,9 +161,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 throw e;
             }
 
-            final RtmpSession rtmpSession = getSession(getStream(getStreamList(content)));
-            rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
-            rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
+            final Stream stream = getStream(getStreamList(content));
+            final RtmpSession rtmpSession = getSession(stream);
+            final String SwfUrl = (stream.cdn.equalsIgnoreCase("level3") ? "http://www.hulu.com/site-player/205906/player.swf?cb=205906" : "http://download.hulu.com/huludesktop.swf");
+            final SwfVerificationHelper helper = new SwfVerificationHelper(SwfUrl);
+            rtmpSession.getConnectParams().put("pageUrl", SwfUrl);
+            rtmpSession.getConnectParams().put("swfUrl", SwfUrl);
             helper.setSwfVerification(rtmpSession, client);
             tryDownloadAndSaveFile(rtmpSession);
         } else {

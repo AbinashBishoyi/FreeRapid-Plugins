@@ -7,12 +7,16 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -44,9 +48,26 @@ class MediafireRunner extends AbstractRunner {
         }
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+    private void checkNameAndSize() throws Exception {
         if (isFolder()) {
-            httpFile.setFileName("MediaFire Folder >>");
+            final String id = fileURL.substring(fileURL.indexOf('?') + 1);
+            final HttpMethod method = getMethodBuilder()
+                    .setAction("http://www.mediafire.com/api/folder/get_info.php")
+                    .setParameter("folder_key", id)
+                    .setParameter("response_format", "json")
+                    .setParameter("rand", "" + (int) (10000 * Math.random()))
+                    .toGetMethod();
+            setFileStreamContentTypes(new String[0], new String[]{"application/json"});
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            final String name = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"name\":\"", "\","));
+            final long contents = Long.parseLong(PlugUtils.getStringBetween(getContentAsString(), "\"file_count\":\"", "\",")) +
+                    Long.parseLong(PlugUtils.getStringBetween(getContentAsString(), "\"folder_count\":\"", "\","));
+            httpFile.setFileName("Folder: " + name + " >");
+            httpFile.setFileSize(contents);
+
         } else {
             final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('.+?','(.+?)','(\\d+?)'");
             if (!matcher.find()) {
@@ -204,12 +225,36 @@ class MediafireRunner extends AbstractRunner {
                 list.add(new FolderItem(s, null));
             }
         } else {
+            // get sub-folders
+            final HttpMethod method1 = getMethodBuilder()
+                    .setAction("http://www.mediafire.com/api/folder/get_content.php")
+                    .setParameter("r", "bdmz")
+                    .setParameter("content_type", "folders")
+                    .setParameter("filter", "all")
+                    .setParameter("folder_key", id)
+                    .setParameter("order_by", "name")
+                    .setParameter("order_direction", "asc")
+                    .setParameter("response_format", "json")
+                    .setParameter("version", "2")
+                    .toGetMethod();
+            setFileStreamContentTypes(new String[0], new String[]{"application/json"});
+            if (!makeRedirectedRequest(method1)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            final Matcher matcher1 = getMatcherAgainstContent("\"folderkey\":\"(.+?)\",.*?\"name\":\"(.+?)\"");
+            while (matcher1.find()) {
+                list.add(new FolderItem(matcher1.group(1), matcher1.group(2)));
+            }
+            // get files
             final HttpMethod method = getMethodBuilder()
                     .setAction("http://www.mediafire.com/api/folder/get_content.php")
                     .setParameter("r", "ying")
                     .setParameter("content_type", "files")
                     .setParameter("filter", "all")
                     .setParameter("folder_key", id)
+                    .setParameter("order_by", "name")
+                    .setParameter("order_direction", "asc")
                     .setParameter("response_format", "json")
                     .setParameter("version", "2")
                     .toGetMethod();
@@ -218,11 +263,10 @@ class MediafireRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            final Matcher matcher = getMatcherAgainstContent("\"quickkey\":\"(.+?)\",\"filename\":\"(.+?)\"");
+            final Matcher matcher = getMatcherAgainstContent("\"quickkey\":\"(.+?)\",.*?\"filename\":\"(.+?)\"");
             while (matcher.find()) {
                 list.add(new FolderItem(matcher.group(1), matcher.group(2)));
             }
-            Collections.sort(list);
         }
         if (list.isEmpty()) {
             throw new PluginImplementationException("No links found");

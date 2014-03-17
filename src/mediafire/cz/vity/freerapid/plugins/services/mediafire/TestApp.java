@@ -21,7 +21,8 @@ public class TestApp extends PluginDevApplication {
             ///httpFile.setNewURL(new URL("http://www.mediafire.com/download/u6cor1a8lpjjbuf/test.rar"));
             ///httpFile.setNewURL(new URL("http://www.mediafire.com/?7m4fjgk7p4ea2"));
             //httpFile.setNewURL(new URL("http://www.mediafire.com/?bjegtrkfv9inn5f"));//password is "coplay"
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/?4i65rqry7h78y"));//folder
+            //httpFile.setNewURL(new URL("http://www.mediafire.com/?7m4fjgk7p4ea2"));//folder
+            //httpFile.setNewURL(new URL("http://www.mediafire.com/?uvn6ot51q5vco"));//folder of folders
             //httpFile.setNewURL(new URL("http://www.mediafire.com/?lrr6mv33a67s8pb,ogxiipdtc34gzh7,kte3dr6d62i3p83,cnk1yaandyuder7,dssonwaaclcwopw,g74urguvuvjb0a1,7dxzppwfrne38i2,yzynzwzdyfe7gkz,q3bcstafuccq4ng,eyb2ktbzxr5ales,c0d8qfnv7j6l101,ehmasgbwgirdiik,yo85f5payma55ws,un6ebgiovase89a,whcdo271dx7dtx7,bkp6e507b1rpj22"));//multi link
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

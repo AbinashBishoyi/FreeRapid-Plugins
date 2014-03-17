@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.depositfiles;
+package cz.vity.freerapid.plugins.services.upload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -15,11 +15,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author saikek
  */
-class DepositFilesRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(DepositFilesRunner.class.getName());
-    private static final String HTTP_DEPOSITFILES = "http://www.depositfiles.com";
+class UploadRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(UploadRunner.class.getName());
+    private static final String HTTP_UPLOAD = "http://www.upload.com.ua";
 
 
     @Override
@@ -57,7 +57,7 @@ class DepositFilesRunner extends AbstractRunner {
 
                 logger.info("Submit form to - " + s);
                 client.setReferer(fileURL);
-                final PostMethod postMethod = getPostMethod(HTTP_DEPOSITFILES + s);
+                final PostMethod postMethod = getPostMethod(HTTP_UPLOAD + s);
                 postMethod.addParameter("gateway_result", "1");
 
                 if (!makeRequest(postMethod)) {
@@ -105,26 +105,31 @@ class DepositFilesRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        if (!content.contains("depositfiles")) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-        }
+//        if (!content.contains("depositfiles")) {
+//            logger.warning(getContentAsString());
+//            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+//        }
+//        if (content.contains("Файл не найден")) {
+//            throw new URLNotAvailableAnymoreException(String.format("not exists"));
+//        }
+//
+//        Matcher matcher = getMatcherAgainstContent("<b>([0-9.]+&nbsp;.B)</b>");
+//        if (matcher.find()) {
+//            logger.info("File size " + matcher.group(1));
+//            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
+//            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+//        }
+//        matcher = getMatcherAgainstContent("class\\=\"info[^=]*\\=\"([^\"]*)\"");
+//        if (matcher.find()) {
+//            final String fn = matcher.group(1);
+//            logger.info("File name " + fn);
+//            httpFile.setFileName(fn);
+//        } else logger.warning("File name was not found" + getContentAsString());
 
-        if (content.contains("file does not exist")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
-        }
-        Matcher matcher = getMatcherAgainstContent("<b>([0-9.]+&nbsp;.B)</b>");
-        if (matcher.find()) {
-            logger.info("File size " + matcher.group(1));
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        }
-        matcher = getMatcherAgainstContent("class\\=\"info[^=]*\\=\"([^\"]*)\"");
-        if (matcher.find()) {
-            final String fn = matcher.group(1);
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-        } else logger.warning("File name was not found" + getContentAsString());
+        final String contentAsString = getContentAsString();
+        PlugUtils.checkName(httpFile, contentAsString, "скачать файл ", "[");
+        PlugUtils.checkFileSize(httpFile, contentAsString, "file_size\">", "</div>");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {

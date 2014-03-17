@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.depositfiles;
+package cz.vity.freerapid.plugins.services.upload;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,17 +8,17 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Ladislav Vitasek
+ * @author saikek
  */
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://depositfiles.com/de/files/7845416"));
+            httpFile.setNewURL(new URL("http://upload.com.ua/get/901254209/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             // connectionSettings.setProxy("localhost", 8081);
-            testRun(new DepositFilesShareServiceImpl(), httpFile, connectionSettings);
+            testRunCheck(new UploadShareServiceImpl(), httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -1,20 +1,20 @@
-package cz.vity.freerapid.plugins.services.depositfiles;
+package cz.vity.freerapid.plugins.services.upload;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Ladislav Vitasek
+ * @author Saikek
  */
-public class DepositFilesShareServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "depositfiles.com";
+public class UploadShareServiceImpl extends AbstractFileShareService {
+    private static final String SERVICE_NAME = "upload.com.ua";
 
     public String getName() {
         return SERVICE_NAME;
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 1;
+        return 5; //? i don't know yet
     }
 
     @Override
@@ -24,7 +24,7 @@ public class DepositFilesShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new DepositFilesRunner();
+        return new UploadRunner();
     }
 
 

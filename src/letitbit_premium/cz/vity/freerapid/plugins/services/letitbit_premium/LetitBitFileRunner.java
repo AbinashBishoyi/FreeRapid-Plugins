@@ -7,10 +7,8 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -19,18 +17,15 @@ import java.util.regex.Matcher;
  */
 class LetitBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LetitBitFileRunner.class.getName());
-    private boolean badConfig = false;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            PlugUtils.checkName(httpFile, getContentAsString(), "File::</span>", "</h1>");
-            PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size of file::</span>", "</h1>");
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -41,40 +36,49 @@ class LetitBitFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".letitbit.net", "lang", "EN", "/", 86400, false));
-
+        addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
         login();
-
-        HttpMethod httpMethod = getMethodBuilder()
-                .setReferer("http://premium.letitbit.net/index.php")
-                .setAction("http://premium.letitbit.net/ajax.php?action=download")
-                .setParameter("link", fileURL)
-                .toPostMethod();
-        httpMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-        if (!makeRedirectedRequest(httpMethod))
-            throw new ServiceConnectionProblemException();
-        checkProblems();
-
-        final Matcher matcher = getMatcherAgainstContent("Download file (.+?) \\((.+?)\\)");
-        if (!matcher.find()) throw new PluginImplementationException("File name/size not found");
-        httpFile.setFileName(matcher.group(1));
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-
-        httpMethod = getMethodBuilder()
-                .setReferer("http://premium.letitbit.net/index.php")
-                .setActionFromAHrefWhereATagContains("Download file")
-                .toGetMethod();
-        if (!tryDownloadAndSaveFile(httpMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            throw new ServiceConnectionProblemException("Error starting download");
+            //name and size are not visible for premium users
+            method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromIFrameSrcWhereTagContains("check2")
+                    .toGetMethod();
+            if (makeRedirectedRequest(method)) {
+                checkProblems();
+                method = getMethodBuilder()
+                        .setReferer(method.getURI().toString())
+                        .setActionFromAHrefWhereATagContains("ownload")
+                        .toGetMethod();
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, getContentAsString(), "File: <span>", "</span>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "[<span>", "</span>]");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         if (content.contains("The page is temporarily unavailable")) {
             throw new ServiceConnectionProblemException("The page is temporarily unavailable");
+        }
+        if (content.contains("The file is temporarily unavailable")) {
+            throw new ServiceConnectionProblemException("The file is temporarily unavailable");
         }
         if (content.contains("file was not found")
                 || content.contains("\u043D\u0430\u0439\u0434\u0435\u043D")
@@ -89,30 +93,25 @@ class LetitBitFileRunner extends AbstractRunner {
 
     private void login() throws Exception {
         synchronized (LetitBitFileRunner.class) {
-            LetitBitServiceImpl service = (LetitBitServiceImpl) getPluginService();
+            final LetitBitServiceImpl service = (LetitBitServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
-            if (!pa.isSet() || badConfig) {
+            if (pa == null || !pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
                     throw new BadLoginException("No LetitBit Premium account login information!");
                 }
-                badConfig = false;
             }
-
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer("http://premium.letitbit.net/login.php")
-                    .setAction("http://premium.letitbit.net/uajax.php?action=login")
+                    .setReferer("http://letitbit.net/")
+                    .setAction("http://letitbit.net/")
+                    .setParameter("act", "login")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
-                    .setParameter("permanent", "true")
                     .toPostMethod();
-            httpMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
-
-            if (getContentAsString().equals("ENTERERROR"))
-                throw new BadLoginException("You can not enter a premium account from this computer!");
-            if (!getContentAsString().equals("OK"))
+            if (getContentAsString().contains("Authorization data is invalid")
+                    || getContentAsString().contains("Login is indicated in wrong format"))
                 throw new BadLoginException("Invalid LetitBit Premium account login information!");
         }
     }

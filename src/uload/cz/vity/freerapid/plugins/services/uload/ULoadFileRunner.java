@@ -17,4 +17,12 @@ class ULoadFileRunner extends XFileSharingRunner {
         fileSizeHandlers.add(0, new ULoadFileSizeHandler());
         return fileSizeHandlers;
     }
+
+    @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("http://uload.to/images/download.png");
+        return downloadPageMarkers;
+    }
+
 }

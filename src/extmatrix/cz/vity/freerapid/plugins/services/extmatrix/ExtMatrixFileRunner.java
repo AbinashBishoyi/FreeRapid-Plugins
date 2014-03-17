@@ -58,7 +58,10 @@ class ExtMatrixFileRunner extends AbstractRunner {
             method = getGetMethod(matcher.group(1));
 
             boolean bReCaptcha = true;
+            int count = 0;
             while (bReCaptcha) {
+                if (count++ > 5)
+                    throw new PluginImplementationException("Problem with captcha");
                 bReCaptcha = false;
 
                 if (!makeRedirectedRequest(method)) {
@@ -67,13 +70,19 @@ class ExtMatrixFileRunner extends AbstractRunner {
                 }
                 final MethodBuilder methodB = getMethodBuilder()
                         .setActionFromFormWhereActionContains(httpFile.getFileName(), true);
-
-                if (!tryDownloadAndSaveFile(stepReCaptcha(methodB))) {
-                    checkProblems();//if downloading failed
-                    if (getContentAsString().contains("www.extlocker.com"))  //You have entered the wrong security code
+                try {
+                    if (!tryDownloadAndSaveFile(stepReCaptcha(methodB))) {
+                        checkProblems();//if downloading failed
+                        if (getContentAsString().contains("www.extlocker.com"))  //You have entered the wrong security code
+                            bReCaptcha = true;
+                        else
+                            throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                    }
+                } catch (PluginImplementationException ee) {
+                    if (ee.getMessage().equals("ReCaptcha challenge not found"))
                         bReCaptcha = true;
                     else
-                        throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                        throw ee;
                 }
             }
         } else {

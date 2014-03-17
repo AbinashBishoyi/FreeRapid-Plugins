@@ -1,23 +1,17 @@
 package cz.vity.freerapid.plugins.services.saavn;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
-import cz.vity.freerapid.plugins.services.rtmp.RtmpClient;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.video2audio.FlvToMp3InputStream;
-import cz.vity.freerapid.plugins.webclient.*;
-import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
+import cz.vity.freerapid.plugins.video2audio.AbstractVideo2AudioRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.utilities.LogUtils;
-import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
@@ -32,7 +26,7 @@ import java.util.regex.Pattern;
  * @author tong2shot
  * @since 0.9u2
  */
-class SaavnFileRunner extends AbstractRtmpRunner {
+class SaavnFileRunner extends AbstractVideo2AudioRunner {
     private final static Logger logger = Logger.getLogger(SaavnFileRunner.class.getName());
     private final static byte[] SECRET_KEY = "38346591".getBytes(Charset.forName("UTF-8"));
     //private final static String SWF_URL = "http://www.saavn.com/dplayer/2.inviplayer.swf";
@@ -79,65 +73,12 @@ class SaavnFileRunner extends AbstractRtmpRunner {
                 final String host = "r.saavncdn.com";
                 final String play = decryptPlay(url);
                 final RtmpSession rtmpSession = new RtmpSession(host, 1935, app, play, true);
-                tryDownloadAndSaveFile(rtmpSession);
+                tryDownloadAndSaveFile(rtmpSession, 128);
             }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
-    }
-
-    @Override
-    protected boolean tryDownloadAndSaveFile(RtmpSession rtmpSession) throws Exception {
-        httpFile.setState(DownloadState.GETTING);
-        logger.info("Starting RTMP download");
-
-        httpFile.getProperties().remove(DownloadClient.START_POSITION);
-        httpFile.getProperties().remove(DownloadClient.SUPPOSE_TO_DOWNLOAD);
-        httpFile.setResumeSupported(false);
-
-        final String fn = httpFile.getFileName();
-        if (fn == null || fn.isEmpty())
-            throw new IOException("No defined file name");
-        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fn), "_"));
-        setClientParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
-        rtmpSession.setConnectionSettings(client.getSettings());//for proxy
-        rtmpSession.setHttpFile(httpFile);//for size estimation
-        RtmpClient rtmpClient = null;
-        try {
-            rtmpClient = new RtmpClient(rtmpSession);
-            rtmpClient.connect();
-            InputStream in = rtmpSession.getOutputWriter().getStream();
-            if (in != null) {
-                InputStream ais = new FlvToMp3InputStream(in);  //original audio stream is 128 kbps mp3, bitrate param won't be used
-                logger.info("Saving to file");
-                downloadTask.saveToFile(ais);
-                return true;
-            } else {
-                logger.info("Saving file failed");
-                return false;
-            }
-        } catch (InterruptedException e) {
-            //ignore
-        } catch (InterruptedIOException e) {
-            //ignore
-        } catch (Exception e) {
-            LogUtils.processException(logger, e);
-            Throwable t = e;
-            while (t.getCause() != null) {
-                t = t.getCause();
-            }
-            throw new PluginImplementationException("RTMP error - " + Utils.getThrowableDescription(t));
-        } finally {
-            if (rtmpClient != null) {
-                try {
-                    rtmpClient.disconnect();
-                } catch (Exception e) {
-                    LogUtils.processException(logger, e);
-                }
-            }
-        }
-        return true;
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -167,7 +108,7 @@ class SaavnFileRunner extends AbstractRtmpRunner {
     private String decryptPlay(final String str) throws Exception {
         final Cipher cipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(SECRET_KEY, "DES"));
-        return new String(cipher.doFinal(Base64.decodeBase64(str)));
+        return new String(cipher.doFinal(Base64.decodeBase64(str)), "UTF-8");
     }
 
     private void parseAlbum() throws Exception {

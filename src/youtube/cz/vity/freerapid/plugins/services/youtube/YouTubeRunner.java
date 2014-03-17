@@ -4,15 +4,11 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.services.youtube.srt.Transcription2SrtUtil;
-import cz.vity.freerapid.plugins.video2audio.FlvToMp3InputStream;
-import cz.vity.freerapid.plugins.video2audio.Mp4ToMp3InputStream;
-import cz.vity.freerapid.plugins.webclient.DownloadClient;
+import cz.vity.freerapid.plugins.video2audio.AbstractVideo2AudioRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -26,7 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -37,7 +32,7 @@ import java.util.regex.Matcher;
  * @author tong2shot
  * @since 0.82
  */
-class YouTubeRunner extends AbstractRtmpRunner {
+class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:22.0) Gecko/20100101 Firefox/22.0";
 
@@ -153,7 +148,10 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 method = getGetMethod(URLDecoder.decode(videoURL, "UTF-8"));
                 setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
                 if (config.isConvertToAudio()) {
-                    if (!convertToAudio(method)) {
+                    httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
+                    final int bitrate = youTubeMedia.getAudioBitrate();
+                    final boolean mp4 = ".mp4".equalsIgnoreCase(youTubeMedia.getFileExtension());
+                    if (!tryDownloadAndSaveFile(method, bitrate, mp4)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
@@ -418,42 +416,6 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 return 152;
             default:
                 return 192;
-        }
-    }
-
-    //realtime video to audio conversion
-    private boolean convertToAudio(HttpMethod method) throws Exception {
-        if (httpFile.getState() == DownloadState.PAUSED || httpFile.getState() == DownloadState.CANCELLED)
-            return false;
-        else
-            httpFile.setState(DownloadState.GETTING);
-        if (logger.isLoggable(Level.INFO)) {
-            logger.info("Convert to audio..");
-            logger.info("Download link URI: " + method.getURI().toString());
-            logger.info("Making final request for file");
-        }
-
-        try {
-            httpFile.getProperties().remove(DownloadClient.START_POSITION);
-            httpFile.getProperties().remove(DownloadClient.SUPPOSE_TO_DOWNLOAD);
-            httpFile.setResumeSupported(false);
-            httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
-            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(httpFile.getFileName()), "_"));
-            client.getHTTPClient().getParams().setBooleanParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
-            final InputStream is = client.makeFinalRequestForFile(method, httpFile, true);
-            if (is != null) {
-                int audioBitrate = youTubeMedia.getAudioBitrate();
-                InputStream v2ais = (youTubeMedia.getFileExtension().toUpperCase().equals(".FLV") ? new FlvToMp3InputStream(is, audioBitrate) : new Mp4ToMp3InputStream(is, audioBitrate));
-                logger.info("Saving to file");
-                downloadTask.saveToFile(v2ais);
-                return true;
-            } else {
-                logger.info("Saving file failed");
-                return false;
-            }
-        } finally {
-            method.abort();
-            method.releaseConnection();
         }
     }
 

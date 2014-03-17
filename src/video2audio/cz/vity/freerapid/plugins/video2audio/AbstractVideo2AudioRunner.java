@@ -1,7 +1,9 @@
-package cz.vity.freerapid.plugins.services.rtmp;
+package cz.vity.freerapid.plugins.video2audio;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
+import cz.vity.freerapid.plugins.services.rtmp.RtmpClient;
+import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
@@ -9,37 +11,57 @@ import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import cz.vity.freerapid.utilities.Utils;
+import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Subclass this for support for RTMP downloads.
- *
  * @author ntoskrnl
- * @see #tryDownloadAndSaveFile(RtmpSession)
  */
-public abstract class AbstractRtmpRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(AbstractRtmpRunner.class.getName());
+public abstract class AbstractVideo2AudioRunner extends AbstractRtmpRunner {
 
-    /**
-     * Method uses given RtmpSession parameter to connect to the server and tries to download.<br />
-     * Download state of HttpFile is updated automatically - sets <code>DownloadState.GETTING</code> and then <code>DownloadState.DOWNLOADING</code>.
-     * The DownloadClient parameter {@link DownloadClientConsts#NO_CONTENT_LENGTH_AVAILABLE NO_CONTENT_LENGTH_AVAILABLE} is also set.
-     *
-     * @param rtmpSession RtmpSession to use for downloading
-     * @return true if file was successfully downloaded, false otherwise
-     * @throws Exception if something goes horribly wrong
-     * @see RtmpSession
-     */
-    protected boolean tryDownloadAndSaveFile(final RtmpSession rtmpSession) throws Exception {
+    private static final Logger logger = Logger.getLogger(AbstractVideo2AudioRunner.class.getName());
+
+    protected boolean tryDownloadAndSaveFile(final HttpMethod method, final int bitrate, final boolean mp4) throws Exception {
         if (httpFile.getState() == DownloadState.PAUSED || httpFile.getState() == DownloadState.CANCELLED)
             return false;
         else
             httpFile.setState(DownloadState.GETTING);
-        logger.info("Starting RTMP download");
+        if (logger.isLoggable(Level.INFO)) {
+            logger.info("Download link URI: " + method.getURI().toString());
+            logger.info("Starting video2audio HTTP download");
+        }
+
+        httpFile.setResumeSupported(false);
+        setClientParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
+
+        try {
+            InputStream in = client.makeFinalRequestForFile(method, httpFile, true);
+            if (in != null) {
+                in = mp4 ? new Mp4ToMp3InputStream(in, bitrate) : new FlvToMp3InputStream(in, bitrate);
+                logger.info("Saving to file");
+                downloadTask.saveToFile(in);
+                return true;
+            } else {
+                logger.info("Saving file failed");
+                return false;
+            }
+        } finally {
+            method.abort();
+            method.releaseConnection();
+        }
+    }
+
+    protected boolean tryDownloadAndSaveFile(final RtmpSession rtmpSession, final int bitrate) throws Exception {
+        if (httpFile.getState() == DownloadState.PAUSED || httpFile.getState() == DownloadState.CANCELLED)
+            return false;
+        else
+            httpFile.setState(DownloadState.GETTING);
+        logger.info("Starting video2audio RTMP download");
 
         httpFile.getProperties().remove(DownloadClient.START_POSITION);
         httpFile.getProperties().remove(DownloadClient.SUPPOSE_TO_DOWNLOAD);
@@ -63,6 +85,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             InputStream in = rtmpSession.getOutputWriter().getStream();
 
             if (in != null) {
+                in = new FlvToMp3InputStream(in, bitrate);
                 logger.info("Saving to file");
                 downloadTask.saveToFile(in);
                 return true;

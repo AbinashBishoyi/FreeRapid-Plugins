@@ -8,7 +8,10 @@
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="video2audio"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.13"
+                reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="video2audio" path="/" type="code">
             <export prefix="*"/>

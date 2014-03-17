@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,12 +67,12 @@ class LetitbitRunner {
             if (matcher.find()) {
                 String t = matcher.group(2);
                 logger.info("Download URL: " + t);
-                downloader.sleep(10);
+                //downloader.sleep(10);
                 if (downloader.isTerminated())
                     throw new InterruptedException();
                 httpFile.setState(DownloadState.GETTING);
                 client.setReferer(matcher.group(1) + "?link=" + t);
-                client.getHTTPClient().getParams().setParameter("http.protocol.single-cookie-header", true);
+                client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
                 final GetMethod method = client.getGetMethod(t);
                 method.setFollowRedirects(true);
                 try {

@@ -9,11 +9,16 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -37,7 +42,18 @@ class XUN6FileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "\u6587\u4EF6\u540D\u7A31:</th><td>", "</td></tr>");
+
+        Pattern urlPattern = Pattern.compile("http\\:\\/\\/www\\.xun6\\.com/file/[0-9a-f]+/(.*)\\.html");
+        Matcher m = urlPattern.matcher(fileURL);
+        if (m.matches()) {
+            try {
+                httpFile.setFileName(URLDecoder.decode(m.group(1), "utf8"));
+            } catch (UnsupportedEncodingException ex) {
+                //ignored
+            }
+        } else { //if above url match does not work
+            PlugUtils.checkName(httpFile, content, "\u6587\u4EF6\u540D\u7A31:</th><td>", "</td></tr>");
+        }
         PlugUtils.checkFileSize(httpFile, content, "\u6587\u4EF6\u5927\u5C0F:</th><td>", "</td></tr>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -54,7 +70,7 @@ class XUN6FileRunner extends AbstractRunner {
 
             CaptchaSupport captchaSupport = getCaptchaSupport();
             do {
-                String captchaURL=PlugUtils.getStringBetween(getContentAsString(), "<img id=\"dynimg\" src=\"", "\"");
+                String captchaURL = PlugUtils.getStringBetween(getContentAsString(), "<img id=\"dynimg\" src=\"", "\"");
                 String captchaR = captchaSupport.getCaptcha(captchaURL);
                 if (captchaR == null) {
                     throw new CaptchaEntryInputMismatchException();
@@ -65,15 +81,22 @@ class XUN6FileRunner extends AbstractRunner {
                     throw new PluginImplementationException();
                 }
             } while (getContentAsString().contains("\u8ACB\u91CD\u65B0\u8F38\u5165\u9A57\u8B49\u78BC"));
-            final HttpMethod method3 = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("\u4E0B\u8F09").toHttpMethod();
-            int waitTime=PlugUtils.getWaitTimeBetween(getContentAsString(), "var timeout=\"", "\";", TimeUnit.SECONDS);
-            downloadTask.sleep(waitTime); 
-            //here is the download link extraction
+            String content = getContentAsString();
+            int waitTime = PlugUtils.getWaitTimeBetween(content, "var timeout=\"", "\";", TimeUnit.SECONDS);
+
+            String protocol = PlugUtils.getStringBetween(content, "var protocol = \"", "\";");
+            String domain = PlugUtils.getStringBetween(content, "var domain = \"", "\";");
+            String dirname = PlugUtils.getStringBetween(content, "var dirname = \"", "\";");
+            String basename = PlugUtils.getStringBetween(content, "var basename = \"", "\";");
+
+            final HttpMethod method3 = getMethodBuilder().setReferer(fileURL).setAction(protocol + "://" + domain + dirname + "/" + basename).toHttpMethod();
+            downloadTask.sleep(waitTime);
+
             if (!tryDownloadAndSaveFile(method3)) {
                 checkProblems();//if downloading failed
                 logger.warning(getContentAsString());//log the info
                 throw new PluginImplementationException();//some unknown problem
-                }
+            }
 
         } else {
             checkProblems();

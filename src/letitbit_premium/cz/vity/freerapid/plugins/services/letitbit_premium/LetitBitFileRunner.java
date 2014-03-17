@@ -82,6 +82,9 @@ class LetitBitFileRunner extends AbstractRunner {
                 || (content.contains("Request file ") && content.contains(" Deleted"))) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
+        if (content.contains("You do not have enough premium points to download this file")) {
+            throw new NotRecoverableDownloadException("You do not have enough premium points to download this file");
+        }
     }
 
     private void login() throws Exception {

@@ -117,7 +117,7 @@ class LetitbitRunner extends AbstractRunner {
     }
 
     private String getCaptchaImageURL() throws Exception {
-        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getEscapedURI();
+        String s = getMethodBuilder().setBaseURL("http://letitbit.net").setActionFromImgSrcWhereTagContains("cap.php").getEscapedURI();
         logger.info("Captcha image URL: " + s);
         return s;
     }

@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.fourupload;
 
 import java.awt.image.BufferedImage;
+import java.io.FileOutputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,24 +48,27 @@ class FourUploadFilesRunner extends AbstractRunner {
 
             Matcher matcher = getMatcherAgainstContent("<a\\shref=\"([\\w/\\.]*)\"\\sclass=\"button-download\">");
             if( !matcher.find() ) {
-                checkProblems();
+                checkProblems(20);
             }
 
             getMethod = getGetMethod(URI_BASE + matcher.group(1));
             if( !makeRequest(getMethod)) {
-                checkProblems();
+                checkProblems(21);
             }
 
+            /** It's not necessary wait this
             matcher = getMatcherAgainstContent("<p\\sid=\"counter\">(\\d*)</p>");
             if( !matcher.find() ) {
                 checkProblems();
             }
             String t = matcher.group(1);
             int seconds = new Integer(t);
+            logger.info("wait - " + seconds);
+            /**/
 
             matcher = getMatcherAgainstContent("Ajax.Request\\('([/\\w]*)'\\);");
             if( !matcher.find() ) {
-                checkProblems();
+                checkProblems(22);
             }
 
             String postAction = getMethodBuilder().setActionFromFormByName("downloadForm", false).getAction();
@@ -74,12 +78,12 @@ class FourUploadFilesRunner extends AbstractRunner {
             logger.info( "Captcha URL: " + recaptcha );
             getMethod = getGetMethod(recaptcha);
             if( !makeRequest(getMethod)) {
-                checkProblems();
+                checkProblems(23);
             }
             //System.out.println( getContentAsString() );
             matcher = getMatcherAgainstContent("challenge\\s:\\s'([\\w-]*)'");
             if( !matcher.find() ) {
-                checkProblems();
+                checkProblems(24);
             }
             String recaptcha_challenge_field = matcher.group(1);
             String captcha="http://api.recaptcha.net/image?c=" + recaptcha_challenge_field;
@@ -92,7 +96,6 @@ class FourUploadFilesRunner extends AbstractRunner {
                 throw new CaptchaEntryInputMismatchException("Can't be null");
             }
 
-            logger.info("wait - " + seconds);
             // It's not necessary wait this
             //downloadTask.sleep(seconds + 1);
 
@@ -104,7 +107,7 @@ class FourUploadFilesRunner extends AbstractRunner {
             //postMethod.setFollowRedirects(true);
 
             if (!tryDownloadAndSaveFile(postMethod)) {
-                checkProblems();//if downloading failed
+                checkProblems(25);//if downloading failed
                 //logger.warning(getContentAsString());//log the info
                 throw new CaptchaEntryInputMismatchException();
             }
@@ -129,12 +132,12 @@ class FourUploadFilesRunner extends AbstractRunner {
                 httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
                 return;
             } else {
-                checkProblems();
+                checkProblems(1);
             }
         }
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems(int step) throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, PluginImplementationException {
         String content = getContentAsString();
         if (content.contains("\u0421 \u0432\u0430\u0448\u0435\u0433\u043e IP \u0430\u0434\u0440\u0435\u0441\u0430")) {
             throw new ServiceConnectionProblemException(String.format("<b>Your IP is already downloading a file from our system.</b><br>You cannot download more than one file in parallel."));
@@ -149,11 +152,12 @@ class FourUploadFilesRunner extends AbstractRunner {
             f.close();
         } catch(Exception e) {}
         /**/
+        throw new PluginImplementationException("Step " + step);
     }
 
     public String getActionFromScriptSrcWhereTagContains(final String text) throws BuildMethodException {
-        Pattern iframePattern = Pattern.compile("(<script(?:.*?)src\\s?=\\s?(?:\"|')(.+?)(?:\"|')(?:.*?)>)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-        final Matcher matcher = iframePattern.matcher( getContentAsString() );
+        Pattern scriptPattern = Pattern.compile("(<script(?:.*?)src\\s?=\\s?(?:\"|')(.+?)(?:\"|')(?:.*?)>)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+        final Matcher matcher = scriptPattern.matcher( getContentAsString() );
         int start = 0;
         final String lower = text.toLowerCase();
         while (matcher.find(start)) {

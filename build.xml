@@ -178,6 +178,13 @@
         <ant dir="${src.dir}/bigandfree/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/photobucket/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidlibrary/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/megavideo/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/filesavr/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/fileshost/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/bebasupload/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/remixshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/microsoftdownloads/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/hyperfileshare/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

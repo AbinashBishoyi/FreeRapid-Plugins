@@ -97,7 +97,8 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
         }
         if (getContentAsString().contains("Access To Website Blocked"))
             throw new ServiceConnectionProblemException("FreeRapid detected as robot - Access To Website Blocked");
-        if (content.contains("META NAME=\"ROBOTS\"") || content.contains("META NAME=\"robots\"")) {
+        if (content.contains("META NAME=\"ROBOTS\"") || content.contains("META NAME=\"robots\"") ||
+                content.contains("to pass the security check")) {
             Logger.getLogger(BillionUploadsFileRunner.class.getName()).info("FREERAPID DETECTED AS ROBOT");
             checkRobotDetectorProblem();
         }

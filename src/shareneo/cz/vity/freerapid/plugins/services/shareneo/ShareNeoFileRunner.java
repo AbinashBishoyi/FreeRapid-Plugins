@@ -54,7 +54,7 @@ class ShareNeoFileRunner extends AbstractRunner {
 
             final Matcher matchWait = PlugUtils.matcher("var seconds\\s*?=\\s*?(.+?);", contentAsString);
             if (!matchWait.find()) throw new PluginImplementationException("Wait time not found");
-            downloadTask.sleep(Integer.parseInt(matchWait.group(1)) + 1);
+            downloadTask.sleep(Integer.parseInt(matchWait.group(1).trim()) + 1);
             final String nextPage = PlugUtils.getStringBetween(contentAsString, ".download-timer').html(\"<a href='", "'>download now</a>\");");
             if (!makeRedirectedRequest(getGetMethod(nextPage))) {
                 checkProblems();

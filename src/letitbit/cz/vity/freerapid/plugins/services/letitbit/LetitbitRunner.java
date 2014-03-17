@@ -1,18 +1,15 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
-import cz.vity.freerapid.plugins.services.letitbit.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 
 /**
@@ -20,7 +17,6 @@ import java.util.logging.Logger;
  */
 class LetitbitRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LetitbitRunner.class.getName());
-    private int captchatry = 0;
 
     @Override
     public void runCheck() throws Exception {
@@ -28,7 +24,6 @@ class LetitbitRunner extends AbstractRunner {
         addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
         setPageEncoding("Windows-1251");
         final HttpMethod httpMethod = getGetMethod(fileURL);
-
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
@@ -53,73 +48,64 @@ class LetitbitRunner extends AbstractRunner {
         setPageEncoding("Windows-1251");
         client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
 
-        final HttpMethod httpMethod = getGetMethod(fileURL);
+        HttpMethod httpMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
 
-            final HttpMethod httpMethod2 = getMethodBuilder()
+            httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormByName("ifree_form", true)
                     .toPostMethod();
-            if (!makeRedirectedRequest(httpMethod2)) {
+            if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            String secondPageUrl = httpMethod2.getURI().toString();
+            String pageUrl = httpMethod.getURI().toString();
 
             if (!getContentAsString().contains("\"dvifree\"")) {
                 //Russian IPs may see a different page here, let's handle it
-                final HttpMethod httpMethodR = getMethodBuilder()
-                        .setReferer(secondPageUrl)
+                httpMethod = getMethodBuilder()
+                        .setReferer(pageUrl)
                         .setActionFromFormWhereActionContains("letitbit.net", true)
                         .toPostMethod();
-                if (!makeRedirectedRequest(httpMethodR)) {
+                if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                secondPageUrl = httpMethodR.getURI().toString();
+                pageUrl = httpMethod.getURI().toString();
             }
 
-            final MethodBuilder captchaBuilder = getMethodBuilder()
-                    .setReferer(secondPageUrl)
-                    .setActionFromFormByName("dvifree", true);
-            final String captchaurl = getCaptchaImageURL();
-            do {
-                final HttpMethod captchaMethod = captchaBuilder
-                        .setParameter("cap", readCaptchaImage(captchaurl))
-                        .toPostMethod();
-                if (!makeRedirectedRequest(captchaMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                if (getContentAsString().contains("id=\"callback_form\"")) {
-                    throw new ServiceConnectionProblemException("The file is temporarily unavailable for downloading. Please try again later.");
-                }
-                captchatry++;
-            } while (getContentAsString().contains("history.go(-1)"));
+            httpMethod = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setActionFromFormByName("dvifree", true)
+                    .toPostMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            pageUrl = httpMethod.getURI().toString();
 
-            final HttpMethod httpMethod3 = getMethodBuilder()
-                    .setActionFromIFrameSrcWhereTagContains("name=\"topFrame\"")
-                    .setReferer(secondPageUrl).toGetMethod();
-            final String thirdPageUrl = httpMethod3.getURI().toString();
-            if (!makeRedirectedRequest(httpMethod3)) {
+            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
+
+            httpMethod = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setAction("/ajax/download3.php")
+                    .toPostMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
 
-            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "<span id=\"errt\">", "</span>") + 1);
-
-            if (!makeRedirectedRequest(httpMethod3)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
+            final String content = getContentAsString().trim();
+            if (content.isEmpty()) {
+                throw new PluginImplementationException("Download link not found");
             }
-
-            final HttpMethod httpMethod4 = getMethodBuilder()
-                    .setActionFromAHrefWhereATagContains("ownload")
-                    .setReferer(thirdPageUrl)
+            httpMethod = getMethodBuilder()
+                    .setReferer(pageUrl)
+                    .setAction(content)
                     .toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod4)) {
+            if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
@@ -129,43 +115,7 @@ class LetitbitRunner extends AbstractRunner {
         }
     }
 
-    private String getCaptchaImageURL() throws Exception {
-        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getEscapedURI();
-        logger.info("Captcha image URL: " + s);
-        return s;
-    }
-
-    private String readCaptchaImage(final String captchaurl) throws Exception {
-        final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaurl);
-        String captcha;
-        switch (captchatry) {
-            case 0:
-                CaptchaReader cr = new CaptchaReader(captchaImage);
-                captcha = cr.getWord();
-                if (captcha != null) {
-                    logger.info("Captcha - RickCL Captcha recognized: " + captcha);
-                    break;
-                }
-            case 1:
-                final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2, captchaImage.getHeight() - 2);
-                captcha = PlugUtils.recognize(croppedCaptchaImage, "-C a-z-0-9");
-                if (captcha != null) {
-                    logger.info("Captcha - OCR recognized: " + captcha);
-                    break;
-                }
-            default:
-                captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-                if (captcha != null) {
-                    logger.info("Captcha - Manual: " + captcha);
-                }
-                break;
-        }
-        if (captcha == null)
-            throw new CaptchaEntryInputMismatchException();
-        return captcha;
-    }
-
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         if (content.contains("The page is temporarily unavailable")) {
             throw new ServiceConnectionProblemException("The page is temporarily unavailable");

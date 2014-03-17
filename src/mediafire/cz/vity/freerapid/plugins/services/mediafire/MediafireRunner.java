@@ -46,12 +46,12 @@ class MediafireRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
 
-            if (getContentAsString().contains("dh('');")) {
+            if (getContentAsString().contains("dh('');")) { //if passworded
                 while (getContentAsString().contains("dh('');")) {
-                    //this doesn't work
                     HttpMethod postPwd = getMethodBuilder()
                             .setReferer(fileURL)
-                            .setAction(fileURL)//could propably be setActionFromFormByName("form_password", true), but it's the same as this
+                            .setBaseURL("http://www.mediafire.com/")
+                            .setActionFromFormByName("form_password", true)
                             .setAndEncodeParameter("downloadp", getPassword())
                             .toPostMethod();
                     if (!makeRedirectedRequest(postPwd)) {
@@ -72,7 +72,6 @@ class MediafireRunner extends AbstractRunner {
                 String url = "http://www.mediafire.com/dynamic/download.php?qk=" + qk + "&pk=" + pk + "&r=" + r;
                 logger.info("Script target URL " + url);
                 GetMethod method = getGetMethod(url);
-
 
                 if (makeRequest(method)) {
 

@@ -14,7 +14,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import java.awt.image.BufferedImage;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -205,7 +204,7 @@ class BadongoFileRunner extends AbstractRunner {
     }
 
     private String processJavaScript() throws Exception {
-        String content = decryptJavaScript(getContentAsString());
+        String content = getContentAsString();
 
         Matcher matcher = PlugUtils.matcher("function sajax_do_call\\([^\\}]+?uri = \"(.+?)\"", content);
         if (!matcher.find()) throw new PluginImplementationException("AJAX URI not found");
@@ -239,7 +238,7 @@ class BadongoFileRunner extends AbstractRunner {
                 logger.warning("I don't think this is going anywhere...");
                 throw new PluginImplementationException("Cannot proceed from AJAX calls");
             }
-            content = decryptJavaScript(getContentAsString());
+            content = getContentAsString();
             matcher = PlugUtils.matcher("(?s)= \\{(.+?)\\}", content);
             if (matcher.find()) {
                 matcher = PlugUtils.matcher("'(.+?)'\\s*?:\\s*?'(.*?)'", matcher.group(1));
@@ -276,7 +275,7 @@ class BadongoFileRunner extends AbstractRunner {
         if (!makeRedirectedRequest(method)) throw new ServiceConnectionProblemException();
         referer = method.getURI().toString();
 
-        content = decryptJavaScript(getContentAsString());
+        content = getContentAsString();
         return PlugUtils.getStringBetween(content, "window.location.href = '", "';");
     }
 
@@ -290,6 +289,7 @@ class BadongoFileRunner extends AbstractRunner {
         return method;
     }
 
+    /*
     private static String decryptJavaScript(final String content) throws PluginImplementationException {
         final StringBuilder sb = new StringBuilder();
         try {
@@ -337,5 +337,6 @@ class BadongoFileRunner extends AbstractRunner {
     protected String getBaseURL() {
         return SERVICE_WEB;
     }
+    */
 
 }

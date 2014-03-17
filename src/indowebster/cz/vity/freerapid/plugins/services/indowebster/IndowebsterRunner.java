@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.Header;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -63,26 +64,40 @@ class IndowebsterRunner extends AbstractRunner {
             if (matcher.find()) {
                 String secondUrl = matcher.group(1);
                 final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(secondUrl).toGetMethod();
-                client.getHTTPClient().getParams().setHttpElementCharset("iso-8859-1");
-                client.getHTTPClient().getParams().setParameter("pageCharset", "iso-8859-1");
+                client.getHTTPClient().getParams().setHttpElementCharset("utf-8");
+                client.getHTTPClient().getParams().setParameter("pageCharset", "utf-8");
                 if (makeRedirectedRequest(method2)) {
                     String content = getContentAsString();
                     matcher = getMatcherAgainstContent("<p id=\"link-download\" align=\"center\"><a href=\"(http.*)\" class=\"dlm-h2\">Klik Disini untuk Mengunduh</a></p>");
                     if (matcher.find()) {
                         String thirdUrl = matcher.group(1);
+                        PlugUtils.checkName(httpFile, content, "<p align=\"center\">YOU ARE DOWNLOADING : <br /><b>", "</b></p>");
                         final int waittime = PlugUtils.getNumberBetween(content, "document.counter.dl2.value='", "'");
                         downloadTask.sleep(waittime);
                         final HttpMethod method3 = getMethodBuilder().setReferer(secondUrl).setAction(thirdUrl).toGetMethod();
-                        method3.setFollowRedirects(true);
-                        if (!tryDownloadAndSaveFile(method3)) {
-                            checkProblems();
-                            logger.warning(getContentAsString());
-                            throw new IOException("File input stream is empty.");
+                        // handle cross redirect
+                        try
+                        {
+                        tryDownloadAndSaveFile(method3);
                         }
-                    } else throw new InvalidURLOrServiceProblemException("Final link not found");
-                } else throw new InvalidURLOrServiceProblemException("Cant get second url");
-            } else throw new InvalidURLOrServiceProblemException("Cant find download link");
-        }  else throw new InvalidURLOrServiceProblemException("Cant load first link");
+                        catch (Exception ex)
+                        {
+                        }
+                        Header locationHeader = method3.getResponseHeader("location");
+                        if (locationHeader != null)
+                        {
+                            //logger.warning(locationHeader.getValue());
+                            final HttpMethod method4 = getMethodBuilder().setAction(locationHeader.getValue()).toGetMethod();
+                            if (!tryDownloadAndSaveFile(method4)) {
+                                checkProblems();
+                                logger.warning(getContentAsString());
+                                throw new IOException("File input stream is empty.");
+                            } else throw new InvalidURLOrServiceProblemException("Download failed");
+                        } else throw new InvalidURLOrServiceProblemException("Final link not found");
+                    } else throw new InvalidURLOrServiceProblemException("Can't get third url");
+                } else throw new InvalidURLOrServiceProblemException("Can't get second url");
+            } else throw new InvalidURLOrServiceProblemException("Can't find download link");
+        }  else throw new InvalidURLOrServiceProblemException("Can't load first link");
     }
 
     private boolean isPassworded() {
@@ -104,7 +119,8 @@ class IndowebsterRunner extends AbstractRunner {
         if (content.contains("File doesn")) {
             throw new URLNotAvailableAnymoreException("<b>Indowebster error:</b><br>File doesn't exist");
         }
-        PlugUtils.checkName(httpFile, content, "Description :</span>\n" + "            <p>", "</p>");
+        //PlugUtils.checkName(httpFile, content, "Description :</span>\n" + "            <p>", "</p>");
+        PlugUtils.checkName(httpFile, content, "class=\"dl-title\" title=\"", "\">");
         PlugUtils.checkFileSize(httpFile, content, "Size : <span style=\"float:none;\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 

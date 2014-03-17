@@ -1,20 +1,21 @@
 package cz.vity.freerapid.plugins.services.youtube;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.io.UnsupportedEncodingException;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.net.URLDecoder;
 
 /**
  * @author Kajda, JPEXS
@@ -22,7 +23,6 @@ import java.net.URLDecoder;
  */
 class YouTubeFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
-    private static final String SERVICE_WEB = "http://www.youtube.com";
     private YouTubeSettingsConfig config;
     private int fmt = 0;
     private String fileExtension = ".flv";
@@ -33,10 +33,11 @@ class YouTubeFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkSeriousProblems();
+            checkProblems();
             checkName();
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -47,42 +48,37 @@ class YouTubeFileRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
-            checkAllProblems();
+            checkProblems();
             setConfig();
             checkFmtParameter();
             checkName();
-            
-            
-            String fmt_url_map=PlugUtils.getStringBetween(getContentAsString(), "&fmt_url_map=", "&");
-            fmt_url_map=URLDecoder.decode(fmt_url_map,"UTF-8");            
-            Matcher matcher = PlugUtils.matcher(","+fmt+"\\|(http[^\\|]+)(,[0-9]+\\||$)",","+fmt_url_map);
+
+            String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_url_map=", "&");
+            fmt_url_map = URLDecoder.decode(fmt_url_map, "UTF-8");
+            Matcher matcher = PlugUtils.matcher("," + fmt + "\\|(http[^\\|]+)(,[0-9]+\\||$)", "," + fmt_url_map);
 
             if (matcher.find()) {
                 client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
                 getMethod = getGetMethod(matcher.group(1));
                 if (!tryDownloadAndSaveFile(getMethod)) {
-                        checkAllProblems();
-                        logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty");
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             } else {
-                throw new PluginImplementationException("Cannot find specified video format("+fmt+")");
+                throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
             }
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkSeriousProblems() throws ErrorDuringDownloadingException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final Matcher matcher = getMatcherAgainstContent("class=\"errorBox\">((?:.|\\s)+?)</div");
 
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(matcher.group(1));
         }
-    }
-
-    private void checkAllProblems() throws ErrorDuringDownloadingException {
-        checkSeriousProblems();
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
@@ -93,8 +89,7 @@ class YouTubeFileRunner extends AbstractRunner {
             logger.info("File name " + fileName);
             httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fileName), "_"));
         } else {
-            logger.warning("File name was not found");
-            throw new PluginImplementationException();
+            throw new PluginImplementationException("File name was not found");
         }
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -106,13 +101,13 @@ class YouTubeFileRunner extends AbstractRunner {
     }
 
     private void checkFmtParameter() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("fmt=(\\d+)", fileURL.toLowerCase());
+        final Matcher matcher = PlugUtils.matcher("fmt=(\\d+)", fileURL.toLowerCase(Locale.ENGLISH));
 
         if (matcher.find()) {
             final String fmtCode = matcher.group(1);
 
             if (fmtCode.length() <= 2) {
-                fmt=Integer.parseInt(fmtCode);
+                fmt = Integer.parseInt(fmtCode);
                 setFileExtension(fmt);
             }
         } else {
@@ -121,23 +116,23 @@ class YouTubeFileRunner extends AbstractRunner {
     }
 
     private void processConfig() throws ErrorDuringDownloadingException {
-        String fmt_map=PlugUtils.getStringBetween(getContentAsString(), "&fmt_map=", "&hl");
+        String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_map=", "&");
         try {
-            fmt_map=URLDecoder.decode(fmt_map, "UTF-8");
-        } catch (UnsupportedEncodingException ex) {
-
+            fmt_map = URLDecoder.decode(fmt_map, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            LogUtils.processException(logger, e);
         }
-        String formats[]=fmt_map.split(",");
-        int quality=config.getQualitySetting();
-        if(quality==4) quality=formats.length-1; //maximum available
-        if(quality>=formats.length) quality=formats.length-1;
-        String selectedFormat=formats[formats.length-1-quality];
-        fmt=Integer.parseInt(selectedFormat.substring(0,selectedFormat.indexOf("/")));
-        setFileExtension(fmt);          
+        String formats[] = fmt_map.split(",");
+        int quality = config.getQualitySetting();
+        if (quality == 4) quality = formats.length - 1; //maximum available
+        if (quality >= formats.length) quality = formats.length - 1;
+        String selectedFormat = formats[formats.length - 1 - quality];
+        fmt = Integer.parseInt(selectedFormat.substring(0, selectedFormat.indexOf("/")));
+        setFileExtension(fmt);
     }
 
     private void setFileExtension(int fmtCode) {
-        switch (fmtCode) {            
+        switch (fmtCode) {
             case 13:
             case 17:
                 fileExtension = ".3gp";

@@ -12,10 +12,12 @@ public class YouTubeServiceImpl extends AbstractFileShareService {
     private static final String CONFIG_FILE = "YouTubeSettings.xml";
     private volatile YouTubeSettingsConfig config;
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 9;
     }

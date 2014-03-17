@@ -18,7 +18,7 @@ public class YouTubeSettingsPanel extends JPanel implements ActionListener {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"0 (lowest)","1","2","3","maximum available"};
+        final String[] qualityStrings = {"0 (lowest)", "1", "2", "3", "maximum available"};
         final JLabel qualityLabel = new JLabel("Preffered quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);
         qualityList.setSelectedIndex(config.getQualitySetting());
@@ -28,6 +28,7 @@ public class YouTubeSettingsPanel extends JPanel implements ActionListener {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         final JComboBox cb = (JComboBox) e.getSource();
         config.setQualitySetting(cb.getSelectedIndex());

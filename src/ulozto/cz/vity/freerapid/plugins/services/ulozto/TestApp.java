@@ -8,14 +8,14 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
+ * @author Ladislav Vitasek & Tomï¿½ Prochï¿½zka <to.m.p@atomsoft.cz>
  */
 public class TestApp extends PluginDevApplication {
     protected void startup() {
 
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://uloz.to/3298932/A.P.P.T.B.o.L. 2009 480p BRRip XviD AC3.CZ.smn.part4.rar"));
+            httpFile.setNewURL(new URL("http://www.uloz.to/1579588/7-harry-potter-a-relikvie-smrti-kniha-mp3-svet-warez-cz-part2-rar"));
             testRun(new UlozToServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

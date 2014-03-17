@@ -43,12 +43,12 @@ class UlozToRunner extends AbstractRunner {
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
-            if (getContentAsString().contains("id=\"captcha\"")) {
+            if (getContentAsString().contains("captcha_user")) {
 
                 checkNameAndSize(getContentAsString());
                 boolean saved = false;
                 captchaCount = 0;
-                while (getContentAsString().contains("id=\"captcha\"")) {
+                while (getContentAsString().contains("captcha_user")) {
                     setClientParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha(getContentAsString());
                     method.setFollowRedirects(false);
@@ -98,13 +98,17 @@ class UlozToRunner extends AbstractRunner {
         if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
         }
-        PlugUtils.checkName(httpFile, content, "|", "|");
-        PlugUtils.checkFileSize(httpFile, content, "Velikost souboru je <b>", "</b>");
+        Matcher m=Pattern.compile("<h2 class=\"nadpis\"[^>]*><a href=\"[^\"]*\">([^<]+)</a>").matcher(content);
+        if(!m.find()) throw new PluginImplementationException("Cannot find filename");
+
+        httpFile.setFileName(m.group(1));
+        m=Pattern.compile("<div class=\"info_velikost\"[^>]*><div>([^<]+)</div>").matcher(content);
+        if(!m.find()) throw new PluginImplementationException("Cannot find filesize");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(m.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private HttpMethod stepCaptcha(String contentAsString) throws Exception {
-        if (contentAsString.contains("id=\"captcha\"")) {
             CaptchaSupport captchaSupport = getCaptchaSupport();
             MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
             String captcha = "";
@@ -130,15 +134,14 @@ class UlozToRunner extends AbstractRunner {
                 sendForm.setAndEncodeParameter("captcha_user", captcha);
                 return sendForm.toPostMethod();
             }
-        } else {
-            logger.warning(contentAsString);
-            throw new PluginImplementationException("Captcha picture was not found");
-        }
     }
 
     //"P�ekro�en po�et FREE slot�, pou�ijte VIP download
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
+        if (content.contains("Soubor byl sma")){
+            throw new URLNotAvailableAnymoreException("Soubor byl smazan");
+        }
         if (content.contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
         }

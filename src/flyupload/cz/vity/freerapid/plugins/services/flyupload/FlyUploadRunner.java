@@ -58,8 +58,10 @@ class FlyUploadRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         if (!fileURL.toLowerCase().contains("&c=1"))
             fileURL = fileURL + "&c=1";
+        if (!fileURL.toLowerCase().contains("/get?"))
+            fileURL = fileURL.replace("com/?", "com/get?");
         client.setReferer(fileURL);
-        addCookie(new Cookie(".flyupload.com", "downloadpages", "1", "/", 86400, false));
+        addCookie(new Cookie(".flyupload.com", "downloadpages", "2", "/", 86400, false));
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
@@ -84,6 +86,11 @@ class FlyUploadRunner extends AbstractRunner {
         if (contentAsString.contains("has either expired or the URL has an invalid fid.")) {
             throw new URLNotAvailableAnymoreException("The file you requested has either expired or the URL has an invalid fid."); //let to know user in FRD
         }
+        if (contentAsString.contains("The file you requested has expired")) {
+            throw new URLNotAvailableAnymoreException("The file you requested has expired"); //let to know user in FRD
+        }
+
+
     }
 
     @Override

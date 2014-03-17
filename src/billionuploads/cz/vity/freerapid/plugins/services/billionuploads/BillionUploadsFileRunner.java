@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.billionuploads;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -29,6 +30,13 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
         final List<String> downloadLinkRegexes = new LinkedList<String>();
         downloadLinkRegexes.add("<a href\\s?=\\s?(?:\"|')(http.+?)(?:\"|') id=\"_tlink\"");
         return downloadLinkRegexes;
+    }
+
+    @Override
+    protected MethodBuilder getXFSMethodBuilder() throws Exception {
+        final MethodBuilder builder = getXFSMethodBuilder(getContentAsString());
+        builder.setParameter("geekref", "yeahman");
+        return builder;
     }
 
     @Override

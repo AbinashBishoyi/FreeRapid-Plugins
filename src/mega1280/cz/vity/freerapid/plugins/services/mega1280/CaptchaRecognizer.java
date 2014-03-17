@@ -20,7 +20,7 @@ final class CaptchaRecognizer {
         final BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream("/resources/letters.png"));
         int pos = 0;
         for (final char c : LETTERS) {
-            final BufferedImage subimage = image.getSubimage(pos, 0, 20, 28);
+            final BufferedImage subimage = prepareSubimage(image.getSubimage(pos, 0, 20, 30));
             trainedSet.add(new Template(c, imageToData(subimage)));
             pos += 20;
         }
@@ -33,7 +33,7 @@ final class CaptchaRecognizer {
         final StringBuilder builder = new StringBuilder(4);
 
         for (int i = 0, x = 9; i < 5; i++, x += 28) {
-            final BufferedImage subimage = image.getSubimage(x, 0, 20, 28);
+            final BufferedImage subimage = prepareSubimage(image.getSubimage(x, 0, 20, 30));
             builder.append(findResult(subimage).ch);
         }
 
@@ -96,6 +96,84 @@ final class CaptchaRecognizer {
         }
 
         return data;
+    }
+
+    private BufferedImage prepareSubimage(final BufferedImage image) {
+        final int fullW = image.getWidth();
+        final int fullH = image.getHeight();
+        final BufferedImage input = crop(image);
+        final int cropW = input.getWidth();
+        final int cropH = input.getHeight();
+        final BufferedImage output = new BufferedImage(fullW, fullH, BufferedImage.TYPE_BYTE_BINARY);
+        output.getGraphics().drawImage(input, fullW / 2 - cropW / 2, fullH / 2 - cropH / 2, Color.WHITE, null);//put it in the center
+        return output;
+    }
+
+    /**
+     * Crop image so there are no white space on the left/right/up/down.
+     *
+     * @param img Image to crop
+     * @return new cropped image
+     */
+    //author JPEXS
+    private BufferedImage crop(final BufferedImage img) {
+        int bottom = 0;
+        int top = img.getHeight() - 1;
+        int right = 0;
+        int left = img.getWidth() - 1;
+        boolean set = false;
+        for (int y = 0; y < img.getHeight(); y++) {
+            for (int x = 0; x < img.getWidth(); x++) {
+                if (img.getRGB(x, y) == Color.black.getRGB()) {
+                    if (x < left) {
+                        left = x;
+                    }
+                    set = true;
+                    break;
+                }
+            }
+
+            for (int x = img.getWidth() - 1; x >= 0; x--) {
+                if (img.getRGB(x, y) == Color.black.getRGB()) {
+                    if (x > right) {
+                        right = x;
+                    }
+                    set = true;
+                    break;
+                }
+            }
+        }
+
+        for (int x = 0; x < img.getWidth(); x++) {
+
+            for (int y = 0; y < img.getHeight(); y++) {
+                if (img.getRGB(x, y) == Color.black.getRGB()) {
+                    if (y < top) {
+                        top = y;
+                    }
+                    set = true;
+                    break;
+                }
+            }
+
+            for (int y = img.getHeight() - 1; y >= 0; y--) {
+                if (img.getRGB(x, y) == Color.black.getRGB()) {
+                    if (y > bottom) {
+                        bottom = y;
+                    }
+                    set = true;
+                    break;
+                }
+            }
+        }
+        if (!set) {
+            return img;
+        }
+        int width = (right - left) + 1;
+        int height = (bottom - top) + 1;
+        BufferedImage ret = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        ret.getGraphics().drawImage(img, -left, -top, null);
+        return ret;
     }
 
 }

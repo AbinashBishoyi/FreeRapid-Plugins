@@ -14,6 +14,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -83,9 +84,14 @@ class Mega1280FileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found") || contentAsString.contains("Li\u00EAn k\u1EBFt b\u1EA1n v\u1EEBa ch\u1ECDn kh\u00F4ng t\u1ED3n t\u1EA1i tr\u00EAn h\u1EC7 th\u1ED1ng") || contentAsString.contains("File not found")) {
+        if (contentAsString.contains("File Not Found")
+                || contentAsString.contains("File not found")
+                || contentAsString.contains("Li\u00EAn k\u1EBFt b\u1EA1n v\u1EEBa ch\u1ECDn kh\u00F4ng t\u1ED3n t\u1EA1i tr\u00EAn h\u1EC7 th\u1ED1ng")
+                || contentAsString.contains("Y\u00EAu c\u1EA7u kh\u00F4ng \u0111\u01B0\u1EE3c t\u00ECm th\u1EA5y")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let user know in FRD
         }
+        if (contentAsString.contains("Vui l\u00F2ng ch\u1EDD cho l\u01B0\u1EE3t download k\u1EBF ti\u1EBFp"))
+            throw new ServiceConnectionProblemException("Please wait for your current download to finish");
         if (contentAsString.contains("Limit download xx !")) {
             throw new ServiceConnectionProblemException("Limit download xx ! - unknown error message from server");
         }
@@ -129,13 +135,13 @@ class Mega1280FileRunner extends AbstractRunner {
         }
 
         //remove the small distraction dots
-        final BufferedImage output = new BufferedImage(w - 2, h - 2, BufferedImage.TYPE_BYTE_BINARY);
-        output.getGraphics().drawImage(blackAndWhite.getSubimage(1, 1, w - 2, h - 2), 0, 0, Color.WHITE, null);
-        for (int y = 1; y < h - 1; y++) {
-            for (int x = 1; x < w - 1; x++) {
+        final BufferedImage output = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
+        output.getGraphics().drawImage(blackAndWhite, 0, 0, Color.WHITE, null);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
                 if (blackAndWhite.getRGB(x, y) == Color.BLACK.getRGB()) {
-                    final int color = getNeighborPixels(blackAndWhite, x, y).contains(Color.BLACK.getRGB()) ? Color.BLACK.getRGB() : Color.WHITE.getRGB();
-                    output.setRGB(x - 1, y - 1, color);
+                    final int color = getBlock(blackAndWhite, x, y).size() > 5 ? Color.BLACK.getRGB() : Color.WHITE.getRGB();
+                    output.setRGB(x, y, color);
                 }
             }
         }
@@ -145,25 +151,42 @@ class Mega1280FileRunner extends AbstractRunner {
         return output;
     }
 
-    private ArrayList<Integer> getNeighborPixels(final BufferedImage img, final int x, final int y) {
-        if (img == null)
-            throw new NullPointerException("Image cannot be null");
-        final int w = img.getWidth();
-        final int h = img.getHeight();
-        if (x <= 0 || y <= 0 || x >= w || y >= h)
-            throw new IndexOutOfBoundsException();
+    //from megaupload.captcha.CaptchaReader with minor modifications
 
-        final ArrayList<Integer> ret = new ArrayList<Integer>(8);
-        ret.add(img.getRGB(x - 1, y - 1));
-        ret.add(img.getRGB(x, y - 1));
-        ret.add(img.getRGB(x + 1, y - 1));
-        ret.add(img.getRGB(x - 1, y));
-        ret.add(img.getRGB(x + 1, y));
-        ret.add(img.getRGB(x - 1, y + 1));
-        ret.add(img.getRGB(x, y + 1));
-        ret.add(img.getRGB(x + 1, y + 1));
+    private ArrayList<Point> getBlock(final BufferedImage image, final int bx, final int by) {
+        ArrayList<Point> block = new ArrayList<Point>();
+        int colour = image.getRGB(bx, by);
+        List<Point> edge = new ArrayList<Point>();
+        edge.add(new Point(bx, by));
+        block.add(new Point(bx, by));
 
-        return ret;
+        while (edge.size() > 0) {
+            List<Point> newedge = new ArrayList<Point>();
+            for (final Point p : edge) {
+                int x = p.x;
+                int y = p.y;
+                List<Point> adjacent = new ArrayList<Point>();
+                adjacent.add(new Point(x + 1, y));
+                adjacent.add(new Point(x - 1, y));
+                adjacent.add(new Point(x, y + 1));
+                adjacent.add(new Point(x, y - 1));
+                for (final Point q : adjacent) {
+                    int s = q.x;
+                    int t = q.y;
+
+                    if (isWithin(image, s, t) && !block.contains(new Point(s, t)) && image.getRGB(s, t) == colour) {
+                        block.add(new Point(s, t));
+                        newedge.add(new Point(s, t));
+                    }
+                }
+            }
+            edge = newedge;
+        }
+        return block;
+    }
+
+    private boolean isWithin(final BufferedImage image, final int x, final int y) {
+        return 0 <= x && x < image.getWidth() && 0 <= y && y < image.getHeight();
     }
 
 }

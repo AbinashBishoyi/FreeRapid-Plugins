@@ -2,18 +2,17 @@ package cz.vity.freerapid.plugins.services.filefactory;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Kajda
+ * @author Kajda, ntoskrnl
  */
 class FileFactoryFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(FileFactoryFileRunner.class.getName());
@@ -28,7 +27,8 @@ class FileFactoryFileRunner extends AbstractRunner {
             checkSeriousProblems();
             checkNameAndSize(getContentAsString());
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkSeriousProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -50,56 +50,26 @@ class FileFactoryFileRunner extends AbstractRunner {
                 makeRedirectedRequest(getMethod);
             }
 
-            final MethodBuilder methodBuilder = getMethodBuilder();
-            final HttpMethod httpMethod = methodBuilder.setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").setBaseURL(SERVICE_WEB).toGetMethod();
-            final String redirectURL = SERVICE_WEB + methodBuilder.getAction();
-
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(getLink()).toGetMethod();
             if (makeRedirectedRequest(httpMethod)) {
-                /*
-                if (getContentAsString().contains("captcha")) {
-                    int captchaOCRCounter = 1;
-
-                    while (getContentAsString().contains("captcha")) {
-                        final PostMethod postMethod = stepCaptcha(redirectURL, captchaOCRCounter++);
-                        makeRedirectedRequest(postMethod);
-                    }
-
-                    checkAllProblems();
-
-                    matcher = getMatcherAgainstContent("href=\"(.+?)\" class=\"download\">CLICK HERE");
-
-                    if (matcher.find()) {
-                        client.setReferer(redirectURL);
-                        final String finalURL = matcher.group(1);
-                        getMethod = getGetMethod(finalURL);
-
-                        if (!tryDownloadAndSaveFile(getMethod)) {
-                            checkAllProblems();
-                            logger.warning(getContentAsString());
-                            throw new IOException("File input stream is empty");
-                        }
-                    } else {
-                        throw new PluginImplementationException("Download link was not found");
-                    }
-                } else {
-                    throw new PluginImplementationException("Captcha form was not found");
-                }
-                */
-
                 checkAllProblems();
-                HttpMethod finalMethod = getMethodBuilder().setReferer(redirectURL).setActionFromAHrefWhereATagContains("Download with FileFactory Basic").toGetMethod();
-                downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS));
+                final String content = getContentAsString();
+
+                HttpMethod finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setAction(getLink()).toGetMethod();
+
+                downloadTask.sleep(PlugUtils.getWaitTimeBetween(content, "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
+
                 if (!tryDownloadAndSaveFile(finalMethod)) {
                     checkAllProblems();
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty");
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
 
             } else {
                 throw new ServiceConnectionProblemException();
             }
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkAllProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -110,6 +80,10 @@ class FileFactoryFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Sorry, this file is no longer available. It may have been deleted by the uploader, or has expired");
         }
 
+        if (contentAsString.contains("What is FileFactory?")) {
+            throw new URLNotAvailableAnymoreException("Page not found");
+        }
+
         if (contentAsString.contains("Sorry, there are currently no free download slots available on this server")) {
             throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server", 60);
         }
@@ -118,12 +92,6 @@ class FileFactoryFileRunner extends AbstractRunner {
     private void checkAllProblems() throws ErrorDuringDownloadingException {
         checkSeriousProblems();
         final String contentAsString = getContentAsString();
-
-        /*
-        if (contentAsString.contains("Sorry, your time to enter the code has expired")) {
-            throw new YouHaveToWaitException("Sorry, your time to enter the code has expired. Please try again", 60);
-        }
-        */
 
         if (contentAsString.contains("Your download slot has expired")) {
             throw new YouHaveToWaitException("Your download slot has expired.  Please try again", 60);
@@ -157,52 +125,59 @@ class FileFactoryFileRunner extends AbstractRunner {
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span");
         PlugUtils.checkFileSize(httpFile, content, "<span>", "file uploaded");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    /*
-    private PostMethod stepCaptcha(String redirectURL, int captchaOCRCounter) throws ErrorDuringDownloadingException {
-        final CaptchaSupport captchaSupport = getCaptchaSupport();
+    private String getLink() throws Exception {
+        Matcher matcher = getMatcherAgainstContent("(\\?hash=.+?)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("JavaScript URL not found");
+        }
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction("/file/getLink.js" + matcher.group(1)).toGetMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            throw new ServiceConnectionProblemException();
+        }
+        matcher = getMatcherAgainstContent("function\\(\\)\\{\\s*var\\s*\\w+?\\s*=\\s*(.+?);");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing JavaScript");
+        }
+        return parseLink(matcher.group(1));
+    }
 
-        final Matcher matcher = getMatcherAgainstContent("class=\"captchaImage\" src=\"(.+?)\"");
+    private String parseLink(final String rawlink) throws Exception {
+        final StringBuilder sb = new StringBuilder();
 
+        Matcher matcher = PlugUtils.matcher("'(.*?)'(.*?)'(.*?)'", rawlink);
+        while (matcher.find()) {
+            sb.append(matcher.group(1));
+            Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(2));
+            while (matcher1.find()) {
+                final String var = getVar(matcher1.group(1), getContentAsString());
+                sb.append(var);
+            }
+            sb.append(matcher.group(3));
+        }
+
+        return sb.toString();
+    }
+
+    private String getVar(final String s, final String content) throws PluginImplementationException {
+
+        Matcher matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*'([^']*)'", content);
         if (matcher.find()) {
-            final String captchaSrc = SERVICE_WEB + matcher.group(1);
-            logger.info("Captcha URL " + captchaSrc);
-            final String captcha;
-
-            if (captchaOCRCounter <= 0) {
-                captcha = readCaptchaImage(captchaSrc);
-            } else {
-                captcha = captchaSupport.getCaptcha(captchaSrc);
-            }
-
-            if (captcha == null) {
-                throw new CaptchaEntryInputMismatchException();
-            } else {
-                final PostMethod postMethod = getPostMethod(redirectURL);
-                postMethod.addParameter("captchaText", captcha);
-
-                return postMethod;
-            }
-        } else {
-            throw new PluginImplementationException("Captcha picture was not found");
+            return matcher.group(1);
         }
-    }
-
-    private String readCaptchaImage(String captchaSrc) throws ErrorDuringDownloadingException {
-        final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaSrc);
-        final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2, captchaImage.getHeight() - 2);
-        String captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
-
-        if (captcha != null) {
-            logger.info("Captcha - OCR recognized " + captcha);
-        } else {
-            captcha = "";
+        matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*([0-9]+)", content);
+        if (matcher.find()) {
+            return matcher.group(1);
         }
 
-        captchaImage.flush();
-
-        return captcha;
+        throw new PluginImplementationException("Error parsing JavaScript: Variable '" + s + "' not found");
     }
-    */
+
+    @Override
+    protected String getBaseURL() {
+        return SERVICE_WEB;
+    }
+
 }

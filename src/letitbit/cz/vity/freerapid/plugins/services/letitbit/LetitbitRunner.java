@@ -77,7 +77,8 @@ public class LetitbitRunner extends AbstractRunner {
                     final String url = PlugUtils.getStringBetween(getContentAsString(), "var _direct_links = new Array(\"", "\");");
                     urls = Arrays.asList(url);
                 } else {
-                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
+                    if (getContentAsString().contains("seconds ="))
+                        downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
                     String content = handleCaptcha();
                     logger.info("Ajax response: " + content);
                     if (content.contains("[\"")) {

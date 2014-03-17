@@ -16,6 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             httpFile.setNewURL(new URL("http://rapidgator.net/file/12111436"));
+            //httpFile.setNewURL(new URL("http://rapidgator.net/folder/1251306/M+ki.html"));    // folder
             //httpFile.setNewURL(new URL("http://rapidgator.net/file/3575395")); // > 1 GB
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

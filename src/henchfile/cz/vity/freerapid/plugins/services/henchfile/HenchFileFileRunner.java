@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.henchfile;
 
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
-import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 
 import java.util.List;
 
@@ -13,10 +13,10 @@ import java.util.List;
 class HenchFileFileRunner extends XFileSharingRunner {
 
     @Override
-    protected List<FileSizeHandler> getFileSizeHandlers() {
-        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
-        fileSizeHandlers.add(0, new HenchFileFileSizeHandler());
-        return fileSizeHandlers;
+    protected List<FileNameHandler> getFileNameHandlers() {
+        final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
+        fileNameHandlers.add(0, new HenchFileFileNameHandler());
+        return fileNameHandlers;
     }
 
 }

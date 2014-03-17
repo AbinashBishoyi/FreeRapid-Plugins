@@ -2,16 +2,16 @@ package cz.vity.freerapid.plugins.services.rapidgator;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.solvemediacaptcha.SolveMediaCaptcha;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
-import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.*;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -33,7 +33,11 @@ class RapidGatorFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
-            checkNameAndSize(getContentAsString());
+            if (fileURL.contains("/folder/")) {
+                httpFile.setFileName("Folder : " + PlugUtils.getStringBetween(getContentAsString(), "<title>Download file", "</title>"));
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            } else
+                checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -68,6 +72,19 @@ class RapidGatorFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             String contentAsString = getContentAsString();
             checkProblems();
+            if (fileURL.contains("/folder/")) {
+                List<URI> list = new LinkedList<URI>();
+                final Matcher m = PlugUtils.matcher("class=\"(?:odd|even)\"><td><a href=\"(.+?)\"", getContentAsString());
+                while (m.find()) {
+                    list.add(new URI("http://rapidgator.net" + m.group(1).trim()));
+                }
+                if (list.isEmpty()) throw new PluginImplementationException("No links found");
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                httpFile.setFileName("Link(s) Extracted !");
+                httpFile.setState(DownloadState.COMPLETED);
+                httpFile.getProperties().put("removeCompleted", true);
+                return;
+            }
             checkNameAndSize(contentAsString);
             final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "var secs =", ";", TimeUnit.SECONDS);
             final String fileId = PlugUtils.getStringBetween(contentAsString, "var fid =", ";");

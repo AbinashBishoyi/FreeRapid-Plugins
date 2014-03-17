@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.henchfile;
+package cz.vity.freerapid.plugins.services.keeplinks;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,18 +16,14 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.henchfile.com/3g6eujbpt8d0"));
+            //httpFile.setNewURL(new URL("http://www.keeplinks.me/d/ngDDxozxrm"));     //direct link
+            //httpFile.setNewURL(new URL("http://www.keeplinks.me/p/am5sytll"));       //protected
+            httpFile.setNewURL(new URL("http://www.keeplinks.me/p/mmpybmli"));       //protected with captcha
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final HenchFileServiceImpl service = new HenchFileServiceImpl(); //instance of service - of our plugin
-
-            //we set premium account details
-            //final PremiumAccount config = new PremiumAccount();
-            //config.setUsername("****");
-            //config.setPassword("****");
-            //service.setConfig(config);
-
+            //then we tries to download
+            final KeepLinksServiceImpl service = new KeepLinksServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

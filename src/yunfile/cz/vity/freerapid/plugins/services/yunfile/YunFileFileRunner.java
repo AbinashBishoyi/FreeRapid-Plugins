@@ -8,6 +8,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URLEncoder;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -88,19 +89,35 @@ class YunFileFileRunner extends AbstractRunner {
                 ++captchaCounter;
             }
             while (getContentAsString().contains("vcode"));
-
-            if (getContentAsString().contains("vid1")) {
+            final String downloadPageUrl = httpMethod.getURI().toString();
+            boolean cookieVidSet = false;
+            if (getContentAsString().contains("setCookie(\"vid1\", \"")) {
                 final String vid1CookieValue = PlugUtils.getStringBetween(getContentAsString(), "setCookie(\"vid1\", \"", "\"");
                 addCookie(new Cookie(".yunfile.com", "vid1", vid1CookieValue, "/", 86400, false));
+                cookieVidSet = true;
             }
-            if (getContentAsString().contains("vid2")) {
+            if (getContentAsString().contains("setCookie(\"vid2\", \"")) {
                 final String vid2CookieValue = PlugUtils.getStringBetween(getContentAsString(), "setCookie(\"vid2\", \"", "\"");
                 addCookie(new Cookie(".yunfile.com", "vid2", vid2CookieValue, "/", 86400, false));
+                cookieVidSet = true;
             }
-            httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setActionFromFormByName("down_from", true)
-                    .toPostMethod();
+            if (cookieVidSet) {
+                httpMethod = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setActionFromFormByName("down_from", true)
+                        .toPostMethod();
+            } else {
+                final String fileId = PlugUtils.getStringBetween(getContentAsString(), "fileId.value = \"", "\"");
+                final String vid = PlugUtils.getStringBetween(getContentAsString(), "vid.value = \"", "\"");
+                httpMethod = getMethodBuilder()
+                        .setReferer(downloadPageUrl)
+                        .setActionFromFormWhereTagContains("d_down_from", true)
+                        .setParameter("fileId", fileId)
+                        .setParameter("vid", vid)
+                        .toPostMethod();
+                addCookie(new Cookie(".yunfile.com", "referer", URLEncoder.encode(downloadPageUrl, "UTF-8"), "/", 86400, false));
+            }
+
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -119,7 +136,7 @@ class YunFileFileRunner extends AbstractRunner {
         if (contentAsString.contains("down_interval")) {
             throw new YouHaveToWaitException("Waiting for next file.",
                     PlugUtils.getWaitTimeBetween(contentAsString,
-                            "down_interval\" style=\"font-size: 28px; color: green;\">", "</span>",
+                            "down_interval_tag\" style=\" color: green; font-size: 28px; \">", "</span>",
                             TimeUnit.MINUTES));
         }
         if (contentAsString.contains("Web Server may be down")) {

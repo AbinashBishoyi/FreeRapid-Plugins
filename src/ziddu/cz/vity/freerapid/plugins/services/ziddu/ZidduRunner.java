@@ -48,59 +48,10 @@ class ZidduRunner extends AbstractRunner {
         if (!fileURL.contains("http://downloads.ziddu.com/downloadfile/")) {
             throw new PluginImplementationException("Link Error");
         }
-//        final GetMethod getMethod = getGetMethod(fileURL);
-//        if (makeRequest(getMethod)) {
-//            checkNameandSize(getContentAsString());
-//            // getCaptcha(getContentAsString());
-//
-//        } else
-//            throw new PluginImplementationException();
-
 
     }
-//private void getCaptcha(String contentAsString) throws Exception {
-//               Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
-//        if (matcher.find()) {
-//
-//        }
-
-    //}
-
-    private void checkNameandSize(String contentAsString) throws Exception {
-
-        if (!contentAsString.contains("downloadfilelinkicon")) {
-            logger.warning(getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-        }
-
-        if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-        }
-
-        //if (contentAsString.contains("fname")) {
-//
-//            String fn = PlugUtils.getParameter("fname", contentAsString);
-//            fn = fn.replace(".html", "");//why did you removed it? it's OK with it
-//            fn = fn.replace("\"", "");
-//            fn = fn.replace(";", "");
-//
-//            logger.info("File name " + fn);
-//            httpFile.setFileName(fn);
-
-        Matcher matcher = PlugUtils.matcher("12black\">([0-9.]* .B)", contentAsString);
-        if (matcher.find()) {
-            logger.info("Founded : " + matcher.group(1));
-
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else logger.warning("File size was not found" + contentAsString);
-
-        //} else logger.warning("File name was not found" + contentAsString);
 
 
-    }
 
     @Override
     public void run() throws Exception {
@@ -209,11 +160,6 @@ class ZidduRunner extends AbstractRunner {
     }
 
     private String getFinalURL(String mURL) throws Exception {
-//        http://www.ziddu.com/downloadlink/1750286/Video_Php_And_Mysql01.txt          	-> Process URL -> Captha
-////      http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html		-> Process URL -> Captha
-////      http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html	-> Process URL -> Captha
-
-//        http://downloads.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html  -> Captha
         Matcher finURL = PlugUtils.matcher("http://www.ziddu.com/[a-z]+/([0-9)]+)/(.+)", mURL);
         if (finURL.find()) {
             String fURL;

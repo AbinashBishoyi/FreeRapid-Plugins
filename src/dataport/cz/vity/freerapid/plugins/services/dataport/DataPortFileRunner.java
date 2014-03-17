@@ -8,11 +8,12 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
- * @author Vity
+ * @author Vity , birchie
  */
 class DataPortFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DataPortFileRunner.class.getName());
@@ -30,12 +31,23 @@ class DataPortFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        if (content.contains("<td>N\u00E1zev souboru:</td>\n<td><strong>")) {
-            PlugUtils.checkName(httpFile, content, "<td>N\u00E1zev souboru:</td>\n<td><strong>", "</strong></td>");
+        Matcher filenameMatcher = PlugUtils.matcher("Název</td>\\s*<td><strong>(.+)</strong></td>", content);
+        if (filenameMatcher.find()) {
+            httpFile.setFileName(filenameMatcher.group(1));
         } else {
-            PlugUtils.checkName(httpFile, content, "<td>N\u00E1zev souboru:</td>\n<td>", "</td>");
+            filenameMatcher = PlugUtils.matcher("Název</td>\\s*<td>(.+)</td>", content);
+            if (filenameMatcher.find()) {
+                httpFile.setFileName(filenameMatcher.group(1));
+            } else {
+                throw new PluginImplementationException("File name not found");
+            }
         }
-        PlugUtils.checkFileSize(httpFile, content, "<td>Velikost souboru:</td>\n<td>", "</td>");
+        final Matcher filesizeMatcher = PlugUtils.matcher("Velikost</td>\\s*<td>(.+)</td>", content);
+        if (filesizeMatcher.find()) {
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
+        } else {
+            throw new PluginImplementationException("File size not found");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -48,7 +60,21 @@ class DataPortFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Stažení ZDARMA").toHttpMethod();
+
+            Matcher captchaImageMatcher = PlugUtils.matcher("id=\"captcha_bg\">\\s*<img src=\"(.+)\" height", getContentAsString());
+            if (!captchaImageMatcher.find()) {
+                throw new PluginImplementationException("Captcha not found");
+            }
+            final String sCaptchaImage = "http://dataport.cz" + captchaImageMatcher.group(1);
+            final String sCaptchaResponse = getCaptchaSupport().getCaptcha(sCaptchaImage);
+            if (sCaptchaResponse == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setActionFromFormByName("free_download_form", true)
+                    .setParameter("captchaCode", sCaptchaResponse)
+                    .toPostMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {

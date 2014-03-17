@@ -92,7 +92,7 @@ class EnteruploadRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
 
         if (makeRequest(getMethod)) {
-            final String contentAsString = getContentAsString();
+            String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
           
 //(http://www\.enterupload\.com/captchas/[^\"]+)
@@ -110,6 +110,11 @@ class EnteruploadRunner extends AbstractRunner {
                            count=4;
 
                        }
+
+                       makeRequest(getMethod);
+                       contentAsString = getContentAsString();
+
+
 
                         count++;
                 }

@@ -102,7 +102,7 @@ class ZidduRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRequest(getMethod)) {
-            final String contentAsString = getContentAsString();
+            String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
             //<input type="hidden" name="fid" id="fid" value="2847949">
             // <input type="hidden" name="tid" id="tid" value="MjAwOC0xMi0wNQ==">
@@ -129,7 +129,8 @@ class ZidduRunner extends AbstractRunner {
                            count=4;
 
                        }
-
+                        makeRequest(getMethod);
+                       contentAsString = getContentAsString();
                         count++;
                 }
 

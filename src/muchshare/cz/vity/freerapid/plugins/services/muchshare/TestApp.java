@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://muchshare.net/bhfn1ho582rl"));
+            httpFile.setNewURL(new URL("http://muchshare.net/ffcyllg0z472"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final MuchShareServiceImpl service = new MuchShareServiceImpl();

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.box.BoxServiceImpl"
-        id="box.com" vendor="birchie" version="1.0.0">
+        id="box.com" vendor="birchie" version="1.0.1">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?box\.com/.+"/>
+        <attribute id="urlRegex" value="https?://((app|www)\.)?box\.com/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="box.com"/>

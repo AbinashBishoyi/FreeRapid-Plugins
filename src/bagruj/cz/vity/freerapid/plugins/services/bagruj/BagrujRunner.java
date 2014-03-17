@@ -12,7 +12,10 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -47,8 +50,28 @@ class BagrujRunner extends AbstractRunner {
         if (checkInQueue())     // added by Smisek
             return;
         captchaCounter = 0;
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+
+        /* Bagruj can sometimes redirect to uloz.to
+         *  modified by JPEXS
+         */
+        GetMethod getMethod = getGetMethod(fileURL);
+        int ret=client.makeRequest(getMethod,false);        
+        if(ret==301){
+            String targetLink=getMethod.getResponseHeader("Location").getValue();
+            logger.info("Redirection to:"+targetLink);
+            getMethod.releaseConnection();
+            if(targetLink.matches("http://(www\\.)?(uloz\\.to|ulozto\\.net|ulozto\\.cz|ulozto\\.sk)/.+")){                
+                final List<URI> uriList = new LinkedList<URI>();
+                uriList.add(new URI(targetLink));
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+                return;
+            }else{
+                getMethod = getGetMethod(targetLink);
+                if(!makeRedirectedRequest(getMethod)){
+                    throw new ServiceConnectionProblemException();
+                }
+            }
+        }        
             if (getContentAsString().contains("testcaptcha")) {
                 checkNameAndSize(getContentAsString());
                 while (getContentAsString().contains("testcaptcha")) {
@@ -89,8 +112,6 @@ class BagrujRunner extends AbstractRunner {
                 logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
-        } else
-            throw new ServiceConnectionProblemException();
     }
 
     // added by Smisek

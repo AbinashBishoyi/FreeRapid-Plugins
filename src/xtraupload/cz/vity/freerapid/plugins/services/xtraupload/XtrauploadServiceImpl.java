@@ -21,4 +21,9 @@ public class XtrauploadServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new XtrauploadRunner();
     }
+
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
 }

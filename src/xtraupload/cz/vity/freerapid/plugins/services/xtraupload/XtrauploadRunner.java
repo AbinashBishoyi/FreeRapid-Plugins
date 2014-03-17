@@ -2,119 +2,108 @@ package cz.vity.freerapid.plugins.services.xtraupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
 class XtrauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XtrauploadRunner.class.getName());
-    private HttpDownloadClient client;
-    private HttpFileDownloader downloader;
     private String initURL;
 
     @Override
-    public void run() throws Exception {
-        super.run();
-        this.downloader = downloader;
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        final String fileURL = httpFile.getFileUrl().toString();
-        initURL = fileURL;
-        logger.info("Starting download in TASK " + fileURL);
-        final GetMethod getMethod = client.getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-
-            Matcher matcher = Pattern.compile("\\(([0-9.]* .B)\\)", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + a);
-                httpFile.setFileSize(a);
-            }
-            matcher = Pattern.compile("File name:((<[^>]*>)|\\s)*([^<]+)<", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                final String fn = matcher.group(matcher.groupCount());
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-            } else logger.warning("File name was not found" + client.getContentAsString());
-
-            do {
-                checkProblems();
-                if (!client.getContentAsString().contains("captchacode")) {
-                    logger.info(client.getContentAsString());
-                    throw new PluginImplementationException("No captcha.\nCannot find requested page content");
-                }
-                stepCaptcha(client.getContentAsString());
-
-            } while (client.getContentAsString().contains("Captcha number error or expired"));
-
-            matcher = Pattern.compile("document.location=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                String s = matcher.group(1);
-                logger.info("Found File URL - " + s);
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
-                httpFile.setState(DownloadState.GETTING);
-                final GetMethod method = client.getGetMethod(s);
-                try {
-                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                    if (inputStream != null) {
-                        downloader.saveToFile(inputStream);
-                    } else {
-                        checkProblems();
-                        throw new IOException("File input stream is empty.");
-                    }
-                } finally {
-                    method.abort();
-                    method.releaseConnection();
-                }
-            } else {
-                checkProblems();
-                logger.info(client.getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
-            }
+    public void runCheck() throws Exception {
+        super.runCheck();
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(getContentAsString());
 
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
+    @Override
+    public void run() throws Exception {
+        super.run();
+        initURL = fileURL;
+        logger.info("Starting download in TASK " + fileURL);
+        final GetMethod getMethod = getGetMethod(fileURL);
+        getMethod.setFollowRedirects(true);
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(getContentAsString());
+            do {
+                checkProblems();
+                if (!getContentAsString().contains("captchacode")) {
+                    logger.info(getContentAsString());
+                    throw new PluginImplementationException("No captcha.\nCannot find requested page content");
+                }
+                stepCaptcha(getContentAsString());
+            } while (getContentAsString().contains("Captcha number error or expired"));
+            Matcher matcher = PlugUtils.matcher("document.location=\"([^\"]*)\"", getContentAsString());
+            if (matcher.find()) {
+                String s = matcher.group(1);
+                logger.info("Found File URL - " + s);
+
+                final GetMethod method = getGetMethod(s);
+                if (!tryDownload(method)) {
+                    checkProblems();
+                    throw new IOException("File input stream is empty.");
+                }
+            } else {
+                checkProblems();
+                logger.info(getContentAsString());
+                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            }
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+    private void checkNameAndSize(String content) throws Exception {
+        Matcher matcher = PlugUtils.matcher("File size:((<[^>]*>)|\\s)*([^<]+)<", content);
+        if (matcher.find()) {
+            Long a = PlugUtils.getFileSizeFromString(matcher.group(matcher.groupCount()));
+            logger.info("File size " + a);
+            httpFile.setFileSize(a);
+        }
+        matcher = PlugUtils.matcher("File name:((<[^>]*>)|\\s)*([^<]+)<", content);
+        if (matcher.find()) {
+            final String fn = matcher.group(matcher.groupCount());
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+        } else logger.warning("File name was not found" + content);
+        checkProblems();
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
     private boolean stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("captchacode")) {
-
-            Matcher matcher = Pattern.compile("captcha", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = PlugUtils.matcher("captcha", contentAsString);
             if (matcher.find()) {
                 String s = "http://www.xtraupload.de/captcha.php";
-                String captcha = this.getCaptchaSupport().getCaptcha(s);
+                String captcha = getCaptchaSupport().getCaptcha(s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
 
-                    matcher = Pattern.compile("name=myform action\\=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
+                    matcher = PlugUtils.matcher("name=myform action\\=\"([^\"]*)\"", contentAsString);
                     if (!matcher.find()) {
                         throw new PluginImplementationException("Captcha form action was not found");
                     }
                     s = matcher.group(1);
                     client.setReferer(initURL);
-                    final PostMethod postMethod = client.getPostMethod(s);
+                    final PostMethod postMethod = getPostMethod(s);
                     postMethod.addParameter("captchacode", captcha);
 
                     client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
-                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                    if (makeRequest(postMethod)) {
                         return true;
                     }
                 }
@@ -122,24 +111,19 @@ class XtrauploadRunner extends AbstractRunner {
                 logger.warning(contentAsString);
                 throw new PluginImplementationException("Captcha picture was not found");
             }
-
         }
         return false;
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = Pattern.compile("You have got max allowed download sessions from the same IP", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
+        String content = getContentAsString();
+        if (content.contains("You have got max allowed download sessions from the same IP")) {
             throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP!", 5 * 60);
         }
-        matcher = Pattern.compile("max allowed bandwidth size per hour", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
-
+        if (content.contains("max allowed bandwidth size per hour")) {
             throw new YouHaveToWaitException("You have got max allowed bandwidth size per hour", 10 * 60);
         }
-        matcher = Pattern.compile("Your requested file is not found", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
+        if (content.contains("Your requested file is not found")) {
             throw new URLNotAvailableAnymoreException("The requested file is not available");
         }
 

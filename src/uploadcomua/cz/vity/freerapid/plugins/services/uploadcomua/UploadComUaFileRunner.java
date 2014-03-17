@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 class UploadComUaFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadComUaFileRunner.class.getName());
-    private final static int captchaMax = 5;
+    private final static int captchaMax = 3;
     private int captchaCounter = 1;
 
     @Override
@@ -79,7 +79,7 @@ class UploadComUaFileRunner extends AbstractRunner {
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
 
             //find waiting time and wait
-            matcher = getMatcherAgainstContent("var dl_timer.*? = (\\d+?);");
+            matcher = getMatcherAgainstContent("var .*?timer.*? = (\\d+?);");
             if (!matcher.find()) throw new PluginImplementationException("Waiting time not found");
             downloadTask.sleep(new Integer(matcher.group(1)) + 1);
 

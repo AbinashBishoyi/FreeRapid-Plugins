@@ -59,7 +59,7 @@ class DailymotionRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
-            final String sequence = PlugUtils.getStringBetween(getContentAsString(), ".addVariable(\"sequence\",  \"", "\"");
+            final String sequence = PlugUtils.getStringBetween(getContentAsString(), "\"sequence\":\"", "\"");
             final String url = PlugUtils.getStringBetween(sequence, "%22sdURL%22%3A%22", "%22");
             method = getGetMethod(urlDecode(url).replace("\\", ""));
             if (!tryDownloadAndSaveFile(method)) {

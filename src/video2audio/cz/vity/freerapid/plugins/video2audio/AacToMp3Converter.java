@@ -20,18 +20,18 @@ class AacToMp3Converter {
 
     private final byte[] outputBuffer = new byte[4 * 1024];
 
-    public AacToMp3Converter(final byte[] decoderSpecificInfo, int targetBitrate) throws IOException {
+    public AacToMp3Converter(final byte[] decoderSpecificInfo, final int targetBitrate) throws IOException {
         this.targetBitrate = targetBitrate;
         decoder = new Decoder(decoderSpecificInfo);
     }
 
     public ByteBuffer convert(final byte[] aacFrame) throws IOException {
         decoder.decodeFrame(aacFrame, sampleBuffer);
-        if (encoder == null) {
-            final AudioFormat sourceFormat = new AudioFormat(sampleBuffer.getSampleRate(), sampleBuffer.getBitsPerSample(), sampleBuffer.getChannels(), true, sampleBuffer.isBigEndian());
-            encoder = new LameEncoder(sourceFormat, targetBitrate, LameEncoder.CHANNEL_MODE_AUTO, LameEncoder.QUALITY_HIGH, false);
-        }
         try {
+            if (encoder == null) {
+                final AudioFormat sourceFormat = new AudioFormat(sampleBuffer.getSampleRate(), sampleBuffer.getBitsPerSample(), sampleBuffer.getChannels(), true, sampleBuffer.isBigEndian());
+                encoder = new LameEncoder(sourceFormat, targetBitrate, LameEncoder.CHANNEL_MODE_AUTO, LameEncoder.QUALITY_HIGH, false);
+            }
             final int outputLength = encoder.encodeBuffer(sampleBuffer.getData(), 0, sampleBuffer.getData().length, outputBuffer);
             return ByteBuffer.wrap(outputBuffer, 0, outputLength).asReadOnlyBuffer();
         } catch (final Exception e) {
@@ -42,7 +42,11 @@ class AacToMp3Converter {
     public ByteBuffer finish() throws IOException {
         int outputLength = 0;
         if (encoder != null) {
-            outputLength = encoder.encodeFinish(outputBuffer);
+            try {
+                outputLength = encoder.encodeFinish(outputBuffer);
+            } catch (final Exception e) {
+                throw new IOException("MP3 encoding failed", e);
+            }
         }
         return ByteBuffer.wrap(outputBuffer, 0, outputLength).asReadOnlyBuffer();
     }

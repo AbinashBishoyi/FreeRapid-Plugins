@@ -54,7 +54,7 @@ class PlunderFileRunner extends AbstractRunner {
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("File not found")) {
+        if (contentAsString.contains("File not found") || contentAsString.contains("An unexpected error has occured")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
@@ -75,7 +75,7 @@ class PlunderFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         PlugUtils.checkName(httpFile, contentAsString, "Filename: </b>", "(");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "(", ") <a href=\"");
+        PlugUtils.checkFileSize(httpFile, contentAsString, "(", ")<BR /><a href=\"");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 }

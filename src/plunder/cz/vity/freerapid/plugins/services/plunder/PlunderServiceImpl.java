@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Kajda
  */
 public class PlunderServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "plunder.com";
+    private final static String SERVICE_NAME = "plunder.com";
 
     public String getName() {
         return SERVICE_NAME;

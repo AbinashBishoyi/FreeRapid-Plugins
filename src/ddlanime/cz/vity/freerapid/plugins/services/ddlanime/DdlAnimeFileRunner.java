@@ -118,11 +118,10 @@ class DdlAnimeFileRunner extends AbstractRunner {
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (PlugUtils.matcher("No such file|File not found|File Not Found", contentAsString).find()) {
+        if (getContentAsString().contains("<h2>File Not Found</h2>")
+                || getContentAsString().contains("<b>File Not Found</b>")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {

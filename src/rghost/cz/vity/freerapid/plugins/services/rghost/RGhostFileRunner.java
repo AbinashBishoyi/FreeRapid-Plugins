@@ -34,7 +34,7 @@ class RGhostFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<h1 style=\"display:inline;\">", "</h1>");
+        PlugUtils.checkName(httpFile, content, "<title>", "— RGhost");
         PlugUtils.checkFileSize(httpFile, content, "<small>(", ")</small>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

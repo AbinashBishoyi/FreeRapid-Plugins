@@ -271,6 +271,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         if (content.contains("Error happened when generating Download Link")) {
             throw new YouHaveToWaitException("Error happened when generating download link", 60);
         }
+        if (content.contains("Free Download Closed")) {
+            throw new ServiceConnectionProblemException("Reached free download limit, wait or try premium");
+        }
         if (content.contains("file is available to premium users only")
                 || content.contains("this file requires premium to download")) {
             throw new NotRecoverableDownloadException("This file is only available to premium users");

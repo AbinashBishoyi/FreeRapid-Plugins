@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -97,6 +98,8 @@ class DepositFilesRunner extends AbstractRunner {
     }
 
     private String CheckURL(String URL) {
+        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
+
         return URL.replaceFirst("/../files", "/en/files");
 
     }
@@ -138,7 +141,7 @@ class DepositFilesRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 * 60 + 20);
         }
-         matcher = Pattern.compile("Please try in\\s*([0-9]+):([0-9]+) hour", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
+        matcher = Pattern.compile("Please try in\\s*([0-9]+):([0-9]+) hour", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
         if (matcher.find()) {
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 * 60 + Integer.parseInt(matcher.group(2)) * 60 + 20);
         }

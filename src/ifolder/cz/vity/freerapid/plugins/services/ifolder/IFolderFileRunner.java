@@ -55,8 +55,8 @@ class IFolderFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            Matcher matcher=getMatcherAgainstContent("(http://ints.ifolder.ru/ints/\\?ifolder.ru/[0-9]+\\?ints_code=)");
-            if(!matcher.find()){
+            Matcher matcher = getMatcherAgainstContent("(http://ints.ifolder.ru/ints/\\?(?:[a-zA-Z0-9\\-]+?.)?ifolder.ru/[0-9]+\\?ints_code=)");
+            if (!matcher.find()) {
                 throw new PluginImplementationException("Cannot find link on first page");
             }
             final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();

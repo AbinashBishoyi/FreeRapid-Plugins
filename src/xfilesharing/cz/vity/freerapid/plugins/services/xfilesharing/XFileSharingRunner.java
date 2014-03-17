@@ -130,7 +130,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                 break;
             }
             checkDownloadProblems();
-            stepWaitTime();
+            //stepWaitTime();
         }
         setFileStreamContentTypes("text/plain");
         if (!tryDownloadAndSaveFile(method)) {

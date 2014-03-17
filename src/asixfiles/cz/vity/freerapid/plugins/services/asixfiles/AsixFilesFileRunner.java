@@ -16,13 +16,12 @@ import java.util.regex.Matcher;
  */
 class AsixFilesFileRunner extends RegisteredUserRunner {
     private final static Logger logger = Logger.getLogger(AsixFilesFileRunner.class.getName());
-    private final static String SERVICE_COOKIE_DOMAIN = ".asixfiles.com";
     private final static String SERVICE_TITLE = "AsixFiles";
     private final static String SERVICE_LOGIN_URL = "http://www.asixfiles.com/login.html";
     private final static String SERVICE_LOGIN_ACTION = "http://www.asixfiles.com";
 
     public AsixFilesFileRunner() {
-        super(SERVICE_COOKIE_DOMAIN, SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, AsixFilesFileRunner.class, AsixFilesServiceImpl.class);
+        super(SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, AsixFilesFileRunner.class, AsixFilesServiceImpl.class);
     }
 
     @Override

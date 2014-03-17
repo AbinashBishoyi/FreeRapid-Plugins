@@ -16,7 +16,6 @@ import java.util.logging.Logger;
 class JalurCepatFileRunner extends XFileSharingRunner {
     private final static Logger logger = Logger.getLogger(JalurCepatFileRunner.class.getName());
     private static final String SERVICE_TITLE = "JalurCepat";
-    private static final String SERVICE_COOKIE_DOMAIN = ".jalurcepat.com";
 
     public JalurCepatFileRunner() {
         super(SERVICE_TITLE);

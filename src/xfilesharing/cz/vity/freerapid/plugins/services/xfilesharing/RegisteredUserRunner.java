@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.lang.reflect.Method;
 import java.util.logging.Logger;
+import java.net.URL;
 
 /**
  * @author tong2shot
@@ -21,7 +22,7 @@ public abstract class RegisteredUserRunner extends XFileSharingRunner implements
     protected final Class runnerClass; //ex : RyuShareFileRunner.class
     protected final Class implClass; // ex : RyuShareServiceImpl.class
 
-    public RegisteredUserRunner(String cookieDomain, String serviceTitle, String loginURL, String loginAction, Class runnerClass, Class implClass) {
+    public RegisteredUserRunner(String serviceTitle, String loginURL, String loginAction, Class runnerClass, Class implClass) {
         super(serviceTitle);
         this.loginURL = loginURL;
         this.loginAction = loginAction;
@@ -53,6 +54,7 @@ public abstract class RegisteredUserRunner extends XFileSharingRunner implements
                 logger.info("No account data set, skipping login");
                 return false;
             }
+            final String cookieDomain = "." + new URL(getBaseURL()).getHost();
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(loginURL)
                     .setAction(loginAction)
@@ -62,8 +64,8 @@ public abstract class RegisteredUserRunner extends XFileSharingRunner implements
                     .setParameter("password", pa.getPassword())
                     .setParameter("submit", "")
                     .toPostMethod();
-            addCookie(new Cookie("TODO", "login", pa.getUsername(), "/", null, false));
-            addCookie(new Cookie("TODO", "xfss", "", "/", null, false));
+            addCookie(new Cookie(cookieDomain, "login", pa.getUsername(), "/", null, false));
+            addCookie(new Cookie(cookieDomain, "xfss", "", "/", null, false));
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
             if (getContentAsString().contains(getIncorrectLoginContains()))

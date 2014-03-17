@@ -15,12 +15,11 @@ import java.util.logging.Logger;
 class RyuShareFileRunner extends RegisteredUserRunner {
     private final static Logger logger = Logger.getLogger(RyuShareFileRunner.class.getName());
     private final static String SERVICE_TITLE = "RyuShare";
-    private final static String SERVICE_COOKIE_DOMAIN = ".ryushare.com";
     private final static String SERVICE_LOGIN_URL = "http://www.ryushare.com/login.python";
     private final static String SERVICE_LOGIN_ACTION = "http://www.ryushare.com";
 
     public RyuShareFileRunner() {
-        super(SERVICE_COOKIE_DOMAIN, SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, RyuShareFileRunner.class, RyuShareServiceImpl.class);
+        super(SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, RyuShareFileRunner.class, RyuShareServiceImpl.class);
     }
 
     @Override

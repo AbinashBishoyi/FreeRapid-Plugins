@@ -24,13 +24,12 @@ import java.util.regex.Matcher;
 class MovZapFileRunner extends RegisteredUserRunner {
     private final static Logger logger = Logger.getLogger(MovZapFileRunner.class.getName());
     private final static String SERVICE_TITLE = "MovZap";
-    private final static String SERVICE_COOKIE_DOMAIN = ".movzap.com";
     private final static String SERVICE_LOGIN_URL = "http://www.movzap.com/login.html";
     private final static String SERVICE_LOGIN_ACTION = "http://www.movzap.com";
     private final static byte[] SECRET_KEY = "N%66=]H6".getBytes(Charset.forName("UTF-8"));
 
     public MovZapFileRunner() {
-        super(SERVICE_COOKIE_DOMAIN, SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, MovZapFileRunner.class, MovZapServiceImpl.class);
+        super(SERVICE_TITLE, SERVICE_LOGIN_URL, SERVICE_LOGIN_ACTION, MovZapFileRunner.class, MovZapServiceImpl.class);
     }
 
     @Override

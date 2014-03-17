@@ -27,7 +27,11 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Kajda, JPEXS, ntoskrnl, tong2shot
+ * @author Kajda
+ * @author JPEXS
+ * @author ntoskrnl
+ * @author tong2shot
+ *
  * @since 0.82
  */
 class YouTubeRunner extends AbstractRtmpRunner {
@@ -40,7 +44,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/ 20120405 Firefox/14.0.1");
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0");
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -56,7 +60,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/ 20120405 Firefox/14.0.1");
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0");
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         setConfig();
 
@@ -147,7 +151,9 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 || getContentAsString().contains("video has been removed")
                 || getContentAsString().contains("page you requested cannot be found")
                 || getContentAsString().contains("blocked it in your country on copyright grounds")
-                || getContentAsString().contains("has not made this video available")) {
+                || getContentAsString().contains("has not made this video available")
+                || getContentAsString().contains("account associated with this video has been terminated")
+                || getContentAsString().contains("This video is unavailable")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         /* Causes false positives
@@ -508,7 +514,9 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private void bypassAgeVerification(HttpMethod method) throws Exception {
-        if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_age.*")) {
+        if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_age.*")
+                || getContentAsString().contains("watch7-player-age-gate-content")
+                || getContentAsString().contains("Sign in to confirm your age")) {
             setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)");
             method = getGetMethod(fileURL);
             if (!makeRedirectedRequest(method)) {
@@ -523,13 +531,14 @@ class YouTubeRunner extends AbstractRtmpRunner {
                     throw new ServiceConnectionProblemException();
                 }
             }
-            setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/ 20120405 Firefox/14.0.1");
+            setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0");
         } else if (getContentAsString().contains("I confirm that I am 18 years of age or older")) {
             if (!makeRedirectedRequest(getGetMethod(fileURL + "&has_verified=1"))) {
                 throw new ServiceConnectionProblemException();
             }
         }
-        if (getContentAsString().contains("Sign in to view this video")) {  //just in case they change age verification mechanism
+        if (getContentAsString().contains("Sign in to view this video")
+                || getContentAsString().contains("Sign in to confirm your age")) {  //just in case they change age verification mechanism
             throw new PluginImplementationException("YouTube account is not supported : Sign in to view this video");
         }
     }

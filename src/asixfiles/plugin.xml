@@ -3,16 +3,20 @@
 <plugin id="asixfiles.com" version="1.0.1" vendor="tong2shot"
         class="cz.vity.freerapid.plugins.services.asixfiles.AsixFilesServiceImpl">
     <attributes>
+        <attribute id="libraryPlugin" value="false"/>
         <attribute id="urlRegex" value="http://(?:www\.)?asixfiles\.com/.*\.html$"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="asixfiles.com"/>
-        <attribute id="premium" value="true"/>
+        <attribute id="premium" value="false"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharingcommon.com"
+                plugin-version="1.0" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="asixfiles.com" path="/" type="code"/>
     </runtime>

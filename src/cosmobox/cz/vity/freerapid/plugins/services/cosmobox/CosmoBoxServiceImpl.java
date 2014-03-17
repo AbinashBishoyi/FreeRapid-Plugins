@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.cosmobox;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -9,10 +8,9 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class CosmoBoxServiceImpl extends AbstractFileShareService {
-	private final static String PLUGIN_CONFIG_FILE = "plugin_CosmoBox.xml";
+public class CosmoBoxServiceImpl extends XFileSharingCommonServiceImpl {
+    private final static String PLUGIN_CONFIG_FILE = "plugin_CosmoBox.xml";
     private final static String SERVICE_TITLE = "CosmoBox";
-	private volatile PremiumAccount config;
 
     @Override
     public String getName() {
@@ -25,27 +23,22 @@ public class CosmoBoxServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    protected PluginRunner getPluginRunnerInstance() {
+    public PluginRunner getPluginRunnerInstance() {
         return new CosmoBoxFileRunner();
     }
-	
-	@Override
-    public void showOptions() throws Exception {
-        PremiumAccount pa = showConfigDialog();
-        if (pa != null) config = pa;
+
+    @Override
+    protected String getPluginConfigFile() {
+        return PLUGIN_CONFIG_FILE;
     }
 
-    public PremiumAccount showConfigDialog() throws Exception {
-        return showAccountDialog(getConfig(), SERVICE_TITLE, PLUGIN_CONFIG_FILE);
+    @Override
+    protected String getPluginServiceTitle() {
+        return SERVICE_TITLE;
     }
 
-    PremiumAccount getConfig() throws Exception {
-        if (config == null) {
-            synchronized (CosmoBoxServiceImpl.class) {
-                config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
-            }
-        }
-        return config;
+    @Override
+    protected Class getImplClass() {
+        return CosmoBoxServiceImpl.class;
     }
-
 }

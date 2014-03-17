@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.ryushare;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -9,10 +8,9 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class RyuShareServiceImpl extends AbstractFileShareService {
+public class RyuShareServiceImpl extends XFileSharingCommonServiceImpl {
     private static final String PLUGIN_CONFIG_FILE = "plugin_RyuShare.xml";
     private static final String SERVICE_TITLE = "RyuShare";
-    private volatile PremiumAccount config;
 
     @Override
     public String getName() {
@@ -25,27 +23,22 @@ public class RyuShareServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    protected PluginRunner getPluginRunnerInstance() {
+    public PluginRunner getPluginRunnerInstance() {
         return new RyuShareFileRunner();
     }
 
     @Override
-    public void showOptions() throws Exception {
-        PremiumAccount pa = showConfigDialog();
-        if (pa != null) config = pa;
+    protected Class getImplClass() {
+        return RyuShareServiceImpl.class;
     }
 
-    public PremiumAccount showConfigDialog() throws Exception {
-        return showAccountDialog(getConfig(), SERVICE_TITLE, PLUGIN_CONFIG_FILE);
+    @Override
+    protected String getPluginConfigFile() {
+        return PLUGIN_CONFIG_FILE;
     }
 
-    PremiumAccount getConfig() throws Exception {
-        if (config == null) {
-            synchronized (RyuShareServiceImpl.class) {
-                config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
-            }
-        }
-        return config;
+    @Override
+    protected String getPluginServiceTitle() {
+        return SERVICE_TITLE;
     }
-
 }

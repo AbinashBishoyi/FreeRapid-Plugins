@@ -1,13 +1,13 @@
 package cz.vity.freerapid.plugins.services.movzap;
 
-import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonFileRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -21,68 +21,57 @@ import java.util.regex.Matcher;
  *
  * @author tong2shot
  */
-class MovZapFileRunner extends AbstractRunner {
+class MovZapFileRunner extends XFileSharingCommonFileRunner {
     private final static Logger logger = Logger.getLogger(MovZapFileRunner.class.getName());
     private final static String SERVICE_TITLE = "MovZap";
     private final static String SERVICE_COOKIE_DOMAIN = ".movzap.com";
-    private final static String SERVICE_LOGIN_REFERER = "http://www.movzap.com/login.html";
+    private final static String SERVICE_LOGIN_URL = "http://www.movzap.com/login.html";
     private final static String SERVICE_LOGIN_ACTION = "http://www.movzap.com";
     private final static byte[] SECRET_KEY = "N%66=]H6".getBytes(Charset.forName("UTF-8"));
 
     @Override
-    public void runCheck() throws Exception {
-        super.runCheck();
-        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "english", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            checkFileProblems();
-            checkNameAndSize(getContentAsString());
-        } else {
-            checkFileProblems();
-            throw new ServiceConnectionProblemException();
-        }
-    }
-
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    private boolean login() throws Exception {
-        synchronized (MovZapFileRunner.class) {
-            MovZapServiceImpl service = (MovZapServiceImpl) getPluginService();
-            PremiumAccount pa = service.getConfig();
-
-            //for testing purpose
-            //pa.setPassword("freerapid");
-            //pa.setUsername("freerapid");
-            if (pa == null || !pa.isSet()) {
-                logger.info("No account data set, skipping login");
-                return false;
-            }
-            final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(SERVICE_LOGIN_REFERER)
-                    .setAction(SERVICE_LOGIN_ACTION)
-                    .setParameter("op", "login")
-                    .setParameter("redirect", "")
-                    .setParameter("login", pa.getUsername())
-                    .setParameter("password", pa.getPassword())
-                    .setParameter("submit", "")
-                    .toPostMethod();
-            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "login", pa.getUsername(), "/", null, false));
-            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "xfss", "", "/", null, false));
-            if (!makeRedirectedRequest(httpMethod))
-                throw new ServiceConnectionProblemException("Error posting login info");
-            if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new BadLoginException("Invalid " + SERVICE_TITLE + " registered account login information!");
-            return true;
-        }
+    protected String getCookieDomain() {
+        return SERVICE_COOKIE_DOMAIN;
     }
 
     @Override
-    public void run() throws Exception {
-        super.run();
-        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "english", "/", 86400, false));
-        login();
+    protected String getServiceTitle() {
+        return SERVICE_TITLE;
+    }
+
+    @Override
+    protected boolean isRegisteredUserImplemented() {
+        return true;
+    }
+
+    @Override
+    protected Class getRunnerClass() {
+        return MovZapFileRunner.class;
+    }
+
+    @Override
+    protected Class getImplClass() {
+        return MovZapServiceImpl.class;
+    }
+
+
+    @Override
+    protected String getLoginURL() {
+        return SERVICE_LOGIN_URL;
+    }
+
+    @Override
+    protected String getLoginActionURL() {
+        return SERVICE_LOGIN_ACTION;
+    }
+
+    @Override
+    protected boolean useCustomRun() {
+        return true;
+    }
+
+    @Override
+    protected void customRun() throws Exception {
         logger.info("Starting download in TASK " + fileURL);
         GetMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
@@ -149,56 +138,19 @@ class MovZapFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkFileProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed")) {
-            throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (contentAsString.contains("server is in maintenance mode")) {
-            throw new PluginImplementationException("This server is in maintenance mode. Please try again later.");
-        }
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
     }
 
-    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("till next download")) {
-            String regexRule = "(?:([0-9]+) hours?, )?(?:([0-9]+) minutes?, )?(?:([0-9]+) seconds?) till next download";
-            Matcher matcher = PlugUtils.matcher(regexRule, contentAsString);
-            int waitHours = 0, waitMinutes = 0, waitSeconds = 0, waitTime;
-            if (matcher.find()) {
-                if (matcher.group(1) != null)
-                    waitHours = Integer.parseInt(matcher.group(1));
-                if (matcher.group(2) != null)
-                    waitMinutes = Integer.parseInt(matcher.group(2));
-                waitSeconds = Integer.parseInt(matcher.group(3));
-            }
-            waitTime = (waitHours * 60 * 60) + (waitMinutes * 60) + waitSeconds;
-            throw new YouHaveToWaitException("You have to wait " + waitTime + " seconds", waitTime);
-        }
-        if (contentAsString.contains("Undefined subroutine")) {
-            throw new PluginImplementationException("Plugin is broken - Undefined subroutine");
-        }
-        if (contentAsString.contains("file reached max downloads limit")) {
-            throw new PluginImplementationException("This file reached max downloads limit");
-        }
-        if (contentAsString.contains("You can download files up to")) {
-            throw new PluginImplementationException(PlugUtils.getStringBetween(contentAsString, "<div class=\"err\">", "<br>"));
-        }
-        if (contentAsString.contains("have reached the download-limit")) {
-            throw new YouHaveToWaitException("You have reached the download-limit", 10 * 60);
-        }
-        if (contentAsString.contains("Error happened when generating Download Link")) {
-            throw new YouHaveToWaitException("Error happened when generating Download Link", 60);
-        }
-        if (contentAsString.contains("file is available to premium users only")) {
-            throw new PluginImplementationException("This file is available to premium users only");
-        }
-        if (contentAsString.contains("this file requires premium to download")) {
-            throw new PluginImplementationException("This file is available to premium users only");
-        }
-        if (contentAsString.contains("Wrong password")) {
-            throw new PluginImplementationException("Wrong password");
-        }
+    @Override
+    protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    @Override
+    public void run() throws Exception {
+        super.run();
     }
 
 }

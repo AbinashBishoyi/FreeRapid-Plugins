@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.jalurcepat;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -9,7 +8,8 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class JalurCepatServiceImpl extends AbstractFileShareService {
+//public class JalurCepatServiceImpl extends AbstractFileShareService { //for non-supported registered users, this can also be used
+public class JalurCepatServiceImpl extends XFileSharingCommonServiceImpl {
     @Override
     public String getName() {
         return "jalurcepat.com";
@@ -21,9 +21,8 @@ public class JalurCepatServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    protected PluginRunner getPluginRunnerInstance() {
+    public PluginRunner getPluginRunnerInstance() {
         return new JalurCepatFileRunner();
     }
 
-    
 }

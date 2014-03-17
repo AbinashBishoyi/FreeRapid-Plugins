@@ -12,7 +12,10 @@
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-	
+	<requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharingcommon.com"
+                plugin-version="1.0" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="movzap.com" path="/" type="code"/>
     </runtime>

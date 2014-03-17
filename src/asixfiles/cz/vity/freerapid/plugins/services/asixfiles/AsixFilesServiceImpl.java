@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.asixfiles;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.services.xfilesharingcommon.XFileSharingCommonServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -9,46 +8,40 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class AsixFilesServiceImpl extends AbstractFileShareService {
-    private static final String PLUGIN_CONFIG_FILE = "plugin_AsixFiles.xml";
-    private volatile PremiumAccount config;
+public class AsixFilesServiceImpl extends XFileSharingCommonServiceImpl {
+    private final static String PLUGIN_CONFIG_FILE = "plugin_AsixFiles.xml";
+    private final static String SERVICE_TITLE = "AsixFiles";
 
+    @Override
+    public Class getImplClass() {
+        return AsixFilesServiceImpl.class;
+    }
+
+    @Override
+    public String getPluginConfigFile() {
+        return PLUGIN_CONFIG_FILE;
+    }
+
+
+    @Override
+    public String getPluginServiceTitle() {
+        return SERVICE_TITLE;
+    }
+    
 
     @Override
     public String getName() {
         return "asixfiles.com";
     }
 
-
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return true;
     }
 
     @Override
-    protected PluginRunner getPluginRunnerInstance() {
+    public PluginRunner getPluginRunnerInstance() {
         return new AsixFilesFileRunner();
     }
-
-    @Override
-    public void showOptions() throws Exception {
-        PremiumAccount pa = showConfigDialog();
-        if (pa != null) config = pa;
-    }
-
-    public PremiumAccount showConfigDialog() throws Exception {
-        return showAccountDialog(getConfig(), "AsixFiles", PLUGIN_CONFIG_FILE);
-    }
-
-    PremiumAccount getConfig() throws Exception {
-        if (config == null) {
-            synchronized (AsixFilesServiceImpl.class) {
-                config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
-            }
-        }
-
-        return config;
-    }
-
 
 }

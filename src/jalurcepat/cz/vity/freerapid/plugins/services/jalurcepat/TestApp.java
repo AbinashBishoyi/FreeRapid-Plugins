@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.jalurcepat.com/vzoq6p9r9nin/Physics__5_Ed._-_Paul_A._Tipler.pdf"));
+            httpFile.setNewURL(new URL("http://www.jalurcepat.com/0uakrrqgtc4o/PerfectWorldIndonesia.part06.rar.htm"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final JalurCepatServiceImpl service = new JalurCepatServiceImpl();

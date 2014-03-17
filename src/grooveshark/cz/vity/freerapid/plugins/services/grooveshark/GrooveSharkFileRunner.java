@@ -7,11 +7,14 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 
+import java.util.Locale;
 import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -22,7 +25,7 @@ import java.util.regex.Matcher;
  */
 class GrooveSharkFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(GrooveSharkFileRunner.class.getName());
-    private final static String CLIENT_REVISION = "20130520.05";//sniff from requests
+    private final static String CLIENT_REVISION = "20130520";//sniff from requests
     private final static String SALT_1 = "frenchFriedDogs";//search for 'var r="' in app*.js
     private final static String SALT_2 = "nuggetsOfBaller";//search for 'secretKey' in decompressed .swf
     private String sessionId;
@@ -32,9 +35,10 @@ class GrooveSharkFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        setVariables();
+        final String songToken = getSongToken();
+        getPreload();
         final String communicationToken = getCommunicationToken();
-        final String songId = getSongIdFromSongToken(communicationToken, getSongToken());
+        final String songId = getSongIdFromSongToken(communicationToken, songToken);
         final HttpMethod method = getStreamKeyFromSongId(communicationToken, songId);
         if (!tryDownloadAndSaveFile(method)) {
             throw new ServiceConnectionProblemException("Error starting download");
@@ -49,21 +53,17 @@ class GrooveSharkFileRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private void setVariables() throws Exception {
-        final HttpMethod method = getGetMethod("http://grooveshark.com/");
+    private void getPreload() throws Exception {
+        final HttpMethod method = getGetMethod("http://grooveshark.com/preload.php");
         if (!makeRedirectedRequest(method)) {
             throw new ServiceConnectionProblemException();
         }
-        Matcher matcher = getMatcherAgainstContent("\"sessionID\":\"(.+?)\"");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Session ID not found");
+        final Cookie cookie = getCookieByName("PHPSESSID");
+        if (cookie == null) {
+            throw new PluginImplementationException("Session cookie not found");
         }
-        sessionId = matcher.group(1);
-        matcher = getMatcherAgainstContent("\"uuid\":\"(.+?)\"");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("UUID not found");
-        }
-        uuid = matcher.group(1);
+        sessionId = cookie.getValue();
+        uuid = UUID.randomUUID().toString().toUpperCase(Locale.ROOT);
     }
 
     private String getCommunicationToken() throws Exception {

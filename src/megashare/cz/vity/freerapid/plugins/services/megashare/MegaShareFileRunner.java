@@ -6,13 +6,13 @@ import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.URL;
+import java.util.Date;
 import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -21,6 +21,50 @@ import java.util.regex.Matcher;
  * Class which contains main code
  *
  * @author ntoskrnl
+ */
+
+/**
+ * Request and response data by Tommy[ywx217@gmail.com]
+ *  1. First page of http://www.megashare.com/4433199 click download link, then should wait for 10 sec.
+ *      Request URL:http://www.megashare.com/4433199
+ *      Request Method:POST
+ *      Referer:http://www.megashare.com/4433199
+ *      Form data:
+ *          4433199prZVal:2596608
+ *          f£0Dl75314876.x:34
+ *          f£0Dl75314876.y:33
+ *          f£0Dl75314876:FREE
+ *      Cookie:(I'm from China, so geo code is CN, I think there's no need to handle the cookies)
+ *          PHPSESSID=c9fbbb5d62rcuo039ade5qq9a6
+ *          geoCode=CN
+ *
+ *  2. After 10 seconds of waiting, it's the download page with captcha image.
+ *      Request URL:http://www.megashare.com/4433199
+ *      Request Method:POST
+ *      Referer:http://www.megashare.com/4433199
+ *      Form data:
+ *          wComp:1
+ *          4433199prZVal:5780228
+ *          id:4433199
+ *          time_diff:1344232440
+ *          req_auth:n
+ *      Cookies are the same with the above.
+ *      Captcha image URL:
+ *          security.php?i=44331991344232451&sid=4433199
+ *          Notes:
+ *              The parameter "i" is the combination of id and the time_diff value of this page, the time_diff
+ *              value(1344232451) is different from the request param time_diff(1344232440) of this page; and
+ *              the parameter "sid" is obviously is same with id.
+ *
+ *  3. Enter the right captcha, start download..
+ *      Request URL:http://www.megashare.com/dnd/4433199/bdab773eb22f5212b0384b0c6e7b65b6/r221.zip
+ *      Request Method:GET
+ *      Referer:http://www.megashare.com/4433199
+ *      Form data: no form data.
+ *      Cookie:
+ *          PHPSESSID=c9fbbb5d62rcuo039ade5qq9a6
+ *          geoCode=CN
+ *          __atuvc=1%7C32  (domain=www.megashare.com; path=/)
  */
 class MegaShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegaShareFileRunner.class.getName());
@@ -72,55 +116,28 @@ class MegaShareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            final String parameter;
-            final String value;
-            if (getContentAsString().contains("FreePremDz")) {
-                logger.info("Free premium");
-                parameter = "FreePremDz";
-                value = "free+premium";
-            } else {
-                logger.info("Free download");
-                Matcher matcher = getMatcherAgainstContent("FreeDz-\\d+");
-                if (!matcher.find()) throw new PluginImplementationException("Free download link not found");
-                parameter = matcher.group();
-                value = "FREE";
-            }
-
-            HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(fileURL)
-                    .setParameter(parameter, value)
-                    .setParameter(parameter + ".x", Integer.toString(random.nextInt(100)))
-                    .setParameter(parameter + ".y", Integer.toString(random.nextInt(100)))
-                    .toPostMethod();
-
-            if (makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-
-                while (true) {
-                    httpMethod = stepCaptcha();
-
-                    //waiting is not necessary
-                    //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var c =", ";") + 1);
-
-                    makeRequest(httpMethod);
-                    checkProblems();
-
-                    final Header h = httpMethod.getResponseHeader("Location");
-                    if (h != null && h.getValue() != null && !h.getValue().isEmpty()) {
-                        httpMethod = getMethodBuilder().setReferer(fileURL).setAction(h.getValue()).toGetMethod();
-
-                        if (tryDownloadAndSaveFile(httpMethod)) {
-                            break;
-                        } else {
-                            checkProblems();
-                            throw new ServiceConnectionProblemException("Error starting download");
-                        }
-                    }
-                }
-            } else {
+            // First stage process.
+            HttpMethod httpMethod = processFirstStage();
+            if(!makeRedirectedRequest(httpMethod)){
                 checkProblems();
                 throw new ServiceConnectionProblemException();
+            }
+            logger.info(getContentAsString());
+
+            httpMethod = processSecondStage();
+            if(!makeRedirectedRequest(httpMethod)){
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+
+            // Now it's the page contains captcha image.
+            httpMethod = stepCaptcha();
+            if(tryDownloadAndSaveFile(httpMethod)){
+                // break;
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -143,27 +160,53 @@ class MegaShareFileRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha() throws Exception {
+        /**
+         *  Captcha image URL:
+         *      security.php?i=44331991344232451&sid=4433199
+         *      Notes:
+         *          The parameter "i" is the combination of id and the time_diff value of this page, the time_diff
+         *          value(1344232451) is different from the request param time_diff(1344232440) of this page; and
+         *          the parameter "sid" is obviously is same with id.
+         */
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("security").getEscapedURI();
+        final String time_diff = getTimeDiff();
+        final String fileId = getFileId();
+        final String captchaSrc = String.format("http://www.megashare.com/security.php?i=%s&sid=%s",
+                fileId + time_diff, fileId);
         logger.info("Captcha URL " + captchaSrc);
 
         final String captcha;
-        if (captchaCounter <= CAPTCHA_MAX) {
+        // Temporarily disable OCR, because could get the right captcha image.
+        if (false && captchaCounter <= CAPTCHA_MAX) {
             //final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaSrc));
             //captcha = PlugUtils.recognize(captchaImage, "-d -1 -C 0-9");
             captcha = new CaptchaRecognizer().recognize(captchaSupport.getCaptchaImage(captchaSrc));
             logger.info("OCR attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", recognized " + captcha);
             captchaCounter++;
         } else {
+            //TODO: I can't get the right captcha image with white characters, because we don't have cookie
+            //       __atuvc of megashare.com and uvc of .addthis.com(WTF???), without any of them, captcha image without number...
+            //       __atuvc's value may be x%7C32, x is a number usually 1-16, uvc's is the same.
             captcha = captchaSupport.getCaptcha(captchaSrc);
             if (captcha == null) throw new CaptchaEntryInputMismatchException();
             logger.info("Manual captcha " + captcha);
         }
 
+        /**
+         *  3. Enter the right captcha, start download..
+         *      Request URL:http://www.megashare.com/dnd/4433199/bdab773eb22f5212b0384b0c6e7b65b6/r221.zip
+         *      Request Method:GET
+         *      Referer:http://www.megashare.com/4433199
+         *      Form data: no form data.
+         *      Cookie:
+         *          PHPSESSID=c9fbbb5d62rcuo039ade5qq9a6
+         *          geoCode=CN
+         *          __atuvc=1%7C32  (domain=www.megashare.com; path=/)
+         */
         return getMethodBuilder()
                 .setReferer(fileURL)
-                .setActionFromFormByName("downloader", true)
-                .setAction(fileURL)
+                .setAction("http://www.megashare.com/download.php")
+                .setParameter("wComp", "1")
                 .setParameter("yesss", "Download")
                 .setParameter("yesss.x", Integer.toString(random.nextInt(100)))
                 .setParameter("yesss.y", Integer.toString(random.nextInt(100)))
@@ -214,4 +257,63 @@ class MegaShareFileRunner extends AbstractRunner {
         return "http://www.megashare.com/";
     }
 
+    private HttpMethod processFirstStage() throws URLNotAvailableAnymoreException, PluginImplementationException {
+        if(!getContentAsString().contains("please-scroll.png"))
+            throw new URLNotAvailableAnymoreException("Not downloading page");
+
+        final String freeImageParameter = PlugUtils.getStringBetween(getContentAsString(), "name=\"", "\" class=\"textfield\" value=\"FREE\"");
+        final String fidParameter = getFileId() + "prZVal";
+        final String fidValue = PlugUtils.getParameter(fidParameter, getContentAsString());
+        /**
+         *  Form data:
+         *      4433199prZVal:2596608
+         *      f£0Dl75314876.x:34
+         *      f£0Dl75314876.y:33
+         *      f£0Dl75314876:FREE
+         */
+        return getMethodBuilder()
+                .setAction(fileURL)
+                .setReferer(fileURL)
+                .setParameter(fidParameter, fidValue)
+                .setParameter(freeImageParameter + ".x", Integer.toString(random.nextInt(100)))
+                .setParameter(freeImageParameter + ".y", Integer.toString(random.nextInt(100)))
+                .setParameter(freeImageParameter, "FREE")
+                .toPostMethod();
+    }
+
+    private HttpMethod processSecondStage() throws URLNotAvailableAnymoreException, PluginImplementationException {
+        final String fid = getFileId();
+        final String fidParameter = fid + "prZVal";
+        final String fidValue = PlugUtils.getParameter(fidParameter, getContentAsString());
+        final long time_diff = new Date().getTime()/1000;
+        final String time_diff_str = Long.toString(time_diff);
+        /**
+         *  Form data:
+         *      wComp:1
+         *      4433199prZVal:5780228
+         *      id:4433199
+         *      time_diff:1344232440
+         *      req_auth:n
+         */
+        return getMethodBuilder()
+                .setAction(fileURL)
+                .setReferer(fileURL)
+                .setParameter("wComp", "1")
+                .setParameter(fidParameter, fidValue)
+                .setParameter("id", fid)
+                .setParameter("time_diff", time_diff_str)
+                .setParameter("req_auth", "n")
+                .toPostMethod();
+    }
+
+    private String getFileId() throws URLNotAvailableAnymoreException {
+        Matcher fileidMatcher = PlugUtils.matcher("[Mm]ega[Ss]hare\\.com/([0-9]+)", fileURL);
+        if(!fileidMatcher.find())
+            throw new URLNotAvailableAnymoreException("Cannot get file ID");
+        return fileidMatcher.group(1);
+    }
+    
+    private String getTimeDiff() throws PluginImplementationException {
+        return PlugUtils.getStringBetween(getContentAsString(), "name=\"time_diff\" value=\"", "\"");
+    }
 }

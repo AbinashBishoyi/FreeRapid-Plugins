@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 3165 2011-08-22 14:35:00Z ntoskrnl $
+ * $Id: RapidShareRunner.java 3315 2011-11-18 11:53:49Z ntoskrnl $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -33,7 +33,7 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Map;
 import java.util.logging.Level;
@@ -85,26 +85,21 @@ class RapidShareRunner extends AbstractRunner {
         if (finalUrl == null) {
             chechFile();
         }
-        final GetMethod getMethod = getGetMethod(finalUrl);
         finalDownload(finalUrl, downloadTask);
     }
 
-    /**
-     * This method will be use RapidShare API to check file
-     *
-     * @throws ErrorDuringDownloadingException
-     *
-     * @throws UnsupportedEncodingException
-     * @throws IOException
-     */
-    private void chechFile() throws ErrorDuringDownloadingException, UnsupportedEncodingException, IOException {
-        // http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles&files=145378634&filenames=DSCF5628.JPG&incmd5=1
-        Matcher matcher = PlugUtils.matcher("files/(\\d+)/(.*)", fileURL);
+    private void chechFile() throws Exception {
+        Matcher matcher = PlugUtils.matcher("!download(?:%7C|\\|)(?:[^%\\|]+)(?:%7C|\\|)(\\d+)(?:%7C|\\|)([^%\\|]+)", fileURL);
+        if (matcher.find()) {
+            fileURL = "http://rapidshare.com/files/" + matcher.group(1) + "/" + matcher.group(2);
+            httpFile.setNewURL(new URL(fileURL));
+        }
+        matcher = PlugUtils.matcher("/files/(\\d+)/(.+)", fileURL);
         if (!matcher.find()) {
-            throw new PluginImplementationException("Parse URL failed");
+            throw new PluginImplementationException("Error parsing file URL");
         }
         final String fileId = matcher.group(1);
-        final String fileName = matcher.group(2); //.replace(".html", "").replace(".htm", "");
+        final String fileName = matcher.group(2);
 
         PostMethod method = getPostMethod("http://api.rapidshare.com/cgi-bin/rsapi.cgi");
         method.addParameter("sub", "checkfiles");
@@ -121,7 +116,7 @@ class RapidShareRunner extends AbstractRunner {
             method.abort();
             method.releaseConnection();
         }
-        if (status == HttpStatus.SC_OK && responseString != null || !responseString.isEmpty()) {
+        if (status == HttpStatus.SC_OK && responseString != null && !responseString.isEmpty()) {
             String[] response = responseString.split(",");
             int fileStatus = Integer.parseInt(response[4]);
 
@@ -158,7 +153,7 @@ class RapidShareRunner extends AbstractRunner {
             final String ip = matcher.group(1);
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Your IP address %s is already downloading a file. <br>Please wait until the download is completed.", ip));
         }
-        if (contentAsString.indexOf("Currently a lot of users") >= 0) {
+        if (contentAsString.contains("Currently a lot of users")) {
             matcher = Pattern.compile("Please try again in ([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);

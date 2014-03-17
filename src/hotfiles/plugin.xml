@@ -8,6 +8,8 @@
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="hotfiles.ws"/>
         <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="false"/>
+        <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>

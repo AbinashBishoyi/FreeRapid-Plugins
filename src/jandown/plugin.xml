@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="jandown.com" version="0.1" vendor="Alex"
+        class="cz.vity.freerapid.plugins.services.jandown.JandownServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://[0-9a-z\-]+\.jandown\.com/link\.php\?ref\=.+"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.82"/>
+        <attribute id="services" value="jandown.com"/>
+        <attribute id="faviconImage" value="resources/favicon.gif"/>
+    </attributes>
+
+    <runtime>
+        <library id="jandown.com" path="/" type="code"/>
+    </runtime>
+</plugin>

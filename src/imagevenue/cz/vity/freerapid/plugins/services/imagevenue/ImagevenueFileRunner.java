@@ -39,8 +39,7 @@ class ImagevenueFileRunner extends AbstractRunner {
         if (!matcher.find()) {
             throw new PluginImplementationException("Filename not found");
         }
-        //  httpFile.setFileName(matcher.group(1));
-        httpFile.setFileName("z");//temporary, for testing
+        httpFile.setFileName(matcher.group(1));
         //name is automatically taken from the file URL, there is no available full file name on their page with extension
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

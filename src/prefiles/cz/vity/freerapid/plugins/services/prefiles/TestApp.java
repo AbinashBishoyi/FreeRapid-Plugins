@@ -15,8 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://prefiles.com/lcwluokw8h5q/Packtpub.Visual.Studio.2010.Best.Practices.Aug.2012.rar"));
-            httpFile.setNewURL(new URL("http://prefiles.com/ykauetqx0mh4/MK.Analyzing.the.Social.Web.Mar.2013.rar"));
+            httpFile.setNewURL(new URL("http://prefiles.com/4i74dbu89scv/AWP.Data.Just.Right.Dec.2013.rar"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             final PreFilesServiceImpl service = new PreFilesServiceImpl();
             testRun(service, httpFile, connectionSettings);

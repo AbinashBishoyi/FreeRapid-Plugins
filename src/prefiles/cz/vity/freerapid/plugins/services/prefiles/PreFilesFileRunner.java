@@ -43,6 +43,13 @@ class PreFilesFileRunner extends XFileSharingRunner {
     }
 
     @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("This direct link is only available");
+        return downloadPageMarkers;
+    }
+
+    @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
         checkFileProblems();
         return getMethodBuilder()

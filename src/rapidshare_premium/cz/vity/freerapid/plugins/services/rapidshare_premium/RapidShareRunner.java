@@ -94,7 +94,7 @@ class RapidShareRunner extends AbstractRunner {
                 client.setReferer(fileURL);
                 final PostMethod postMethod = client.getPostMethod(s);
                 postMethod.addParameter("dl.start", "PREMIUM");
-                if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                if (makeRequest(postMethod)) {
                     if (client.getContentAsString().contains("Your Cookie has not been recognized")) {
                         throw new BadLoginException();
                     }

@@ -13,7 +13,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
@@ -154,8 +153,7 @@ class EgoshareRunner extends AbstractRunner {
     private boolean stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("Please enter the number")) {
 
-            Matcher matcher = Pattern.compile("captcha", Pattern.MULTILINE).matcher(contentAsString);
-            if (matcher.find()) {
+            if (contentAsString.contains("captcha")) {
                 String s = "http://www.egoshare.com/captcha.php";
                 String captcha = getCaptchaSupport().getCaptcha(s);
                 if (captcha == null) {
@@ -163,7 +161,7 @@ class EgoshareRunner extends AbstractRunner {
                 } else {
 
                     String ndpage = PlugUtils.getParameter("2ndpage", contentAsString);
-                    matcher = PlugUtils.matcher("name=myform action\\=\"([^\"]*)\"", contentAsString);
+                    final Matcher matcher = PlugUtils.matcher("name=myform action\\=\"([^\"]*)\"", contentAsString);
                     if (!matcher.find()) {
                         throw new PluginImplementationException("Captcha form action was not found");
                     }

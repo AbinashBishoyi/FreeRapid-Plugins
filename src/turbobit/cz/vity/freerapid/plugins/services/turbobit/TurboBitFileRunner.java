@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -18,7 +17,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Arthur Gunawan, RickCL, ntoskrnl
+ * @author Arthur Gunawan, RickCL, ntoskrnl, tong2shot
  */
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
@@ -58,47 +57,13 @@ class TurboBitFileRunner extends AbstractRunner {
         return "http://turbobit.net/" + urlCode + ".html";
     }
 
-    /**
-     * This method removes all HTML entries, and finds next text after found parameter
-     *
-     * @param text text
-     * @return next text after parameter
-     */
-    private String findNextTextAfter(final String text) {
-        final String contentWithOutHTML[] = getContentAsString().replaceAll("&[^;]{4};", "").split("<[^>]*>");
-        boolean found = false;
-        for (String x : contentWithOutHTML) {
-            if (!found && x.toLowerCase(Locale.ENGLISH).contains(text.toLowerCase(Locale.ENGLISH))) {
-                found = true;
-                continue;
-            }
-            if (found && x != null && !x.trim().isEmpty())
-                return x.trim();
-        }
-        return null;
-    }
-
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        /*
-        try {
-            httpFile.setFileName(findNextTextAfter("File name:"));
-        } catch (Exception e) {
-            throw new PluginImplementationException("File name not found", e);
-        }
-        try {
-            long size = PlugUtils.getFileSizeFromString(findNextTextAfter("File size:"));
-            httpFile.setFileSize(size);
-        } catch (Exception e) {
-            throw new PluginImplementationException("File size not found", e);
-        }
-        */
         final Matcher filenameMatcher = getMatcherAgainstContent("<title>\\s+Download (.+?). Free download");
         if (filenameMatcher.find()) {
             httpFile.setFileName(filenameMatcher.group(1));
         } else {
             throw new PluginImplementationException("File name not found");
         }
-
         final Matcher filesizeMatcher = getMatcherAgainstContent("<span.+?</span>\\s+\\((.+?)\\)");
         if (filesizeMatcher.find()) {
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
@@ -113,7 +78,6 @@ class TurboBitFileRunner extends AbstractRunner {
         super.run();
         fileURL = checkFileURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
-        String contentAsString;
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(httpMethod)) {
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
@@ -121,7 +85,6 @@ class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
                 checkNameAndSize();
 
-                contentAsString = getContentAsString();
                 final String freeAction = "http://turbobit.net/download/free/" + urlCode + "/";
                 httpMethod = getMethodBuilder().setReferer(fileURL).setAction(freeAction).toGetMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
@@ -131,7 +94,7 @@ class TurboBitFileRunner extends AbstractRunner {
 
                 Matcher matcher = getMatcherAgainstContent("limit: (\\d+),");
                 if (matcher.find()) {
-                    throw new YouHaveToWaitException("Waiting time between downloads", Integer.parseInt(matcher.group(1)));
+                    throw new YouHaveToWaitException("Download limit reached", Integer.parseInt(matcher.group(1)));
                 }
 
                 while (getContentAsString().contains("captcha")) {
@@ -141,10 +104,9 @@ class TurboBitFileRunner extends AbstractRunner {
                     }
                 }
 
-                contentAsString = getContentAsString();
-                int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "minLimit : ", ",", TimeUnit.SECONDS);
-                if (contentAsString.contains("Timeout.minLimit = Timeout.minLimit/")) { // there is divider
-                    final int waitTimeDivider = PlugUtils.getNumberBetween(contentAsString, "Timeout.minLimit = Timeout.minLimit/", ";");
+                int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "minTimeLimit : ", ",", TimeUnit.SECONDS);
+                if (getContentAsString().contains("Timeout.minTimeLimit = Timeout.minTimeLimit/")) { // there is divider
+                    final int waitTimeDivider = PlugUtils.getNumberBetween(getContentAsString(), "Timeout.minTimeLimit = Timeout.minTimeLimit/", ";");
                     waitTime = waitTime / waitTimeDivider;
                 }
                 downloadTask.sleep(waitTime);
@@ -159,15 +121,12 @@ class TurboBitFileRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                contentAsString = getContentAsString();
-                //logger.info(contentAsString);
 
-                final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(contentAsString, "<a href='/download/redirect/", "'");
+                final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(getContentAsString(), "<a href='/download/redirect/", "'");
                 logger.info("Final URL: " + finalURL);
                 httpMethod = getMethodBuilder().setReferer(timeoutAction).setAction(finalURL).toGetMethod();
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
-                    logger.warning(getContentAsString());
                     throw new ServiceConnectionProblemException("Error starting download");
                 }
             } else {
@@ -240,7 +199,6 @@ class TurboBitFileRunner extends AbstractRunner {
                     getMethodBuilder(content)
                             .setReferer(action)
                             .setActionFromFormByIndex(3, true)
-                            //.setActionFromFormWhereTagContains("recaptcha", true)
                             .setAction(action)
             ).toPostMethod();
         } else {

@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="megaupload.com_premium" version="1.0.0" vendor="ntoskrnl"
+<plugin id="megaupload.com_premium" version="1.0" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.services.megaupload_premium.MegaUploadServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?megaupload\.com/\?d=.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="megaupload.com"/>
+        <attribute id="services" value="megaupload.com megarotic.com megaporn.com sexuploader.com"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>
@@ -14,6 +14,6 @@
     </attributes>
 
     <runtime>
-        <library id="megaupload.com" path="/" type="code"/>
+        <library id="megaupload.com_premium" path="/" type="code"/>
     </runtime>
 </plugin>

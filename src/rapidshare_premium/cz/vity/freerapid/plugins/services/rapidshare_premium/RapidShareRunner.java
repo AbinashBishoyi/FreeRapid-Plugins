@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 2375 2010-04-15 14:49:46Z ntoskrnl $
+ * $Id: RapidShareRunner.java 2480 2010-06-30 05:43:36Z wordrider $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
@@ -27,6 +26,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.util.Map;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpStatus;
@@ -169,7 +169,9 @@ class RapidShareRunner extends AbstractRunner {
         if (code.contains("you have exceeded the download limit")) {
             int pause = 20 * 60;
             int toMidnight = RapidShareSupport.getSecondToMidnight();
-            if (toMidnight > 18 * 3600) pause = toMidnight + 5 * 60;
+            if (toMidnight > 18 * 3600) {
+                pause = toMidnight + 5 * 60;
+            }
             throw new YouHaveToWaitException("<b>RapidShare known error:</b><br> You have exceeded the download limit.", pause);
         }
 
@@ -182,14 +184,20 @@ class RapidShareRunner extends AbstractRunner {
         }
 
         matcher = getMatcherAgainstContent("\"downloadlink\">(.*?)<font");
-        if (!matcher.find()) throw new PluginImplementationException("File name not found");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found");
+        }
         final String trimmedURL = matcher.group(1).trim();
         final int i = trimmedURL.lastIndexOf('/');
-        if (i > 0) httpFile.setFileName(trimmedURL.substring(i + 1));
+        if (i > 0) {
+            httpFile.setFileName(trimmedURL.substring(i + 1));
+        }
 
         //| 5277 KB</font>
         matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
-        if (!matcher.find()) throw new PluginImplementationException("File size not found");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -257,33 +265,43 @@ class RapidShareRunner extends AbstractRunner {
         }
     }
 
-    private String login(String login, String password) throws IOException {
+    private String login(String login, String password) throws IOException, BadLoginException {
         if (RapidShareRunner.cookie != null) {
             return RapidShareRunner.cookie;
         }
 
-        final PostMethod pm = getPostMethod("https://ssl.rapidshare.com/cgi-bin/premiumzone.cgi");
+
+        final PostMethod pm = getPostMethod("https://api.rapidshare.com/cgi-bin/rsapi.cgi");
+        pm.addParameter("sub", "getaccountdetails_v1");
+        pm.addParameter("withcookie", "1");
+        pm.addParameter("type", "prem");
         pm.addParameter("login", login);
         pm.addParameter("password", password);
-        client.makeRequest(pm, false);
+
+
+//        final GetMethod pm = getGetMethod("https://api.rapidshare.com/cgi-bin/rsapi.cgi" +
+//            "?sub=getaccountdetails_v1&withcookie=1&type=prem&login=" + login + "&password=" + password);
+
+
+        int status = client.makeRequest(pm, false);
+
+        String response = client.getContentAsString();
         pm.releaseConnection();
-        Cookie[] cookies = client.getHTTPClient().getState().getCookies();
-        for (Cookie c : cookies) {
-            if ("enc".equals(c.getName())) {
-                RapidShareRunner.cookie = c.getValue();
-                return c.getValue();
-            }
+
+        if (response.startsWith("ERROR:")) {
+            throw new BadLoginException(response.replace("ERROR: ", ""));
         }
-        return null;
+
+        Map<String, String> params = RapidShareSupport.parseRapidShareResponse(response);
+        return params.get("cookie");
+
     }
 
     private void setBadConfig() {
         badConfig = true;
     }
-
     private boolean badConfig = false;
     private static String cookie = null;
+
     ;
-
 }
-

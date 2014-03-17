@@ -89,8 +89,11 @@ class SharpFileFileRunner extends AbstractRunner {
                     bReCaptcha = true;
             }
 
-            HttpMethod hMethod = methodBuilder.setActionFromAHrefWhereATagContains(httpFile.getFileName()).toGetMethod();
-            if (!tryDownloadAndSaveFile(hMethod)) {
+            Matcher match = getMatcherAgainstContent("<a href=\"(.+" + httpFile.getFileName() + "[^\"]*)\">");
+            if (!match.find())
+                throw new PluginImplementationException("Unable to find download link");
+
+            if (!tryDownloadAndSaveFile(getGetMethod(match.group(1)))) {
                 checkDownloadProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }

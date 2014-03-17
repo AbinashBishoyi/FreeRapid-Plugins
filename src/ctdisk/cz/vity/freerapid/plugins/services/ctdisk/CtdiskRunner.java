@@ -52,7 +52,7 @@ class CtdiskRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                if (!getMatcherAgainstContent("function redirect()").find()) {
+                if (getMatcherAgainstContent("<a class=\"telecom\"").find()) {
                     if (getContentAsString().contains("You have reached")) {
                         throw new ServiceConnectionProblemException("Free download limit reached");
                     }
@@ -81,7 +81,6 @@ class CtdiskRunner extends AbstractRunner {
         }
         try {
             final String decodedContent = new String(Base64.decodeBase64(base64InfoMatcher.group(1)), "UTF-8");
-//            logger.info("DECODE: " + decodedContent);
             PlugUtils.checkName(httpFile, decodedContent, "target=\"_blank\">", "</a>");
             PlugUtils.checkFileSize(httpFile, decodedContent, "filesize=\"", "\"");
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -109,8 +108,9 @@ class CtdiskRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha(final String fileId) throws Exception {
+        final String urlRoot = getUrlRoot();
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaURL = String.format("http://www.ctdisk.com/randcodeV2.php?fid=%s&rand=%f", fileId, 1.0);
+        final String captchaURL = String.format("%srandcodeV2.php?fid=%s&rand=%f", urlRoot, fileId, 1.0);
         logger.info("Captcha URL " + captchaURL);
         final String captcha;
         String captcha_result;
@@ -138,7 +138,17 @@ class CtdiskRunner extends AbstractRunner {
         return getMethodBuilder(pageContentWithCaptcha)
                 .setReferer(fileURL)
                 .setActionFromFormByName("user_form", true)
+                .setAction(String.format("%sguest_loginV2.php", urlRoot))
                 .setParameter("randcode", captcha_result)
                 .toPostMethod();
+    }
+
+    private String getUrlRoot() {
+        if (fileURL.contains("ctdisk"))
+            return "http://www.ctdisk.com/";
+        else if (fileURL.contains("400gb"))
+            return "http://www.400gb.com/";
+        else
+            return "http://www.t00y.com/";
     }
 }

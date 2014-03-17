@@ -54,6 +54,7 @@ class Tv6PlayFileRunner extends AbstractRtmpRunner {
             checkNameAndSize();
             method = getGetMethod("http://viastream.viasat.tv/PlayProduct/" + getId());
             if (makeRedirectedRequest(method)) {
+                checkProblems();
                 Matcher matcher = getMatcherAgainstContent("(?s)<Video>(.+?)</Video>");
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Error parsing stream info file (1)");
@@ -62,9 +63,15 @@ class Tv6PlayFileRunner extends AbstractRtmpRunner {
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Error parsing stream info file (2)");
                 }
-                final String url = matcher.group(1);
+                String url = matcher.group(1);
                 if (url.startsWith("http")) {
-                    throw new NotRecoverableDownloadException("Due to rights limitations this content can not be shown in your country");
+                    method = getGetMethod(url);
+                    if (!makeRedirectedRequest(method)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                    checkProblems();
+                    url = PlugUtils.getStringBetween(getContentAsString(), "<Url>", "</Url>");
                 }
                 final RtmpSession rtmpSession = new RtmpSession(url);
                 rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
@@ -92,6 +99,9 @@ class Tv6PlayFileRunner extends AbstractRtmpRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("URL:en hittades inte")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("due to rights limitations this content can not be shown in your country")) {
+            throw new NotRecoverableDownloadException("Due to rights limitations this content can not be shown in your country");
         }
     }
 

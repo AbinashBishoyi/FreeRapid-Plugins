@@ -13,12 +13,11 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
- *         <p/>
- *         History: detekce ve strance The file you are trying to access is temporarily unavailable.
+ *        
+ *
  */
 
 class MegauploadRunner {
@@ -26,6 +25,7 @@ class MegauploadRunner {
     private HttpDownloadClient client;
     private HttpFileDownloader downloader;
     private String HTTP_SITE = "http://www.megaupload.com";
+    private int captchaCount;
 
     public void run(HttpFileDownloader downloader) throws Exception {
         this.downloader = downloader;
@@ -40,7 +40,7 @@ class MegauploadRunner {
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-            Matcher matcher = Pattern.compile(" ([0-9.]+ .B).?</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = PlugUtils.matcher(" ([0-9.]+ .B).?</div>", client.getContentAsString());
             if (matcher.find()) {
                 logger.info("File size " + matcher.group(1));
                 httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
@@ -48,18 +48,19 @@ class MegauploadRunner {
                 if (client.getContentAsString().contains("trying to access is temporarily unavailable"))
                     throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
             }
-            matcher = Pattern.compile("Filename:(</font>)?</b> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = PlugUtils.matcher("Filename:(</font>)?</b> ([^<]*)", client.getContentAsString());
             if (matcher.find()) {
                 final String fn = PlugUtils.unescapeHtml(matcher.group(2));
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
             } else logger.warning("File name was not found" + client.getContentAsString());
+            captchaCount = 0;
             while (client.getContentAsString().contains("Please enter")) {
                 stepCaptcha(client.getContentAsString());
             }
 
             if (client.getContentAsString().contains("Click here to download")) {
-                matcher = Pattern.compile("=([0-9]+);[^/w]*function countdown", Pattern.MULTILINE).matcher(client.getContentAsString());
+                matcher = PlugUtils.matcher("=([0-9]+);[^/w]*function countdown", client.getContentAsString());
                 if (!matcher.find()) {
                     throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
                 }
@@ -104,17 +105,17 @@ class MegauploadRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = Pattern.compile("Download limit exceeded", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = PlugUtils.matcher("Download limit exceeded", client.getContentAsString());
         if (matcher.find()) {
 
             throw new ServiceConnectionProblemException(String.format("Download limit exceeded."));
         }
-        matcher = Pattern.compile("All download slots", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = PlugUtils.matcher("All download slots", client.getContentAsString());
         if (matcher.find()) {
 
             throw new ServiceConnectionProblemException(String.format("No free slot for your country."));
         }
-        matcher = Pattern.compile("Unfortunately, the link you have clicked is not available", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = PlugUtils.matcher("Unfortunately, the link you have clicked is not available", client.getContentAsString());
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>The file is not available</b><br>"));
 
@@ -125,19 +126,21 @@ class MegauploadRunner {
     private boolean stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("Please enter")) {
 
-            Matcher matcher = Pattern.compile("src=\"(/capgen[^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = PlugUtils.matcher("src=\"(/capgen[^\"]*)\"", contentAsString);
             if (matcher.find()) {
                 String s = replaceEntities(matcher.group(1));
-                logger.info(HTTP_SITE + s);
-                EditImage ei = new EditImage(downloader.getCaptchaImage(HTTP_SITE + s));
-                String captcha = PlugUtils.recognize(ei.separate(),"");
-                logger.info("Recognized "+ captcha);
-               if (captcha == null)
-                captcha = downloader.getCaptcha(HTTP_SITE + s);
-                // InputStreamReader inp = new InputStreamReader(System.in);
-                //  BufferedReader br = new BufferedReader(inp);
-                //  System.out.println("Enter text : ");
-                //  captcha = br.readLine();
+                logger.info("Captcha - image " + HTTP_SITE + s);
+                String captcha;
+                if (captchaCount < 2) {
+                    EditImage ei = new EditImage(downloader.getCaptchaImage(HTTP_SITE + s));
+                    captcha = PlugUtils.recognize(ei.separate(), "");
+                    captchaCount++;
+                    logger.info("Captcha - OCR recognized " + captcha + " attempts " + captchaCount);
+                    matcher = PlugUtils.matcher("[A-Za-z0-9]{3}", captcha);
+                    if (!matcher.find()) {
+                        captcha = downloader.getCaptcha(HTTP_SITE + s);
+                    }
+                } else captcha = downloader.getCaptcha(HTTP_SITE + s);
 
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
@@ -147,9 +150,7 @@ class MegauploadRunner {
                     String imagecode = getParameter("imagecode", contentAsString);
                     String megavar = getParameter("megavar", contentAsString);
 
-
                     final PostMethod postMethod = client.getPostMethod(HTTP_SITE);
-
 
                     postMethod.addParameter("d", d);
                     postMethod.addParameter("imagecode", imagecode);
@@ -173,7 +174,7 @@ class MegauploadRunner {
     }
 
     private String encodeURL(String s) throws UnsupportedEncodingException {
-        Matcher matcher = Pattern.compile("(.*/)([^/]*)$", Pattern.MULTILINE).matcher(s);
+        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
         if (matcher.find()) {
             return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
         }
@@ -181,7 +182,7 @@ class MegauploadRunner {
     }
 
     private String getParameter(String s, String contentAsString) throws PluginImplementationException {
-        Matcher matcher = Pattern.compile("name=\"" + s + "\" value=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
+        Matcher matcher = PlugUtils.matcher("name=\"" + s + "\" value=\"([^\"]*)\"", contentAsString);
         if (matcher.find()) {
             return matcher.group(1);
         } else

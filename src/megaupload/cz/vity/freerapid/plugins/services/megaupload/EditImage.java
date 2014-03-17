@@ -2,10 +2,10 @@ package cz.vity.freerapid.plugins.services.megaupload;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * @author Ludek Zika
@@ -15,18 +15,20 @@ class EditImage {
     private final static Logger logger = Logger.getLogger(EditImage.class.getName());
     BufferedImage in;
     BufferedImage out;
+
     EditImage(BufferedImage in) {
         this.in = in;
         out = new BufferedImage(in.getWidth(), in.getHeight(), BufferedImage.TYPE_INT_RGB);
 
-    /*    File fo = new File("D:\\capgenIn.bmp");
-        try {
-            ImageIO.write(in, "bmp", fo);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-         */
+    /*        File fo = new File("D:\\capgenIn.bmp");
+       try {
+           ImageIO.write(in, "bmp", fo);
+       } catch (IOException e) {
+           e.printStackTrace();
+       }
+              */
     }
+
     BufferedImage separate() {
         HashMap<Integer, Integer> histogram = new HashMap<Integer, Integer>();
         int rgb;
@@ -43,7 +45,7 @@ class EditImage {
                 histogram.put(rgb, count);
             }
         }
-         List<Integer> keys = new ArrayList<Integer>(histogram.keySet());
+        List<Integer> keys = new ArrayList<Integer>(histogram.keySet());
         final Map<Integer, Integer> mapForComp = histogram;
         Collections.sort(keys,
                 new Comparator<Integer>() {
@@ -69,9 +71,10 @@ class EditImage {
                 if (mostColor.contains(color)) {
                     if (shiftMap.containsKey(color)) {
                         int shift = shiftMap.get(color);
+                        int shiftX = x + shift;
+                        if (shiftX >= 0 && shiftX < in.getWidth()) out.setRGB(shiftX, y, color);
 
-                        out.setRGB(x + shift, y, color);
-                    } else shiftMap.put(color, countShift(shiftMap.size()));
+                    } else shiftMap.put(color, countShift(shiftMap.size(), x));
 
                 }
 
@@ -80,10 +83,15 @@ class EditImage {
         }
         return out;
     }
-    private Integer countShift(int size) {
-        if (size == 0) return -5;
+
+    private Integer countShift(int size, int x) {
+        if (size == 0) {
+            if (x < 5) return -x;
+            return -5;
+        }
         if (size == 1) return 0;
         if (size == 2) return 5;
+
         return 0;
     }
 

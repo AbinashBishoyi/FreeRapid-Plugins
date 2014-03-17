@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="zshare.net" version="0.1.1" vendor="Prathap Reddy"
+<plugin id="zshare.net" version="0.1.2" vendor="Prathap Reddy"
         class="cz.vity.freerapid.plugins.services.zshare.ZShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?zshare\.net/.+"/>

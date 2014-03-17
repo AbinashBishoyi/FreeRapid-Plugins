@@ -39,7 +39,7 @@ class ZShareRunner extends AbstractRunner {
         if (contentAsString.toLowerCase().contains("file not found")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
         }
-        
+
         if (!contentAsString.contains("form name=\"form1\" method=\"post\" action=")) {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
@@ -50,7 +50,7 @@ class ZShareRunner extends AbstractRunner {
             Matcher matcher = PlugUtils.matcher("\\-\\s*([^-]+)</title>", contentAsString);
             if (matcher.find()) {
                 String fn = matcher.group(1);
-                fn = fn.replace(".html", "");//why did you removed it? it's OK with it
+                fn = fn.replace(".html", "");
 
                 fn = fn.replace("\"", "");
                 fn = fn.replace(";", "");
@@ -102,7 +102,8 @@ class ZShareRunner extends AbstractRunner {
                     if (!link.equals("")) {//link found write down data to the specified file.
                         logger.info("Download URL: " + link);
                         //zShare allows users to download unlimited downloads (isn't it?)
-                        final PostMethod method = getPostMethod(link);
+                        final GetMethod method = getGetMethod(link);
+                        downloadTask.sleep(50);//zShare added a server-side check for waiting time
                         if (!tryDownloadAndSaveFile(method)) {
                             checkProblems();
                             throw new IOException("File input stream is empty.");
@@ -155,9 +156,9 @@ class ZShareRunner extends AbstractRunner {
      * Generally ZShare displays the hidden links after 20 secs.
      * Using this we can find out the hidden link and can save that 20 secs of time.
      *
-     * @param link
-     * @return
-     * @throws java.lang.Exception
+     * @param link Link to process
+     * @return Processed download link
+     * @throws Exception When something goes wrong
      */
     private String processDownloadLink(String link) throws Exception {
         String tmp = "";

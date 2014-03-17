@@ -1,3 +1,19 @@
+/*
+ * PLEASE, READ THIS
+ *
+ * This file is in UTF-8 encoding
+ *
+ * If you want to edit it, you can edit it as ASCII provided
+ * you don't touch the UTF-8 characters and don't change the encoding
+ *
+ * If you want to compile it, set the encoding in your IDE or
+ * use the -encoding option to javac
+ *
+ * If you want to build this plugin, use build.xml which already
+ * deals with this
+ *
+ * Otherwise, don't touch the strings if you can't check their meaning
+ */
 package cz.vity.freerapid.plugins.services.narod;
 
 import cz.vity.freerapid.plugins.exceptions.*;
@@ -40,12 +56,12 @@ class NarodFileRunner extends AbstractRunner {
         Matcher namePartMatcher = PlugUtils.matcher("<[^>]*>|\\s", nameMatcher.group(1));
         httpFile.setFileName(namePartMatcher.replaceAll(""));
 
-        Matcher sizeMatcher = PlugUtils.matcher("??????:(?:<[^>]*>|\\s)*(.*?)<", getContentAsString());
-        if (!sizeMatcher.find())
-            unimplemented();
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1).replace('?', 'B')));
 
 
+    	 Matcher sizeMatcher=PlugUtils.matcher("Размер:(?:<[^>]*>|\\s)*(.*?)<", getContentAsString());
+    	 if(!sizeMatcher.find())
+    		 unimplemented();
+    	 httpFile.setFileSize(PlugUtils.getFileSizeFromString(sizeMatcher.group(1).replace('Б', 'B')));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -108,16 +124,20 @@ class NarodFileRunner extends AbstractRunner {
         if (contentAsString.contains("<td class=\"headCode\">404</td>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if(contentAsString.contains("Файл удален с сервиса."))
+        	throw new URLNotAvailableAnymoreException("File deleted");
     }
-
-    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("<b class=\\\"error-msg\\\"><strong>?????????</strong> ?????????? ???&nbsp;???</b>"))
+		
+		private void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        if(getContentAsString().contains("<b class=\"error-msg\"><strong>Ошиблись?</strong> Попробуйте еще&nbsp;раз</b>"))
             throw new CaptchaEntryInputMismatchException();
-    }
-
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        checkDownloadProblems();
-        checkFileProblems();
-    }
+		}
+		
+		private void checkProblems() throws ErrorDuringDownloadingException {
+			checkDownloadProblems();
+			checkFileProblems();
+			if(getContentAsString().contains("Внутренняя ошибка сервиса."))
+				throw new ServiceConnectionProblemException();
+		}
 
 }

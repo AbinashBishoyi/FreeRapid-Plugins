@@ -55,6 +55,7 @@ class IFileFileRunner extends AbstractRunner {
             httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             setFileStreamContentTypes(new String[0], new String[]{"application/json"});
             if (makeRedirectedRequest(httpMethod)) {
+                checkProblems();
                 while (getContentAsString().contains("\"captcha\":1")) {
                     logger.info(getContentAsString());
                     stepCaptcha(_recaptchaKey, _requestUrl, _ukey, _ab);
@@ -82,6 +83,9 @@ class IFileFileRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("file removed") || content.contains("no such file") || content.contains("file expired")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("the server this file is on is currenty busy")) {
+            throw new YouHaveToWaitException("The server this file is on is currenty busy, try again later",60);
         }
     }
 

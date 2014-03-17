@@ -15,7 +15,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://ifile.it/pebw7y1/CD-9942-rm.rar"));
+            //httpFile.setNewURL(new URL("http://ifile.it/pebw7y1/CD-9942-rm.rar"));
+            httpFile.setNewURL(new URL("http://ifile.it/k9s2qwu"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final IFileServiceImpl service = new IFileServiceImpl();

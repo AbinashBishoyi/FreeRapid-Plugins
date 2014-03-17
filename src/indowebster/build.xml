@@ -2,7 +2,7 @@
 <project name="Indowebster Plugin" default="all" basedir=".">
     <property name="application" value="indowebster"/>
 
-    <property name="version" value="0.4"/>
+    <property name="version" value="0.5"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="indowebster.jar"/>

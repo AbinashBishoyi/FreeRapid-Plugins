@@ -12,6 +12,7 @@ import java.util.regex.Matcher;
 
 /**
  * @author Kajda
+ * @author ntoskrnl
  * @since 0.82
  */
 class SendspaceFileRunner extends AbstractRunner {
@@ -34,15 +35,26 @@ class SendspaceFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkAllProblems();
             checkNameAndSize();
-            final HttpMethod httpMethod = getMethodBuilder()
+            if (getContentAsString().contains("quickdownloadbutton")) {
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(fileURL)
+                        .setParameter("quickdownloadbutton", "")
+                        .toPostMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkAllProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            }
+            method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromAHrefWhereATagContains("start download")
                     .toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            if (!tryDownloadAndSaveFile(method)) {
                 checkAllProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }

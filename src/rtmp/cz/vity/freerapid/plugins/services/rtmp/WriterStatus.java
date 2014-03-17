@@ -59,7 +59,7 @@ class WriterStatus {
 
     public void updateVideoChannelTime(int time) {
         if (videoChannel == -1) {
-            throw new RuntimeException("video channel id not initialized!");
+            //throw new RuntimeException("video channel id not initialized!");  //commented, so audio-only RTMP stream can get through
         }
         channelTimeMap.put(videoChannel, time); // absolute
         logVideoProgress(time);

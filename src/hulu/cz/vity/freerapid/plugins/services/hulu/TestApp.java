@@ -13,36 +13,34 @@ import java.net.URL;
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
-        final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
+        final HttpFile httpFile = getHttpFile();
         try {
             //log everything
             //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            //httpFile.setNewURL(new URL("http://new.hulu.com/watch/393583"));
             //httpFile.setNewURL(new URL("http://www.hulu.com/profiles/user/public_queue"));//user queue
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/137629#s-p1-so-i0"));
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/245224")); // non episode
-            httpFile.setNewURL(new URL("http://www.hulu.com/watch/280815")); //has subtitle
+            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/280815")); //has subtitle
             //httpFile.setNewURL(new URL("http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1")); //subtitle
+            httpFile.setNewURL(new URL("http://www.hulu.com/watch/422886"));
             //the way we connect to the internet
-            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final HuluServiceImpl service = new HuluServiceImpl(); //instance of service - of our plugin
-            /*
-            final PremiumAccount config = new PremiumAccount();
-            config.setUsername("***");
-            config.setPassword("***");
+            final HuluServiceImpl service = new HuluServiceImpl();
+
+            final HuluSettingsConfig config = new HuluSettingsConfig();
+            //config.setUsername("***");
+            //config.setPassword("***");
+            config.setQualityHeightIndex(10); //highest
+            config.setVideoFormatIndex(1); //h264
             service.setConfig(config);
-            */
-            //runcheck makes the validation
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
-            //all output goes to the console
-        } catch (Exception e) {//catch possible exception
-            e.printStackTrace(); //writes error output - stack trace to console
+
+            testRun(service, httpFile, connectionSettings);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        //this.exit();//exit application
     }
 
     /**
@@ -52,6 +50,6 @@ public class TestApp extends PluginDevApplication {
      * @param args arguments for application
      */
     public static void main(String[] args) {
-        Application.launch(TestApp.class, args);//starts the application - calls startup() internally
+        Application.launch(TestApp.class, args);
     }
 }

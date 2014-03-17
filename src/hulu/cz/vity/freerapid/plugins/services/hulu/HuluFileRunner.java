@@ -6,7 +6,6 @@ import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.codec.binary.Hex;
@@ -44,17 +43,28 @@ class HuluFileRunner extends AbstractRtmpRunner {
     private final static String HMAC_KEY = "f6daaa397d51f568dd068709b0ce8e93293e078f7dfc3b40dd8c32d36d2b3ce1";
     private final static String DECRYPT_KEY = "d6dac049cc944519806ab9a1b5e29ccfe3e74dabb4fa42598a45c35d20abdd28";
     private final static String DECRYPT_IV = "27b9bedf75ccA2eC";
+    private final static String SUBTITLE_DECRYPT_KEY = "4878b22e76379b55c962b18ddbc188d82299f8f52e3e698d0faf29a40ed64b21";
+    private final static String SUBTITLE_DECRYPT_IV = "WA7hap7AGUkevuth";
+    private final static int LOWER_QUALITY_PENALTY = 1; //change this to 10 if prefer nearest higher
 
     private final String sessionId = getSessionId();
 
     private String contentId;
-    private boolean hasCaption = false;
+    private boolean hasSubtitle = false;
+    private HuluSettingsConfig config;
+
+
+    private void setConfig() throws Exception {
+        final HuluServiceImpl service = (HuluServiceImpl) getPluginService();
+        config = service.getConfig();
+    }
+
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        if (isCaptionUrl()) return;
-        fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
+        if (isSubtitle()) return;
+        checkUrl();
         final HttpMethod method = getGetMethod(fileURL);
         //Server sometimes sends a 404 response
         makeRedirectedRequest(method);
@@ -90,7 +100,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 name = title;
             }
             try {
-                hasCaption = (engine.eval("data[\"has_captions\"]").toString().equals("true")); //has subtitle
+                hasSubtitle = (engine.eval("data[\"has_captions\"]").toString().equals("true")); //has subtitle
             } catch (final Exception e) {
                 //
             }
@@ -107,12 +117,13 @@ class HuluFileRunner extends AbstractRtmpRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        if (isCaptionUrl()) {
-            processCaption();
+        if (isSubtitle()) {
+            processSubtitle();
             return;
         }
-        fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
+        setConfig();
         login();
 
         HttpMethod method = getGetMethod(fileURL);
@@ -125,7 +136,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             return;
         }
 
-        if (hasCaption) {
+        if (hasSubtitle) {
             //add filename to URL's tail so we can extract the filename later
             //http://www.hulu.com/captions.xml?content_id=40039219 -> original caption url
             //http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1 -> filename added at url's tail
@@ -167,6 +178,10 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
     }
 
+    private void checkUrl() {
+        fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
+    }
+
     private void checkProblems(final String content) throws ErrorDuringDownloadingException {
         if (content.contains("The page you were looking for doesn't exist")
                 || content.contains("This content is unavailable for playback")) {
@@ -181,20 +196,93 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private RtmpSession getStream(final String content) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? cdn=\"(.+?)\"", content);
+        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? height=\"(\\d+?)\".*? file-type=\"\\d+_(.+?)\".*? cdn=\"(.+?)\"", content);
         final List<Stream> list = new LinkedList<Stream>();
         while (matcher.find()) {
-            final String cdn = matcher.group(5);
+            final String cdn = matcher.group(7);
             if ("level3".equals(cdn)) {
                 logger.info("Ignoring stream served by Level3");
             } else {
-                list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4)), cdn));
+                list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4)), Integer.parseInt(matcher.group(5)), matcher.group(6), cdn));
             }
         }
         if (list.isEmpty()) {
             throw new PluginImplementationException("No streams found");
         }
-        return Collections.max(list).getSession();
+        calcStreamWeight(list);
+        final Stream selectedStream = Collections.max(list);
+        logger.info("Selected stream : " + selectedStream);
+        return selectedStream.getSession();
+    }
+
+    private void calcStreamWeight(List<Stream> streamList) {
+        //get the concrete configHeight
+        int configHeightMin = Integer.MAX_VALUE;
+        int configHeightMax = Integer.MIN_VALUE;
+        for (Stream stream : streamList) {
+            if (stream.height < configHeightMin) configHeightMin = stream.height;
+            if (stream.height > configHeightMax) configHeightMax = stream.height;
+        }
+        final int configHeight;
+        if (config.getQualityHeight() == HuluSettingsConfig.MAX_HEIGHT) {
+            configHeight = configHeightMax;
+            logger.info("Config height : the highest available (" + configHeight + ")");
+        } else if (config.getQualityHeight() == HuluSettingsConfig.MIN_HEIGHT) {
+            configHeight = configHeightMin;
+            logger.info("Config height : the lowest available (" + configHeight + ")");
+        } else {
+            configHeight = config.getQualityHeight();
+            logger.info("Config height : " + configHeight);
+        }
+
+        //calc height weight
+        //if the same height (quality) doesn't exist, prefer the neareast one (higher or lower doesn't matter).
+        float heightWeightMax = Float.MIN_VALUE; //selected height weight
+        for (Stream stream : streamList) {
+            final int heightDiff = stream.height - configHeight;
+            float heightWeight;
+            if (heightDiff == 0) //same height (quality)
+                heightWeight = 1.0f;
+            else if (heightDiff < 0) //lower
+                heightWeight = (1.0f / (Math.abs(heightDiff) * LOWER_QUALITY_PENALTY));
+            else //higher
+                heightWeight = (1.0f / heightDiff);
+            heightWeight *= 100000;
+            stream.heightWeight = heightWeight;
+            if (heightWeight > heightWeightMax) heightWeightMax = heightWeight;
+        }
+
+        //calc file type weight
+        float videoFormatWeight = 0f;
+        if (config.getVideoFormatIndex() != HuluSettingsConfig.ANY_VIDEO_FORMAT) {
+            for (Stream stream : streamList) {
+                if (stream.heightWeight == heightWeightMax) { //same height as the selected height
+                    //same video format > h264 > vp6
+                    if (stream.videoFormat.equals(config.getVideoFormat()))
+                        videoFormatWeight = 50f;
+                    else if (stream.videoFormat.equals("h264"))
+                        videoFormatWeight = 10f;
+                    else if (stream.videoFormat.equals("vp6"))
+                        videoFormatWeight = 5f;
+                }
+                stream.videoFormatWeight = videoFormatWeight;
+            }
+        }
+
+        //calc cdn weight and total weight
+        float cdnWeight = 0f;
+        for (Stream stream : streamList) {
+            if (stream.heightWeight == heightWeightMax) { //same height as the selected height
+                //akamai > limelight
+                if (stream.cdn.equals("akamai"))
+                    cdnWeight = 10f;
+                else if (stream.cdn.equals("limelight"))
+                    cdnWeight = 5f;
+            }
+            stream.cdnWeight = cdnWeight;
+            stream.calcWeight();
+            logger.info(stream.toString());
+        }
     }
 
     private class Stream implements Comparable<Stream> {
@@ -202,9 +290,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
         private final String play;
         private final String app;
         private final int bitrate;
+        private final int height;
+        private final String videoFormat; // Example : vp6, h264
         private final String cdn;
+        private float heightWeight, videoFormatWeight, cdnWeight, weight;
 
-        public Stream(String server, String stream, String token, int bitrate, String cdn) throws ErrorDuringDownloadingException {
+        public Stream(String server, String stream, String token, int bitrate, int height, String videoFormat, String cdn) throws ErrorDuringDownloadingException {
             Matcher matcher = PlugUtils.matcher("://(.+?)/(.+)", server);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Error parsing stream server");
@@ -215,6 +306,8 @@ class HuluFileRunner extends AbstractRtmpRunner {
             this.play = stream;
             this.app = token;
             this.bitrate = bitrate;
+            this.height = height;
+            this.videoFormat = videoFormat;
             this.cdn = cdn;
             logger.info("Found stream: " + this);
         }
@@ -224,22 +317,13 @@ class HuluFileRunner extends AbstractRtmpRunner {
             return new RtmpSession(server, 1935, app, play, true);
         }
 
+        public void calcWeight() {
+            weight = (10 * heightWeight) + (5 * videoFormatWeight) + cdnWeight;
+        }
+
         @Override
         public int compareTo(Stream that) {
-            final int i = Integer.valueOf(this.bitrate).compareTo(that.bitrate);
-            //Prefer akamai streams as they are often faster and allow non-US IPs
-            if (i == 0) {
-                final boolean thisAkamai = "akamai".equals(this.cdn);
-                final boolean thatAkamai = "akamai".equals(that.cdn);
-                if (thisAkamai == thatAkamai) {
-                    return 0;
-                } else if (thisAkamai) {
-                    return 1;
-                } else {
-                    return -1;
-                }
-            }
-            return i;
+            return Float.valueOf(this.weight).compareTo(that.weight);
         }
 
         @Override
@@ -249,7 +333,13 @@ class HuluFileRunner extends AbstractRtmpRunner {
                     ", play='" + play + '\'' +
                     ", app='" + app + '\'' +
                     ", bitrate=" + bitrate +
+                    ", height=" + height +
+                    ", file type=" + videoFormat +
                     ", cdn='" + cdn + '\'' +
+                    ", heightweight=" + heightWeight +
+                    ", videoformatweight=" + videoFormatWeight +
+                    ", cdnweight=" + cdnWeight +
+                    ", weight=" + weight +
                     '}';
         }
     }
@@ -357,16 +447,16 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private boolean login() throws Exception {
-        final PremiumAccount pa = ((HuluServiceImpl) getPluginService()).getConfig();
-        if (pa == null || !pa.isSet()) {
+        logger.info("Entering login subroutine...");
+        if (config.getUsername() == null || config.getUsername().isEmpty()) {
             logger.info("No account data set, skipping login");
             return false;
         }
         setFileStreamContentTypes(new String[0], new String[]{"application/x-www-form-urlencoded"});
         final HttpMethod method = getMethodBuilder()
                 .setAction("https://secure.hulu.com/account/authenticate")
-                .setParameter("login", pa.getUsername())
-                .setParameter("password", pa.getPassword())
+                .setParameter("login", config.getUsername())
+                .setParameter("password", config.getPassword())
                 .setParameter("sli", "1")
                 .toPostMethod();
         if (!makeRedirectedRequest(method)) {
@@ -378,11 +468,11 @@ class HuluFileRunner extends AbstractRtmpRunner {
         return true;
     }
 
-    private boolean isCaptionUrl() {
+    private boolean isSubtitle() {
         return fileURL.matches("http://(www\\.)?hulu\\.com/captions\\.xml\\?content_id=\\d+/.+");
     }
 
-    private void processCaption() throws Exception {
+    private void processSubtitle() throws Exception {
         //http://www.hulu.com/captions.xml?content_id=40039219 -> original caption url
         //http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1 -> filename added at url's tail
         httpFile.setFileName(URLDecoder.decode(fileURL.substring(fileURL.lastIndexOf("/") + 1), "UTF-8"));
@@ -407,16 +497,8 @@ class HuluFileRunner extends AbstractRtmpRunner {
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException("Error downloading subtitle-2");
             }
-            byte[] decryptKey = Hex.decodeHex("625298045c1db17fe3489ba7f1eba2f208b3d2df041443a72585038e24fc610b".toCharArray());
-            byte[] decrypytIV = "V@6i`q6@FTjdwtui".getBytes("UTF-8");
-            for (int i = 0; i < decryptKey.length; i++) {
-                decryptKey[i] = (byte) (decryptKey[i] ^ 42);
-            }
-            for (int i = 0; i < decrypytIV.length; i++) {
-                decrypytIV[i] = (byte) (decrypytIV[i] ^ 1);
-            }
             final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(decryptKey, "AES"), new IvParameterSpec(decrypytIV));
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(Hex.decodeHex(SUBTITLE_DECRYPT_KEY.toCharArray()), "AES"), new IvParameterSpec(SUBTITLE_DECRYPT_IV.getBytes()));
             final StringBuilder subtitleSb = new StringBuilder(100);
             subtitleSb.append("<SAMI><BODY>");
             matcher = Pattern.compile("<SYNC Encrypted=\"true\" start=\"(\\d+)\">(.+?)</SYNC>", Pattern.CASE_INSENSITIVE).matcher(getContentAsString());
@@ -425,6 +507,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 subtitleSb.append(String.format("<SYNC start=%s>%s</SYNC>\n", matcher.group(1), plainText));
             }
             subtitleSb.append("</BODY></SAMI>");
+            //logger.info(subtitleSb.toString());
             final byte[] subtitle = subtitleSb.toString().getBytes("UTF-8");
             httpFile.setFileSize(subtitle.length);
             try {

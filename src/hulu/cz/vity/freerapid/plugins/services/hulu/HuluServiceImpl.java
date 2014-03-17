@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.hulu;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -11,7 +12,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class HuluServiceImpl extends AbstractFileShareService {
     private static final String PLUGIN_CONFIG_FILE = "plugin_Hulu.xml";
-    private volatile PremiumAccount config;
+    private volatile HuluSettingsConfig config;
 
     @Override
     public String getName() {
@@ -29,25 +30,40 @@ public class HuluServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public void showOptions() {
-        PremiumAccount pa = showConfigDialog();
-        if (pa != null) config = pa;
-    }
-
-    PremiumAccount showConfigDialog() {
-        return showAccountDialog(getConfig(), "Hulu", PLUGIN_CONFIG_FILE);
-    }
-
-    PremiumAccount getConfig() {
-        synchronized (HuluServiceImpl.class) {
-            if (config == null) {
-                config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
-            }
+    public void showOptions() throws Exception {
+        super.showOptions();
+        if (getPluginContext().getDialogSupport().showOKCancelDialog(new HuluSettingsPanel(this), "Hulu settings")) {
+            getPluginContext().getConfigurationStorageSupport().storeConfigToFile(config, PLUGIN_CONFIG_FILE);
         }
-        return config;
     }
 
-    void setConfig(PremiumAccount config) {
+    public HuluSettingsConfig getConfig() throws Exception {
+        synchronized (HuluServiceImpl.class) {
+            final ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
+            if (config == null) {
+                if (!storage.configFileExists(PLUGIN_CONFIG_FILE)) {
+                    config = new HuluSettingsConfig();
+                    config.setQualityHeightIndex(10); //highest
+                    config.setVideoFormatIndex(0); //any
+                } else {
+                    try {
+                        config = storage.loadConfigFromFile(PLUGIN_CONFIG_FILE, HuluSettingsConfig.class);
+                    } catch (java.lang.ClassCastException e) {
+                        //old config conversion
+                        final PremiumAccount pa = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
+                        config = new HuluSettingsConfig();
+                        config.setUsername(pa.getUsername());
+                        config.setPassword(pa.getPassword());
+                        config.setQualityHeightIndex(10); //highest
+                        config.setVideoFormatIndex(0); //any
+                    }
+                }
+            }
+            return config;
+        }
+    }
+
+    public void setConfig(HuluSettingsConfig config) {
         this.config = config;
     }
 

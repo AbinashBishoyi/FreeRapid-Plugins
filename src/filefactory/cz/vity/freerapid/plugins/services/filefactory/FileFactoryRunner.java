@@ -102,8 +102,10 @@ class FileFactoryRunner {
     }
 
     private void mainStep(String fileURL) throws Exception {
-        if (--deep <= 0)
+        if (--deep <= 0) {
+            logger.warning(client.getContentAsString());
             throw new InvalidURLOrServiceProblemException("Something is very bad");
+        }
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {

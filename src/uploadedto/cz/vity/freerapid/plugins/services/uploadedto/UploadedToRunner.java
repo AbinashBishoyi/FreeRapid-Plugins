@@ -40,7 +40,7 @@ class UploadedToRunner {
                             waitMinutes = 1;
                         throw new YouHaveToWaitException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!", (waitMinutes * 60));
                     }
-                    throw new InvalidURLOrServiceProblemException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!");
+                    throw new YouHaveToWaitException("<b>Uploaded.to error:</b><br>Your Free-Traffic is exceeded!", 60);
                 } else if (contentAsString.contains("File doesn")) {
                     throw new URLNotAvailableAnymoreException("<b>Uploaded.to error:</b><br>File doesn't exist");
                 }

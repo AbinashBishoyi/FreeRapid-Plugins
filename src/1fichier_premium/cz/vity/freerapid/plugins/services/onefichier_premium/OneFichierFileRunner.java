@@ -8,7 +8,9 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URLDecoder;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -25,6 +27,13 @@ class OneFichierFileRunner extends AbstractRunner {
         setEnglishURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
+            final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
+            if (match.find()) {
+                String name = match.group(1);
+                if (match.group(3).length() > 0)
+                    name = URLDecoder.decode(match.group(3), "UTF-8");
+                httpFile.setFileName(name);
+            }
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
@@ -55,6 +64,8 @@ class OneFichierFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL); //create GET request
         final int status = client.makeRequest(method, false);
         if (status / 100 == 3) {
+            final String dlLink = method.getResponseHeader("Location").getValue();
+            httpFile.setFileName(URLDecoder.decode(dlLink.substring(1 + dlLink.lastIndexOf("/")), "UTF-8"));
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

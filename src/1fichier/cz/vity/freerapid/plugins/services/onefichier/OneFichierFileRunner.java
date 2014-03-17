@@ -10,7 +10,9 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URLDecoder;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -26,6 +28,13 @@ class OneFichierFileRunner extends AbstractRunner {
         setEnglishURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
+            final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
+            if (match.find()) {
+                String name = match.group(1);
+                if (match.group(3).length() > 0)
+                    name = URLDecoder.decode(match.group(3), "UTF-8");
+                httpFile.setFileName(name);
+            }
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
@@ -59,7 +68,7 @@ class OneFichierFileRunner extends AbstractRunner {
                 final String contentAsString = getContentAsString();//check for response
                 checkProblems();//check problems
                 checkNameAndSize(contentAsString);//extract file name and size from the page
-                downloadTask.sleep(1 + PlugUtils.getNumberBetween(contentAsString, "var count =", ";"));
+                //      downloadTask.sleep(1 + PlugUtils.getNumberBetween(contentAsString, "var count =", ";"));
                 final HttpMethod h2Method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Show the download link", true).toPostMethod();
                 if (!makeRedirectedRequest(h2Method)) {
                     checkProblems();

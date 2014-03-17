@@ -32,27 +32,31 @@ class ZidduRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        //http://www.ziddu.com/download.php?uid=a6uelpmnaLKZlOKnZ6qhkZSoZKqfm5So7
         //http://www.ziddu.com/downloadlink.php?uid=aqqblpWtbqygnOKnaKqhkZSqZayclZuo8
         //http://www.ziddu.com/downloadlink/1750286/Video_Php_And_Mysql01.txt
         //http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html
         //http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html
-        logger.info("Starting..." + fileURL);
-
+        logger.info("Checking..." + fileURL);
         fileURL = processURL(fileURL);
-        actionURL = fileURL.replace(".html", "");
+
 
         httpFile.setNewURL(new URL(fileURL));
         baseURL = fileURL;
         logger.info("New URL : " + fileURL);
 
+        if (!fileURL.contains("http://downloads.ziddu.com/downloadfile/")) {
+            throw new PluginImplementationException("Link Error");
+        }
+//        final GetMethod getMethod = getGetMethod(fileURL);
+//        if (makeRequest(getMethod)) {
+//            checkNameandSize(getContentAsString());
+//            // getCaptcha(getContentAsString());
+//
+//        } else
+//            throw new PluginImplementationException();
 
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
-            checkNameandSize(getContentAsString());
-            // getCaptcha(getContentAsString());
 
-        } else
-            throw new PluginImplementationException();
     }
 //private void getCaptcha(String contentAsString) throws Exception {
 //               Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
@@ -61,6 +65,7 @@ class ZidduRunner extends AbstractRunner {
 //        }
 
     //}
+
     private void checkNameandSize(String contentAsString) throws Exception {
 
         if (!contentAsString.contains("downloadfilelinkicon")) {
@@ -100,106 +105,125 @@ class ZidduRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
-        if (!fileURL.contains("downloadfile")) {
-            fileURL = processURL(fileURL);
-            if (!httpFile.getFileUrl().toString().contains(fileURL)) {
-                logger.info("Set again : " + fileURL);
-                httpFile.setNewURL(new URL(fileURL));
+        logger.info("Starting " + fileURL);
 
-            }
-        }
+        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
+
+        fileURL = processURL(fileURL);
+        logger.info("Set New URL for ziddu : " + fileURL);
+
+        httpFile.setNewURL(new URL(fileURL));
 
         baseURL = fileURL;
         logger.info("Starting download in TASK!!! " + fileURL);
 
+        String contentAsString = clickDownload(fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
-        if (makeRequest(getMethod)) {
-            String contentAsString = getContentAsString();
-            //find action
+        logger.info("Looking for captcha..");
 
-            Matcher mAction = PlugUtils.matcher("action=\"([^\"]+)", contentAsString);
-            if (mAction.find()) {
-                logger.info("Action found " + mAction.group(1));
-                client.setReferer(mAction.group(1));
-
-                PostMethod pMethod = getPostMethod(mAction.group(1));
-                pMethod.addParameter("mmemid", "0");
-                pMethod.addParameter("mname", "");
-                pMethod.addParameter("lang", "english");
-                pMethod.addParameter("Submit", "");
-                pMethod.addParameter("Submit2", " Share ");
-                pMethod.addParameter("Submit3", "Link");
-                if (makeRequest(pMethod)) {
-                    logger.info("Success requested");
-
-
+        Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
+        if (matcher.find()) {
+            result = false;
+            int count = 0;
+            while ((!result) && count < 5) {
+                result = stepCaptcha(contentAsString);
+                if (!result) {
+                    clickDownload(fileURL);
                 }
+                if (result) count = 6;
+                if (cancel) throw new CaptchaEntryInputMismatchException();
+                makeRequest(getMethod);
+                contentAsString = getContentAsString();
+                count++;
             }
+        } else throw new PluginImplementationException("Cant find captcha image");
+    }
 
-            contentAsString = getContentAsString();
+    private String clickDownload(String mURL) throws Exception {
+        client.setReferer(mURL);
 
+        PostMethod pMethod = getPostMethod(mURL);
+        pMethod.addParameter("mmemid", "0");
+        pMethod.addParameter("mname", "");
+        pMethod.addParameter("lang", "english");
+        pMethod.addParameter("Submit", "");
+        pMethod.addParameter("Submit2", " Share ");
+        pMethod.addParameter("Submit3", "Link");
+        if (makeRequest(pMethod)) {
+            logger.info("Success requested");
+        }
+        makeRequest(pMethod);
+        return getContentAsString();
 
-            checkNameandSize(contentAsString);       //<img src="/CaptchaSecurityImages.php?width=100&amp;height=38&amp;characters=5"
-            logger.info("Looking for captcha..");
-
-            Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
-            if (matcher.find()) {
-                result = false;
-                int count = 0;
-                while ((!result) && count < 3) {
-                    result = stepCaptcha(contentAsString);
-                    if (result) count = 4;
-                    if (cancel) throw new CaptchaEntryInputMismatchException();
-                    makeRequest(getMethod);
-                    contentAsString = getContentAsString();
-                    count++;
-                }
-            } else throw new PluginImplementationException("Cant find captcha image");
-        } else throw new PluginImplementationException();
     }
 
     private String processURL(String mURL) throws Exception {
         String tURL = mURL;
+        String myURL = mURL;
 
-        if (tURL.contains("downloadlink.php")) {
-            final GetMethod getLink = getGetMethod(tURL);
-            if (makeRequest(getLink)) {
-                final String stringLink = getContentAsString();
-                if (stringLink.contains("http://www.ziddu.com/download/")) {
-                    Matcher lnkMatch = PlugUtils.matcher("(http://www.ziddu.com/download[^<]+)", stringLink);
-                    if (lnkMatch.find()) {
-                        logger.info("Found download Link " + lnkMatch.group(1));
+//      http://www.ziddu.com/download.php?uid=a6uelpmnaLKZlOKnZ6qhkZSoZKqfm5So7    -> Click Download -> Captha
+//      http://www.ziddu.com/downloadlink.php?uid=aqqblpWtbqygnOKnaKqhkZSqZayclZuo8  -> Find URL -> Click Download -> Captha
+//
+//      http://www.ziddu.com/downloadlink/1750286/Video_Php_And_Mysql01.txt          	-> Process URL -> Captha
+//      http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html		-> Process URL -> Captha
+//      http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html	-> Process URL -> Captha
+//      Final Link:
+//      http://downloads.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html  -> Captha
 
-                        tURL = lnkMatch.group(1);
-                        tURL = tURL.trim();
-                    } else throw new InvalidURLOrServiceProblemException("Cant find download link");
-                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
-            } else
-                throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
-        } else if (tURL.contains("download.php")) {
-            final GetMethod getLink = getGetMethod(tURL);
-            if (makeRequest(getLink)) {
-                final String stringLink = getContentAsString();
-                if (stringLink.contains("href=\"/downloadfile/")) {
-                    Matcher lnkMatch = PlugUtils.matcher("href=\"(/downloadfile[^\"]+)", stringLink);
-                    if (lnkMatch.find()) {
-                        tURL = "http://www.ziddu.com" + lnkMatch.group(1);
-                        tURL = tURL.trim();
-                    } else throw new InvalidURLOrServiceProblemException("Cant find download link");
-                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
-            } else
-                throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
+        if (tURL.contains("http://downloads.ziddu.com/downloadfile/")) {
+            logger.info("Final Link Found " + mURL);
+            return mURL;
         }
 
-        if (tURL.contains("www.ziddu.com/downloadlink")) {
-            tURL = tURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/download") + ".html";
+        if (tURL.contains("http://www.ziddu.com/download.php") || tURL.contains("http://www.ziddu.com/downloadlink.php")) {
+            logger.info("Find Link!");
+            GetMethod getMethod = getGetMethod(mURL);
+            if (makeRequest(getMethod)) {
+                String cs = getContentAsString();
+                String rx = "(http://www.ziddu.com/download/[^\\<]+)";
+                if (tURL.contains("http://www.ziddu.com/download.php")) {
+                    rx = "<form action=\"(http://downloads.ziddu.com/downloadfile/[^\"]+)";
+                }
 
-        } else if (tURL.contains("www.ziddu.com/downloadfile/")) {
-            tURL = tURL.replaceFirst("www.ziddu.com/downloadfile/", "www.ziddu.com/download/");
+                Matcher tmpURL = PlugUtils.matcher(rx, cs);
+                if (tmpURL.find()) {
+                    myURL = tmpURL.group(1);
+
+                    if (tURL.contains("http://www.ziddu.com/downloadlink.php")) {
+                        myURL = getFinalURL(myURL);
+                    }
+                    logger.info("Final Link Found " + myURL);
+                    return myURL;
+                } else
+                    throw new PluginImplementationException("Can't Find Download Link");
+            } else
+                throw new PluginImplementationException("Can't Find Download Link");
         }
-        return tURL;
+
+        if (mURL.contains("/downloadlink/") || mURL.contains("/download/") || mURL.contains("/downloadfile/")) {
+            myURL = getFinalURL(mURL);
+            return myURL;
+        }
+        return myURL;
+    }
+
+    private String getFinalURL(String mURL) throws Exception {
+//        http://www.ziddu.com/downloadlink/1750286/Video_Php_And_Mysql01.txt          	-> Process URL -> Captha
+////      http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html		-> Process URL -> Captha
+////      http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html	-> Process URL -> Captha
+
+//        http://downloads.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html  -> Captha
+        Matcher finURL = PlugUtils.matcher("http://www.ziddu.com/[a-z]+/([0-9)]+)/(.+)", mURL);
+        if (finURL.find()) {
+            String fURL;
+
+            fURL = "http://downloads.ziddu.com/downloadfile/" + finURL.group(1) + "/" + finURL.group(2);
+            logger.info("Final URL: " + fURL);
+            return fURL;
+        }
+        throw new PluginImplementationException("Can't find appropriate link format");
+
     }
 
     private boolean stepCaptcha(String contentAsString) throws Exception {

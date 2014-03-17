@@ -29,35 +29,7 @@ class ZidduRunner extends AbstractRunner {
         //http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html
         //http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html
 
-        if (fileURL.contains("downloadlink.php")) {
-            final GetMethod getLink = getGetMethod(fileURL);
-            if (makeRequest(getLink)) {
-                final String stringLink = getContentAsString();
-                if (stringLink.contains("http://www.ziddu.com/download/")) {
-                    Matcher lnkMatch = PlugUtils.matcher("class=\"download\">([^<]+)", stringLink);
-                        if (lnkMatch.find()) {
-                            fileURL = lnkMatch.group(1);
-                            fileURL = fileURL.trim();
-
-
-                        } else throw new InvalidURLOrServiceProblemException("Cant find download link");
-
-                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
-
-
-            }  else throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
-
-
-        }
-
-
-
-        if (fileURL.contains("www.ziddu.com/downloadlink")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
-
-        } else if (fileURL.contains("www.ziddu.com/download/")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/download/", "www.ziddu.com/downloadfile/");
-        }
+        fileURL=processURL(fileURL);
 
         baseURL = fileURL;
 
@@ -110,32 +82,8 @@ class ZidduRunner extends AbstractRunner {
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         //baseURL = fileURL;
 
-                if (fileURL.contains("downloadlink.php")) {
-            final GetMethod getLink = getGetMethod(fileURL);
-            if (makeRequest(getLink)) {
-                final String stringLink = getContentAsString();
-                if (stringLink.contains("http://www.ziddu.com/download/")) {
-                    Matcher lnkMatch = PlugUtils.matcher("class=\"download\">([^<]+)", stringLink);
-                        if (lnkMatch.find()) {
-                            fileURL = lnkMatch.group(1);
-                            fileURL = fileURL.trim();
+        fileURL = processURL(fileURL);
 
-                        } else throw new InvalidURLOrServiceProblemException("Cant find download link");
-
-                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
-
-
-            }  else throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
-
-
-        }
-
-        if (fileURL.contains("www.ziddu.com/downloadlink")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
-
-        } else if (fileURL.contains("www.ziddu.com/download/")) {
-            fileURL = fileURL.replaceFirst("www.ziddu.com/download/", "www.ziddu.com/downloadfile/");
-        }
 
         baseURL = fileURL;
         //httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));
@@ -184,6 +132,63 @@ class ZidduRunner extends AbstractRunner {
 
 
         } else throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+
+    private String processURL(String mURL) throws Exception {
+        String tURL = mURL;
+
+        if (tURL.contains("downloadlink.php")) {
+            final GetMethod getLink = getGetMethod(tURL);
+            if (makeRequest(getLink)) {
+                final String stringLink = getContentAsString();
+                if (stringLink.contains("http://www.ziddu.com/download/")) {
+                    Matcher lnkMatch = PlugUtils.matcher("class=\"download\">([^<]+)", stringLink);
+                        if (lnkMatch.find()) {
+                            tURL = lnkMatch.group(1);
+                            tURL = tURL.trim();
+
+                        } else throw new InvalidURLOrServiceProblemException("Cant find download link");
+
+                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
+
+
+            }  else throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
+
+
+        } else if(tURL.contains("download.php")) {
+            final GetMethod getLink = getGetMethod(tURL);
+            if (makeRequest(getLink)) {
+                final String stringLink = getContentAsString();
+                //
+
+                if (stringLink.contains("href=\"/downloadfile/")) {
+                    Matcher lnkMatch = PlugUtils.matcher("href=\"(/downloadfile[^\"]+)", stringLink);
+                        if (lnkMatch.find()) {
+                            tURL = "http://www.ziddu.com" + lnkMatch.group(1);
+                            tURL = tURL.trim();
+
+                        } else throw new InvalidURLOrServiceProblemException("Cant find download link");
+
+                } else throw new InvalidURLOrServiceProblemException("Cant find download link page");
+
+
+            }  else throw new InvalidURLOrServiceProblemException("Problem with a connection to service.\nCannot find requested page content");
+        }
+
+        if (tURL.contains("www.ziddu.com/downloadlink")) {
+            tURL = tURL.replaceFirst("www.ziddu.com/downloadlink", "www.ziddu.com/downloadfile") + ".html";
+
+        } else if (tURL.contains("www.ziddu.com/download/")) {
+            tURL = tURL.replaceFirst("www.ziddu.com/download/", "www.ziddu.com/downloadfile/");
+        }
+
+
+
+        return tURL;
+
+
+
     }
 
  private String stepCaptcha(String contentAsString) throws Exception {

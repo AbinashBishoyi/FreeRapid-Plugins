@@ -20,12 +20,14 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.flickr.com/photos/sdasmarchives/8092199892/in/set-72157631786232754"));
             //httpFile.setNewURL(new URL("http://www.flickr.com/photos/sdasmarchives/sets/72157631786232754/")); //photosets
             //httpFile.setNewURL(new URL("http://www.flickr.com/photos/gsfc/galleries/72157628360143331/")); //galleries
-            httpFile.setNewURL(new URL("http://www.flickr.com/photos/gsfc/favorites/")); //favorites
+            //httpFile.setNewURL(new URL("http://www.flickr.com/photos/gsfc/favorites/")); //favorites
             //httpFile.setNewURL(new URL("http://www.flickr.com/photos/gsfc/5958023159/in/set-72157629952998158")); //video
             //httpFile.setNewURL(new URL("http://www.flickr.com/photos/gsfc/sets/72157631454991752/")); //photosets (photo+video)
+            //httpFile.setNewURL(new URL("http://www.flickr.com/photos/86616005@N08/sets/72157631451389242/"));
+            httpFile.setNewURL(new URL("http://www.flickr.com/photos/87928658@N02/sets/72157631675130544/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("195.77.62.138", 3128); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final FlickrServiceImpl service = new FlickrServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

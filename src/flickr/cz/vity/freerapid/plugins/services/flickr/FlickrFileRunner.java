@@ -37,6 +37,7 @@ class FlickrFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        setFileStreamContentTypes(new String[0], new String[]{"application/json"});
         if (isPhotoSets()) {
             parsePhotoSets();
         } else if (isGalleries()) {
@@ -151,6 +152,15 @@ class FlickrFileRunner extends AbstractRunner {
         return uriList;
     }
 
+    private void queueLinks(List<URI> uriList) throws PluginImplementationException {
+        if (uriList.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+        httpFile.getProperties().put("removeCompleted", true);
+        logger.info(uriList.size() + " photos added");
+    }
+
     private String getPhotoIdFromURL() throws Exception {
         final Matcher matcher = PlugUtils.matcher("/photos/.+/([0-9]+)/?", fileURL);
         if (!matcher.find()) {
@@ -178,12 +188,7 @@ class FlickrFileRunner extends AbstractRunner {
                 .setParameter("photoset_id", getPhotoSetIdFromURL())
                 .getEscapedURI();
         final List<URI> uriList = getURIList(action, "\"id\":\"(\\d+)\", \"secret\"", false);
-        if (uriList.isEmpty()) {
-            throw new PluginImplementationException("No links found");
-        }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        httpFile.getProperties().put("removeCompleted", true);
-        logger.info(uriList.size() + " photos added");
+        queueLinks(uriList);
     }
 
     private boolean isGalleries() {
@@ -208,12 +213,7 @@ class FlickrFileRunner extends AbstractRunner {
                 .setParameter("gallery_id", getGalleryId())
                 .getEscapedURI();
         final List<URI> uriList = getURIList(action, "\"id\":\"(\\d+)\", \"owner\":\"(.+?)\", \"secret\"", true);
-        if (uriList.isEmpty()) {
-            throw new PluginImplementationException("No links found");
-        }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        httpFile.getProperties().put("removeCompleted", true);
-        logger.info(uriList.size() + " photos added");
+        queueLinks(uriList);
     }
 
     private boolean isFavorites() {
@@ -239,12 +239,7 @@ class FlickrFileRunner extends AbstractRunner {
                 .setParameter("user_id", getUserId())
                 .getEscapedURI();
         final List<URI> uriList = getURIList(action, "\"id\":\"(\\d+)\", \"owner\":\"(.+?)\", \"secret\"", true);
-        if (uriList.isEmpty()) {
-            throw new PluginImplementationException("No links found");
-        }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        httpFile.getProperties().put("removeCompleted", true);
-        logger.info(uriList.size() + " photos added");
+        queueLinks(uriList);
     }
 
 

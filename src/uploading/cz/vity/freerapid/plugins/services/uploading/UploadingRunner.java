@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Calendar;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -111,14 +112,24 @@ class UploadingRunner extends AbstractRunner {
 
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("FILE REMOVED");
-        if (matcher.find()) {
+        if (getContentAsString().contains("FILE REMOVED")) {
             throw new URLNotAvailableAnymoreException("File removed because of abuse or deleted by owner.");
         }
         if (getContentAsString().contains("You have reached the daily downloads limit")) {
-            throw new YouHaveToWaitException("You have reached the daily downloads limit. Please come back later", 2 * 60);
+            int pause = 20 * 60;
+            int toMidnight = getSecondToMidnight();
+            if (toMidnight > 18 * 3600) pause = toMidnight + 5 * 60;
+
+            throw new YouHaveToWaitException("You have reached the daily downloads limit. Please come back later", pause);
         }
+
+    }
+
+    public static int getSecondToMidnight() {
+        Calendar now = Calendar.getInstance();
+        Calendar midnight = Calendar.getInstance();
+        midnight.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH) + 1, 0, 0, 1);
+        return (int) ((midnight.getTimeInMillis() - now.getTimeInMillis()) / 1000f);
     }
 
 }

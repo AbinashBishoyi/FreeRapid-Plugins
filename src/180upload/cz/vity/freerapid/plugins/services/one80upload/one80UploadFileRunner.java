@@ -2,10 +2,19 @@ package cz.vity.freerapid.plugins.services.one80upload;
 
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 
+import java.util.List;
+
 /**
  * Class which contains main code
  *
  * @author birchie
  */
 class one80UploadFileRunner extends XFileSharingRunner {
+
+    @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("By downloading the file you agree to the TOS");
+        return downloadPageMarkers;
+    }
 }

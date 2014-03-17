@@ -16,8 +16,8 @@ import java.util.logging.Logger;
  *
  * @author Abinash Bishoyi
  */
-class wowebookFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(wowebookFileRunner.class.getName());
+class WowEbookFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(WowEbookFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception { //this method validates file

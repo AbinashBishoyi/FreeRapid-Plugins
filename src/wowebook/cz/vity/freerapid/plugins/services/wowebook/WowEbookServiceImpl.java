@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author Abinash Bishoyi
  */
-public class wowebookServiceImpl extends AbstractFileShareService {
+public class WowEbookServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
@@ -22,7 +22,7 @@ public class wowebookServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new wowebookFileRunner();
+        return new WowEbookFileRunner();
     }
 
 }

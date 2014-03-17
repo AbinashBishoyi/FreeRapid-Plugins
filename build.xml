@@ -98,6 +98,7 @@
         <ant dir="${src.dir}/subory/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/ultrashare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/wiiupload/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/sendspace/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

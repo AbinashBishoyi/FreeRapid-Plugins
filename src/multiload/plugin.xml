@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="multiload.cz" version="1.0" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.multiload.MultiloadServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?multiload\.cz/.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="multiload.cz"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="multiload.cz" path="/" type="code"/>
+    </runtime>
+</plugin>

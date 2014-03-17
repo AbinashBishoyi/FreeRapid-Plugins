@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="dl.free.fr" version="1.0.0" vendor="ntoskrnl"
+        class="cz.vity.freerapid.plugins.services.dlfreefr.DlFreeFrServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://dl\.free\.fr/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="dl.free.fr"/>
+        <attribute id="maxDownloads" value="10"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="dl.free.fr" path="/" type="code"/>
+    </runtime>
+</plugin>

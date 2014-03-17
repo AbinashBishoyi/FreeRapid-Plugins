@@ -30,9 +30,9 @@ class MegauploadRunner {
 
     public void run(HttpFileDownloader downloader) throws Exception {
         this.downloader = downloader;
-        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         HttpFile httpFile = downloader.getDownloadFile();
         client = downloader.getClient();
+        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);        
         final String fileURL = httpFile.getFileUrl().toString();
         logger.info("Starting download in TASK " + fileURL);
 

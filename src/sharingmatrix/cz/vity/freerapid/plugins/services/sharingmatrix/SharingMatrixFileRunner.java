@@ -13,10 +13,9 @@ import java.io.InputStream;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
- * @author Kajda, JPEXS
+ * @author Kajda, JPEXS, RickCL
  * @since 0.82
  */
 class SharingMatrixFileRunner extends AbstractRunner {
@@ -49,12 +48,18 @@ class SharingMatrixFileRunner extends AbstractRunner {
             final String rootURL = PlugUtils.getStringBetween(contentAsString, "URL_ROOT = '", "'");
             final String linkId = PlugUtils.getStringBetween(contentAsString, "link_id = '", "'");
             final String linkName = PlugUtils.getStringBetween(contentAsString, "link_name = '", "'");
+            String captchaURL = rootURL + "/images/captcha/";
 
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/download.php?type_membership=free&link_id=" + linkId).toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 int ctjv = PlugUtils.getWaitTimeBetween(getContentAsString(), "ctjv = '", "';", TimeUnit.SECONDS);
                 downloadTask.sleep(ctjv);
                 String dlID = "";
+                try {
+                    captchaURL = PlugUtils.getStringBetween(getContentAsString(), "CAPTCHA_IMAGE_URL = '", "'");
+                } catch(PluginImplementationException e) {
+                    logger.warning(e.getMessage());
+                }
                 if (getContentAsString().contains("_get2.php")) {
                     dlID = PlugUtils.getStringBetween(getContentAsString(), "showLink(", ", '');");
                     httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/_get2.php?link_id=" + linkId + "&link_name=" + linkName + "&dl_id=" + dlID + "&password=").toHttpMethod();
@@ -88,13 +93,14 @@ class SharingMatrixFileRunner extends AbstractRunner {
                             if(!makeRequest(httpMethod)) {
                                 throw new PluginImplementationException();
                             }
-                            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/images/captcha/"+getContentAsString().trim()+".jpg").toHttpMethod();
+                            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(captchaURL + getContentAsString().trim()+".jpg").toHttpMethod();
                             is = client.makeRequestForFile(httpMethod);
                             if (is == null) {
                                 throw new PluginImplementationException(httpMethod.getURI().toString());
                             }
                             captchaImage = captchaSupport.loadCaptcha(is);
                         }
+                        //System.out.println( getContentAsString() );
                         captchaR = captchaSupport.askForCaptcha(captchaImage);
                         if (captchaR == null) {
                             throw new CaptchaEntryInputMismatchException();

@@ -11,14 +11,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class UploadIlServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "upload-il.com";
 
-    //@Override
-
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
-    //@Override
-
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }

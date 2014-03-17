@@ -7,12 +7,11 @@
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="upload-il.com"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="uploadil.com" path="/" type="code"/>
+        <library id="upload-il.com" path="/" type="code"/>
     </runtime>
 </plugin>

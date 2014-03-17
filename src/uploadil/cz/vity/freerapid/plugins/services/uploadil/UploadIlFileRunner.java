@@ -28,7 +28,7 @@ class UploadIlFileRunner extends AbstractRunner {
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
 
-        fileURL = fileURL.replaceFirst("/" + fileURL.split("/")[3] + "/", "/en/");
+        fileURL = fileURL.replaceAll("\\.com/../", ".com/en/");
 
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
@@ -49,7 +49,7 @@ class UploadIlFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        fileURL = fileURL.replaceFirst("/" + fileURL.split("/")[3] + "/", "/en/");
+        fileURL = fileURL.replaceAll("\\.com/../", ".com/en/");
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
@@ -59,33 +59,26 @@ class UploadIlFileRunner extends AbstractRunner {
 
             // Do while captcha isn't broken. After CAPTCHA_MAX failed 
             // recognition attempts it would ask the user for manual input
-            while (true) {
+            while (getContentAsString().contains("captcha")) {
                 if (!makeRequest(stepCaptcha())) {
                     throw new ServiceConnectionProblemException();
                 }
                 checkProblems();
-                if (getContentAsString().contains("captcha")) continue;
-                else break;
             }
 
-            Matcher matcher = getMatcherAgainstContent("<input type=button id=\"downloadbtn\" class=\"Dwarn\" name=\"downloadbtn\" value=\"Click here to download\" onclick='document.location=\"(.+?)\"' style=\"visibility: hidden;\">");
-            if (matcher.find()) {
-                fileURL = matcher.group(1);
-            } else {
-                throw new PluginImplementationException("Download link not found on retrieved page");
-            }
+            Matcher matcher = getMatcherAgainstContent("id=\"downloadbtn\"[^<>]+?onclick='document.location=\"(.+?)\"'");
+            if (!matcher.find()) throw new PluginImplementationException("Download link not found");
+            final String downloadURL = matcher.group(1);
 
-            if (getContentAsString().contains("Your download session is ready.<br/> Please wait")) {
-                matcher = getMatcherAgainstContent("var timeout='(\\d+?)'");
-                if (!matcher.find()) throw new PluginImplementationException("Waiting time not found");
-                downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
+            if (getContentAsString().contains("Please wait")) {
+                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var timeout='", "'") + 1);
             }
 
             //we don't want "upload-il.com" in the filename
             client.getHTTPClient().getParams().setParameter("dontUseHeaderFilename", true);
 
             //here is the download link extraction
-            if (!tryDownloadAndSaveFile(getGetMethod(fileURL))) {
+            if (!tryDownloadAndSaveFile(getGetMethod(downloadURL))) {
                 checkProblems();//if downloading failed
                 logger.warning(getContentAsString());//log the info
                 throw new ServiceConnectionProblemException("Error starting download");

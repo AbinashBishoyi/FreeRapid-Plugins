@@ -22,8 +22,9 @@ class ForSharedRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        this.fileURL = this.fileURL.toLowerCase().replace("/get/", "/file/");
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();
         } else {
@@ -36,6 +37,7 @@ class ForSharedRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        this.fileURL = this.fileURL.toLowerCase().replace("/get/", "/file/");
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();

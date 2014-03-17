@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="4shared.com" version="1.2.0" vendor="Alex+ntoskrnl"
+<plugin id="4shared.com" version="1.2.1" vendor="Alex+ntoskrnl+Vity"
         class="cz.vity.freerapid.plugins.services.forshared.ForSharedServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?4shared\.com/file/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?4shared\.com/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="4shared.com"/>

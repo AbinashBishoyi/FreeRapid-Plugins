@@ -65,7 +65,7 @@ class ProtectMyLinksFileRunner extends AbstractRunner {
 
     private void stepCaptcha() throws Exception {
         String password = null;
-        if (getContentAsString().contains("Password"))
+        if (getContentAsString().contains("Password :"))
             password = getPassword();
 
         while (getContentAsString().contains("secureCaptcha")) {

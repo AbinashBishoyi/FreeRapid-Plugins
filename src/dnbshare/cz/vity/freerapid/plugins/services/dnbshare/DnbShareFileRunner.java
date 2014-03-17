@@ -51,7 +51,7 @@ class DnbShareFileRunner extends AbstractRunner {
                     .setActionFromFormByName("dlform", true)
                     .setAction(fileURL)
                     .toPostMethod();
-            //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "c=", ";") + 1);
+            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var c = ", ";") + 1);
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
@@ -65,7 +65,7 @@ class DnbShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("</em> not found") || content.contains("<h1>Not Found</h1>")) {
+        if (content.contains("</em> not found") || content.contains("<h1>Not Found</h1>") || content.contains("was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

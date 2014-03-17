@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="usercash.com" version="1.0" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.usercash.UserCashServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://[0-9]+\.usercash\.com/?"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="usercash.com"/>
+        <attribute id="faviconImage" value="resources/favicon.gif"/>
+    </attributes>
+
+    <runtime>
+        <library id="usercash.com" path="/" type="code"/>
+    </runtime>
+</plugin>

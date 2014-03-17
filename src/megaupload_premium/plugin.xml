@@ -6,7 +6,7 @@
         <attribute id="urlRegex" value="http://(www\.)?(mega(upload|porn|rotic)|sexuploader)\.com/\?[df]=.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="megaupload.com megarotic.com megaporn.com sexuploader.com"/>
+        <attribute id="services" value="megaupload.com megaporn.com"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>

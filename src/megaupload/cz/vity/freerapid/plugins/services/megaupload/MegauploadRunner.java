@@ -31,7 +31,7 @@ class MegauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
     private String HTTP_SITE = "http://www.megaupload.com";
     private String LINK_TYPE = "single";
-    private final static int captchaMax = 5;
+    private final int captchaMax = 5;
     private int captchaCount;
 
     @Override
@@ -40,11 +40,11 @@ class MegauploadRunner extends AbstractRunner {
         final String host = httpFile.getFileUrl().getHost();
         if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
             HTTP_SITE = "http://www.megaporn.com";
-            fileURL = fileURL.replace("megarotic", "megaporn");
-            fileURL = fileURL.replace("sexuploader", "megaporn");
+            fileURL = fileURL.replace("megarotic", "megaporn").replace("sexuploader", "megaporn");
         }
 
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
+        addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
 
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
@@ -64,13 +64,13 @@ class MegauploadRunner extends AbstractRunner {
         final String host = httpFile.getFileUrl().getHost();
         if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
             HTTP_SITE = "http://www.megaporn.com";
-            fileURL = fileURL.replace("megarotic", "megaporn");
-            fileURL = fileURL.replace("sexuploader", "megaporn");
+            fileURL = fileURL.replace("megarotic", "megaporn").replace("sexuploader", "megaporn");
         }
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
 
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
+        addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
 
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         getMethod.setFollowRedirects(true);

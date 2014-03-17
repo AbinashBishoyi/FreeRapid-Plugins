@@ -1,13 +1,13 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="megaupload.com" version="1.9.6" vendor="Lukiz+JPEXS+daniol"
+<plugin id="megaupload.com" version="1.9.7" vendor="Lukiz+JPEXS+daniol"
         class="cz.vity.freerapid.plugins.services.megaupload.MegauploadShareServiceImpl">
     <attributes>
         <attribute id="urlRegex"
-                   value="http://(www\.)?(megaupload|megarotic|megaporn|sexuploader)\.com/\?[d|f]=.+"/>
+                   value="http://(www\.)?(megaupload|megarotic|megaporn|sexuploader)\.com/\?[df]=.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="megaupload.com megarotic.com megaporn.com sexuploader.com"/>
+        <attribute id="services" value="megaupload.com megaporn.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

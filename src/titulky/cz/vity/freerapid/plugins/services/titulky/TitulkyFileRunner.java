@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.titulky;
 
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
@@ -42,27 +43,47 @@ class TitulkyFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             checkProblems();//check problems
-            final String number = PlugUtils.getStringBetween(getContentAsString(), "//OpenDownload('", "','");
+            //final String number = PlugUtils.getStringBetween(getContentAsString(), "//OpenDownload('", "','");
+            final String href = PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" id=\"opendown\"");
             client.getHTTPClient().getParams().setParameter("considerAsStream", "archive/zip");
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction("http://www.titulky.com/idown.php?R=65456454545454545454654654466415454&titulky=" + number + "&zip=z&histstamp=").toHttpMethod();
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(href).toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {
-                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "CountDown(", ")"));
-                final String id = PlugUtils.getStringBetween(getContentAsString(), "href=\"/idown.php?id=", "\"");
-                httpMethod = getMethodBuilder().setAction("http://titulky.com//idown.php?id=" + id).toHttpMethod();
-                //here is the download link extraction
-                client.getHTTPClient().getParams().setBooleanParameter("noContentLengthAvailable", true);
-                if (!tryDownloadAndSaveFile(httpMethod)) {
-                    checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
-                } else {
-                    extractZipFile();
+                while (getContentAsString().contains("roboty, opsat")) {
+                    String captcha = "";
+                    while ("".equals(captcha)) {
+                        captcha = getCaptchaSupport().getCaptcha("http://www.titulky.com/captcha/captcha.php");
+                        if (captcha == null) {
+                            throw new CaptchaEntryInputMismatchException("Captcha entry required");
+                        }
+                    }
+                    final HttpMethod withCaptchaMethod = getMethodBuilder().setActionFromFormByName("downform", true).setBaseURL("http://www.titulky.com").setParameter("downkod", captcha).toPostMethod();
+                    if (!makeRedirectedRequest(withCaptchaMethod)) {
+                        throw new PluginImplementationException();//some unknown problem
+                    }
                 }
-
-            } else throw new PluginImplementationException();
+                parseDownloadPage();
+            } else {
+                throw new PluginImplementationException();
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private void parseDownloadPage() throws Exception {
+        HttpMethod httpMethod;
+        downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "CountDown(", ")"));
+        final String id = PlugUtils.getStringBetween(getContentAsString(), "href=\"/idown.php?id=", "\"");
+        httpMethod = getMethodBuilder().setAction("http://titulky.com//idown.php?id=" + id).toHttpMethod();
+        //here is the download link extraction
+        client.getHTTPClient().getParams().setBooleanParameter("noContentLengthAvailable", true);
+        if (!tryDownloadAndSaveFile(httpMethod)) {
+            checkProblems();//if downloading failed
+            logger.warning(getContentAsString());//log the info
+            throw new PluginImplementationException();//some unknown problem
+        } else {
+            extractZipFile();
         }
     }
 

@@ -38,8 +38,8 @@ class FileStoreUaFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "\u0424\u0430\u0439\u043B:</b></td>\n<td align=left width=400px>", "</td>");
-        PlugUtils.checkFileSize(httpFile, content, "\u0420\u0430\u0437\u043C\u0435\u0440:</b></td>\n<td align=left >", "</td>");
+        PlugUtils.checkName(httpFile, content, "<title>", "</title>");
+        PlugUtils.checkFileSize(httpFile, content, "File size:</b></td>\n<td align=left >", "</td>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -66,7 +66,8 @@ class FileStoreUaFileRunner extends AbstractRunner {
 
             logger.info("Captcha OK");
 
-            String file_url = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\"><img src=\"http://filestore.com.ua/dwnru.gif\">");
+            String file_url = PlugUtils.getStringBetween(getContentAsString(),
+                    "<a href=\"", "\" onmouseout='window.status");
             http = getMethodBuilder().setAction(file_url).toGetMethod();
 
             if (!tryDownloadAndSaveFile(http)) {

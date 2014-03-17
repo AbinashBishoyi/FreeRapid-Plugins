@@ -19,10 +19,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -124,9 +121,17 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 }
                 String videoURL = matcher.group(1);
                 if (!videoURL.contains("signature")) {
-                    matcher = PlugUtils.matcher("sig=(.+?)(?:\\\\u0026.+)?$", formatContent);
-                    if (matcher.find()) {
-                        videoURL = videoURL + "&signature=" + matcher.group(1);
+                    if (formatContent.contains("sig=")) {
+                        matcher = PlugUtils.matcher("sig=(.+?)(?:\\\\u0026.+)?$", formatContent);
+                        if (matcher.find()) {
+                            videoURL = videoURL + "&signature=" + matcher.group(1);
+                        }
+                    } else {
+                        matcher = PlugUtils.matcher("(?:\\\\u0026)?s=([A-Z0-9\\.]+?)(?:\\\\u0026|$)", formatContent);
+                        if (matcher.find()) {
+                            logger.info(matcher.group(1));
+                            videoURL = videoURL + "&signature=" + new YouTubeSigDecipher().decipher(matcher.group(1));
+                        }
                     }
                 }
                 method = getGetMethod(URLDecoder.decode(videoURL, "UTF-8"));
@@ -141,6 +146,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
             throw new ServiceConnectionProblemException();
         }
     }
+
 
     //@TODO : implement https://developers.google.com/youtube/2.0/developers_guide_protocol_video_entries
     //@TODO : https://gdata.youtube.com/feeds/api/videos/$videoid?v=2    , where $videoid = video id from url
@@ -540,6 +546,35 @@ class YouTubeRunner extends AbstractRtmpRunner {
         if (getContentAsString().contains("Sign in to view this video")
                 || getContentAsString().contains("Sign in to confirm your age")) {  //just in case they change age verification mechanism
             throw new PluginImplementationException("YouTube account is not supported : Sign in to view this video");
+        }
+    }
+
+    private class YouTubeSigDecipher {
+        private List<String> swap(List<String> lstSig, int pos) {
+            String head = lstSig.get(0);
+            String headSwapTo = lstSig.get(pos % lstSig.size());
+            lstSig.set(0, headSwapTo);
+            lstSig.set(pos, head);
+            return lstSig;
+        }
+
+        private List<String> clone(List<String> lst, int from) {
+            return lst.subList(from, lst.size());
+        }
+
+        public String decipher(String sig) {
+            List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
+            lstSig.remove(0); //remove empty char at head
+            Collections.reverse(lstSig);
+            lstSig = clone(lstSig, 3);
+            lstSig = swap(lstSig, 19);
+            Collections.reverse(lstSig);
+            lstSig = clone(lstSig, 2);
+            StringBuilder sb = new StringBuilder();
+            for (String s : lstSig) {
+                sb.append(s);
+            }
+            return sb.toString();
         }
     }
 

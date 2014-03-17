@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
@@ -23,6 +24,7 @@ class EasyShareRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".easy-share.com","language", "en", "/", null, false));
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -47,6 +49,7 @@ class EasyShareRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        addCookie(new Cookie(".easy-share.com","language", "en", "/", null, false));
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         baseURL = fileURL;
         httpSite = fileURL.substring(0, fileURL.indexOf('/', 10));

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.warservercz.WarServerCzServiceImpl"
-        id="warserver.cz" vendor="tong2shot" version="1.0.1">
+<plugin class="cz.vity.freerapid.plugins.services.inafr.InaFrServiceImpl"
+        id="ina.fr" vendor="tong2shot" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?warserver\.cz/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?ina\.fr/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="warserver.cz"/>
+        <attribute id="services" value="ina.fr"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="warserver.cz" path="/" type="code"/>
+        <library id="ina.fr" path="/" type="code"/>
     </runtime>
 </plugin>

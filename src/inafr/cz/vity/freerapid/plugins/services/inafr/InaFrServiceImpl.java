@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.warservercz;
+package cz.vity.freerapid.plugins.services.inafr;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -8,11 +8,11 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class WarServerCzServiceImpl extends AbstractFileShareService {
+public class InaFrServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "warserver.cz";
+        return "ina.fr";
     }
 
     @Override
@@ -22,7 +22,7 @@ public class WarServerCzServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new WarServerCzFileRunner();
+        return new InaFrFileRunner();
     }
 
 }

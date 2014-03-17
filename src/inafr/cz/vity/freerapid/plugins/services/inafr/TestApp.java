@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.warservercz;
+package cz.vity.freerapid.plugins.services.inafr;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -15,11 +15,12 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://www.warserver.cz/stahnout/1794/krajni-meze-cz-s5e01-avi"));
-            httpFile.setNewURL(new URL("http://www.warserver.cz/stahnout/1580/pomsta-sprtu-xxx-parody-rar"));
+            //httpFile.setNewURL(new URL("http://www.ina.fr/sport/football/video/CAA7600524501/glasgow-la-folle-nuit.fr.html"));
+            //httpFile.setNewURL(new URL("http://www.ina.fr/economie-et-societe/vie-sociale/video/CAB93031104/la-fete-a-marseille.fr.html"));
+            httpFile.setNewURL(new URL("http://www.ina.fr/ardisson/les-integrales/video/CPB94001383/long-courrier-une-nuit-a-rio.fr.html"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final WarServerCzServiceImpl service = new WarServerCzServiceImpl();
+            final InaFrServiceImpl service = new InaFrServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

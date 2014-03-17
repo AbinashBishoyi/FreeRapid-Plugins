@@ -36,7 +36,7 @@ class WebshotsFileRunner extends AbstractRunner {
 
 
         if (fileURL.contains("/photo/")) {
-            CONTENT_TYPE = "photo";
+            CONTENT_TYPE = "picture";
             FILE_EXTENSION = ".jpg";
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();

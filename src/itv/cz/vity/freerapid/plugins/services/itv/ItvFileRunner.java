@@ -98,7 +98,7 @@ class ItvFileRunner extends AbstractRtmpRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         runCheck();
-        Matcher matcher = PlugUtils.matcher("<Video timecode=[^<>]*?>(.+?)</Video>", content);
+        Matcher matcher = PlugUtils.matcher("(?s)<Video timecode=[^<>]*?>(.+?)</Video>", content);
         if (!matcher.find()) {
             throw new PluginImplementationException("'Video' tag not found in playlist");
         }

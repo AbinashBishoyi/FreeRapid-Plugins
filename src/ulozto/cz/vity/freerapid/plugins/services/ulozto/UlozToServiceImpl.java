@@ -58,5 +58,9 @@ public class UlozToServiceImpl extends AbstractFileShareService {
         return new UlozToRunner();
     }
 
+    public int getMaxDownloadsFromOneIP(){
+        return 9;
+    }
+
 
 }

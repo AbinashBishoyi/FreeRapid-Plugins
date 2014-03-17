@@ -104,7 +104,7 @@ class UlozToRunner extends AbstractRunner {
         if (!m.find()) throw new PluginImplementationException("Cannot find filename");
 
         httpFile.setFileName(m.group(1));
-        m = Pattern.compile("<div class=\"info_velikost\"[^>]*><div>(?:.+?\\|)?([^<]+)</div>").matcher(content);
+        m = Pattern.compile("<div class=\"info_velikost\"[^>]*>\\s*<div>\\s*(?:.+\\| *)?([^<\\|]+)\\s*</div>").matcher(content);
         if (!m.find()) throw new PluginImplementationException("Cannot find filesize");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(m.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

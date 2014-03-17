@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.easyshare.EasyShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://([a-zA-Z_0-9])*?\.easy-share\.com/.+"/>
-        <attribute id="minver" value="0.82"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="easy-share.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

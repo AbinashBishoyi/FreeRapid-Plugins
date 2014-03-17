@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.shareator.ShareatorServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?shareator\.com/.+"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="shareator.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

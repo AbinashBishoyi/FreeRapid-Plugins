@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.urlcash.UrlCashServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://[0-9a-z\-]+\.urlcash\.net"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="urlcash.net"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>

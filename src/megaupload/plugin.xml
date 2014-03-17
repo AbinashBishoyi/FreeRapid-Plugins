@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.megaupload.MegauploadShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(megaupload|megarotic|sexuploader)\.com/.+"/>
-        <attribute id="minver" value="0.82"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="megaupload.com megarotic.com sexuploader.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

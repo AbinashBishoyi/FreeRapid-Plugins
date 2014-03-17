@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.co.CoServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(.*?)co\.cc/.+"/>
-        <attribute id="minver" value="0.82"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="co.cc"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>

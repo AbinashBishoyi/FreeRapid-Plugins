@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.uploadjockey.UploadJockeyServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?uploadjockey\.com/download/.+"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="uploadjockey.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

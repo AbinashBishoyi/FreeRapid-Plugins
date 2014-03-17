@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.leteckaposta.LeteckaPostaServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?leteckaposta\.cz/[0-9]+"/>
-        <attribute id="minver" value="0.81"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="leteckaposta.cz"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>

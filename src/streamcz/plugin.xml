@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.streamcz.StreamCzServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?stream\.cz/.+"/>
-        <attribute id="minver" value="0.81"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="stream.cz"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

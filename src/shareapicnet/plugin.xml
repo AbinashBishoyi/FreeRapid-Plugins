@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.shareapicnet.ShareapicnetServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://[0-9a-z\-]+\.shareapic\.net/content\.php.+"/>
-        <attribute id="minver" value="0.81"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.82"/>
         <attribute id="services" value="shareapic.net"/>
         <attribute id="faviconImage" value="resources/favicon.gif"/>

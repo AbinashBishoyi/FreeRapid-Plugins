@@ -5,7 +5,7 @@
     <attributes>
         <attribute id="urlRegex"
                    value="http://(www\.)?(share-rapid\.com|e-stahuj\.cz|jirkasekyrka\.com|kadzet\.com|mediatack\.cz|premium-rapidshare\.cz|rapidshare-premium\.cz|share-credit\.cz|share-free\.cz|share-ms\.net|share-rapid\.cz|share-rapid\.info|share-rapid\.net|share-rapid\.sk|sharerapid\.net|sharerapid\.cz|sharerapid\.org|strelci\.net|universal-share\.com)/stahuj/.+"/>
-        <attribute id="minver" value="0.81"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="share-rapid.com"/>
         <attribute id="hasOptions" value="true"/>

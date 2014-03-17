@@ -5,7 +5,7 @@
     <attributes>
         <attribute id="urlRegex"
                    value="http://(www\.)?hellshare\.com/.+|http://(download\.[a-z]+\.)?hellshare\.com/.+|http://download\.hellshare\.hu/.+"/>
-        <attribute id="minver" value="0.81"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="hellshare.com"/>
         <!-- ID pluginu, pro ktere je to premium -->

@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.shareonline.ShareonlineShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?share-online\.biz/.+"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="share-online.biz"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

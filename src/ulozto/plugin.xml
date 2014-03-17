@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.ulozto.UlozToServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(uloz\.to|ulozto\.net|ulozto\.cz|ulozto\.sk)/.+"/>
-        <attribute id="minver" value="0.82"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="uloz.to"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.badongo.BadongoServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?badongo\.com/([a-zA-Z]{2}/)?(file|pic|vid)/.+"/>
-        <attribute id="minver" value="0.82"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="badongo.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

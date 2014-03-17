@@ -4,7 +4,7 @@
         class="cz.vity.freerapid.plugins.services.rapidsharede.RapidShareDeServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?rapidshare\.de/files/.+"/>
-        <attribute id="minver" value="0.81"/>
+        <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.82"/>
         <attribute id="services" value="rapidshare.de"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

@@ -14,6 +14,8 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="solvemediacaptcha"
+                plugin-version="1.0.0" reverse-lookup="false"/>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
                 plugin-version="1.0.7" reverse-lookup="false"/>
     </requires>

@@ -87,12 +87,7 @@ class UploadingRunner extends AbstractRunner {
             logger.warning(content);
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-        if (content.contains("FILE REMOVED")) {
-            throw new URLNotAvailableAnymoreException("FILE REMOVED BECAUSE OF ABUSE OR DELETED BY OWNER");
-        }
-        if (content.contains("You have reached the daily downloads limit")) {
-            throw new YouHaveToWaitException("You have reached the daily downloads limit. Please come back later", 2 * 60);
-        }
+        checkProblems();
 
         Matcher matcher = PlugUtils.matcher("Download file </h.> <b>([^<]+)", content);
         // odebiram jmeno
@@ -119,7 +114,10 @@ class UploadingRunner extends AbstractRunner {
         Matcher matcher;
         matcher = getMatcherAgainstContent("FILE REMOVED");
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("<b>FILE REMOVED BECAUSE OF ABUSE OR DELETED BY OWNER</b><br>");
+            throw new URLNotAvailableAnymoreException("File removed because of abuse or deleted by owner.");
+        }
+        if (getContentAsString().contains("You have reached the daily downloads limit")) {
+            throw new YouHaveToWaitException("You have reached the daily downloads limit. Please come back later", 2 * 60);
         }
     }
 

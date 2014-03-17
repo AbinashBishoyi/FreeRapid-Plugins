@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="100Shared.com" default="all" basedir=".">
-    <property name="application" value="100shared"/>
+<project name="UploadZeal.com" default="all" basedir=".">
+    <property name="application" value="uploadzeal"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="100shared.jar"/>
+    <property name="mainjar.file" value="uploadzeal.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -63,8 +63,7 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**, **/hundredshared/**, resources/**"
-                     excludes="**/TestApp*"/>
+            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/TestApp*"/>
         </copy>
 
         <copy todir="${build.dir}">

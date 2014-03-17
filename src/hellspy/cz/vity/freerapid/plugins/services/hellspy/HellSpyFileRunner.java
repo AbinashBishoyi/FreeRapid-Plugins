@@ -85,8 +85,8 @@ class HellSpyFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<h1>", "</h1>");
-        final String size = PlugUtils.getStringBetween(content, "Size: </span>", "</strong>").replace("&nbsp;", " ");
+        PlugUtils.checkName(httpFile, content, "<span class=\"text\" title=\"\">", "</span></span></h1>");
+        final String size = PlugUtils.getStringBetween(content, "Size: </span>", "</span>").replace("&nbsp;", " ");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

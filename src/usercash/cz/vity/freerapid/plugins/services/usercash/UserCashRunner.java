@@ -22,7 +22,7 @@ class UserCashRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        logger.info("Starting download in TASK " + fileURL);
+        logger.info("Starting run task " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             final Matcher matcher = getMatcherAgainstContent("<TITLE>(.+?)</TITLE>");
@@ -48,7 +48,7 @@ class UserCashRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("was not found")) {
-            throw new URLNotAvailableAnymoreException("Súbor bol zmazaný");
+            throw new URLNotAvailableAnymoreException("The page you requested was not found in our database.");
         }
     }
 

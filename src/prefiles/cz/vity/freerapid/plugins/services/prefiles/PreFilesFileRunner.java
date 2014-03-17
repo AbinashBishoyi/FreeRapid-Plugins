@@ -73,8 +73,16 @@ class PreFilesFileRunner extends AbstractRunner {
 
             content = getContentAsString();
 
-            //TODO get wait time from page (it uses random span tag for it)
-            downloadTask.sleep(99);
+            long now = System.currentTimeMillis();
+            int waitTime = 99;
+            try {
+                final String spanId = PlugUtils.getStringBetween(content, "<span id=\"countdown_str\">Please wait <span id=\"", "\"");
+                logger.info("span id: " + spanId);
+                waitTime = PlugUtils.getNumberBetween(content, "<span id=\"" + spanId + "\">", "</span>");
+                logger.info("wait: " + waitTime);
+            } catch (PluginImplementationException ignored) {
+                logger.warning("Can't get wait time, using default (99 seconds)");
+            }
 
             final String captchaKey = PlugUtils.getStringBetween(content, "challenge?k=", "\">");
             logger.info("Captcha key: " + captchaKey);
@@ -103,6 +111,14 @@ class PreFilesFileRunner extends AbstractRunner {
                     .setAction(fileURL);
 
             post = r.modifyResponseMethod(methodBuilder).toPostMethod();
+
+            long timeSpent = System.currentTimeMillis() - now;
+            waitTime -= timeSpent / 1000;
+
+            if (waitTime > 0) {
+                logger.info("wait left: " + waitTime);
+                downloadTask.sleep(waitTime);
+            }
 
             if (client.makeRequest(post, false) != HttpStatus.SC_MOVED_TEMPORARILY) {
                 checkProblems();

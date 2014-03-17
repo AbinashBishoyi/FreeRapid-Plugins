@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class ZShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "zshare.net";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
@@ -23,4 +24,5 @@ public class ZShareServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new ZShareRunner();
     }
+
 }

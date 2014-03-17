@@ -14,6 +14,7 @@ import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -437,6 +438,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
             httpFile.getProperties().remove(DownloadClient.SUPPOSE_TO_DOWNLOAD);
             httpFile.setResumeSupported(false);
             httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
+            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(httpFile.getFileName()), "_"));
             client.getHTTPClient().getParams().setBooleanParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
             final InputStream is = client.makeFinalRequestForFile(method, httpFile, true);
             if (is != null) {
@@ -638,6 +640,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 fileExtension = ".srt";
             }
             httpFile.setFileName(httpFile.getFileName() + fileExtension);
+            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(httpFile.getFileName()), "_"));
 
             final String url = "http://www.youtube.com/api/timedtext?type=track" + matcher.group(2);
             final HttpMethod method = getGetMethod(url);

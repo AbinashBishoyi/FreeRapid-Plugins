@@ -8,9 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * Test application for kewlshare.com
- *
- * @author Alex
+ * @author Arthur Gunawan
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -18,12 +16,13 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://kewlshare.com/dl/af31fe668dcc/Harry.Potter.And.The.Goblet.Of.Fire.2005.720p.nHD.x264.AAC.NhaNc3__mininova_.torrent.html"));
+            httpFile.setNewURL(new URL("http://kewlshare.com/dl/8cf01af8ff09/China_Town_Food_Festival_2009s.JPG.html"));//TODO
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final KewlshareServiceImpl service = new KewlshareServiceImpl(); //instance of service - of our plugin
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

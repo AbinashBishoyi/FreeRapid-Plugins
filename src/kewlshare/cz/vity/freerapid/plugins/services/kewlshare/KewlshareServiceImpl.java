@@ -4,13 +4,13 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Alex
+ * Class that provides basic info about plugin
+ * @author Arthur Gunawan
  */
 public class KewlshareServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "kewlshare.com";
 
     public String getName() {
-        return SERVICE_NAME;
+        return "kewlshare.com";
     }
 
     public int getMaxDownloadsFromOneIP() {
@@ -19,12 +19,12 @@ public class KewlshareServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;
+        return true;//ok
     }
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new KewlshareRunner();
+        return new KewlshareFileRunner();
     }
 
 }

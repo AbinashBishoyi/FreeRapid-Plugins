@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.oron.recaptcha;
+package cz.vity.freerapid.plugins.services.recaptcha;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;

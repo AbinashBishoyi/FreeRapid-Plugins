@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.ifile_login;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.ifile_login.recaptcha.ReCaptcha;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
@@ -111,7 +111,7 @@ class IFileFileRunner extends AbstractRunner {
             if (respStatus.equals("ok")) {
                 if (respCaptcha.equals("1")) {
                     stepReCaptcha();
-                } else{
+                } else {
                     finalRequest();
                 }
             } else {
@@ -132,7 +132,7 @@ class IFileFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize();
             String content = getContentAsString();
-             __alias_id = PlugUtils.getStringBetween(content, "var __alias_id				=	'", "';");
+            __alias_id = PlugUtils.getStringBetween(content, "var __alias_id				=	'", "';");
             __esn = "0";
             __recaptcha_public = PlugUtils.getStringBetween(content, "var __recaptcha_public		=	'", "';");
             makeUrl("na", "");

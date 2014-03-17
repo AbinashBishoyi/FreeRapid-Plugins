@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="oron.com" version="1.0.3" vendor="Thumb+JPEXS"
+<plugin id="oron.com" version="1.0.4" vendor="Thumb+JPEXS"
         class="cz.vity.freerapid.plugins.services.oron.OronServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?oron\.com/.+"/>
@@ -11,7 +11,9 @@
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import plugin-id="recaptcha.com" plugin-version="1.0" match="greater-or-equal"/>
+    </requires>
     <runtime>
         <library id="oron.com" path="/" type="code"/>
     </runtime>

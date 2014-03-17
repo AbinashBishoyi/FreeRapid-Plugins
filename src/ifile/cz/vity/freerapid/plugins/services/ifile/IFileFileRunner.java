@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.ifile;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.ifile.recaptcha.ReCaptcha;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
@@ -23,7 +23,7 @@ class IFileFileRunner extends AbstractRunner {
     private final static String BASE_URL = "http://ifile.it/";
     private final static String REDIRECT_URL = BASE_URL + "dl";
     private String __alias_id;
-    private String __x_c;
+    //    private String __x_c;
     private String __esn;
     private String __recaptcha_public;
 
@@ -108,7 +108,7 @@ class IFileFileRunner extends AbstractRunner {
             if (respStatus.equals("ok")) {
                 if (respCaptcha.equals("1")) {
                     stepReCaptcha();
-                } else{
+                } else {
                     finalRequest();
                 }
             } else {
@@ -180,16 +180,16 @@ class IFileFileRunner extends AbstractRunner {
         }
     }
 
-    private void stepCaptchaSimple() throws Exception {
-        final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = BASE_URL + "download:captcha";
-        logger.info("Simple captcha URL " + captchaSrc);
-        final String captcha = captchaSupport.getCaptcha(captchaSrc);
-
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
-        } else {
-            makeUrl("simple", "&" + __x_c + "=" + captcha);
-        }
-    }
+//    private void stepCaptchaSimple() throws Exception {
+//        final CaptchaSupport captchaSupport = getCaptchaSupport();
+//        final String captchaSrc = BASE_URL + "download:captcha";
+//        logger.info("Simple captcha URL " + captchaSrc);
+//        final String captcha = captchaSupport.getCaptcha(captchaSrc);
+//
+//        if (captcha == null) {
+//            throw new CaptchaEntryInputMismatchException();
+//        } else {
+//            makeUrl("simple", "&" + __x_c + "=" + captcha);
+//        }
+//    }
 }

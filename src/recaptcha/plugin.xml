@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="recaptcha.com" version="1.0.0" vendor="Vity+Team"
+        class="cz.vity.freerapid.plugins.services.recaptcha.ReCaptchaServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?recaptchaXY\.com/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="recaptcha.com"/>
+        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
+        <attribute id="maxDownloads" value="0"/>
+        <!--<attribute id="faviconImage" value="resources/favicon.png"/>-->
+    </attributes>
+
+    <runtime>
+        <library id="recaptcha.com" path="/" type="code">
+            <export prefix="*"/>
+        </library>
+    </runtime>
+</plugin>

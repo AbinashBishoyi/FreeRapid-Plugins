@@ -103,7 +103,6 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
                 logger.info(stream.toString());
             }
             Stream selectedStream = Collections.min(videoClip.getStreamList());
-            logger.info(videoClip.toString());
             logger.info("Config settings : " + config);
             logger.info("Selected stream : " + selectedStream);
             RtmpSession session = getSession(selectedStream);
@@ -230,13 +229,19 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("Video URL not found");
         }
         logger.info("Video URL : " + videoURL);
-        Matcher matcher = PlugUtils.matcher("://([^/]+)/(.+?)/(mp4:.+)", videoURL);
+        Matcher matcher = PlugUtils.matcher("://([^/]+)/(.+?)/((?:flv|mp4):.+)", videoURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing stream URL");
         }
         String host = matcher.group(1);
         String app = matcher.group(2);
         String play = matcher.group(3);
+        if (play.startsWith("flv:")) {
+            play = play.substring(4);
+        }
+        if (play.endsWith(".flv")) {
+            play = play.substring(0, play.length() - 4);
+        }
         return new RtmpSession(host, 1935, app, play);
     }
 

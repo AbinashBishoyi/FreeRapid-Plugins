@@ -24,7 +24,21 @@ class SharePlaceFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize();
+            Matcher matcher = getMatcherAgainstContent("name=\"main\" src=\"(.+?)\">");
+            if (!matcher.find()) {
+                logger.info(getContentAsString());
+                throw new PluginImplementationException();
+            }
+            String urltwo = "http://shareplace.com/" + matcher.group(1);
+            final GetMethod checkmethod = getGetMethod(urltwo);
+            if (makeRedirectedRequest(checkmethod)) {
+                checkProblems();
+                checkNameAndSize();
+            } else {
+                checkProblems();
+                logger.info(getContentAsString());
+                throw new ServiceConnectionProblemException();
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -50,7 +64,20 @@ class SharePlaceFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize();
+            Matcher matcher = getMatcherAgainstContent("name=\"main\" src=\"(.+?)\">");
+            if (!matcher.find()) {
+                logger.info(getContentAsString());
+                throw new PluginImplementationException();
+            }
+            String urltwo = "http://shareplace.com/" + matcher.group(1);
+            final GetMethod checkmethod = getGetMethod(urltwo);
+            if (makeRedirectedRequest(checkmethod)) {
+                checkProblems();
+                checkNameAndSize();
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
 
             final String action = PlugUtils.getStringBetween(getContentAsString(), "var beer = '", "';")
                     .replace("vvvvvvvvv", "")

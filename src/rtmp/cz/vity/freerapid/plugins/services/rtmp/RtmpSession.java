@@ -107,14 +107,6 @@ public class RtmpSession {
     }
 
     private void initConnectParams(String host, int port, String app, String playName, boolean encrypted) {
-        if(playName.startsWith("mp3:")){
-            //TODO: implement MP3 output writer
-            throw new UnsupportedOperationException("Cannot save MP3 RTMP stream");
-        }
-        if(playName.startsWith("mp4:")){
-            //TODO: implement MP4 output writer
-            throw new UnsupportedOperationException("Cannot save MP4 RTMP stream");
-        }
         this.host = host;
         this.port = port;
         this.playName = playName;

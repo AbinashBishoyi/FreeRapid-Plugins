@@ -87,7 +87,7 @@ public class AmfObject {
         for (Object value : values) {
             o.put(value);
         }
-        ByteBuffer body = ByteBuffer.allocate(1024);
+        ByteBuffer body = ByteBuffer.allocate(2048);
         o.encode(body);
         return body;
     }

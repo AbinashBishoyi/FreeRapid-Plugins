@@ -4,6 +4,10 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.services.cryptography.CryptographySupport;
+import cz.vity.freerapid.plugins.services.cryptography.Engine;
+import cz.vity.freerapid.plugins.services.cryptography.Mode;
+import cz.vity.freerapid.plugins.services.cryptography.Padding;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -14,9 +18,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -237,12 +238,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         for (int i = 0; i < iv.length; i++) {
             iv[i] = (byte) (iv[i] ^ 1);
         }
-        final SecretKeySpec spec = new SecretKeySpec(key, "AES");
-        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
-        final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, spec, ivSpec);
-        final byte[] decrypted = cipher.doFinal(Hex.decodeHex(toDecrypt.toCharArray()));
-        return new String(decrypted, "UTF-8");
+        return new CryptographySupport().setEngine(Engine.AES).setMode(Mode.CBC).setPadding(Padding.PKCS7).setKey(key).setIV(iv).decrypt(toDecrypt);
     }
 
     private static String getSessionId() {

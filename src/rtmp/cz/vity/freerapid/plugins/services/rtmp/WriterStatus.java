@@ -30,9 +30,11 @@ public class WriterStatus {
     private int videoChannel = -1;
     private double lastLoggedSeconds;
     private int seekTime;
+    private StreamInfo streamInfo;
 
-    public WriterStatus(int seekTime) {
+    public WriterStatus(int seekTime, StreamInfo streamInfo) {
         this.seekTime = seekTime;
+        this.streamInfo = streamInfo;
     }
 
     public void logFinalVideoDuration() {
@@ -76,6 +78,7 @@ public class WriterStatus {
     }
 
     private void logVideoProgress(int time) {
+        streamInfo.setTime(time);
         if (RtmpSession.DEBUG) {
             logger.finest("time: " + time + ", seek: " + seekTime);
         }

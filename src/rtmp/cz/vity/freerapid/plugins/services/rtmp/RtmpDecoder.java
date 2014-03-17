@@ -109,6 +109,9 @@ public class RtmpDecoder extends CumulativeProtocolDecoder {
                     logger.fine("notify is 'onMetadata', writing metadata");
                     data.rewind();
                     session.getOutputWriter().write(packet);
+                    double duration = (Double) ((AmfObject) notify.getProperties().get(1).getValue()).getProperty("duration").getValue();
+                    logger.fine("Stream duration: " + duration + " seconds");
+                    session.getStreamInfo().setDuration((int) (duration * 1000));
                 }
                 break;
             case INVOKE:
@@ -123,12 +126,14 @@ public class RtmpDecoder extends CumulativeProtocolDecoder {
                     logger.fine("onStatus code: " + code);
                     if (code.equals("NetStream.Failed")
                             || code.equals("NetStream.Play.Failed")
-                            || code.equals("NetStream.Play.Stop")) {
+                            || code.equals("NetStream.Play.Stop")
+                            || code.equals("NetStream.Play.StreamNotFound")
+                            || code.equals("NetConnection.Connect.InvalidApp")) {
                         logger.fine("disconnecting");
                         session.getDecoderOutput().disconnect();
                     }
                 } else if (methodName.equals("close")) {
-                    logger.fine("disconnecting");
+                    logger.fine("Server requested close, disconnecting");
                     session.getDecoderOutput().disconnect();
                 } else {
                     logger.fine("unhandled server invoke: " + serverInvoke);

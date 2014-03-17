@@ -203,7 +203,7 @@ public class Packet {
     }
 
     public ByteBuffer encode(final int chunkSize) {
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        ByteBuffer buffer = ByteBuffer.allocate(2048);
         header.encode(buffer);
         int remaining = header.getSize();
         while (true) {

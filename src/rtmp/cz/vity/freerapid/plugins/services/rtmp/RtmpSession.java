@@ -66,6 +66,7 @@ public class RtmpSession {
     private byte[] clientDigest;
     private byte[] serverDigest;
     private byte[] serverResponse;
+    private StreamInfo streamInfo = new StreamInfo();
 
     public RtmpSession() {
     }
@@ -124,7 +125,7 @@ public class RtmpSession {
         connectParams.put("capabilities", 15);
         connectParams.put("videoCodecs", 252);
 
-        this.outputWriter = new FlvStreamWriter(playStart);
+        this.outputWriter = new FlvStreamWriter(playStart, streamInfo);
     }
 
     public static RtmpSession getFrom(IoSession ioSession) {
@@ -369,6 +370,10 @@ public class RtmpSession {
 
     public void setChunkSize(int chunkSize) {
         this.chunkSize = chunkSize;
+    }
+
+    public StreamInfo getStreamInfo() {
+        return this.streamInfo;
     }
 
 }

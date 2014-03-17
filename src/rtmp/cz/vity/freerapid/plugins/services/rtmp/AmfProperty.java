@@ -130,7 +130,7 @@ public class AmfProperty {
     }
 
     public static ByteBuffer encode(Object... values) {
-        ByteBuffer out = ByteBuffer.allocate(1024);
+        ByteBuffer out = ByteBuffer.allocate(2048);
         encode(out, values);
         return out;
     }

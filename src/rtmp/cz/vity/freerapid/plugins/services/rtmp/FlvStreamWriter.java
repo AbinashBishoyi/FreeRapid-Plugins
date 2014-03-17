@@ -36,16 +36,16 @@ public class FlvStreamWriter implements OutputWriter {
     private final ByteBuffer buffer;
     private boolean headerWritten = false;
 
-    public FlvStreamWriter(int seekTime) {
-        status = new WriterStatus(seekTime);
+    public FlvStreamWriter(int seekTime, StreamInfo streamInfo) {
+        status = new WriterStatus(seekTime, streamInfo);
         try {
             out = new PipedOutputStream();
             channel = Channels.newChannel(out);
-            in = new PipedInputStream(out, 1024);
+            in = new PipedInputStream(out, 2048);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        buffer = ByteBuffer.allocate(1024);
+        buffer = ByteBuffer.allocate(2048);
         buffer.setAutoExpand(true);
     }
 

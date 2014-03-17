@@ -44,7 +44,7 @@ public class SwitchItem implements Comparable<SwitchItem> {
 
     @Override
     public int compareTo(SwitchItem that) {
-        return Double.valueOf(this.duration).compareTo(that.duration);
+        return Double.compare(this.duration, that.duration);
     }
 
 }

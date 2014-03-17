@@ -219,7 +219,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         logger.info("Available YouTube media : ");
         for (String format : formats) {
             //Example: 37/1920x1080/9/0/115
-            String formatParts[] = format.split("/");
+            String[] formatParts = format.split("/");
             int itagCode = Integer.parseInt(formatParts[0]);
             int videoResolution = Integer.parseInt(formatParts[1].split("x")[1]);
             YouTubeMedia ytMedia = new YouTubeMedia(itagCode, videoResolution);
@@ -332,8 +332,8 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
     }
 
     private boolean isVid2AudSupported(YouTubeMedia ytMedia) {
-        String container = ytMedia.getContainer().getName().toUpperCase();
-        String audioEncoding = ytMedia.getAudioEncoding().toUpperCase();
+        String container = ytMedia.getContainer().getName();
+        String audioEncoding = ytMedia.getAudioEncoding();
         return ((container.equals("MP4") || container.equals("FLV")) && (audioEncoding.equals("MP3") || audioEncoding.equals("AAC")));
     }
 

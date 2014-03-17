@@ -39,13 +39,16 @@ class EdiskRunner extends AbstractRunner {
         super.run();
         final HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {
+            checkProblems();
             final HttpMethod httpMethod2 = getGetMethod(fileURL.replace("/stahni/", "/stahni-pomalu/"));
 
             if (makeRedirectedRequest(httpMethod2)) {
+                checkProblems();
                 String action = PlugUtils.getStringBetween(getContentAsString(), "countDown('", "',");
                 downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "var waitSecs = ", ";", TimeUnit.SECONDS));
                 final HttpMethod httpMethod3 = getMethodBuilder().setAction("/x-download/" + action).setBaseURL(SERVICE_WEB).setParameter("action", action).toPostMethod();
                 if (makeRedirectedRequest(httpMethod3)) {
+                    checkProblems();
                     final HttpMethod finalMethod = getMethodBuilder().setAction(getContentAsString()).toGetMethod();
                     if (!tryDownloadAndSaveFile(finalMethod)) {
                         checkProblems();

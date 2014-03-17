@@ -58,7 +58,7 @@ class UploadedToRunner extends AbstractRunner {
                 } while (getMatcherAgainstContent("err\"?:\"?captcha").find());
 
                 if (getContentAsString().contains("You have reached") || getContentAsString().contains("limit-dl")) {
-                    throw new YouHaveToWaitException("Free download limit reached", 15 * 60);
+                    throw new YouHaveToWaitException("Free download limit reached", 3 * 60 * 60);
                 }
                 if (getContentAsString().contains("available download slots")) {
                     throw new YouHaveToWaitException("All download slots are busy currently, please try again within a few minutes.", 120);
@@ -88,7 +88,7 @@ class UploadedToRunner extends AbstractRunner {
     }
 
     private void checkSizeAndName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\((.+?)\\) \\- uploaded\\.(?:to|net)</title>");
+        final Matcher matcher = getMatcherAgainstContent("<title>(.+?) \\(([^\\(\\)]+?)\\) \\- uploaded\\.(?:to|net)</title>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name/size not found");
         }

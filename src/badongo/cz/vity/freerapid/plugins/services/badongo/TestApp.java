@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Kajda
+ * @author Kajda, ntoskrnl
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -17,10 +17,12 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.badongo.com/vid/508663"));//more files
-            httpFile.setNewURL(new URL("http://www.badongo.com/vid/508663/1/aa"));//one file
+            //httpFile.setNewURL(new URL("http://www.badongo.com/vid/508663/1/aa"));//one file from the above
+            httpFile.setNewURL(new URL("http://www.badongo.com/file/24202463"));//regular file
+            //httpFile.setNewURL(new URL("http://www.badongo.com/pic/10530291"));//picture
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final BadongoServiceImpl service = new BadongoServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,21 +18,24 @@ import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
+ *         <p/>
+ *         History: detekce ve strance The file you are trying to access is temporarily unavailable.
  */
+
 class MegauploadRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
     private HttpDownloadClient client;
     private HttpFileDownloader downloader;
-    private String baseURL;
     private static final String HTTP_MEGAUPLOAD = "http://www.megaupload.com";
 
     public void run(HttpFileDownloader downloader) throws Exception {
         this.downloader = downloader;
+        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         HttpFile httpFile = downloader.getDownloadFile();
         client = downloader.getClient();
         final String fileURL = httpFile.getFileUrl().toString();
         logger.info("Starting download in TASK " + fileURL);
-        baseURL = fileURL;
+
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
@@ -41,6 +45,9 @@ class MegauploadRunner {
                 Double a = new Double(matcher.group(1).replaceAll(" ", ""));
                 a = (a * 1024 * 1024);
                 httpFile.setFileSize(a.longValue());
+            } else {
+                if (client.getContentAsString().contains("trying to access is temporarily unavailable"))
+                    throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
             }
             matcher = Pattern.compile("Filename:</b> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
@@ -59,9 +66,9 @@ class MegauploadRunner {
                 }
                 String s = matcher.group(1);
                 int seconds = new Integer(s);
-                s = new LinkInJSResolver(logger).FindUrl(client.getContentAsString());
+                s = new LinkInJSResolver(logger).findUrl(client.getContentAsString());
 
-                if (s.equals("")) logger.warning("Link was not found" + client.getContentAsString());
+                if ("".equals(s)) logger.warning("Link was not found" + client.getContentAsString());
                 logger.info("Found File URL - " + s);
 
                 downloader.sleep(seconds + 1);

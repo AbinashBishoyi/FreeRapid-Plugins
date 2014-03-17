@@ -31,12 +31,11 @@ import java.util.regex.Matcher;
 class MultiShareMMSFileRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(MultiShareMMSFileRunner.class.getName());
-    private static final String SERVER_URL = "http://www.multishare.cz/";
+    private static final String API_URL = "https://www.multishare.cz/api/";
     private boolean badConfig = false;
-    private static String PHPSESSID = "";
     private static String versionUrl="http://www.multishare.cz/html/mms_support.php?version";
 
-    private static String version="1.1.13";
+    private static String version="1.2.0";
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -45,20 +44,15 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        PostMethod pm = new PostMethod("http://www.multishare.cz/html/mms_ajax.php");
+        PostMethod pm = new PostMethod(API_URL+"?sub=check-file");
         pm.addParameter("link", fileURL);
         if (makeRequest(pm)) {
             String content=getContentAsString();
-            if (content.equals("neexistuje")) {
-                throw new URLNotAvailableAnymoreException("File not found");
+            if(content.startsWith("ERR:")){
+                throw new URLNotAvailableAnymoreException(content.substring(4));
             }
-            if (content.equals("neznam")) {
-                {
-                    throw new URLNotAvailableAnymoreException("File URL not supported");
-                }
-            }
-            PlugUtils.checkName(httpFile, content, "Soubor: <strong>", "</strong>");
-            PlugUtils.checkFileSize(httpFile, content, "Velikost: <strong>", "</strong>");
+            PlugUtils.checkName(httpFile, content, "\"file_name\":\"", "\"");
+            PlugUtils.checkFileSize(httpFile, content, "\"file_size\":", ",");
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         }
     }
@@ -97,41 +91,9 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         checkNameAndSize();
-        versionCheck();
-        logger.info("Starting download in TASK " + fileURL);
-        if (!PHPSESSID.equals("")) {
-            client.getHTTPClient().getState().addCookie(new Cookie("www.multishare.cz", "PHPSESSID", PHPSESSID, "/", 86400, false));
-        }
-
-        final GetMethod method = getGetMethod(SERVER_URL);
-        Matcher matcher;
-        if (makeRedirectedRequest(method)) {
-
-            if (getContentAsString().contains("<form id=\"form_prihlaseni\"")) {
-                login();
-                makeRedirectedRequest(method);
-            }
-
-            client.getHTTPClient().getParams().setParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //Multishare kurvi nazvy souboru v hlavicce podtrzitky
-
-            Random rnd = new Random();
-            final String baseUrl = "http://dl" + (rnd.nextInt(9999) + 1) + ".mms.multishare.cz/";
-            final HttpMethod finalMethod = getMethodBuilder(getContentAsString()).setBaseURL(baseUrl).setActionFromFormByName("mms-form", true).setParameter("link", URLEncoder.encode(fileURL, "utf8")).toGetMethod();
-            if (!tryDownloadAndSaveFile(finalMethod)) {
-                checkProblems();
-                logger.info(getContentAsString());
-                throw new ServiceConnectionProblemException();
-            }
-        }
-    }
-
-    private void checkProblems() throws NotRecoverableDownloadException {
-        if (getMatcherAgainstContent("Nem.te dostate.n. kredit na sta.en. tohoto souboru").find()) {
-            throw new NotRecoverableDownloadException("No credit for download this file!");
-        }
-    }
-
-    private void login() throws Exception {
+        versionCheck();    
+        String jmeno = "";
+        String heslo = "";
         synchronized (MultiShareMMSFileRunner.class) {
             MultiShareMMSServiceImpl service = (MultiShareMMSServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
@@ -142,32 +104,23 @@ class MultiShareMMSFileRunner extends AbstractRunner {
                 }
                 badConfig = false;
             }
-
-            final PostMethod postmethod = getPostMethod("http://www.multishare.cz/html/prihlaseni_process.php");
-            postmethod.addParameter("jmeno", pa.getUsername());
-            postmethod.addParameter("heslo", pa.getPassword());
-            postmethod.addParameter("trvale", "ano");
-            char prihlasitBytes[] = new char[]{'P', (char) 0xc5, (char) 0x99, 'i', 'h', 'l', (char) 0xc3, (char) 0xa1, 's', 'i', 't'};
-            postmethod.addParameter("akce", new String(prihlasitBytes));
-            logger.info("Logging in...");
-            postmethod.setQueryString(PHPSESSID);
-            if (makeRedirectedRequest(postmethod)) {
-                if ("".equals(getContentAsString())) {
-                    throw new PluginImplementationException("Null response from login page");
-                }
-                Matcher matcher = getMatcherAgainstContent("Chybn?. jm.no nebo heslo");
-                if (matcher.find()) {
-                    badConfig = true;
-                    throw new NotRecoverableDownloadException("Bad MultiShare premium account login information!");
-                } else {
-                    Cookie[] cookies = client.getHTTPClient().getState().getCookies();
-                    for (Cookie c : cookies) {
-                        if ("PHPSESSID".equals(c.getName())) {
-                            PHPSESSID = c.getValue();
-                        }
-                    }
-                    logger.info("Logged in");
-                }
+            jmeno = pa.getUsername();
+            heslo = pa.getPassword();
+        }
+        PostMethod pm = new PostMethod(API_URL+"?sub=download-link");
+        pm.addParameter("login", jmeno);
+        pm.addParameter("password", heslo);
+        pm.addParameter("link", fileURL);
+        if (makeRequest(pm)) {
+            String content=getContentAsString();
+            if(content.startsWith("ERR:")){
+                throw new NotRecoverableDownloadException(content.substring(4));
+            }
+            String link = PlugUtils.getStringBetween(content, "\"link\":\"", "\"");
+            link = link.replace("\\/", "/");
+            if (!tryDownloadAndSaveFile(getGetMethod(link))) {
+                logger.info(getContentAsString());
+                throw new ServiceConnectionProblemException();
             }
         }
     }

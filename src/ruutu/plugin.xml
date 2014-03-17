@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.ruutu.RuutuServiceImpl" id="ruutu.fi" vendor="ntoskrnl" version="1.0.3">
+<plugin class="cz.vity.freerapid.plugins.services.ruutu.RuutuServiceImpl"
+        id="ruutu.fi" vendor="ntoskrnl" version="1.0.4">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?ruutu\.fi/video\?.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="ruutu.fi"/>
-        <attribute id="maxDownloads" value="9"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.0" reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="1.0.0"
+                reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="ruutu.fi" path="/" type="code"/>

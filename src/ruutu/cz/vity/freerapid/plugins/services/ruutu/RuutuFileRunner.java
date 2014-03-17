@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URLDecoder;
 import java.util.logging.Logger;
@@ -23,7 +23,7 @@ class RuutuFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
@@ -34,16 +34,9 @@ class RuutuFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "| Ruutu.fi</title>");
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<meta property=\"og:title\" content=\"", "\"");
+        httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    private void checkFileExt(final String url) throws ErrorDuringDownloadingException {
-        final int index = url.lastIndexOf('.');
-        if (index > -1) {
-            final String ext = url.substring(index);
-            httpFile.setFileName(httpFile.getFileName() + ext);
-        }
     }
 
     @Override
@@ -51,7 +44,7 @@ class RuutuFileRunner extends AbstractRtmpRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
 
-        GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
@@ -66,7 +59,6 @@ class RuutuFileRunner extends AbstractRtmpRunner {
 
             if (getContentAsString().contains("<AudioSourceFile>")) {
                 final String sourceFile = PlugUtils.getStringBetween(getContentAsString(), "<AudioSourceFile>", "</AudioSourceFile>");
-                checkFileExt(sourceFile);
                 method = getGetMethod(sourceFile);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
@@ -74,7 +66,6 @@ class RuutuFileRunner extends AbstractRtmpRunner {
                 }
             } else {
                 final String sourceFile = PlugUtils.getStringBetween(getContentAsString(), "<SourceFile>", "</SourceFile>");
-                checkFileExt(sourceFile);
                 final RtmpSession rtmpSession = new RtmpSession(sourceFile);
                 tryDownloadAndSaveFile(rtmpSession);
             }

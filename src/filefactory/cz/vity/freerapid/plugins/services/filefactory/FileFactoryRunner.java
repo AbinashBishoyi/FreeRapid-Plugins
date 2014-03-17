@@ -12,6 +12,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Kajda, ntoskrnl
@@ -70,7 +71,7 @@ class FileFactoryRunner extends AbstractRunner {
             if (makeRedirectedRequest(httpMethod)) {
                 checkAllProblems();
 
-                final Matcher match = PlugUtils.matcher("<a href=\"(.+?" + httpFile.getFileName() + ")\">", getContentAsString());
+                final Matcher match = PlugUtils.matcher("<a href=\"(.+?" + Pattern.quote(httpFile.getFileName()) + ")\">", getContentAsString());
                 if (!match.find())
                     throw new PluginImplementationException("Problem finding final page");
                 getMethod = getGetMethod(match.group(1));
@@ -103,8 +104,8 @@ class FileFactoryRunner extends AbstractRunner {
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
         //PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span"); //truncated
-        String filename = PlugUtils.getStringBetween(content,"redirect\" value=\"","\"");
-        filename = PlugUtils.unescapeHtml(filename.substring(filename.lastIndexOf("/")+1).trim());
+        String filename = PlugUtils.getStringBetween(content, "redirect\" value=\"", "\"");
+        filename = PlugUtils.unescapeHtml(filename.substring(filename.lastIndexOf("/") + 1).trim());
         httpFile.setFileName(filename);
         PlugUtils.checkFileSize(httpFile, content, "<h2>", "file uploaded");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

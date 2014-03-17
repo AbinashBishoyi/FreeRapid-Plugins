@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.prefiles;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author CrazyCoder
  */
-public class PreFilesServiceImpl extends AbstractFileShareService {
+public class PreFilesServiceImpl extends XFileSharingServiceImpl {
 
     @Override
     public String getName() {
@@ -16,8 +16,8 @@ public class PreFilesServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;
+    public String getServiceTitle() {
+        return "PreFiles";
     }
 
     @Override

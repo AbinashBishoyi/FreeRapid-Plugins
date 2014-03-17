@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.prefiles.PreFilesServiceImpl"
-        id="prefiles.com" vendor="CrazyCoder" version="1.0.4">
+        id="prefiles.com" vendor="CrazyCoder" version="2.0.0">
     <attributes>
         <attribute id="urlRegex" value="https?://(www\.)?prefiles\.com/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="prefiles.com"/>
-        <attribute id="maxDownloads" value="1"/>
+        <attribute id="maxDownloads" value="10"/>
+        <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
-                plugin-version="1.0" reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
+                plugin-version="1.0.4" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="prefiles.com" path="/" type="code"/>

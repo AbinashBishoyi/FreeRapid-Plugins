@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="flickrcollections.com" version="1.0.0" vendor="Arthur"
+        class="cz.vity.freerapid.plugins.services.flickrcollections.flickrCollectionsServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?flickr\.com/photos/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="flickrcollections.com"/>
+        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
+        <attribute id="removeCompleted" value="true"/>
+        <attribute id="maxDownloads" value="5"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="flickrcollections.com" path="/" type="code"/>
+    </runtime>
+</plugin>

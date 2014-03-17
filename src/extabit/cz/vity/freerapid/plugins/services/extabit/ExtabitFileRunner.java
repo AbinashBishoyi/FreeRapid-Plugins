@@ -13,10 +13,12 @@ import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
+import javax.naming.ldap.Rdn;
+
 /**
  * Class which contains main code
  *
- * @author Thumb, ntoskrnl
+ * @author Thumb, ntoskrnl, RickCL
  */
 class ExtabitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ExtabitFileRunner.class.getName());
@@ -74,8 +76,19 @@ class ExtabitFileRunner extends AbstractRunner {
                     .setActionFromFormByName("cmn_form", true)
                     .setParameter("capture", getCaptchaCode())
                     .setBaseURL("http://extabit.com/")
-                    .toPostMethod();
+                    .toGetMethod(); // Post Method not work
             if (!makeRequest(req2))
+                throw new ServiceConnectionProblemException();
+            checkProblems();
+        }
+
+        Matcher matcher = getMatcherAgainstContent("\\{\"ok\":true,\"href\":\"([^\"]*)\"\\}");
+        if( matcher.find() ) {
+            String url = Rdn.unescapeValue(matcher.group(1)).toString();
+            if( url.startsWith("?") )
+                url = fileURL + url;
+            final GetMethod req3 = getGetMethod( url );
+            if (!makeRequest(req3))
                 throw new ServiceConnectionProblemException();
             checkProblems();
         }
@@ -117,6 +130,13 @@ class ExtabitFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("<h1>File not found</h1>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("\"err\"")) {
+            try {
+                makeFirstPossiblyRedirectedRequest();
+            }catch(IOException e) {
+                throw new PluginImplementationException(e);
+            }
         }
     }
 

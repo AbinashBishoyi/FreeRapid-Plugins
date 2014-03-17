@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="extabit.com" version="1.0.2" vendor="Thumb+ntoskrnl"
+<plugin id="extabit.com" version="1.0.3" vendor="Thumb+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.extabit.ExtabitServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?extabit\.com/.+"/>

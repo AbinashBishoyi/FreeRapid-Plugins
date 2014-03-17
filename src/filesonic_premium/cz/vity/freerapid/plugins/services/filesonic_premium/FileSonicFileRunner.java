@@ -98,6 +98,9 @@ class FileSonicFileRunner extends AbstractRunner {
         method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
         if (!makeRequest(method)) {
+            logger.warning("Request URL: " + method.getURI());
+            logger.warning("Response status line: " + method.getStatusLine());
+            logger.warning("Response content: " + getContentAsString());
             throw new ServiceConnectionProblemException("Error posting login info");
         }
         if (!getContentAsString().contains("\"status\":\"success\"")) {

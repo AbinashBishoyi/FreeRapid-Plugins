@@ -24,8 +24,8 @@ class ForSharedRunner extends AbstractRunner {
     private void checkUrl() {
         fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
         addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
-        addCookie(new Cookie(".4shared.com", "Login", "16802594", "/", 86400, false));
-        addCookie(new Cookie(".4shared.com", "Password", "89768e17adf70fa33790fa71abdc8366", "/", 86400, false));
+        addCookie(new Cookie(".4shared.com", "Login", "385087947", "/", 86400, false));
+        addCookie(new Cookie(".4shared.com", "Password", "c27a64bbc7de9649e94dcae8d45ca709", "/", 86400, false));
     }
 
     @Override
@@ -62,7 +62,7 @@ class ForSharedRunner extends AbstractRunner {
                         downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "id=\"secondsLeft\" value=\"", "\"") + 1);
                     } else {
                         checkProblems();
-                        throw new ServiceConnectionProblemException("Can't load download page");
+                        throw new ServiceConnectionProblemException();
                     }
                 }
                 if (!tryDownloadAndSaveFile(method)) {
@@ -72,7 +72,7 @@ class ForSharedRunner extends AbstractRunner {
             }
         } else {
             checkProblems();
-            throw new ServiceConnectionProblemException("Can't load download page");
+            throw new ServiceConnectionProblemException();
         }
     }
 

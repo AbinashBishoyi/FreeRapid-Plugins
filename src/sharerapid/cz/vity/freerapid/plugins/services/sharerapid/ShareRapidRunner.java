@@ -80,6 +80,11 @@ class ShareRapidRunner extends AbstractRunner {
                     }
                     */
                 }
+                if(getContentAsString().equals(""))
+                   throw new NotRecoverableDownloadException("No credit for download this file or too many downloads!");
+                checkProblems();
+                logger.info(getContentAsString());
+                throw new PluginImplementationException();
             } else {
                 checkProblems();
                 logger.info(getContentAsString());

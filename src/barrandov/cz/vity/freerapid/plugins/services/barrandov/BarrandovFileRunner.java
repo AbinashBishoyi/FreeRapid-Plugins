@@ -4,11 +4,14 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.Random;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,6 +25,8 @@ class BarrandovFileRunner extends AbstractRtmpRunner {
 
     private final static Logger logger = Logger.getLogger(BarrandovFileRunner.class.getName());
     private BarrandovSettingsConfig config;
+    private final static String SWF_URL = "http://www.barrandov.tv/flash/unigramPlayer_v1.swf";
+    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -93,8 +98,25 @@ class BarrandovFileRunner extends AbstractRtmpRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         checkNameAndSize();
-        RtmpSession ses = new RtmpSession(server, 1935, appName, streamName);
-        if (!tryDownloadAndSaveFile(ses)) {
+        logger.info("appName:"+appName+" streamName:"+streamName+" server:"+server);
+
+        GetMethod gm=new GetMethod(fileURL);
+        if(!makeRedirectedRequest(gm))
+        {
+            throw new PluginImplementationException("Cannot connect to url");
+        }
+        Matcher playerMatcher=getMatcherAgainstContent("rel=\"video_src\" href=\"([^\"]+)\"");
+        if(!playerMatcher.find()){
+            throw new PluginImplementationException("Cannot find player url");
+        }
+       
+        RtmpSession rtmpSession = new RtmpSession(server, 1935, appName, streamName,true);
+        String playerUrl=playerMatcher.group(1);
+        rtmpSession.getConnectParams().put("pageUrl", fileURL);
+        rtmpSession.getConnectParams().put("swfUrl", playerUrl);
+        helper.setSwfVerification(rtmpSession, client);
+        rtmpSession.setSecureToken("#ed%h0#w@1");
+        if (!tryDownloadAndSaveFile(rtmpSession)) {
             checkProblems();//if downloading failed
             logger.warning(getContentAsString());//log the info
             throw new PluginImplementationException();//some unknown problem

@@ -113,10 +113,9 @@ class NetloadInRunner extends AbstractRunner {
         logger.info("Go to URL - " + s);
         GetMethod method1 = getGetMethod(HTTP_NETLOAD + s);
         enterURL = HTTP_NETLOAD + s;
-        method1.setFollowRedirects(true);
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
 
-        if (!makeRequest(method1)) {
+        if (!makeRedirectedRequest(method1)) {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
         }
 
@@ -162,7 +161,7 @@ class NetloadInRunner extends AbstractRunner {
     }
 
     private void checkURL(String fileURL) {
-        if (fileURL.contains("www.netload.in")) HTTP_NETLOAD = "http://www.netload.in";
+        if (fileURL.toLowerCase().contains("www.netload.in")) HTTP_NETLOAD = "http://www.netload.in";
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

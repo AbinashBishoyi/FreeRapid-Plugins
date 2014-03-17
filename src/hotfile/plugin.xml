@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hotfile.com" version="0.6" vendor="Kajda+Arthur Gunawan"
+<plugin id="hotfile.com" version="0.6.1" vendor="Kajda+Arthur Gunawan"
         class="cz.vity.freerapid.plugins.services.hotfile.HotfileServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?hotfile\.com/(dl|links)/.+"/>

@@ -104,7 +104,7 @@ class HotfileFileRunner extends AbstractRunner {
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
-            matcher = getMatcherAgainstContent("\\((.+?)\\)</h2><(?:h3|script)");
+            matcher = getMatcherAgainstContent("\\((.+?)\\)</h2>");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));

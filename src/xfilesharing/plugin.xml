@@ -7,7 +7,7 @@
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="xfilesharingcommon.com"/>
-        
+
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"

@@ -69,7 +69,7 @@ class DailymotionRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("We can't find the page you're looking for")) {
+        if (contentAsString.contains("We can't find the page you're looking for") || contentAsString.contains("video has been removed") || contentAsString.contains("Page Gone")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

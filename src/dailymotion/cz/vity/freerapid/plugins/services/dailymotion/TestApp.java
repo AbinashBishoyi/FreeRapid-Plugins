@@ -13,21 +13,17 @@ import java.net.URL;
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
-        final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
+        final HttpFile httpFile = getHttpFile();
         try {
-            //we set file URL
             httpFile.setNewURL(new URL("http://www.dailymotion.com/en/featured/channel/travel/video/x9y8kg_san-vigilio-di-marebbe-2009_travel"));
-            //the way we connect to the internet
-            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final DailymotionServiceImpl service = new DailymotionServiceImpl(); //instance of service - of our plugin
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
-            //all output goes to the console
-        } catch (Exception e) {//catch possible exception
-            e.printStackTrace(); //writes error output - stack trace to console
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
+            //connectionSettings.setProxy("localhost", 8081);
+            final DailymotionServiceImpl service = new DailymotionServiceImpl();
+            testRun(service, httpFile, connectionSettings);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        this.exit();//exit application
+        this.exit();
     }
 
     /**
@@ -37,6 +33,6 @@ public class TestApp extends PluginDevApplication {
      * @param args arguments for application
      */
     public static void main(String[] args) {
-        Application.launch(TestApp.class, args);//starts the application - calls startup() internally
+        Application.launch(TestApp.class, args);
     }
 }

@@ -40,8 +40,6 @@ public class DailymotionServiceImpl extends AbstractFileShareService {
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new DailymotionSettingsConfig();
-                config.setQualitySetting(3);  //hd quality
-                config.setSubtitleDownload(false); //don't download subtitle
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, DailymotionSettingsConfig.class);
             }

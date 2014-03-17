@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 /**
  * @author ntoskrnl
  */
-class AacToMp3Converter {
+public class AacToMp3Converter {
 
     private final Decoder decoder;
     private final SampleBuffer sampleBuffer = new SampleBuffer();

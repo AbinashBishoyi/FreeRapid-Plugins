@@ -4,15 +4,15 @@ package cz.vity.freerapid.plugins.services.dailymotion;
  * @author tong2shot
  */
 public class DailymotionSettingsConfig {
-    private int qualitySetting;
-    private boolean subtitleDownload;
+    private VideoQuality videoQuality = VideoQuality._480;
+    private boolean subtitleDownload = false;
 
-    public int getQualitySetting() {
-        return qualitySetting;
+    public VideoQuality getVideoQuality() {
+        return videoQuality;
     }
 
-    public void setQualitySetting(int qualitySetting) {
-        this.qualitySetting = qualitySetting;
+    public void setVideoQuality(VideoQuality videoQuality) {
+        this.videoQuality = videoQuality;
     }
 
     public boolean isSubtitleDownload() {

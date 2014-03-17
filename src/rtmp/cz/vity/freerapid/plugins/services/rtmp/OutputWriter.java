@@ -8,7 +8,7 @@ import java.io.InputStream;
  * @author Peter Thomas
  * @author ntoskrnl
  */
-interface OutputWriter {
+public interface OutputWriter {
 
     public void close();
 

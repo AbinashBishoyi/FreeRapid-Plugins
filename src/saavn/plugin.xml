@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.saavn.SaavnServiceImpl"
-        id="saavn.com" vendor="tong2shot" version="1.0.0">
+        id="saavn.com" vendor="tong2shot" version="1.1.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?saavn\.com/(s/#!/)?(s|p)/.+"/>
         <attribute id="minver" value="0.854"/>
@@ -11,8 +11,10 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.11"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.13"
                 reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="video2audio"
+                plugin-version="1.0.1" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="saavn.com" path="/" type="code"/>

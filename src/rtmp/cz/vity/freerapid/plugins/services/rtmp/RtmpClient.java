@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  * @author Peter Thomas
  * @author ntoskrnl
  */
-class RtmpClient extends IoHandlerAdapter {
+public class RtmpClient extends IoHandlerAdapter {
 
     private static final Logger logger = Logger.getLogger(RtmpClient.class.getName());
 

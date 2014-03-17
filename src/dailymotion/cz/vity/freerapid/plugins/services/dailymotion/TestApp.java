@@ -31,7 +31,7 @@ public class TestApp extends PluginDevApplication {
             //connectionSettings.setProxy("23.29.113.100", 3128);
             final DailymotionServiceImpl service = new DailymotionServiceImpl();
             DailymotionSettingsConfig config = new DailymotionSettingsConfig();
-            config.setQualitySetting(4);
+            config.setVideoQuality(VideoQuality._380);
             config.setSubtitleDownload(false);
             service.setConfig(config);
 

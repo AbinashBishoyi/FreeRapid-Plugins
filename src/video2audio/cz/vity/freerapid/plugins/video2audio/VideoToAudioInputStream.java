@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 /**
  * @author ntoskrnl
  */
-abstract class VideoToAudioInputStream extends InputStream {
+public abstract class VideoToAudioInputStream extends InputStream {
 
     protected final InputStream in;
     protected final int targetBitrate;

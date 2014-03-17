@@ -8,7 +8,7 @@ import java.io.InputStream;
 /**
  * @author ntoskrnl
  */
-class FlvReader {
+public class FlvReader {
 
     private static final int FLV_MAGIC = 0x464c5601;
     private static final int AAC_PROFILE = 2;
@@ -42,6 +42,10 @@ class FlvReader {
             }
             int size = readInt24();
             skip(7);
+            if (size == 0) {
+                skip(4);
+                return new byte[0];
+            }
             if (type != TAG_TYPE_AUDIO) {
                 skip(size + 4);
                 continue;

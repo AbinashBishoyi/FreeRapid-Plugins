@@ -62,6 +62,7 @@ class RapidShareRunner {
             if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
                 matcher = Pattern.compile("var c=([0-9]*);", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (!matcher.find()) {
+                    checkProblems();
                     logger.log(Level.WARNING, client.getContentAsString());
                     throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
                 }

@@ -3,8 +3,12 @@ package cz.vity.freerapid.plugins.services.multishare_mms;
 import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.net.URLEncoder;
 import java.util.Random;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -20,22 +24,41 @@ import org.apache.commons.httpclient.methods.PostMethod;
  * @author JPEXS
  */
 class MultiShareMMSFileRunner extends AbstractRunner {
+
     private final static Logger logger = Logger.getLogger(MultiShareMMSFileRunner.class.getName());
     private static final String SERVER_URL = "http://www.multishare.cz/";
     private boolean badConfig = false;
     private static String PHPSESSID = "";
-    private static int counter=0;
 
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        checkNameAndSize();
     }
 
+    private void checkNameAndSize() throws Exception {
+        PostMethod pm = new PostMethod("http://www.multishare.cz/html/mms_ajax.php");
+        pm.addParameter("link", fileURL);
+        if (makeRequest(pm)) {
+            String content=getContentAsString();
+            if (content.equals("neexistuje")) {
+                throw new URLNotAvailableAnymoreException("File not found");
+            }
+            if (content.equals("neznam")) {
+                {
+                    throw new URLNotAvailableAnymoreException("File URL not supported");
+                }
+            }
+            PlugUtils.checkName(httpFile, content, "Soubor: <strong>", "</strong>");
+            PlugUtils.checkFileSize(httpFile, content, "Velikost: <strong>", "</strong>");
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        }
+    }
 
     @Override
     public void run() throws Exception {
         super.run();
-        counter++;
+        checkNameAndSize();
         logger.info("Starting download in TASK " + fileURL);
         if (!PHPSESSID.equals("")) {
             client.getHTTPClient().getState().addCookie(new Cookie("www.multishare.cz", "PHPSESSID", PHPSESSID, "/", 86400, false));
@@ -44,14 +67,16 @@ class MultiShareMMSFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(SERVER_URL);
         Matcher matcher;
         if (makeRedirectedRequest(method)) {
-            
+
             if (getContentAsString().contains("<form id=\"form_prihlaseni\"")) {
                 login();
                 makeRedirectedRequest(method);
             }
-            Random rnd=new Random();
-            final String baseUrl="http://dl"+(rnd.nextInt(9999)+1)+".mms.multishare.cz/";
-            final HttpMethod finalMethod=getMethodBuilder(getContentAsString()).setBaseURL(baseUrl).setActionFromFormByName("mms-form", true).setParameter("link", fileURL).toGetMethod();
+
+
+            Random rnd = new Random();
+            final String baseUrl = "http://dl" + (rnd.nextInt(9999) + 1) + ".mms.multishare.cz/";
+            final HttpMethod finalMethod = getMethodBuilder(getContentAsString()).setBaseURL(baseUrl).setActionFromFormByName("mms-form", true).setParameter("link", URLEncoder.encode(fileURL, "utf8")).toGetMethod();
             if (!tryDownloadAndSaveFile(finalMethod)) {
                 checkProblems();
                 logger.info(getContentAsString());
@@ -61,7 +86,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws NotRecoverableDownloadException {
-        if(getMatcherAgainstContent("Nem.te dostate.n. kredit na sta.en. tohoto souboru").find()){
+        if (getMatcherAgainstContent("Nem.te dostate.n. kredit na sta.en. tohoto souboru").find()) {
             throw new NotRecoverableDownloadException("No credit for download this file!");
         }
     }
@@ -106,5 +131,4 @@ class MultiShareMMSFileRunner extends AbstractRunner {
             }
         }
     }
-
 }

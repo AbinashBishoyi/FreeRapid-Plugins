@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="multishare.cz_mms" version="1.0.2" vendor="JPEXS"
+<plugin id="multishare.cz_mms" version="1.0.3" vendor="JPEXS"
         class="cz.vity.freerapid.plugins.services.multishare_mms.MultiShareMMSServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="(http://(www\.)?hellshare\.com/.+|http://(download\.[a-z]+\.)?hellshare\.com/.+|http://download\.hellshare\.hu/.+|http://download\.hellshare\.sk/.+)|(https?://.*?hotfile\.com/(dl|links)/.+)|(http://(www\.)?quickshare\.cz/.+)|(https?://((www\.)|(rs[0-9]+\.))?rapidshare\.com/files/[0-9]+/.*)|(http://(www\.)?(uloz\.to|ulozto\.net|ulozto\.cz|ulozto\.sk)/.+)"/>

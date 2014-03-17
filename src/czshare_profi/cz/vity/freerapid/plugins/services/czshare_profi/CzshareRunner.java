@@ -5,23 +5,12 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
-//import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-//import org.apache.commons.httpclient.Cookie;
-//import org.apache.commons.httpclient.Header;
-//import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
-
-import java.util.HashMap;
-import java.util.Map;
-//import java.io.IOException;
-//import java.io.InputStream;
-//import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-//import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, Jan Smejkal (edit from Hellshare to CZshare)

@@ -115,7 +115,7 @@ class BayFilesFileRunner extends AbstractRunner {
     private void checkSecondaryProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("has recently downloaded a file")) {
-            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "Upgrade to premium or wait", "minutes.</strong>", TimeUnit.MINUTES);
+            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "Upgrade to premium or wait", "min", TimeUnit.MINUTES);
             throw new YouHaveToWaitException("Waiting time between downloads", waitTime);
         } else if (contentAsString.contains("is already downloading")) {
             throw new ServiceConnectionProblemException("Your IP address is already downloading a file");

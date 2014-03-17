@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 /**
  * kNN classifier
@@ -13,8 +15,6 @@ import java.util.List;
  */
 public class Classifier {
     public int k=3;
-    public static int patternHeight = 8;
-    public static int patternWidth = 1000;
     public static String allLetters = "abcdefghijklmnopqrstuvxz";
 
     private class ComComparator implements Comparator{
@@ -79,12 +79,9 @@ public class Classifier {
         Collections.sort(cmpList,new ComComparator());
 
         int pocty[]=new int[allLetters.length()];
-        //System.out.println("");
-        //System.out.println("Compat:");
         for(int i=0;i<k;i++){
             Compatibility cp=cmpList.get(i);
            SoundPattern v=cp.vzor;
-           // System.out.println(cp);
            pocty[allLetters.indexOf(v.character)]++;
         }
         int max=0;
@@ -100,17 +97,15 @@ public class Classifier {
 
     public void load(String fname){
         try {
-            DataInputStream dis = new DataInputStream(this.getClass().getResourceAsStream(fname));
-            patternHeight=dis.readInt();
-            patternWidth=dis.readInt();
+            DataInputStream dis = new DataInputStream(new InflaterInputStream(this.getClass().getResourceAsStream(fname)));            
             int pocetVzorku=dis.readInt();
             vzory.clear();
-            for(int v=0;v<pocetVzorku;v++){
+            for(int v=0;v<pocetVzorku;v++){             
                 char znak=dis.readChar();
                 int pocetHodnot=dis.readInt();
-                int hodnoty[]=new int[pocetHodnot];
+                short hodnoty[]=new short[pocetHodnot];
                 for(int h=0;h<pocetHodnot;h++){
-                    hodnoty[h]=dis.read();
+                    hodnoty[h]=dis.readShort();
                 }
                 SoundPattern vzor=new SoundPattern(znak, hodnoty);
                 vzory.add(vzor);
@@ -124,15 +119,13 @@ public class Classifier {
     public void save(String fname){
         DataOutputStream dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(fname));
-            dos.writeInt(patternHeight);
-            dos.writeInt(patternWidth);
+            dos = new DataOutputStream(new DeflaterOutputStream(new FileOutputStream(fname)));
             dos.writeInt(vzory.size());
             for (SoundPattern v : vzory) {
                 dos.writeChar(v.character);
                 dos.writeInt(v.values.length);
                 for(int h=0;h<v.values.length;h++){
-                    dos.write(v.values[h]);
+                    dos.writeShort(v.values[h]);
                 }
 
             }
@@ -145,60 +138,6 @@ public class Classifier {
 
             }
         }
-    }
-
-    public char ctiStream(InputStream is){
-        SoundPattern vz=zjistiVzorZeStreamu(is);
-        return getCharacter(vz);
-    }
-
-    public static SoundPattern zjistiVzorZeStreamu(InputStream is) {
-        DataInputStream dis=null;
-        try {
-        dis=new DataInputStream(is);
-        long delka=dis.available()/2;
-        long skip = patternWidth;
-         int pocetVzorku = (int) (delka / skip);
-        int ret[] = new int[pocetVzorku];
-
-
-
-            long pocetNul = 0;
-            long sum = 0;
-            int sk = 0;
-            int pocet = 0;
-            int max = 0;
-            while (dis.available()>2) {
-                int g = Math.abs(dis.readShort());
-                if (g > max) {
-                    max = g;
-                }
-                sum += g;
-                sk++;
-                if (sk < skip) {
-                    continue;
-                }
-                sum = sum / skip;
-                ret[pocet] = max * patternHeight / Short.MAX_VALUE;
-                sk = 0;
-                max = 0;
-                sum = 0;
-                pocet++;
-                if (pocet == pocetVzorku) {
-                    break;
-                }
-            }
-            SoundPattern vz = new SoundPattern(' ',ret);
-        vz.length = delka;
-        return vz;
-        } catch (IOException ex) {
-        } finally {
-            try {
-                dis.close();
-            } catch (IOException ex) {
-            }
-        }
-        return null;
     }
     
 }

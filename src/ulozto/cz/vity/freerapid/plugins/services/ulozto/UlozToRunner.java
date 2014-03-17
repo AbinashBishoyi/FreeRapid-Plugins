@@ -109,8 +109,8 @@ class UlozToRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
-        }
-        PlugUtils.checkName(httpFile, content, "<title>", " | Ulož.to</title>");
+        }        
+        PlugUtils.checkName(httpFile, content, "<title>", " | Ulo");        
         String size;
         try {
             //tady nema byt id=, jinak to prestane fungovat

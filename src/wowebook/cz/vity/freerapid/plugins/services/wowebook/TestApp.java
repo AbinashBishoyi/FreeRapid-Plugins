@@ -18,6 +18,7 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             httpFile.setNewURL(new URL("http://www.wowebook.org/download/149"));
             //httpFile.setNewURL(new URL("http://www.wowebook.org/drupal-7-themes.html"));
+            //httpFile.setNewURL(new URL("http://www.wowebook.org/wp-content/plugins/download-monitor/download.php?id=149"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

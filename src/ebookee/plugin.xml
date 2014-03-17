@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.ebookee.EbookeeServiceImpl"
-        id="ebookee.ws" vendor="Abinash Bishoyi" version="1.0.0">
+        id="ebookee.ws" vendor="Abinash Bishoyi" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?ebookee\.ws/.+"/>
         <attribute id="minver" value="0.852"/>

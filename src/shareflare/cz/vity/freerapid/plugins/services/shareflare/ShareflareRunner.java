@@ -21,7 +21,7 @@ import java.util.logging.Logger;
 class ShareflareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareflareRunner.class.getName());
 
-    private int captchatry = 10;
+    private int captchatry = 0;
 
     @Override
     public void runCheck() throws Exception {

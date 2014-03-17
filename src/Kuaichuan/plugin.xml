@@ -3,7 +3,7 @@
 <plugin class="cz.vity.freerapid.plugins.services.kuaichuan.KuaiServiceImpl"
         id="kuai.xunlei.com" vendor="Tommy" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="(http://kuai\.xunlei\.com/.+|http://.+?\.sendfile.vip.xunlei.com:8000/.+)"/>
+        <attribute id="urlRegex" value="http://(kuai\.xunlei\.com|.+?\.sendfile\.vip\.xunlei\.com:8000)/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="kuai.xunlei.com"/>

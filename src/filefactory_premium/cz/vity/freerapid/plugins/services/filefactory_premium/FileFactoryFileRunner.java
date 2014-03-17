@@ -96,11 +96,11 @@ class FileFactoryFileRunner extends AbstractRunner {
         }
         if (content.contains("Server Maintenance") ||
                 content.contains("The server hosting this file is temporarily unavailable")) {
-            throw new YouHaveToWaitException("File's server currently down for maintenance", 30 * 60);
+            throw new ServiceConnectionProblemException("File's server currently down for maintenance");
         }
         if (content.contains("Server Load Too High") ||
                 content.contains("The server hosting this file is temporarily overloaded")) {
-            throw new YouHaveToWaitException("File's server is temporarily overloaded", 5 * 60);
+            throw new ServiceConnectionProblemException("File's server is temporarily overloaded");
         }
     }
 

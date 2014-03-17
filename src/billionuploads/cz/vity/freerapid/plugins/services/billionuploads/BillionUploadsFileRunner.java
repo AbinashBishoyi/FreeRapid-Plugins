@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.billionuploads;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
@@ -9,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URLDecoder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -59,7 +61,19 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
 
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        return super.getXFSMethodBuilder().setParameter("geekref", "yeahman");
+        final String secretInput = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "decodeURIComponent(\"", "\")"), "UTF-8");
+        final String name = PlugUtils.getStringBetween(secretInput, " name=\"", "\"");
+        final String value = PlugUtils.getStringBetween(secretInput, " value=\"", "\"");
+        return super.getXFSMethodBuilder().setParameter(name, value);
+    }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("File Not found") || content.contains("File was removed")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        super.checkFileProblems();
     }
 
     @Override

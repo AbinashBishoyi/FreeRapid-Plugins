@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.billionuploads;
+package cz.vity.freerapid.plugins.services.shareaz;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,12 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://BillionUploads.com/zyt40zv06udx"));
+            httpFile.setNewURL(new URL("http://www.share.az/q7p6jp3yg5v6/badadroid_Hero355.rar.html‎"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final BillionUploadsServiceImpl service = new BillionUploadsServiceImpl(); //instance of service - of our plugin
+            final ShareAzServiceImpl service = new ShareAzServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set premium account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

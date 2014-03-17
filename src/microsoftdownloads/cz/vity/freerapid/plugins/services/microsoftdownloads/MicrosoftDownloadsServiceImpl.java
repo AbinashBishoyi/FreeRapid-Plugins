@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class MicrosoftDownloadsServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "microsoft.com/downloads";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 10;
     }

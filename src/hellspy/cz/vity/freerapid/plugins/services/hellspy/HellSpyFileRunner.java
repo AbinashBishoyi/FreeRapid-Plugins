@@ -10,6 +10,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -59,8 +60,13 @@ class HellSpyFileRunner extends AbstractRunner {
             String nextURL=PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" target=\"downloadIframe\"");
             HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setBaseURL(SERVICE_WEB).setAction(nextURL).toGetMethod();
             if(nextURL.endsWith("?freedownload=1")){ //Sometimes you can download for free.
+                if(!makeRedirectedRequest(httpMethod)){
+                    throw new ServiceConnectionProblemException("Error connecting to Free download");
+                }
+                httpMethod = getMethodBuilder().setReferer(nextURL).setActionFromAHrefWhereATagContains("Download file").toGetMethod();
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
+                    logger.warning(getContentAsString());
                     throw new ServiceConnectionProblemException("Error starting Free download");
                 }
                 return;
@@ -128,6 +134,22 @@ class HellSpyFileRunner extends AbstractRunner {
 
     private void login() throws Exception {
         synchronized (HellSpyFileRunner.class) {
+            if (cookies != null) {
+                for(Cookie c:cookies){
+                    addCookie(c);
+                }
+                HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
+                if (!makeRedirectedRequest(httpMethod))
+                    throw new ServiceConnectionProblemException();
+                setLanguage();
+               httpMethod = getGetMethod(SERVICE_WEB);
+                if (!makeRedirectedRequest(httpMethod))
+                    throw new ServiceConnectionProblemException();
+                if(!getContentAsString().contains("Logout")){
+                    cookies=null;
+                    logger.info("Session timed out, reloging");
+                }
+            }
             if (cookies == null) {
                 logger.info("Logging in");
                 HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
@@ -143,11 +165,6 @@ class HellSpyFileRunner extends AbstractRunner {
                     }
                 }
 
-                /*final Matcher lg = getMatcherAgainstContent("name=\"(.+?_lg)\"");
-                final Matcher psw = getMatcherAgainstContent("name=\"(.+?_psw)\"");
-                if (!lg.find() || !psw.find())
-                    throw new PluginImplementationException("Login form not found");
-                */
                 httpMethod = getMethodBuilder()
                         .setReferer(SERVICE_WEB)
                         .setActionFromFormWhereTagContains("Login", true)
@@ -164,19 +181,9 @@ class HellSpyFileRunner extends AbstractRunner {
                 for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
                     cookies.add(cookie);
                 }
-            } else {
-                for(Cookie c:cookies)
-                    addCookie(c);
-                HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
-                if (!makeRedirectedRequest(httpMethod))
-                    throw new ServiceConnectionProblemException();
-                setLanguage();
             }
 
-            HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
-                if (!makeRedirectedRequest(httpMethod))
-                    throw new ServiceConnectionProblemException();
-                setLanguage();
+            
 
         }
     }

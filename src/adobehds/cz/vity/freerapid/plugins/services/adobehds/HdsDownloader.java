@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.adobehds;
 
+import cz.vity.freerapid.plugins.webclient.DefaultFileStreamRecognizer;
 import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
@@ -38,6 +39,7 @@ public class HdsDownloader {
     }
 
     public void tryDownloadAndSaveFile(final String manifestUrl) throws Exception {
+        client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, new DefaultFileStreamRecognizer(new String[0], new String[]{"video/f4m"}, false));
         final HdsManifest manifest = new HdsManifest(client, manifestUrl);
         final HdsMedia media = Collections.max(manifest.getMedias());
         logger.info("Downloading media: " + media);

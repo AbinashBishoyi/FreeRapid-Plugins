@@ -31,8 +31,8 @@ class DepositFilesRunner extends AbstractRunner {
         super.runCheck();
         setLanguageEN();
         if (!checkIsFolder()) {
-            final GetMethod getMethod = getGetMethod(fileURL);
-            if (makeRedirectedRequest(getMethod)) {
+            final HttpMethod method = getGetMethod(fileURL);
+            if (makeRedirectedRequest(method)) {
                 checkNameAndSize(getContentAsString());
             } else {
                 throw new ServiceConnectionProblemException();
@@ -50,14 +50,14 @@ class DepositFilesRunner extends AbstractRunner {
             return;
         }
 
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkNameAndSize(getContentAsString());
             checkProblems();
 
             if (getContentAsString().contains("FREE downloading")) {
-                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("free_btn", "FREE downloading").toPostMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
+                method = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("free_btn", "FREE downloading").toPostMethod();
+                if (!makeRedirectedRequest(method)) {
                     throw new ServiceConnectionProblemException();
                 }
             }
@@ -70,28 +70,64 @@ class DepositFilesRunner extends AbstractRunner {
             int seconds = Integer.parseInt(matcher.group(1)) / 1000;
             logger.info("wait - " + seconds);
 
-            matcher = getMatcherAgainstContent("<a href=\"(/get_file\\.php\\?fid=[^&]+).*?\"[^>]*>");
+            matcher = getMatcherAgainstContent("<a href=\"(/get_file\\.php\\?fid=([^&]+)).*?\"[^>]*>");
             if (!matcher.find()) {
                 throw new PluginImplementationException();
             }
+            final String getFileUrl = matcher.group(1);
+            final String fid = matcher.group(2);
 
             downloadTask.sleep(seconds + 5);
 
-            String getFileUrl = matcher.group(1);
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(getFileUrl).toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
+            String reCaptchaUrl = "";
+            matcher = getMatcherAgainstContent("Recaptcha\\.create\\s*\\(\\s*'([^']+)'");
+            if (matcher.find())
+                reCaptchaUrl = "http://www.google.com/recaptcha/api/challenge?k=" + matcher.group(1) + "&ajax=1&cachestop=0." + System.currentTimeMillis();
+
+            method = getMethodBuilder().setReferer(fileURL).setAction(getFileUrl).toGetMethod();
+            if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
+            }
+
+            while (PlugUtils.find("(?s)check_recaptcha\\s*\\(\\s*'" + fid + "'", getContentAsString())) {
+                logger.info("Captcha URL: " + reCaptchaUrl);
+                method = getGetMethod(reCaptchaUrl);
+                if (!makeRedirectedRequest(method))
+                    throw new ServiceConnectionProblemException();
+
+                matcher = getMatcherAgainstContent("(?s)challenge\\s*:\\s*'([\\w-]+)'.*?server\\s*:\\s*'([^']+)'");
+                if (!matcher.find())
+                    throw new PluginImplementationException("Error parsing ReCaptcha response");
+                String reCaptcha_challenge = matcher.group(1);
+                String captchaImg = matcher.group(2) + "image?c=" + reCaptcha_challenge;
+                logger.info("Captcha URL: " + captchaImg);
+
+                String reCaptcha_response = getCaptchaSupport().getCaptcha(captchaImg);
+                if (reCaptcha_response == null)
+                    throw new CaptchaEntryInputMismatchException();
+
+                method = getMethodBuilder()
+                        .setAction("/get_file.php")
+                        .setReferer(fileURL)
+                        .setEncodePathAndQuery(true)
+                        .setParameter("fid", fid)
+                        .setParameter("challenge", reCaptcha_challenge)
+                        .setParameter("response", reCaptcha_response)
+                        .toGetMethod();
+
+                if (!makeRedirectedRequest(method))
+                    throw new ServiceConnectionProblemException();
             }
 
             matcher = getMatcherAgainstContent("<form[^>]+action=\"([^\"]+)\"");
             if (!matcher.find()) {
-                throw new PluginImplementationException();
+                throw new PluginImplementationException("Cannot find download URL");
             }
             String finalDownloadUrl = matcher.group(1);
             logger.info("Download URL: " + finalDownloadUrl);
 
-            httpMethod = getMethodBuilder().setReferer(getFileUrl).setAction(finalDownloadUrl).toHttpMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            method = getMethodBuilder().setReferer(getFileUrl).setAction(finalDownloadUrl).toGetMethod();
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }

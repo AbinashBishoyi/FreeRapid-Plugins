@@ -21,8 +21,13 @@ class UpnitoFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
+
         if (makeRedirectedRequest(getMethod)) {
-            checkNameAndSize(getContentAsString());
+            final GetMethod getMethod2 = getGetMethod(getURLPresmerovanie());
+            client.setReferer(fileURL);
+            if (makeRedirectedRequest(getMethod2)) {
+                checkNameAndSize(getContentAsString());
+            } else throw new PluginImplementationException();
         } else
             throw new PluginImplementationException();
     }
@@ -58,6 +63,11 @@ class UpnitoFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            final GetMethod getMethod2 = getGetMethod(getURLPresmerovanie());
+            client.setReferer(fileURL);
+            if (!makeRedirectedRequest(getMethod2)) {
+                throw new PluginImplementationException();
+            }
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
@@ -81,6 +91,17 @@ class UpnitoFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
     }
+
+    private String getURLPresmerovanie() throws PluginImplementationException {
+        Matcher matcher = getMatcherAgainstContent("Prebieha\\s*<a href='([^']+)'>presmerovanie");
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            logger.warning("redirect not found");
+            throw new PluginImplementationException();
+        }
+    }
+
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();

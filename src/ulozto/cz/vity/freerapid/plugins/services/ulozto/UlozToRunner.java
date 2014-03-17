@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 /**
@@ -60,44 +61,49 @@ class UlozToRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        setClientParameter(cz.vity.freerapid.plugins.webclient.DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2");
+        //Cookie: uloz-to-id=356097727; __utma=140660086.1203105506.1328293691.1329637591.1329640156.8; __utmz=140660086.1328293691.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __utmc=140660086; PHPSESSID=vs3jl2js8r1saohhobu8uinht4; nette-browser=xiaupyelif; __utmb=140660086.3.9.1329640178664
+
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) { 
             checkProblems();
             ageCheck(getContentAsString());
             checkNameAndSize(getContentAsString());
+            addCookie(new Cookie(".uloz.to", "__utma", "140660086.124876764.1329640156.1329640156.1329640156.1", "/", 86400, false));
+            addCookie(new Cookie(".uloz.to", "__utmb", "140660086.3.9.1329640592039", "/", 86400, false));
+            addCookie(new Cookie(".uloz.to", "__utmc", "140660086", "/", 86400, false));
+            addCookie(new Cookie(".uloz.to", "__utmz", "140660086.1328293691.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)", "/", 86400, false));
+        
             if (getContentAsString().contains("captchaContainer")) {                
                 boolean saved = false;
                 captchaCount = 0;
-                while (getContentAsString().contains("captchaContainer") || getContentAsString().contains("?captcha=no")) {
-                    client.getHTTPClient().getParams().setIntParameter(HttpClientParams.MAX_REDIRECTS, 8);
+                loopcaptcha:while (getContentAsString().contains("captchaContainer") || getContentAsString().contains("?captcha=no")) {
+                    //client.getHTTPClient().getParams().setIntParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha();
                     method.setFollowRedirects(false);
-                    httpFile.setState(DownloadState.GETTING);
+                    downloadTask.sleep(new Random().nextInt(4) + new Random().nextInt(3));
+                    httpFile.setState(DownloadState.GETTING);                    
+                    /*
                     final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, false);
                     if (inputStream != null) {
                         downloadTask.saveToFile(inputStream);
                         return;
-                    }
-                    if ((method.getStatusCode() == 302)||(method.getStatusCode() == 303)) {
+                    }*/
+                    makeRequest(method);
+                    while ((method.getStatusCode() == 302)||(method.getStatusCode() == 303)) {
                         String nextUrl = method.getResponseHeader("Location").getValue();
-                        method = getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).toHttpMethod();
-                        if (nextUrl.contains("captcha=no#cpt")) { //takhle to uz asi v nove verzi neni, ale pro jistotu
-                            makeRequest(method);
-                            logger.warning("Wrong captcha code");
-                            continue;
-                        }
-                        if (nextUrl.contains("full=y"))
-                            throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
-                        downloadTask.sleep(new Random().nextInt(15) + new Random().nextInt(3));
-                        if (saved = tryDownloadAndSaveFile(method)) break;                        
+                        method = getMethodBuilder().setReferer(checkURL(fileURL)).setAction(nextUrl).toHttpMethod();                        
+                        method.setFollowRedirects(false);
+                        //downloadTask.sleep(new Random().nextInt(15) + new Random().nextInt(3));
+                        if (saved = tryDownloadAndSaveFile(method)) break loopcaptcha;                        
                     }
                     checkProblems();
                 }
                 if (!saved) {
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");
-                }
+                }                
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
@@ -147,9 +153,15 @@ class UlozToRunner extends AbstractRunner {
         }
         CaptchaSupport captchaSupport = getCaptchaSupport();
         MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("class=\"captcha\"");
+        /* //vygenerovani rucne
+        Random rnd=new Random();        
+        int a = rnd.nextInt(50000)+1;
+        MethodBuilder captchaMethod = getMethodBuilder().setAction("http://img.uloz.to/captcha/"+ a +".png");
+        */
         String captcha = "";
-        if (captchaCount++ < 6) {
-            logger.info("captcha url:" + captchaMethod.getAction());
+        /* //precteni
+           if (captchaCount++ < 6) {
+            logger.warning("captcha url:" + captchaMethod.getAction());
             Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
             if (m.find()) {
                 String number = m.group(1);
@@ -158,18 +170,18 @@ class UlozToRunner extends AbstractRunner {
                 captcha = captchaReader.parse(client.makeRequestForFile(methodSound));
                 methodSound.releaseConnection();
             }
-        } else {
+        } else {*/
             captcha = captchaSupport.getCaptcha(captchaMethod.getAction());
-        }
+        //}
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            MethodBuilder sendForm = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
-            sendForm.setEncodePathAndQuery(true);
+            MethodBuilder sendForm = getMethodBuilder().setReferer(checkURL(fileURL)).setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
+            sendForm.setParameter("freeDownload", "St"+((char) 0xC3) + ((char)0xA1) + "hnout");
             sendForm.setAndEncodeParameter("captcha[text]", captcha);
             return sendForm.toPostMethod();
         }
-    }
+   }
 
     //"Prekro�en pocet FREE slotu, pouzijte VIP download
 

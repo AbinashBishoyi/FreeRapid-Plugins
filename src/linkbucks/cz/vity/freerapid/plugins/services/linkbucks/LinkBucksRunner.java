@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.linkbucks;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
@@ -11,7 +12,7 @@ import java.net.URL;
 import java.util.logging.Logger;
 
 /**
- * @author Alex
+ * @author Alex, ntoskrnl
  */
 class LinkBucksRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LinkBucksRunner.class.getName());
@@ -21,19 +22,28 @@ class LinkBucksRunner extends AbstractRunner {
         super.run();
         logger.info("Starting run task " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
-        logger.info(fileURL);
 
         if (makeRedirectedRequest(method)) {
-            String content = getContentAsString();
+            checkProblems();
+            final String content = getContentAsString();
 
-            //Matcher matcher = PlugUtils.matcher("var LinkURL = '(.+?)'", content);//getMatcherAgainstContent("href=\"(.+?)+\" id=\"linkBucksSkip");
-            final String s = getMethodBuilder().setActionFromAHrefWhereATagContains("Skip This Page").getAction();
-            logger.info("New Links :" + s);
+            final String s;
+            if (content.contains("Skip This Page")) {
+                s = getMethodBuilder().setActionFromAHrefWhereATagContains("Skip This Page").getAction();
+            } else if (content.contains("frame id=\"frame2\"")) {
+                s = getMethodBuilder().setActionFromIFrameSrcWhereTagContains("frame2").getAction();
+            } else {
+                throw new PluginImplementationException("Redirect URL not found");
+            }
+            logger.info("New Link: " + s);
             this.httpFile.setNewURL(new URL(s));
             this.httpFile.setPluginID("");
             this.httpFile.setState(DownloadState.QUEUED);
 
-        } else throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

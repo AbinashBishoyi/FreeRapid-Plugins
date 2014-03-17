@@ -85,14 +85,14 @@ class UnibytesFileRunner extends AbstractRunner {
         HttpMethod httpMethod = getMethodBuilder()
             .setAction(fileURL)
             .toGetMethod();
-        System.out.println( httpMethod.getURI() );
+        logger.info( httpMethod.getURI().toString() );
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
 
         httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("startForm", true).toPostMethod();
-        System.out.println( httpMethod.getURI() );
+        logger.info( httpMethod.getURI().toString() );
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -104,14 +104,14 @@ class UnibytesFileRunner extends AbstractRunner {
         downloadTask.sleep(waitTime);
 
         httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("stepForm", true).toPostMethod();
-        System.out.println( httpMethod.getURI() );
+        logger.info( httpMethod.getURI().toString() );
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
 
         httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("stepForm", true).toPostMethod();
-        System.out.println( httpMethod.getURI() );
+        logger.info( httpMethod.getURI().toString() );
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -125,20 +125,20 @@ class UnibytesFileRunner extends AbstractRunner {
                 throw new CaptchaEntryInputMismatchException("Can't be null");
             }
 
-            System.out.println( getMethodBuilder().setActionFromFormWhereTagContains("stepForm", true).getParameters() );
+            logger.info( getMethodBuilder().setActionFromFormWhereTagContains("stepForm", true).getParameters().toString() );
 
             httpMethod = getMethodBuilder().setActionFromFormWhereTagContains("stepForm", true)
                 .removeParameter("captcha")
                 .setParameter("captcha", captcha)
                 .toPostMethod();
-            System.out.println( httpMethod.getURI() );
+            logger.info( httpMethod.getURI().toString() );
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
         }
         httpMethod = getMethodBuilder().setActionFromTextBetween("<div style=\"width: 650px; margin: 40px auto; text-align: center; font-size: 2em;\"><a href=\"", "\">Download</a>").toGetMethod();
-        System.out.println( httpMethod.getURI() );
+        logger.info( httpMethod.getURI().toString() );
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException();

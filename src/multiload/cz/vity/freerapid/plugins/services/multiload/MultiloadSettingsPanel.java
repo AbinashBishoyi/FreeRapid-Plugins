@@ -13,7 +13,7 @@ import javax.swing.JPanel;
  * @author JPEXS
  */
 public class MultiloadSettingsPanel extends JPanel implements ActionListener {
-    public static final String[] serverNames = {"czshare.com","hellshare.com","share-rapid.cz","rapidshare.com","uloz.to","quickshare.cz","multishare.cz"};
+    public static final String[] serverNames = {"multishare.cz","czshare.com","hellshare.com","share-rapid.cz","rapidshare.com","uloz.to","quickshare.cz"};
     private MultiloadSettingsConfig config;
 
     public MultiloadSettingsPanel(MultiloadServiceImpl service) throws Exception {
@@ -25,7 +25,7 @@ public class MultiloadSettingsPanel extends JPanel implements ActionListener {
     private void initPanel() {
         final JLabel qualityLabel = new JLabel("Preferred download shareserver:");
         final JComboBox serversList = new JComboBox(serverNames);
-        serversList.setSelectedIndex(config.getServerSetting());
+        serversList.setSelectedIndex((config.getServerSetting()+1)%7);
         serversList.addActionListener(this);
         add(qualityLabel, BorderLayout.PAGE_START);
         add(serversList, BorderLayout.PAGE_END);
@@ -34,7 +34,7 @@ public class MultiloadSettingsPanel extends JPanel implements ActionListener {
 
     public void actionPerformed(ActionEvent e) {
         final JComboBox cb = (JComboBox) e.getSource();
-        config.setServerSetting(cb.getSelectedIndex());
+        config.setServerSetting((cb.getSelectedIndex()-1)%7);
     }
 
 }

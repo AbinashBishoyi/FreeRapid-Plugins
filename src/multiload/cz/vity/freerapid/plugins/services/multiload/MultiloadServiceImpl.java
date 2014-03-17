@@ -46,7 +46,7 @@ public class MultiloadServiceImpl extends AbstractFileShareService {
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new MultiloadSettingsConfig();
-                config.setServerSetting(3);
+                config.setServerSetting(6);
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, MultiloadSettingsConfig.class);
             }

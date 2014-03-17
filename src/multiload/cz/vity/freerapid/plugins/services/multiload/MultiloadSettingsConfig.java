@@ -7,8 +7,8 @@ package cz.vity.freerapid.plugins.services.multiload;
 public class MultiloadSettingsConfig {
     private int serverSetting;
 
-    public void setServerSetting(int qualitySetting) {
-        this.serverSetting = qualitySetting;
+    public void setServerSetting(int serverIndex) {
+        this.serverSetting = serverIndex;
     }
 
     public int getServerSetting() {

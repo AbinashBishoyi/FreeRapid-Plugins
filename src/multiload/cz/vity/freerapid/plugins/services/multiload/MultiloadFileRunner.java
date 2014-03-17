@@ -44,7 +44,7 @@ class MultiloadFileRunner extends AbstractRunner {
 
     private void parseWebsite() throws Exception {
         setConfig();
-        String server = MultiloadSettingsPanel.serverNames[config.getServerSetting()];
+        String server = MultiloadSettingsPanel.serverNames[(config.getServerSetting()+1)%7];
         String linksGroup = "";
         if (server.equals("multishare.cz")) {
             linksGroup = PlugUtils.getStringBetween(getContentAsString(), "<p class=\"manager-linky multishare-kod\">", "</p>");

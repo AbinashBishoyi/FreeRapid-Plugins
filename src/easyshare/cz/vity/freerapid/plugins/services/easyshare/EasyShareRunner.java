@@ -40,13 +40,17 @@ class EasyShareRunner {
         final String fileURL = httpFile.getFileUrl().toString();
         baseURL = fileURL;
         httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));
-
         logger.info("Starting download in TASK " + fileURL);
-
         GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
 
+            if(!(client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))) {
+                  checkProblems();
+                  logger.warning(client.getContentAsString());
+                  throw new PluginImplementationException("Plugin implementation problem");
+
+            }
 
             while (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w=")) {
                 Matcher matcher = Pattern.compile("Download ([^,]+), upload", Pattern.MULTILINE).matcher(client.getContentAsString());

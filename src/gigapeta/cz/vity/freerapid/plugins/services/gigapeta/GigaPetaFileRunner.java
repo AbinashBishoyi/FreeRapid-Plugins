@@ -71,7 +71,7 @@ class GigaPetaFileRunner extends AbstractRunner {
 		final HttpMethod httpMethod = getMethodBuilder()
 			.setParameter("captcha_key", captcha_id)
 			.setParameter("captcha", getCaptcha(captcha_id))
-			.setParameter("download", "Ð¡ÐºÐ°Ñ‡Ð°Ñ‚ÑŒ")
+			.setParameter("download", "\u00D0\u00A1\u00D0\u00BA\u00D0\u00B0\u00D1\u2021\u00D0\u00B0\u00D1\u201A\u00D1\u0152")
 			.setAction(fileURL)
 			.toPostMethod();
 
@@ -85,11 +85,11 @@ class GigaPetaFileRunner extends AbstractRunner {
 	private void checkDownloadProblems() throws ErrorDuringDownloadingException {
 		final String contentAsString = getContentAsString();
 		if (contentAsString.contains("<div id=\"page_error\">")) {
-			if(contentAsString.contains("Ð¦Ð¸Ñ„Ñ€Ñ‹ Ñ� ÐºÐ°Ñ€Ñ‚Ð¸Ð½ÐºÐ¸ Ð²Ð²ÐµÐ´ÐµÐ½Ñ‹ Ð½ÐµÐ²ÐµÑ€Ð½Ð¾"))
+			if(contentAsString.contains("\u00D0\u00A6\u00D0\u00B8\u00D1\u201E\u00D1\u20AC\u00D1\u2039 \u00D1\uFFFD \u00D0\u00BA\u00D0\u00B0\u00D1\u20AC\u00D1\u201A\u00D0\u00B8\u00D0\u00BD\u00D0\u00BA\u00D0\u00B8 \u00D0\u00B2\u00D0\u00B2\u00D0\u00B5\u00D0\u00B4\u00D0\u00B5\u00D0\u00BD\u00D1\u2039 \u00D0\u00BD\u00D0\u00B5\u00D0\u00B2\u00D0\u00B5\u00D1\u20AC\u00D0\u00BD\u00D0\u00BE"))
 				throw new CaptchaEntryInputMismatchException();
-			if(PlugUtils.matcher("Ð’Ñ�Ðµ Ð¿Ð¾Ñ‚Ð¾ÐºÐ¸ Ð´Ð»Ñ� IP [0-9.]* Ð·Ð°Ð½Ñ�Ñ‚Ñ‹", contentAsString).find())
+			if(PlugUtils.matcher("\u00D0\u2019\u00D1\uFFFD\u00D0\u00B5 \u00D0\u00BF\u00D0\u00BE\u00D1\u201A\u00D0\u00BE\u00D0\u00BA\u00D0\u00B8 \u00D0\u00B4\u00D0\u00BB\u00D1\uFFFD IP [0-9.]* \u00D0\u00B7\u00D0\u00B0\u00D0\u00BD\u00D1\uFFFD\u00D1\u201A\u00D1\u2039", contentAsString).find())
 				throw new YouHaveToWaitException("Download streams for your IP exhausted", 1800);
-			if(contentAsString.contains("Ð’Ð½Ð¸Ð¼Ð°Ð½Ð¸Ðµ! Ð”Ð°Ð½Ð½Ñ‹Ð¹ Ñ„Ð°Ð¹Ð» Ð±Ñ‹Ð» ÑƒÐ´Ð°Ð»ÐµÐ½"))
+			if(contentAsString.contains("\u00D0\u2019\u00D0\u00BD\u00D0\u00B8\u00D0\u00BC\u00D0\u00B0\u00D0\u00BD\u00D0\u00B8\u00D0\u00B5! \u00D0\u201D\u00D0\u00B0\u00D0\u00BD\u00D0\u00BD\u00D1\u2039\u00D0\u00B9 \u00D1\u201E\u00D0\u00B0\u00D0\u00B9\u00D0\u00BB \u00D0\u00B1\u00D1\u2039\u00D0\u00BB \u00D1\u0192\u00D0\u00B4\u00D0\u00B0\u00D0\u00BB\u00D0\u00B5\u00D0\u00BD"))
 				throw new URLNotAvailableAnymoreException("File was deleted");
 			unimplemented();
 		}

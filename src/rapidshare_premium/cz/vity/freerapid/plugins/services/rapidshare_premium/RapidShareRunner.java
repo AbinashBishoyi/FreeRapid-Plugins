@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 1018 2008-12-09 07:26:52Z ATom $
+ * $Id: RapidShareRunner.java 1021 2008-12-09 13:18:52Z Vity $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -20,13 +20,7 @@
 
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
-import cz.vity.freerapid.plugins.exceptions.BadLoginException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -42,7 +36,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -248,7 +241,7 @@ class RapidShareRunner extends AbstractRunner {
             PremiumAccount pa = service.getConfig();
             if (!pa.isSet() || badConfig) {
                 pa = service.showConfigDialog();
-                if (pa == null  || !pa.isSet()) {
+                if (pa == null || !pa.isSet()) {
                     throw new NotRecoverableDownloadException("No RS Premium account login information!");
                 }
                 badConfig = false;
@@ -261,16 +254,17 @@ class RapidShareRunner extends AbstractRunner {
     }
 
     private int getSecondToMidnight() {
-		Calendar now = Calendar.getInstance();
-		Calendar midnight =	Calendar.getInstance();
-		midnight.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)+1, 0, 0, 1);
-		return (int) ((midnight.getTimeInMillis() - now.getTimeInMillis()) / 1000f);
+        Calendar instance = Calendar.getInstance();
+        final long nowMillis = instance.getTimeInMillis();
+        instance.set(instance.get(Calendar.YEAR), instance.get(Calendar.MONTH), instance.get(Calendar.DAY_OF_MONTH) + 1, 0, 5, 0);
+        return (int) ((instance.getTimeInMillis() - nowMillis) / 1000f);
     }
 
     private void setBadConfig() {
         badConfig = true;
     }
-    
+
     private boolean badConfig = false;
+
 }
 

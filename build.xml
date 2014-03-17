@@ -58,7 +58,7 @@
         <ant dir="${src.dir}/netloadin/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/uploadedto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/egoshare/" antfile="build.xml" inheritall="false"/>
-        <ant dir="${src.dir}/letitbit/" antfile="build.xml" inheritall="false"/>
+        <!--<ant dir="${src.dir}/letitbit/" antfile="build.xml" inheritall="false"/>-->
         <ant dir="${src.dir}/shareonline/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/easyshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/xtraupload/" antfile="build.xml" inheritall="false"/>
@@ -74,6 +74,7 @@
         <ant dir="${src.dir}/savefile/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/upnito/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/flyshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/ziddu/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

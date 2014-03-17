@@ -89,9 +89,16 @@ class BadongoFileRunner extends AbstractRunner {
         }
     }
 
-    private String checkFileURL(String fileURL) {
+    private String checkFileURL(String fileURL) throws Exception {
         if (fileURL.endsWith("/")) {
             fileURL = fileURL.substring(0, fileURL.length() - 1);
+        }
+
+        final URI fileURI = new URI(fileURL);
+        final String[] filePath = fileURI.getPath().split("/");
+
+        if (filePath.length == 4) {
+            fileURL = fileURL.replaceFirst("/" + filePath[1], "");
         }
 
         return fileURL;

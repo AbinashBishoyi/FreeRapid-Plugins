@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uloz.to" version="1.0.1" vendor="Lukiz"
+<plugin id="uloz.to" version="1.0.2" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.ulozto.UlozToServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?(uloz\.to|ulozto\.net|ulozto\.cz|ulozto\.sk)/.+"/>
-        <attribute id="minver" value="0.8"/>
+        <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="uloz.to"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.ulozto;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.ulozto.captcha.SoundReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
@@ -11,6 +12,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,8 +51,25 @@ class UlozToRunner extends AbstractRunner {
                 while (getContentAsString().contains("id=\"captcha\"")) {
                     setClientParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha(getContentAsString());
-
-                    if (saved = tryDownloadAndSaveFile(method)) break;
+                    method.setFollowRedirects(false);
+                    httpFile.setState(DownloadState.GETTING);
+                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile, false);
+                    if (inputStream != null) {
+                        downloadTask.saveToFile(inputStream);
+                        return;
+                    }
+                    if(method.getStatusCode()==302){
+                        String nextUrl=method.getResponseHeader("Location").getValue();
+                        method=getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).toHttpMethod();
+                        if(nextUrl.contains("captcha=no#cpt")) {
+                            makeRequest(method);
+                            logger.warning("Wrong captcha code");
+                            continue;
+                        }
+                        if(nextUrl.contains("full=y"))
+                          throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
+                        if (saved = tryDownloadAndSaveFile(method)) break;
+                    }
                     checkProblems();
                 }
                 if (!saved) {
@@ -128,6 +147,7 @@ class UlozToRunner extends AbstractRunner {
 
         }
         if (content.contains("et FREE slot") && content.contains("ijte VIP download")) {
+            logger.warning(getContentAsString());
             throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
         }
 

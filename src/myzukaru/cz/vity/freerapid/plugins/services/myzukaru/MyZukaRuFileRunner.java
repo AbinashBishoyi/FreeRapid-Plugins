@@ -43,10 +43,14 @@ class MyZukaRuFileRunner extends AbstractRunner {
         }
     }
 
+    private String ru2enFileSize(final String size) {
+        return size.replaceAll("(\u0411|\u0431)", "B").replace("\u041A", "K").replace("\u043C", "M").replace("\u0413", "G").replace("\uFFFD\uFFFD", "MB");
+    }
+
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         if (isSongUrl(fileURL)) {
             httpFile.setFileName(PlugUtils.getStringBetween(content, "<h1 class=\"blue\">", "</h1>").trim() + ".mp3");
-            PlugUtils.checkFileSize(httpFile, content, "Размер:", "<br");
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(ru2enFileSize(PlugUtils.getStringBetween(content, "Размер: <b>", "<").replaceAll(",", "."))));
         } else if (isAlbum()) {
             PlugUtils.checkName(httpFile, content, "<h1 class=\"green\">", "</h1>");
         } else {

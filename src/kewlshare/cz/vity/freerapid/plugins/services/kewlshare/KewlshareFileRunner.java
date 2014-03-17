@@ -31,7 +31,7 @@ class KewlshareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        if (content.contains("Can't connect to local MySQL server through socket"))
+
             checkProblems();
 
 
@@ -40,6 +40,7 @@ class KewlshareFileRunner extends AbstractRunner {
             logger.warning(getContentAsString());
             throw new PluginImplementationException("Kewlshare Server Error");
         }
+
         PlugUtils.checkName(httpFile, content, "File Name : <strong>", " || ");//TODO
         PlugUtils.checkFileSize(httpFile, content, " || ", "</strong>");//TODO
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -134,10 +135,10 @@ class KewlshareFileRunner extends AbstractRunner {
 
 
         }
-        if (getContentAsString().contains("Your Current Download Limit")) {
+
             checkProblems();
 
-        }
+
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -148,7 +149,7 @@ class KewlshareFileRunner extends AbstractRunner {
         if (contentAsString.contains("Download Limit")) {//TODO
             throw new YouHaveToWaitException("Download Limit 1 hour is over", 3600); //let to know user in FRD
         }
-        if (contentAsString.contains("Can't connect to local MySQL server through socket")) {//TODO
+        if (contentAsString.contains("Please Inform us if you see this Error")) {//TODO
             throw new YouHaveToWaitException("Kewlshare server error", 3600); //let to know user in FRD
         }
     }

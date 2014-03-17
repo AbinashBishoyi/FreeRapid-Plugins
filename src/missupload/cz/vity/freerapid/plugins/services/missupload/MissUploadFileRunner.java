@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -19,7 +20,7 @@ import java.util.regex.Matcher;
  */
 class MissUploadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MissUploadFileRunner.class.getName());
-    private final int captchaMax = 0;
+    private final int captchaMax = 1;
     private int captchaCounter = 1;
 
     @Override
@@ -104,7 +105,8 @@ class MissUploadFileRunner extends AbstractRunner {
 
         String captcha;
         if (captchaCounter <= captchaMax) {
-            captcha = PlugUtils.recognize(captchaSupport.getCaptchaImage(captchaSrc), "-d -1 -C 0-9");
+            final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaSrc);
+            captcha = new CaptchaRecognizer().recognize(captchaImage);
             logger.info("OCR attempt " + captchaCounter + " of " + captchaMax + ", recognized " + captcha);
             captchaCounter++;
         } else {

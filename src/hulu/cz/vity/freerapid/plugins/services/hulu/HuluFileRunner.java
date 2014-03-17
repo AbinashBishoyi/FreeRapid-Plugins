@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -11,22 +12,27 @@ import cz.vity.freerapid.utilities.LogUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
  * @author ntoskrnl
+ * @author tong2shot
  */
 class HuluFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(HuluFileRunner.class.getName());
@@ -42,10 +48,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
     private final String sessionId = getSessionId();
 
     private String contentId;
+    private boolean hasCaption = false;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        if (isCaptionUrl()) return;
         fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
         final HttpMethod method = getGetMethod(fileURL);
         //Server sometimes sends a 404 response
@@ -81,6 +89,11 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 //non episode
                 name = title;
             }
+            try {
+                hasCaption = (engine.eval("data[\"has_captions\"]").toString().equals("true")); //has subtitle
+            } catch (final Exception e) {
+                //
+            }
             httpFile.setFileName(name + ".flv");
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 
@@ -94,6 +107,10 @@ class HuluFileRunner extends AbstractRtmpRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        if (isCaptionUrl()) {
+            processCaption();
+            return;
+        }
         fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
         logger.info("Starting download in TASK " + fileURL);
         login();
@@ -106,6 +123,20 @@ class HuluFileRunner extends AbstractRtmpRunner {
         if (isUserPage()) {
             parseUserPage();
             return;
+        }
+
+        if (hasCaption) {
+            //add filename to URL's tail so we can extract the filename later
+            //http://www.hulu.com/captions.xml?content_id=40039219 -> original caption url
+            //http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1 -> filename added at url's tail
+            final String captionUrl = String.format("http://www.hulu.com/captions.xml?content_id=%s/%s", contentId, httpFile.getFileName().replace(".flv", ""));
+            final List<URI> list = new LinkedList<URI>();
+            try {
+                list.add(new URI(new org.apache.commons.httpclient.URI(captionUrl, false, "UTF-8").toString()));
+            } catch (final URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
         }
 
         final String contentSelectUrl = getContentSelectUrl(contentId);
@@ -337,6 +368,68 @@ class HuluFileRunner extends AbstractRtmpRunner {
             throw new BadLoginException("Invalid Hulu account login information");
         }
         return true;
+    }
+
+    private boolean isCaptionUrl() {
+        return fileURL.matches("http://(www\\.)?hulu\\.com/captions\\.xml\\?content_id=\\d+/.+");
+    }
+
+    private void processCaption() throws Exception {
+        //http://www.hulu.com/captions.xml?content_id=40039219 -> original caption url
+        //http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1 -> filename added at url's tail
+        httpFile.setFileName(URLDecoder.decode(fileURL.substring(fileURL.lastIndexOf("/") + 1), "UTF-8"));
+        fileURL = fileURL.substring(0, fileURL.lastIndexOf("/")); //remove "/"+filename
+        GetMethod method = getGetMethod(fileURL);
+        setFileStreamContentTypes(new String[0], new String[]{"application/xml", "application/smil"});
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException("Error downloading subtitle");
+        }
+        //<?xml version="1.0" encoding="utf-8"?><transcripts><en>http://assets.huluim.com/captions/219/40039219_US_ko_en.smi</en></transcripts>
+        Matcher matcher = getMatcherAgainstContent("<transcripts>\\s*<en>\\s*(.+?)\\s*</en>\\s*</transcripts>");
+        if (!matcher.find()) {
+            logger.warning(getContentAsString());
+            throw new PluginImplementationException("Subtitle not found");
+        }
+        final String captionUrl = matcher.group(1);
+        final String extension = captionUrl.substring(captionUrl.lastIndexOf("."));
+        httpFile.setFileName(httpFile.getFileName() + extension);
+        method = getGetMethod(captionUrl);
+        setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
+        if (extension.equals(".smi")) {
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException("Error downloading subtitle-2");
+            }
+            byte[] decryptKey = Hex.decodeHex("625298045c1db17fe3489ba7f1eba2f208b3d2df041443a72585038e24fc610b".toCharArray());
+            byte[] decrypytIV = "V@6i`q6@FTjdwtui".getBytes("UTF-8");
+            for (int i = 0; i < decryptKey.length; i++) {
+                decryptKey[i] = (byte) (decryptKey[i] ^ 42);
+            }
+            for (int i = 0; i < decrypytIV.length; i++) {
+                decrypytIV[i] = (byte) (decrypytIV[i] ^ 1);
+            }
+            final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(decryptKey, "AES"), new IvParameterSpec(decrypytIV));
+            final StringBuilder subtitleSb = new StringBuilder(100);
+            subtitleSb.append("<SAMI><BODY>");
+            matcher = Pattern.compile("<SYNC Encrypted=\"true\" start=\"(\\d+)\">(.+?)</SYNC>", Pattern.CASE_INSENSITIVE).matcher(getContentAsString());
+            while (matcher.find()) {
+                final String plainText = PlugUtils.replaceEntities(PlugUtils.unescapeHtml(new String(cipher.doFinal(Hex.decodeHex(matcher.group(2).toCharArray())), "UTF-8")));
+                subtitleSb.append(String.format("<SYNC start=%s>%s</SYNC>\n", matcher.group(1), plainText));
+            }
+            subtitleSb.append("</BODY></SAMI>");
+            final byte[] subtitle = subtitleSb.toString().getBytes("UTF-8");
+            httpFile.setFileSize(subtitle.length);
+            try {
+                downloadTask.saveToFile(new ByteArrayInputStream(subtitle));
+            } catch (final Exception e) {
+                LogUtils.processException(logger, e);
+                throw new PluginImplementationException("Error saving subtitle", e);
+            }
+        } else { //non .smi subtitle, haven't tested, couldn't find sample
+            if (!tryDownloadAndSaveFile(method)) {
+                throw new PluginImplementationException("Error saving subtitle");
+            }
+        }
     }
 
 }

@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.megaupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.megaupload.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -17,13 +18,13 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, JPEXS
  */
 
 class MegauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
     private String HTTP_SITE = "http://www.megaupload.com";
-    //private int captchaCount;
+    private int captchaCount;
 
     @Override
     public void runCheck() throws Exception {
@@ -52,7 +53,7 @@ class MegauploadRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
             if (tryManagerDownload(fileURL)) return;
             Matcher matcher;
-            //       captchaCount = 0;
+            captchaCount = 0;
             if (getContentAsString().contains("download is password protected")) {
                 stepPasswordPage();
             }
@@ -153,7 +154,8 @@ class MegauploadRunner extends AbstractRunner {
                 logger.info("Captcha - image " + HTTP_SITE + s);
                 String captcha;
                 final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
-//                if (captchaCount++ < 3) {
+
+
 //                    EditImage ei = new EditImage(captchaImage);
 //                    captcha = PlugUtils.recognize(ei.separate(), "-C A-z");
 //                    if (captcha != null) {
@@ -163,11 +165,12 @@ class MegauploadRunner extends AbstractRunner {
 //                            captcha = null;
 //                        }
 //                    }
-//                }
 
-//                if (captcha == null) {
-                captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-//                } else captchaImage.flush();//askForCaptcha uvolnuje ten obrazek, takze tady to udelame rucne
+                if (captchaCount++ < 3) {
+                    captcha=CaptchaReader.read(captchaImage);
+                }else{
+                    captcha = getCaptchaSupport().askForCaptcha(captchaImage);
+                } 
                 if (captcha == null)
                     throw new CaptchaEntryInputMismatchException();
 
@@ -179,7 +182,6 @@ class MegauploadRunner extends AbstractRunner {
                 postMethod.addParameter("captcha", captcha);
 
                 if (makeRequest(postMethod)) {
-
                     return true;
                 }
             } else throw new PluginImplementationException("Captcha picture was not found");

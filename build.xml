@@ -132,6 +132,7 @@
         <ant dir="${src.dir}/przeklej/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/disperseit/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/saveqube/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/sendspacepl/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.yourfilehost;
 
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -125,13 +122,15 @@ class YourFileHostRunner extends AbstractRunner {
     }
 
 
-    private void checkProblems() throws ServiceConnectionProblemException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("already downloading")) {
             throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
         }
         if (getContentAsString().contains("Currently a lot of users")) {
             throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Currently a lot of users are downloading files."));
         }
+        if(getContentAsString().contains("404 - Not Found"))
+        	throw new URLNotAvailableAnymoreException();
     }
 
 }

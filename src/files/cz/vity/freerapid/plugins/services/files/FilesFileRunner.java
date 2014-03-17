@@ -88,10 +88,14 @@ class FilesFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File Not Found")) {//TODO
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
-        }
+        }          //no free download slots available
         if (contentAsString.contains("captcha error")) {//TODO
             throw new YouHaveToWaitException("Retry",5); //let to know user in FRD
 
+        }
+         if (contentAsString.contains("no free download slots available")) {//TODO
+            throw new YouHaveToWaitException("Free slot not available",60); //let to know user in FRD
+             
         }
          if (contentAsString.contains("You have got max allowed bandwidth size per hour")) {//TODO
             throw new YouHaveToWaitException("Maxium bandwidth limit reach",3600); //let to know user in FRD

@@ -2,8 +2,8 @@ package cz.vity.freerapid.plugins.services.pixroute;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -11,8 +11,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
-import java.net.URI;
-import static java.net.URLEncoder.encode;
 
 /**
  * Class which contains main code
@@ -22,9 +20,6 @@ import static java.net.URLEncoder.encode;
 class PixRouteFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(PixRouteFileRunner.class.getName());
 
-
-
-    /*
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
@@ -37,14 +32,12 @@ class PixRouteFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
     }
-    */
+
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<td nowrap>", "</");
         PlugUtils.checkFileSize(httpFile, content, "<td>", "<small>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-
-    
 
     @Override
     public void run() throws Exception {

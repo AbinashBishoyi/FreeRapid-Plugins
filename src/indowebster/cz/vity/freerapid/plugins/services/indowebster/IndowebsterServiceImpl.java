@@ -9,13 +9,9 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class IndowebsterServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "indowebster.com";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
-    }
-
-    public int getMaxDownloadsFromOneIP() {
-        //don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 10;
     }
 
     @Override

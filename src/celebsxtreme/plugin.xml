@@ -4,12 +4,11 @@
         class="cz.vity.freerapid.plugins.services.celebsxtreme.CelebsXtremeServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(?:www\.)?celebsxtreme\.com/wp-content/uploads/\d+/\d+/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="celebsxtreme.com"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="10"/>
-        <attribute id="faviconImage" value="resources/CX.png"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>

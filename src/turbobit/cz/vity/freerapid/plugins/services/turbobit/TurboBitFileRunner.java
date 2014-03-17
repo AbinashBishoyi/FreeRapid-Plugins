@@ -1,17 +1,15 @@
 package cz.vity.freerapid.plugins.services.turbobit;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.services.turbobit.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-
-import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -24,18 +22,16 @@ import java.util.regex.Matcher;
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
     private final static String LANG_REF = "http://www.turbobit.net/en";
-    private final int captchaMax = 10;
+    private final static int CAPTCHA_MAX = 10;
     private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod httpMethodLang = getMethodBuilder().setAction(fileURL).toGetMethod();
-        if (makeRedirectedRequest(httpMethodLang)) {
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(httpMethod)) {
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
             if (makeRedirectedRequest(httpMethod)) {
-                for(Cookie c : this.client.getHTTPClient().getState().getCookies() )
-                    System.out.println( c.getName() + "->" + c.getValue() );
                 checkProblems();
                 checkNameAndSize();
             } else {
@@ -49,29 +45,29 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     /**
-     * This method remove all HTML entry, and find next text after found parameter
+     * This method removes all HTML entries, and finds next text after found parameter
      *
-     * @param search text
+     * @param text text
      * @return next text after parameter
      */
-    private String findNextTextAfter(String text) {
-        String contentWithOutHTML[] = getContentAsString().replaceAll("&[^;]{4,4};", "").split("<[^>]*>");
+    private String findNextTextAfter(final String text) {
+        final String contentWithOutHTML[] = getContentAsString().replaceAll("&[^;]{4};", "").split("<[^>]*>");
         boolean found = false;
-        for(String x : contentWithOutHTML) {
-            if( !found && x.toLowerCase().contains(text.toLowerCase()) ) {
+        for (String x : contentWithOutHTML) {
+            if (!found && x.toLowerCase(Locale.ENGLISH).contains(text.toLowerCase(Locale.ENGLISH))) {
                 found = true;
                 continue;
             }
-            if( found && x != null && !x.trim().equals("") )
+            if (found && x != null && !x.trim().isEmpty())
                 return x.trim();
         }
         return null;
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        httpFile.setFileName( findNextTextAfter("File name:") );
-        long size = PlugUtils.getFileSizeFromString( findNextTextAfter("File size:") );
-        httpFile.setFileSize( size );
+        httpFile.setFileName(findNextTextAfter("File name:"));
+        long size = PlugUtils.getFileSizeFromString(findNextTextAfter("File size:"));
+        httpFile.setFileSize(size);
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -80,14 +76,14 @@ class TurboBitFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod httpMethodLang = getMethodBuilder().setAction(fileURL).toGetMethod();
-        if (makeRedirectedRequest(httpMethodLang)) {
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(httpMethod)) {
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 checkNameAndSize();
 
-                Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/([a-z0-9]+)\\.html", fileURL);
+                Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/(?:download/free/)?([a-z0-9]+)(?:\\.html?)?", fileURL);
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Error parsing download link");
                 }
@@ -101,11 +97,14 @@ class TurboBitFileRunner extends AbstractRunner {
 
                 matcher = getMatcherAgainstContent("limit: (\\d+),");
                 if (matcher.find()) {
-                    throw new YouHaveToWaitException("Waiting time between downloads", new Integer(matcher.group(1)));
+                    throw new YouHaveToWaitException("Waiting time between downloads", Integer.parseInt(matcher.group(1)));
                 }
 
                 while (getContentAsString().contains("captcha")) {
-                    if (!makeRedirectedRequest(stepCaptcha(freeAction))) throw new ServiceConnectionProblemException();
+                    if (!makeRedirectedRequest(stepCaptcha(freeAction))) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
                 }
 
                 matcher = getMatcherAgainstContent("limit: (\\d+),");
@@ -113,9 +112,7 @@ class TurboBitFileRunner extends AbstractRunner {
                     checkProblems();
                     throw new PluginImplementationException("Waiting time not found");
                 }
-                final String t = matcher.group(1);
-                logger.info("Waiting time: " + t);
-                downloadTask.sleep(new Integer(t) + 1);
+                downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
 
                 final String timeoutAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
                 httpMethod = getMethodBuilder().setReferer(freeAction).setAction(timeoutAction).toGetMethod();
@@ -179,29 +176,58 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha(final String action) throws Exception {
-        final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
-        logger.info("Captcha URL " + captchaSrc);
+        if (getContentAsString().contains("recaptcha")) {
+            logger.info("Handling ReCaptcha");
 
-        String captcha;
-        if (captchaCounter <= captchaMax) {
-            captcha = CaptchaReader.recognize(captchaSupport.getCaptchaImage(captchaSrc));
-            if (captcha == null) {
-                logger.info("Could not separate captcha letters, attempt " + captchaCounter + " of " + captchaMax);
-            }
-            logger.info("OCR recognized " + captcha + ", attempt " + captchaCounter + " of " + captchaMax);
-            captchaCounter++;
-        } else {
-            captcha = captchaSupport.getCaptcha(captchaSrc);
+            final Matcher m = getMatcherAgainstContent("api.recaptcha.net/noscript\\?k=([^\"]+)\"");
+            if (!m.find()) throw new PluginImplementationException("ReCaptcha key not found");
+            final String reCaptchaKey = m.group(1);
+
+            final String content = getContentAsString();
+            final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+            final CaptchaSupport captchaSupport = getCaptchaSupport();
+
+            final String captchaURL = r.getImageURL();
+            logger.info("Captcha URL " + captchaURL);
+
+            final String captcha = captchaSupport.getCaptcha(captchaURL);
             if (captcha == null) throw new CaptchaEntryInputMismatchException();
-            logger.info("Manual captcha " + captcha);
-        }
+            r.setRecognized(captcha);
 
-        return getMethodBuilder()
-                .setReferer(action)
-                .setAction(action)
-                .setParameter("captcha_response", captcha)
-                .toPostMethod();
+            return r.modifyResponseMethod(
+                    getMethodBuilder(content)
+                            .setReferer(action)
+                            .setActionFromFormWhereTagContains("recaptcha", true)
+                            .setAction(action)
+            ).toPostMethod();
+        } else {
+            logger.info("Handling regular captcha");
+
+            final CaptchaSupport captchaSupport = getCaptchaSupport();
+            final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
+            logger.info("Captcha URL " + captchaSrc);
+
+            final String captcha;
+            if (captchaCounter <= CAPTCHA_MAX) {
+                captcha = CaptchaReader.recognize(captchaSupport.getCaptchaImage(captchaSrc));
+                if (captcha == null) {
+                    logger.info("Could not separate captcha letters, attempt " + captchaCounter + " of " + CAPTCHA_MAX);
+                }
+                logger.info("OCR recognized " + captcha + ", attempt " + captchaCounter + " of " + CAPTCHA_MAX);
+                captchaCounter++;
+            } else {
+                captcha = captchaSupport.getCaptcha(captchaSrc);
+                if (captcha == null) throw new CaptchaEntryInputMismatchException();
+                logger.info("Manual captcha " + captcha);
+            }
+
+            return getMethodBuilder()
+                    .setReferer(action)
+                    .setActionFromFormWhereTagContains("captcha", true)
+                    .setAction(action)
+                    .setParameter("captcha_response", captcha)
+                    .toPostMethod();
+        }
     }
 
 }

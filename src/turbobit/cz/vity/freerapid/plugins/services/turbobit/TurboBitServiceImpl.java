@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class TurboBitServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
-        return "turbobit.com";
+        return "turbobit.net";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         //don't forget to update this value, in plugin.xml don't forget to update this value too
         return 1;

@@ -25,7 +25,7 @@ class UploadBoxFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         setPageEncoding("ISO-8859-1");
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkSeriousProblems();
@@ -40,12 +40,12 @@ class UploadBoxFileRunner extends AbstractRunner {
         super.run();
         setPageEncoding("ISO-8859-1");
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).setBaseURL(SERVICE_WEB).toHttpMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).toPostMethod();
 
             if (makeRedirectedRequest(httpMethod)) {
                 if (getContentAsString().contains("Enter CAPTCHA code here")) {
@@ -56,7 +56,7 @@ class UploadBoxFileRunner extends AbstractRunner {
 
                     checkAllProblems();
                     if (getContentAsString().contains("click here")) {
-                        httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("click here").toHttpMethod();
+                        httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("click here").toGetMethod();
                     } else {
                         httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Download File", true).toGetMethod();
                     }
@@ -110,14 +110,14 @@ class UploadBoxFileRunner extends AbstractRunner {
 
     private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException, URIException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = getMethodBuilder().setBaseURL(SERVICE_WEB).setActionFromImgSrcWhereTagContains("id=\"captcha\"").toGetMethod().getURI().toString();
+        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
         logger.info("Captcha URL " + captchaSrc);
         final String captcha = captchaSupport.getCaptcha(captchaSrc);
 
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            return getMethodBuilder().setReferer(fileURL).setActionFromFormByName("free", true).setBaseURL(SERVICE_WEB).setParameter("enter", captcha).toHttpMethod();
+            return getMethodBuilder().setReferer(fileURL).setActionFromFormByName("free", true).setParameter("enter", captcha).toPostMethod();
         }
     }
 
@@ -130,4 +130,10 @@ class UploadBoxFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("Suspicious Content-Type", 4);
         }
     }
+
+    @Override
+    protected String getBaseURL() {
+        return SERVICE_WEB;
+    }
+
 }

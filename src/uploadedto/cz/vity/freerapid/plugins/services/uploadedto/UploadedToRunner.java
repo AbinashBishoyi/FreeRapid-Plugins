@@ -66,8 +66,8 @@ class UploadedToRunner extends AbstractRunner {
                 if (getContentAsString().contains("You are already")) {
                     throw new ServiceConnectionProblemException("You are already downloading a file");
                 }
-                if (getContentAsString().contains("Only premium users") || getContentAsString().contains("In order to download files bigger")) {
-                    throw new NotRecoverableDownloadException("Only premium users may download files larger than 1 GB");
+                if (getContentAsString().contains("Only premium users") || getContentAsString().contains("In order to download files bigger") || getContentAsString().contains("This file exceeds the max")) {
+                    throw new NotRecoverableDownloadException("This file exceeds the maximum file size which can be downloaded by free users");
                 }
                 if (getContentAsString().contains("The free download") || getContentAsString().contains("In order to download files bigger")) {
                     throw new NotRecoverableDownloadException("The free download is currently not available - Please try again later");

@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -90,6 +91,8 @@ class BadongoFileRunner extends AbstractRunner {
     }
 
     private String checkFileURL(String fileURL) throws Exception {
+        client.getHTTPClient().getState().addCookie(new Cookie(".badongo.com", "badongoL", "en", "/", 86400, false));
+
         if (fileURL.endsWith("/")) {
             fileURL = fileURL.substring(0, fileURL.length() - 1);
         }
@@ -97,8 +100,12 @@ class BadongoFileRunner extends AbstractRunner {
         final URI fileURI = new URI(fileURL);
         final String[] filePath = fileURI.getPath().split("/");
 
-        if (filePath.length == 4) {
-            fileURL = fileURL.replaceFirst("/" + filePath[1], "");
+        if (filePath.length == 3) {
+            fileURL = fileURL.replaceFirst("/" + filePath[1], "/en/" + filePath[1]);
+        }
+
+        if (filePath.length == 4 && !filePath[1].equals("en")) {
+            fileURL = fileURL.replaceFirst("/" + filePath[1], "/en");
         }
 
         return fileURL;
@@ -208,7 +215,7 @@ class BadongoFileRunner extends AbstractRunner {
     }
 
     private void parseWebsite() {
-        final Matcher matcher = getMatcherAgainstContent("href=\"(" + fileURL + "/.+?)\"");
+        final Matcher matcher = getMatcherAgainstContent("href=\"(" + fileURL.replaceFirst("/en", "") + "/.+?)\"");
         int start = 0;
         final List<URI> uriList = new LinkedList<URI>();
 

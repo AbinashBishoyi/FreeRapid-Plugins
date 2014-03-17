@@ -1,7 +1,14 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="rapidshare.com" version="1.0.1"
+<plugin id="RapidShare.com" version="1.0.1"
         class="cz.vity.freerapid.plugins.services.rapidshare.RapidShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://((www\.)|(rs[0-9]+\.))?rapidshare\.com/files/[0-9]+/.*"/>
+        <attribute id="minver" value="0.7"/>
+        <attribute id="maxver" value="0.799"/>
+    </attributes>
+
+
     <runtime>
         <library id="rapidshare.com" path="/" type="code"/>
     </runtime>

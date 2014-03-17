@@ -2,6 +2,12 @@
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin id="hellshare.com" version="1.0.0"
         class="cz.vity.freerapid.plugins.services.hellshare.HellshareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?hellshare\.com/.*"/>
+        <attribute id="minver" value="0.7"/>
+        <attribute id="maxver" value="0.799"/>
+    </attributes>
+
     <runtime>
         <library id="hellshare.com" path="/" type="code"/>
     </runtime>

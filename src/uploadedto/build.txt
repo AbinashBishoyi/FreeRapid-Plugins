@@ -1,4 +1,0 @@
-#Build Number for ANT. Do not edit!
-#Sat Oct 18 23:11:52 CEST 2008
-build.number=22
-1=

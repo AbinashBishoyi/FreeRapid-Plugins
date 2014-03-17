@@ -2,6 +2,12 @@
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin id="iskladka.cz" version="1.0.0"
         class="cz.vity.freerapid.plugins.services.iskladka.IskladkaServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?iskladka\.(cz|sk)/.*"/>
+        <attribute id="minver" value="0.7"/>
+        <attribute id="maxver" value="0.799"/>
+    </attributes>
+
     <runtime>
         <library id="iskladka.cz" path="/" type="code"/>
     </runtime>

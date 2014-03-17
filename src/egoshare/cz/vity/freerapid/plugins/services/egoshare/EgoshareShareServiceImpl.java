@@ -3,15 +3,11 @@ package cz.vity.freerapid.plugins.services.egoshare;
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 
-
-import java.util.regex.Pattern;
-
 /**
  * @author Ladislav Vitasek
  */
 public class EgoshareShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "egoshare.com";
-    private final static Pattern pattern = Pattern.compile("http://(www\\.)?egoshare\\.com/.*", Pattern.CASE_INSENSITIVE);
     private ServicePluginContext context = new ServicePluginContext();
 
     public String getName() {
@@ -20,10 +16,6 @@ public class EgoshareShareServiceImpl extends AbstractFileShareService {
 
     public int getMaxDownloadsFromOneIP() {
         return 1;
-    }
-
-    public boolean supportsURL(String url) {
-        return pattern.matcher(url).matches();
     }
 
     public void run(HttpFileDownloader downloader) throws Exception {

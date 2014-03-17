@@ -2,6 +2,13 @@
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin id="netload.in" version="1.0.0"
         class="cz.vity.freerapid.plugins.services.netloadin.NetloadInShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?netload\.in/.*"/>
+        <attribute id="minver" value="0.7"/>
+        <attribute id="maxver" value="0.799"/>
+    </attributes>
+
+
     <runtime>
         <library id="netload.in" path="/" type="code"/>
     </runtime>

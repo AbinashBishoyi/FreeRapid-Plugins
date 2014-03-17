@@ -20,7 +20,7 @@ import java.util.regex.Matcher;
  */
 class Keep2ShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(Keep2ShareFileRunner.class.getName());
-    final String baseUrl = "http://keep2share.cc";
+    private String baseUrl = "http://keep2share.cc";
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -59,7 +59,9 @@ class Keep2ShareFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             if (!contentAsString.contains("This link will be available for")) {
-                final MethodBuilder aMethod = getMethodBuilder().setReferer(fileURL)
+                baseUrl = method.getURI().getURI().split("/file/")[0];
+                final MethodBuilder aMethod = getMethodBuilder()
+                        .setBaseURL(baseUrl)
                         .setActionFromFormWhereTagContains("slow_id", true);
                 if (!makeRedirectedRequest(aMethod.toPostMethod())) {
                     checkProblems();
@@ -68,7 +70,6 @@ class Keep2ShareFileRunner extends AbstractRunner {
                 checkProblems();
                 if (getContentAsString().contains("window.location.href")) {
                     HttpMethod hMethod = getMethodBuilder()
-                            .setReferer(fileURL)
                             .setAction(PlugUtils.getStringBetween(getContentAsString(), "window.location.href = '", "';"))
                             .toGetMethod();
                     if (!tryDownloadAndSaveFile(hMethod)) {
@@ -80,7 +81,8 @@ class Keep2ShareFileRunner extends AbstractRunner {
                 boolean loopCaptcha = true;
                 while (loopCaptcha) {
                     loopCaptcha = false;
-                    final MethodBuilder captchaMethod = getMethodBuilder().setReferer(fileURL)
+                    final MethodBuilder captchaMethod = getMethodBuilder()
+                            .setBaseURL(baseUrl)
                             .setActionFromFormWhereTagContains("Slow download", true);
                     if (!makeRedirectedRequest(doCaptcha(captchaMethod).toPostMethod())) {
                         checkProblems();
@@ -95,7 +97,7 @@ class Keep2ShareFileRunner extends AbstractRunner {
                     throw new PluginImplementationException("Wait time not found");
                 downloadTask.sleep(1 + Integer.parseInt(match.group(1).trim()));
                 final MethodBuilder dlBuilder = getMethodBuilder()
-                        .setReferer(fileURL)
+                        .setBaseURL(baseUrl)
                         .setAjax()
                         .setAction(PlugUtils.getStringBetween(getContentAsString(), "url: '", "',"));
                 final String[] params = PlugUtils.getStringBetween(getContentAsString(), "data: {", "},").split(",");
@@ -126,9 +128,11 @@ class Keep2ShareFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (content.contains("File size to large") ||
-                content.contains("Free user can't download large files") ||
-                content.contains("only for premium members")) {
+                content.contains("Free user can't download large files")) {
             throw new NotRecoverableDownloadException("This file size is only for Premium members");
+        }
+        if (content.contains("only for premium members")) {
+            throw new NotRecoverableDownloadException("This file is only for Premium members");
         }
         final Matcher waitMatch = PlugUtils.matcher("Please wait (\\d+?):(\\d+?):(\\d+?) to download this file", content);
         if (waitMatch.find()) {

@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.services.zippyshare.js.JsDocument;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
@@ -87,6 +88,7 @@ class ZippyShareFileRunner extends AbstractRunner {
                 url = urlParam + "&time=" + getRequestValue(seed);
             }
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

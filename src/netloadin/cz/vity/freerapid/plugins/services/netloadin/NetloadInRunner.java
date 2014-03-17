@@ -1,10 +1,7 @@
 package cz.vity.freerapid.plugins.services.netloadin;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -49,15 +46,13 @@ class NetloadInRunner {
 
             } while (client.getContentAsString().contains("You may forgot the security code or it might be wrong"));
 
-            Matcher matcher = Pattern.compile(">([0-9.]*) MB</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = Pattern.compile(">([0-9.]+ .B)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
                 logger.info("File size " + matcher.group(1));
-                Double a = new Double(matcher.group(1).replaceAll(" ", ""));
-                a = (a * 1024 * 1024);
-                httpFile.setFileSize(a.longValue());
+                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
             }
             // download: JFC107.part1.rar
-            matcher = Pattern.compile("download:([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = Pattern.compile("download:\\s*([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
                 final String fn = matcher.group(1);
                 logger.info("File name " + fn);

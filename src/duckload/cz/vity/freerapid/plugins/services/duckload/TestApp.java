@@ -16,7 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.duckload.com/dl/1394389/porn104_009_16p.rar"));//file
+
+            httpFile.setNewURL(new URL("http://www.duckload.com/download/2229956/xTangled10r.part1.rar"));
+
+            // httpFile.setNewURL(new URL("http://www.duckload.com/download/2166947/NLMG2010145gb.part02.rar"));
+            // httpFile.setNewURL(new URL("http://www.duckload.com/dl/1394389/porn104_009_16p.rar"));//file
             //httpFile.setNewURL(new URL("http://www.duckload.com/play/82F043FD0A69AE41"));//video
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

@@ -1,7 +1,9 @@
 package cz.vity.freerapid.plugins.services.duckload;
 
-import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -20,7 +22,7 @@ import java.util.regex.Matcher;
  */
 class DuckLoadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DuckLoadFileRunner.class.getName());
-    private final static Random random = new Random();
+    private final static Random random = new Random(System.nanoTime());
 
     @Override
     public void runCheck() throws Exception {
@@ -42,11 +44,7 @@ class DuckLoadFileRunner extends AbstractRunner {
             throw new PluginImplementationException("File name not found");
         }
         httpFile.setFileName(URLDecoder.decode(matcher.group(1), "UTF-8"));
-        matcher = getMatcherAgainstContent("\\(<i>(.+?)</i> <strong>(.+?)</strong>\\)");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File size not found");
-        }
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2)));
+        httpFile.setFileSize(0);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -54,12 +52,28 @@ class DuckLoadFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".duckload.com", "dl_set_lang", "en", "/", 86400, false));
         addGACookies();
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+
+            String btnName = PlugUtils.getStringBetween(getContentAsString(), "<button name=\"", "\"");
+            method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dl_button_shape slowbutton", true).setParameter(btnName, "").setAction(fileURL).toPostMethod();
+            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var tick\t=", ";") + 1);
+
+            if (makeRedirectedRequest(method)) {
+
+                logger.warning(getContentAsString());
+                btnName = PlugUtils.getStringBetween(getContentAsString(), "<button name=\"", "\"");
+                method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dl_button_shape slowbutton", true).setParameter(btnName, "").setAction(fileURL).toPostMethod();
+                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "<span id=\"w\">", "</span>") + 1);
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+            }
+            /*       captcha
             fileURL = method.getURI().toString();
             while (true) {
                 final String content = getContentAsString();
@@ -84,6 +98,7 @@ class DuckLoadFileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
+            */
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -102,10 +117,11 @@ class DuckLoadFileRunner extends AbstractRunner {
 
     private void addGACookies() {
         addCookie(new Cookie(".duckload.com", "PHPSESSID", String.valueOf(random.nextLong()), "/", 86400, false));
-        addCookie(new Cookie(".duckload.com", "__utma", String.valueOf(random.nextLong()), "/", 86400, false));
-        addCookie(new Cookie(".duckload.com", "__utmb", String.valueOf(random.nextLong()), "/", 86400, false));
-        addCookie(new Cookie(".duckload.com", "__utmc", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "__utmz", String.valueOf(random.nextLong()), "/", 86400, false));
+        addCookie(new Cookie(".duckload.com", "__utma", String.valueOf(random.nextLong()), "/", 86400, false));
+        addCookie(new Cookie(".duckload.com", "__utmc", String.valueOf(random.nextLong()), "/", 86400, false));
+        addCookie(new Cookie(".duckload.com", "__utmb", String.valueOf(random.nextLong()), "/", 86400, false));
+
     }
 
 }

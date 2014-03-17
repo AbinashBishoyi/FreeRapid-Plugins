@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.tv4play.se/program/s%C3%A5-mycket-b%C3%A4ttre?video_id=2240946"));
+            httpFile.setNewURL(new URL("http://www.tv4play.se/program/mordutredarens-egna-fall?video_id=2415137"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

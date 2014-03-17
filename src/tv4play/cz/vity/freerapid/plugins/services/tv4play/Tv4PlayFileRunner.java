@@ -1,9 +1,8 @@
 package cz.vity.freerapid.plugins.services.tv4play;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
-import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.services.adobehds.HdsDownloader;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -17,11 +16,8 @@ import java.util.regex.Matcher;
  *
  * @author ntoskrnl
  */
-public class Tv4PlayFileRunner extends AbstractRtmpRunner {
+public class Tv4PlayFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(Tv4PlayFileRunner.class.getName());
-
-    private final static String SWF_URL = "http://www.tv4play.se/flash/tv4playflashlets.swf";
-    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     @Override
     public void runCheck() throws Exception {
@@ -64,21 +60,12 @@ public class Tv4PlayFileRunner extends AbstractRtmpRunner {
                 checkProblems(content);
                 throw new ServiceConnectionProblemException("Error fetching stream info file");
             }
-            Matcher matcher = PlugUtils.matcher("<base>(.+?)</base>", content);
+            final Matcher matcher = PlugUtils.matcher("<url>(.+?\\.f4m)</url>", content);
             if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing stream info file (1)");
+                throw new PluginImplementationException("Manifest URL not found");
             }
-            final String baseUrl = matcher.group(1);
-            matcher = PlugUtils.matcher("<url>(.+?)</url>", content);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing stream info file (2)");
-            }
-            final String playName = matcher.group(1);
-            final RtmpSession rtmpSession = new RtmpSession(baseUrl, playName);
-            rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
-            rtmpSession.getConnectParams().put("pageUrl", fileURL);
-            helper.setSwfVerification(rtmpSession, client);
-            tryDownloadAndSaveFile(rtmpSession);
+            final HdsDownloader downloader = new HdsDownloader(client, httpFile, downloadTask);
+            downloader.tryDownloadAndSaveFile(matcher.group(1) + "?hdcore=2.10.3&g=MCMQTYCEVAFN");
         } else {
             checkProblems(getContentAsString());
             throw new ServiceConnectionProblemException();

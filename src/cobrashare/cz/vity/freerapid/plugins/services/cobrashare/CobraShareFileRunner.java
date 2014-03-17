@@ -21,21 +21,23 @@ class CobraShareFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        fileURL = fileURL.replace("cobrashare.sk", "cobrashare.net");
         HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             stepRetarget();
+            checkProblems();
             checkNameAndSize(getContentAsString());
-
-        } else
+        } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException, IOException {
-        checkProblems();
+        PlugUtils.checkName(httpFile, getContentAsString(), "<td class=\"popis\">File name :&nbsp;</td>\n<td class=\"data\">", "</td>");
 
-        PlugUtils.checkName(httpFile, getContentAsString(), "<td class=\"popis\">N�zov s�boru :&nbsp;</td>\n<td class=\"data\">", "</td>");
-
-        Matcher matcher = PlugUtils.matcher("Ve�kos� :&nbsp;<\\/td>\\s*<td class=\"data\">(.+?)<", content);
+        Matcher matcher = PlugUtils.matcher("Size :&nbsp;</td>\\s*<td class=\"data\">(.+?)<", content);
         if (matcher.find()) {
             final String stringSize = matcher.group(1);
             logger.info("String size:" + stringSize);
@@ -49,22 +51,24 @@ class CobraShareFileRunner extends AbstractRunner {
             logger.warning("File size was not found\n:");
             throw new PluginImplementationException();
         }
-
     }
 
     @Override
     public void run() throws Exception {
         super.run();
+        fileURL = fileURL.replace("cobrashare.sk", "cobrashare.net");
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             stepRetarget();
+            checkProblems();
             checkNameAndSize(getContentAsString());
-
-        } else
+        } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
+        }
         while (true) {
-
             checkProblems();
             HttpMethod finalMethod = stepCaptcha();
             if (!tryDownloadAndSaveFile(finalMethod)) {
@@ -73,14 +77,14 @@ class CobraShareFileRunner extends AbstractRunner {
                     continue;
                 }
                 checkProblems();
-                logger.warning(getContentAsString());
-                throw new IOException("File input stream is empty.");
-            } else break;
+                throw new ServiceConnectionProblemException("Error starting download");
+            } else {
+                break;
+            }
         }
     }
 
     private HttpMethod stepCaptcha() throws Exception {
-
         CaptchaSupport captchaSupport = getCaptchaSupport();
         String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("ImageGen").getAction();
         logger.info("Captcha URL " + s);
@@ -88,22 +92,16 @@ class CobraShareFileRunner extends AbstractRunner {
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            final HttpMethod postMethod = getMethodBuilder().setActionFromFormByIndex(1, true).
-                    setParameter("over", captcha).toPostMethod();
-            return postMethod;
-
+            return getMethodBuilder().setActionFromFormByIndex(1, true).setParameter("over", captcha).toPostMethod();
         }
-
-
     }
 
     private void stepRetarget() throws Exception {
-
         HttpMethod getMethod = getMethodBuilder().setActionFromTextBetween("url=", "\"").setReferer(fileURL).toHttpMethod();
         if (!makeRedirectedRequest(getMethod)) {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
-
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException, IOException {
@@ -112,24 +110,17 @@ class CobraShareFileRunner extends AbstractRunner {
             final GetMethod getMethod = getGetMethod("http://www.cobrashare.sk/cantDownload.php");
             if (!makeRedirectedRequest(getMethod)) {
                 throw new PluginImplementationException();
-            } else contentAsString = getContentAsString();
+            } else {
+                contentAsString = getContentAsString();
+            }
         }
-
-        if (contentAsString.contains("sa na serveri nenach")) {
-            throw new URLNotAvailableAnymoreException("Požadovaný súbor sa na serveri nenachádza");
+        if (contentAsString.contains("The request file is not longer available")
+                || contentAsString.contains("sa na serveri nenach")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
-
         if (contentAsString.contains("prebieha prenos")) {
             throw new ServiceConnectionProblemException("Práve prebieha prenos (download) z vašej IP adresy");
         }
-
-//        if (PlugUtils.find("te stiahnu. zadarmo", contentAsString)) {
-//            throw new ServiceConnectionProblemException("Záťaž 100% - nemôžte stiahnuť zadarmo");
-//        }
-
-//        if (contentAsString.contains("Neplatny download")) {
-//            throw new YouHaveToWaitException("Neplatny download", 2);
-//        }
     }
 
 }

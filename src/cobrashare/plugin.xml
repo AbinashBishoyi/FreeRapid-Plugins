@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.cobrashare.CobraShareServiceImpl" id="cobrashare.sk" vendor="Vity+Abinash Bishoyi" version="1.0.6">
+<plugin class="cz.vity.freerapid.plugins.services.cobrashare.CobraShareServiceImpl"
+        id="cobrashare.sk" vendor="Vity+Abinash Bishoyi" version="1.0.6">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?cobrashare\.sk:[0-9]+?/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="urlRegex" value="http://(www\.)?cobrashare\.(net|sk)(:\d+?)/.+"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="cobrashare.sk"/>
+        <attribute id="services" value="cobrashare.net cobrashare.sk"/>
+        <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

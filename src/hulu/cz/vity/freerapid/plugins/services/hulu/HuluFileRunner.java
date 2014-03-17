@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.hulu;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.cryptography.CryptographySupport;
 import cz.vity.freerapid.plugins.services.cryptography.Engine;
 import cz.vity.freerapid.plugins.services.cryptography.Mode;
@@ -59,7 +56,7 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>Hulu - (.+?) - Watch");
+        final Matcher matcher = getMatcherAgainstContent("<title>Hulu - (.+?)(?: - Watch|</title>)");
         if (!matcher.find()) throw new PluginImplementationException("File name not found");
         final String name = matcher.group(1).replace(": ", " - ");
         httpFile.setFileName(name + ".flv");
@@ -88,6 +85,18 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
                 if (makeRedirectedRequest(method)) {
                     final String content = decryptContentSelect(getContentAsString());
                     logger.info("Content select:\n" + content);
+                    if (content.contains("allowInternational=\"false\"")) {
+                        logger.info("Performing geocheck");
+                        method = getGetMethod("http://releasegeo.hulu.com/geoCheck");
+                        if (makeRedirectedRequest(method)) {
+                            if (getContentAsString().contains("not-valid")) {
+                                throw new NotRecoverableDownloadException("This video can only be streamed in the US");
+                            }
+                        } else {
+                            checkProblems();
+                            throw new ServiceConnectionProblemException();
+                        }
+                    }
                     final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\" .+? cdn=\"akamai\"", content);
                     final List<Stream> list = new ArrayList<Stream>();
                     while (matcher.find()) {

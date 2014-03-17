@@ -19,8 +19,8 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("C:\\Users\\Administrator\\Desktop\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/163679/if-i-can-dream-menage-a-trois"));//international
-            httpFile.setNewURL(new URL("http://www.hulu.com/watch/170858/eureka-crossing-over"));//US-only
+            httpFile.setNewURL(new URL("http://www.hulu.com/watch/163679/if-i-can-dream-menage-a-trois"));//international
+            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/170858/eureka-crossing-over"));//US-only
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

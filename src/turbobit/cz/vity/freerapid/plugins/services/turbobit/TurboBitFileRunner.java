@@ -7,7 +7,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -100,35 +99,18 @@ class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
             }
 
-            matcher = getMatcherAgainstContent("(min(?:Time)?Limit)\\s*:\\s*(\\d+)");
+            matcher = getMatcherAgainstContent("\"fileId\"\\s*?:\\s*?\"(.+?)\"");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Wait time not found");
+                throw new PluginImplementationException("File ID not found");
             }
-            final String timeVariable = matcher.group(1);
-            int waitTime = Integer.parseInt(matcher.group(2));
-
-            matcher = getMatcherAgainstContent("Timeout\\." + timeVariable + "\\s*=\\s*Timeout\\." + timeVariable + "\\s*/\\s*(\\d+)");
-            if (matcher.find()) { // there is a divisor
-                final int waitTimeDivider = Integer.parseInt(matcher.group(1));
-                waitTime = waitTime / waitTimeDivider;
-            }
-
-            matcher = getMatcherAgainstContent("(?s)(var\\s*url.+?)\\}");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Download link not found");
-            }
-            final String script = matcher.group(1).replaceAll("\\$\\('[^']+?'\\)\\.load", "");
-            logger.info(script);
-            final String url = ScriptUtils.evaluateJavaScriptToString(script);
-            logger.info(url);
 
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
-                    .setAction(url)
+                    .setAction("/download/getlinktimeout/" + matcher.group(1))
                     .toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
 
-            downloadTask.sleep(waitTime);
+            downloadTask.sleep(61);
 
             if (!makeRedirectedRequest(method)) {
                 checkProblems();

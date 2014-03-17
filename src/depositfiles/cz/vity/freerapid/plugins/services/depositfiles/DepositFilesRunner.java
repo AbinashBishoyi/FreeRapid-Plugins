@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,7 +25,7 @@ import java.util.regex.Pattern;
 class DepositFilesRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DepositFilesRunner.class.getName());
     private static final String HTTP_DEPOSITFILES = "http://www.depositfiles.com";
-
+    private final static Random random = new Random(System.nanoTime());
 
     @Override
     public void runCheck() throws Exception {
@@ -51,8 +52,8 @@ class DepositFilesRunner extends AbstractRunner {
         } else {
             final GetMethod getMethod = getGetMethod(fileURL);
             getMethod.setFollowRedirects(true);
+            addGACookies();
             if (makeRequest(getMethod)) {
-
                 checkNameAndSize(getContentAsString());
                 Matcher matcher;
                 checkProblems();
@@ -101,21 +102,27 @@ class DepositFilesRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
                 }
-                String t = matcher.group(1);
-                int seconds = new Integer(t);
-                logger.info("wait - " + t);
+                String t;
+                int seconds = (int) ((PlugUtils.getNumberBetween(getContentAsString(), "'load_form()', ", ")")) / 1000);
+                logger.info("wait - " + seconds);
                 matcher = getMatcherAgainstContent("load\\('(.*?)'\\);");
                 if (matcher.find()) {
                     t = HTTP_DEPOSITFILES + matcher.group(1);
                     logger.info("Download URL: " + t);
-                    downloadTask.sleep(seconds + 1);
+                    downloadTask.sleep(seconds + 20);
                     //  httpFile.setState(DownloadState.GETTING);
+
+
                     HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(t).toHttpMethod();
+                    method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                    method.setFollowRedirects(true);
                     if (!makeRedirectedRequest(method)) {
                         logger.info(getContentAsString());
                         throw new PluginImplementationException();
                     }
+                    System.out.print(getContentAsString());
                     method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("download", true).toHttpMethod();
+
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new IOException("File input stream is empty.");
@@ -132,7 +139,7 @@ class DepositFilesRunner extends AbstractRunner {
     }
 
     private String CheckURL(String URL) {
-        addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
+        //addCookie(new Cookie(".depositfiles.com", "lang_current", "en", "/", 86400, false));
 
         return URL.replaceFirst("/../files", "/en/files");
 
@@ -233,6 +240,14 @@ class DepositFilesRunner extends AbstractRunner {
         synchronized (getPluginService().getPluginContext().getQueueSupport()) {
             getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, new ArrayList<URI>(queye));
         }
+
+    }
+
+    private void addGACookies() {
+        addCookie(new Cookie(".depositfiles.com", "__utmz", String.valueOf(random.nextLong()), "/", 86400, false));
+        addCookie(new Cookie(".depositfiles.com", "__utma", String.valueOf(random.nextLong()), "/", 86400, false));
+        addCookie(new Cookie(".depositfiles.com", "__utmc", String.valueOf(random.nextLong()), "/", 86400, false));
+        addCookie(new Cookie(".depositfiles.com", "__utmb", String.valueOf(random.nextLong()), "/", 86400, false));
 
     }
 

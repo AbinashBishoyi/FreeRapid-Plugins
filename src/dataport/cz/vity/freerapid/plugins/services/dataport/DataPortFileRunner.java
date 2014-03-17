@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.dataport;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -33,7 +30,11 @@ class DataPortFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<td>N�zev souboru:</td>\n<td>", "</td>");
+        if (content.contains("<td>N\u00E1zev souboru:</td>\n<td><strong>")) {
+            PlugUtils.checkName(httpFile, content, "<td>N\u00E1zev souboru:</td>\n<td><strong>", "</strong></td>");
+        } else {
+            PlugUtils.checkName(httpFile, content, "<td>N\u00E1zev souboru:</td>\n<td>", "</td>");
+        }
         PlugUtils.checkFileSize(httpFile, content, "<td>Velikost souboru:</td>\n<td>", "</td>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -47,7 +48,7 @@ class DataPortFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("St�hnout soubor").toHttpMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Stažení ZDARMA").toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -66,6 +67,11 @@ class DataPortFileRunner extends AbstractRunner {
         if (contentAsString.contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if (contentAsString.contains("Volné sloty pro stažení zdarma jsou v tuhle chvíli vyčerpány.")) {
+            throw new YouHaveToWaitException("No Free Slots", 30); //let to know user in FRD
+        }
+
+
     }
 
 }

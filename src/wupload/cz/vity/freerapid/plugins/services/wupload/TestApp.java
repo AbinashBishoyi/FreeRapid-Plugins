@@ -15,9 +15,9 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.wupload.com/file/6212977/testPNG.png"));
+            httpFile.setNewURL(new URL("http://www.wupload.com/file/2530316127/logovq.jpg"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            // connectionSettings.setProxy("localhost", 8081);
+            //connectionSettings.setProxy("localhost", 8118);
             testRun(new WuploadShareServiceImpl(), httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

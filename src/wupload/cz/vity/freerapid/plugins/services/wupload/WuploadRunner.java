@@ -96,18 +96,11 @@ class WuploadRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Page Not Found")) {               //getContentAsString().contains("The file could not be found") || getContentAsString().contains("Page Not Found") || getContentAsString().contains("File not available"))
+        if (getContentAsString().contains("this file has been removed") || getContentAsString().contains("Page Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (getContentAsString().contains("You can only download 1 file at a time")) {
             throw new ServiceConnectionProblemException("You can only download 1 file at a time");
         }
-
-/*
-        Matcher matcher = getMatcherAgainstContent("You (?:have|need) to wait (\\d+) seconds to start another download");
-        if (matcher.find()) {
-            throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)));
-        }
-*/
     }
 }

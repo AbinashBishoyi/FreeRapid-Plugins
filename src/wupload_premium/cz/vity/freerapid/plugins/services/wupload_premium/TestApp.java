@@ -20,7 +20,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://www.wupload.com/file/2530316127/logovq.jpg"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final WuploadServiceImpl service = new WuploadServiceImpl(); //instance of service - of our plugin
             final PremiumAccount config = new PremiumAccount();

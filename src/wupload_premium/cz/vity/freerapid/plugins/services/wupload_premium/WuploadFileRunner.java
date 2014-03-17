@@ -55,11 +55,8 @@ class WuploadFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("This file has been deleted") || getContentAsString().contains("Page Not Found")) {
+        if (getContentAsString().contains("this file has been removed") || getContentAsString().contains("Page Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (getContentAsString().contains("You can only download 1 file at a time")) {
-            throw new ServiceConnectionProblemException("You can only download 1 file at a time");
         }
     }
 
@@ -73,18 +70,28 @@ class WuploadFileRunner extends AbstractRunner {
                     throw new BadLoginException("No Wupload account login information!");
                 }
             }
-
-            final HttpMethod method = getMethodBuilder()
-                    .setAction("http://www.wupload.com/account/login")
+            //Sometimes redirected to a country specific domain. Login using that instead of .com.
+            HttpMethod method = getGetMethod("http://www.wupload.com");
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            method = getMethodBuilder()
+                    .setBaseURL(method.getURI().toString())
+                    .setAction("/account/login")
                     .setParameter("email", pa.getUsername())
                     .setParameter("redirect", "/")
                     .setParameter("password", pa.getPassword())
                     .setParameter("rememberMe", "1")
                     .toPostMethod();
-            makeRequest(method);
-
-            if (getContentAsString().contains("No user found with such email") || getContentAsString().contains("Provided password does not match"))
+            method.setRequestHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+            method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            setFileStreamContentTypes(new String[0], new String[]{"application/json"});
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException("Error posting login info");
+            }
+            if (!getContentAsString().contains("\"status\":\"success\"")) {
                 throw new BadLoginException("Invalid Wupload account login information!");
+            }
         }
     }
 

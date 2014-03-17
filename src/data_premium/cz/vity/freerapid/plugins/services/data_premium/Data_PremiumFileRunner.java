@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.data_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -55,12 +56,19 @@ class Data_PremiumFileRunner extends AbstractRunner {
                 Login();
             }
 
+
             matcher = getMatcherAgainstContent("<a href=\"/premium.php\">Nem vagy prémium");
             if (matcher.find()) {
                 logger.info("No premium");
                 throw new NotRecoverableDownloadException("Not premium account!");
             }
-
+            matcher = getMatcherAgainstContent("Tovább a Fõoldalra");
+            if (matcher.find()) {
+              String url = fileURL;
+                HttpMethod m = getGetMethod(url);
+                makeRequest(m);
+                logger.info("Advertisment fails!");
+            }
             matcher = getMatcherAgainstContent("window.location.href='(.*?)';");
             if (matcher.find()) {
                 String downURL = matcher.group(1);
@@ -133,6 +141,7 @@ class Data_PremiumFileRunner extends AbstractRunner {
                 throw new PluginImplementationException("Bad login URL");
             }
         }
+
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

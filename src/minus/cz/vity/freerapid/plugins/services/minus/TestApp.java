@@ -17,6 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
 //            httpFile.setNewURL(new URL("http://minus.com/m3NkzQYFn"));       // file list of 1 file
+//            httpFile.setNewURL(new URL("http://minus.com/mbzWKzrOt/"));      // file list of many files
             httpFile.setNewURL(new URL("http://minus.com/lyGHOEFKYlVVa"));
 //            httpFile.setNewURL(new URL("http://min.us/mIIOD4rnI/1"));
             //the way we connect to the internet

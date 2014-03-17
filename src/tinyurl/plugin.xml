@@ -3,7 +3,7 @@
 <plugin id="tinyurl.com" version="1.0" vendor="Alex"
         class="cz.vity.freerapid.plugins.services.tinyurl.TinyUrlServiceImpl">
     <attributes> 
-        <attribute id="urlRegex" value="http://(www\.)*tinyurl.com/?"/>
+        <attribute id="urlRegex" value="http://tinyurl.com/.+"/>
         <attribute id="minver" value="0.8"/>
         <attribute id="maxver" value="0.809"/>
         <attribute id="services" value="tinyurl.com"/>

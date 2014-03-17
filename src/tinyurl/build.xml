@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="tinyurl.com Plugin" default="all" basedir=".">
-    <property name="application" value="tinyurl.com"/>
+<project name="tinyurl Plugin" default="all" basedir=".">
+    <property name="application" value="tinyurl"/>
 
     <property name="version" value="1.00"/>
     <property name="version.name" value="${application}"/>

@@ -1,8 +1,13 @@
 package cz.vity.freerapid.plugins.services.tinyurl;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+
+
+
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
@@ -28,36 +33,23 @@ class TinyUrlRunner extends AbstractRunner {
         logger.info(fileURL);
 
        
-        if (makeRedirectedRequest(method)) {
+ 
         //it works to me .... compilable
             if (client.makeRequest(method, false) == HttpStatus.SC_MOVED_PERMANENTLY) {
 
-
-            }
-
-
-            String content = getContentAsString();
-            logger.info(content);
-            
-            final Matcher matcher = getMatcherAgainstContent("<TITLE>(.+?)</TITLE>");
-            if (matcher.find()) {
-                final String s = matcher.group(1);
-                try {
-                    this.httpFile.setNewURL(new URL(s));
-                } catch (MalformedURLException e) {
-                    throw new URLNotAvailableAnymoreException("Invalid URL");
-                }
+         
+                String s = method.getResponseHeaders("Location").toString();
+                logger.info(s);
+                this.httpFile.setNewURL(new URL(s));
                 this.httpFile.setPluginID("");
                 this.httpFile.setState(DownloadState.QUEUED);
+
+          
             } else {
-                checkProblems();
-                throw new PluginImplementationException();
-            }
-        } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
-        }
-    }
+            }
+        } 
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();

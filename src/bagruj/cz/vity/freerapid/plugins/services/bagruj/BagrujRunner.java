@@ -4,15 +4,15 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -62,7 +62,7 @@ class BagrujRunner extends AbstractRunner {
                 if (!getContentAsString().contains("pro tvoji IP adresu n")) {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Cannot find requested page content");
+                    throw new PluginImplementationException();
                 }
 
                 Matcher matcher = getMatcherAgainstContent("(http://[^\"]+)\">\\1");
@@ -70,7 +70,7 @@ class BagrujRunner extends AbstractRunner {
                 if (!matcher.find()) {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Cannot find requested page content");
+                    throw new PluginImplementationException();
                 }
 
                 String finalURL = matcher.group(1);
@@ -162,9 +162,9 @@ class BagrujRunner extends AbstractRunner {
             postmethod.addParameter("op", "login");
 
             if (makeRedirectedRequest(postmethod)) {
-                String c=getContentAsString();
+                getContentAsString();
                 matcher = getMatcherAgainstContent("op=logout\">Odhl.sit</a>");
-                if(!matcher.find()) {
+                if (!matcher.find()) {
                     return;
                 }
                 GetMethod getMethod = getGetMethod(fileURL);
@@ -247,7 +247,7 @@ class BagrujRunner extends AbstractRunner {
             postMethod.addParameter("code", code);
             makeRequest(postMethod);
         } catch (Exception e) {
-
+            //ignore
         }
 
     }

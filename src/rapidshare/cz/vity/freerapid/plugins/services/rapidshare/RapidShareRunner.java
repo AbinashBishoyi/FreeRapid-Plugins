@@ -136,7 +136,7 @@ class RapidShareRunner extends AbstractRunner {
 
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         if (getContentAsString().contains("You have reached the")) {
             matcher = getMatcherAgainstContent("try again in about ([0-9]+) minute");
@@ -162,6 +162,9 @@ class RapidShareRunner extends AbstractRunner {
         }
         if (getContentAsString().contains("momentarily not available")) {
             throw new ServiceConnectionProblemException("The server is momentarily not available.");
+        }
+        if (getContentAsString().contains("This file is larger than")) {
+            throw new InvalidURLOrServiceProblemException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
         }
     }
 

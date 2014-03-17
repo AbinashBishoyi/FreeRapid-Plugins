@@ -70,6 +70,7 @@
         <ant dir="${src.dir}/hellshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filebaseto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/edisk/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/mediafire/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/savefile/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/upnito/" antfile="build.xml" inheritall="false"/>
     </target>

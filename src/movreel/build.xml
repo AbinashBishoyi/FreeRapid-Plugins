@@ -75,7 +75,9 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-
+            <sourcepath location="../recaptcha"/>
+            <sourcepath location="../solvemediacaptcha"/>
+            <sourcepath location="../xfilesharing/"/>
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

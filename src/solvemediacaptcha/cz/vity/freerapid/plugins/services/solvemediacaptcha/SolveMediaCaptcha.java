@@ -128,7 +128,7 @@ public class SolveMediaCaptcha {
                 } else if (client.getContentAsString().contains("base64")) {
                     String base64Str;
                     try {
-                        base64Str = PlugUtils.getStringBetween(client.getContentAsString(), "base64,", "\"");
+                        base64Str = PlugUtils.getStringBetween(client.getContentAsString().replaceAll("\\s", ""), "base64,", "\"");
                     } catch (PluginImplementationException e) {
                         throw new PluginImplementationException("Base64 of image representation not found");
                     }

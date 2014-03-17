@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 987 2008-12-07 13:22:39Z ATom $
+ * $Id: RapidShareRunner.java 1018 2008-12-09 07:26:52Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -41,6 +41,8 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -152,29 +154,16 @@ class RapidShareRunner extends AbstractRunner {
         throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    private void chechFile() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException, BadLoginException {
+    private void chechFile() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException, BadLoginException, YouHaveToWaitException {
         String code = client.getContentAsString().toLowerCase();
-        Matcher matcher = Pattern.compile("<h1>error.*?class=\"klappbox\">(.*?)</div>", Pattern.DOTALL).matcher(code);
-        if (matcher.find()) {
-            final String error = matcher.group(1);
-            if (error.contains("illegal content") || error.contains("could not be found") || error.contains("file has been removed") || error.contains("violation of our terms of use") || error.contains("uploader has removed")) {
-                throw new URLNotAvailableAnymoreException("<b>RapidShare known error:</b><br> " + error);
-            }
-            if (error.contains("your premium account has not been found")) {
-                setBadConfig();
-                logger.log(Level.WARNING, "Account expired. Maybe.");
-                throw new BadLoginException("<b>RapidShare known error:</b><br> " + error);
-            }
-            logger.warning("RapidShare error:" + error);
-            throw new InvalidURLOrServiceProblemException("<b>RapidShare unknown error:</b><br> " + error);
-        }
+        // Fast detec known error messages
         if (code.contains("illegal content")) {
             throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> Illegal content. File was removed.");
         }
         if (code.contains("could not be found")) {
             throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> The file could not be found. Please check the download link.");
         }
-        if (code.contains("The uploader has removed this file from the server")) {
+        if (code.contains("the uploader has removed this file from the server")) {
             throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> The uploader has removed this file from the server.");
         }
         if (code.contains("violation of our terms of use") || code.contains("file has been removed")) {
@@ -183,9 +172,21 @@ class RapidShareRunner extends AbstractRunner {
         if (code.contains("your premium account has not been found")) {
             setBadConfig();
             logger.log(Level.WARNING, "Account expired. Maybe.");
-            throw new BadLoginException("<b>RapidShare known error:</b><br> Your premium account has not been found.");
+            throw new BadLoginException("<b>RapidShare error:</b><br> Your premium account has not been found.");
+        }
+        if (code.contains("you have exceeded the download limit")) {
+            throw new YouHaveToWaitException("<b>RapidShare known error:</b><br> You have exceeded the download limit.", getSecondToMidnight());
         }
 
+        // Match another error messages from standard error box
+        Matcher matcher = Pattern.compile("<h1>error.*?class=\"klappbox\">(.*?)</div>", Pattern.DOTALL).matcher(code);
+        if (matcher.find()) {
+            final String error = matcher.group(1);
+            logger.warning("RapidShare unknown error:" + error);
+            throw new InvalidURLOrServiceProblemException("<b>RapidShare unknown error:</b><br> " + error);
+        }
+
+        // Unknown error message
         if (code.contains("error")) {
             logger.warning(client.getContentAsString());
             throw new InvalidURLOrServiceProblemException("Unknown RapidShare error");
@@ -202,7 +203,7 @@ class RapidShareRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
-        Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
+        Matcher matcher;
         final String contentAsString = client.getContentAsString();
         matcher = Pattern.compile("IP address (.*?) is already", Pattern.MULTILINE).matcher(contentAsString);
         if (matcher.find()) {
@@ -257,6 +258,13 @@ class RapidShareRunner extends AbstractRunner {
             logger.info("Builded RS cookie: " + cookie);
             client.getHTTPClient().getState().addCookie(new Cookie("rapidshare.com", "user", cookie, "/", 86400, false));
         }
+    }
+
+    private int getSecondToMidnight() {
+		Calendar now = Calendar.getInstance();
+		Calendar midnight =	Calendar.getInstance();
+		midnight.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)+1, 0, 0, 1);
+		return (int) ((midnight.getTimeInMillis() - now.getTimeInMillis()) / 1000f);
     }
 
     private void setBadConfig() {

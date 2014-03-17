@@ -149,7 +149,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             final String content = decryptContentSelect(getContentAsString());
             logger.info("Content select:\n" + content);
-            checkProblems(content);
+            try {
+                checkProblems(content);
+            } catch (final Exception e) {
+                logger.warning("Content select:\n" + content);
+                throw e;
+            }
 
             final RtmpSession rtmpSession = getStream(content);
             rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
@@ -166,6 +171,9 @@ class HuluFileRunner extends AbstractRtmpRunner {
         if (content.contains("The page you were looking for doesn't exist")
                 || content.contains("This content is unavailable for playback")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("Your Hulu Plus subscription allows you to watch one video at a time")) {
+            throw new ServiceConnectionProblemException("Your Hulu Plus subscription allows you to watch only one video at a time");
         }
         if (content.contains("we noticed you are trying to access Hulu through")) {
             throw new NotRecoverableDownloadException("Hulu noticed that you are trying to access them through a proxy");

@@ -65,13 +65,13 @@ class EasyShareRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            if (!(getContentAsString().contains("Type characters") || getContentAsString().contains("Free Download"))) {
+            if (!(getContentAsString().contains("Type characters") || getContentAsString().contains("<th class=\"last\">"))) {
                 checkProblems();
                 logger.warning(getContentAsString());
                 throw new PluginImplementationException("Plugin implementation problem");
 
             }
-            if (getContentAsString().contains("Free Download")) {
+            if (getContentAsString().contains("<th class=\"last\">")) {
 
                 if (getContentAsString().contains(" w=")) {
                     Matcher matcher = getMatcherAgainstContent("w='([0-9]+?)';");

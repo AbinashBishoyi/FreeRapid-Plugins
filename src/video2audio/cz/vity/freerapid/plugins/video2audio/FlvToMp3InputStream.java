@@ -10,7 +10,11 @@ import java.nio.ByteBuffer;
 public class FlvToMp3InputStream extends VideoToAudioInputStream {
 
     private FlvReader flvReader;
-    private AacToMp3Converter converter;
+    private AacToMp3Converter converter = null;
+
+    public FlvToMp3InputStream(final InputStream in, final int targetBitrate) {
+        super(in, targetBitrate);
+    }
 
     public FlvToMp3InputStream(final InputStream in) {
         super(in);
@@ -43,7 +47,7 @@ public class FlvToMp3InputStream extends VideoToAudioInputStream {
         flvReader = new FlvReader(in);
         final byte[] packet = flvReader.nextAudioPacket();
         if (flvReader.isAac()) {
-            converter = new AacToMp3Converter(flvReader.getDecoderSpecificInfo());
+            converter = new AacToMp3Converter(flvReader.getDecoderSpecificInfo(), targetBitrate);
         }
         return packet;
     }

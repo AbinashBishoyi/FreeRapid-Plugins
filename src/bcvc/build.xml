@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="YouTube.com" default="all" basedir=".">
-    <property name="application" value="youtube"/>
+<project name="Bc.vc" default="all" basedir=".">
+    <property name="application" value="bcvc"/>
+
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="youtube.jar"/>
+    <property name="mainjar.file" value="bcvc.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -62,7 +63,7 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/Test*"/>
+            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/TestApp*"/>
         </copy>
 
         <copy todir="${build.dir}">
@@ -74,8 +75,7 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-            <sourcepath location="../rtmp"/>
-            <sourcepath location="../video2audio"/>
+
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

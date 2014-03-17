@@ -6,10 +6,13 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.LinkedList;
@@ -24,6 +27,8 @@ import java.util.regex.Matcher;
  */
 class KeepLinksFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(KeepLinksFileRunner.class.getName());
+    private final static int MAX_SIMPLE_CAPTCHA_ATTEMPTS = 3;
+    private int simpleCaptchaCount = 1;
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -139,17 +144,61 @@ class KeepLinksFileRunner extends AbstractRunner {
     }
 
     protected void stepCaptcha(MethodBuilder method) throws Exception {
-        final Matcher m = getMatcherAgainstContent("recaptcha/api/challenge\\?k=(.+?)\"");
-        if (!m.find()) throw new PluginImplementationException("Captcha key not found");
-        final String captchaKey = m.group(1);
-        final ReCaptcha reCaptcha = new ReCaptcha(captchaKey, client);
-        final String captcha = getCaptchaSupport().getCaptcha(reCaptcha.getImageURL());
-        if (captcha == null) throw new CaptchaEntryInputMismatchException();
-        reCaptcha.setRecognized(captcha);
-        reCaptcha.modifyResponseMethod(method);
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final String captcha;
+        if (getContentAsString().contains("recaptcha/api/challenge")) { //recaptcha
+            final Matcher m = getMatcherAgainstContent("recaptcha/api/challenge\\?k=(.+?)\"");
+            if (!m.find()) throw new PluginImplementationException("Captcha key not found");
+            final String captchaKey = m.group(1);
+            final ReCaptcha reCaptcha = new ReCaptcha(captchaKey, client);
+            captcha = captchaSupport.getCaptcha(reCaptcha.getImageURL());
+            if (captcha == null) throw new CaptchaEntryInputMismatchException();
+            reCaptcha.setRecognized(captcha);
+            reCaptcha.modifyResponseMethod(method);
+        } else if (getContentAsString().contains("/simplecaptcha/captcha.php")) { //simple captcha
+            final String captchaUrl = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromImgSrcWhereTagContains("/simplecaptcha/")
+                    .getAction();
+            if (simpleCaptchaCount <= MAX_SIMPLE_CAPTCHA_ATTEMPTS) {
+                captcha = PlugUtils.recognize(binarizeImage(captchaSupport.getCaptchaImage(captchaUrl), 200), "-u 1 -C a-z0-9");
+                logger.info(String.format("Simple captcha auto-recog attempt %d, recognized : %s", simpleCaptchaCount, captcha));
+                simpleCaptchaCount++;
+            } else {
+                captcha = captchaSupport.getCaptcha(captchaUrl);
+                if (captcha == null) {
+                    throw new CaptchaEntryInputMismatchException("No Input");
+                }
+            }
+            method.setParameter("norobot", captcha);
+        } else {
+            throw new PluginImplementationException("Unknows captcha type");
+        }
     }
 
     private URI encodeUri(final String sUri) throws Exception {
         return new URI(URLEncoder.encode(sUri, "UTF-8").replaceAll("%3A", ":").replaceAll("%2F", "/"));
+    }
+
+    private static BufferedImage binarizeImage(final BufferedImage img, final int redLimit) {
+        final int w = img.getWidth(), h = img.getHeight();
+        final BufferedImage ret = createImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                final int red = (img.getRGB(x, y) >> 16) & 0xFF;
+                if (red < redLimit) {
+                    ret.setRGB(x, y, Color.BLACK.getRGB());
+                }
+            }
+        }
+        return ret;
+    }
+
+    private static BufferedImage createImage(final int w, final int h, final int imgType) {
+        final BufferedImage ret = new BufferedImage(w, h, imgType);
+        final Graphics g = ret.getGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, w, h);
+        return ret;
     }
 }

@@ -80,6 +80,8 @@ public class YouTubeServiceImpl extends AbstractFileShareService {
                 config.setContainer(0); //any container
                 config.setReversePlaylistOrder(false);
                 config.setDownloadSubtitles(false);
+                config.setConvertToAudio(false);
+                config.setAudioQuality(AudioQuality._192);
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, YouTubeSettingsConfig.class);
             }

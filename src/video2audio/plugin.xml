@@ -11,7 +11,7 @@
 
     <runtime>
         <library id="video2audio" path="/" type="code">
-            <export prefix="cz.*"/>
+            <export prefix="*"/>
         </library>
     </runtime>
 </plugin>

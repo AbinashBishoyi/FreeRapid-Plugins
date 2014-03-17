@@ -56,6 +56,8 @@ public class TestApp extends PluginDevApplication {
             config.setContainer(1);
             config.setReversePlaylistOrder(false);
             config.setDownloadSubtitles(false);
+            config.setConvertToAudio(true);
+            config.setAudioQuality(AudioQuality._96);
             service.setConfig(config);
 
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

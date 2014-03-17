@@ -10,12 +10,18 @@ import java.nio.ByteBuffer;
 abstract class VideoToAudioInputStream extends InputStream {
 
     protected final InputStream in;
+    protected final int targetBitrate;
 
     private ByteBuffer buffer;
     private boolean finished = false;
 
-    public VideoToAudioInputStream(final InputStream in) {
+    public VideoToAudioInputStream(final InputStream in, final int targetBitrate) {
         this.in = in;
+        this.targetBitrate = targetBitrate;
+    }
+
+    public VideoToAudioInputStream(final InputStream in) {
+        this(in, 192);
     }
 
     @Override

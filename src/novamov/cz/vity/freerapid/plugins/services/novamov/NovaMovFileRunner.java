@@ -11,6 +11,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 
 /**
@@ -75,7 +76,7 @@ class NovaMovFileRunner extends AbstractRunner {
             httpFile.setFileName(httpFile.getFileName() + ext);
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction(downloadUrl)
+                    .setAction(URLDecoder.decode(downloadUrl, "UTF-8"))
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();

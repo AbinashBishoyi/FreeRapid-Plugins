@@ -16,8 +16,12 @@ import java.util.List;
  */
 public class Mp4ToMp3InputStream extends VideoToAudioInputStream {
 
-    private Track track;
+    private Track track = null;
     private AacToMp3Converter converter;
+
+    public Mp4ToMp3InputStream(final InputStream in, final int targetBitrate) {
+        super(in, targetBitrate);
+    }
 
     public Mp4ToMp3InputStream(final InputStream in) {
         super(in);
@@ -44,7 +48,7 @@ public class Mp4ToMp3InputStream extends VideoToAudioInputStream {
             throw new IOException("No AAC tracks found");
         }
         track = tracks.get(0);
-        converter = new AacToMp3Converter(track.getDecoderSpecificInfo());
+        converter = new AacToMp3Converter(track.getDecoderSpecificInfo(), targetBitrate);
     }
 
 }

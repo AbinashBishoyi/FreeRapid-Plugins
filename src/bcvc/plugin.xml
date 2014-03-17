@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.novamov.NovaMovServiceImpl"
-        id="novamov.com" vendor="tong2shot" version="2.0.2">
+<plugin class="cz.vity.freerapid.plugins.services.bcvc.BcVcServiceImpl"
+        id="bc.vc" vendor="tong2shot" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(novamov|novaup)\.com/video/.+"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="urlRegex" value="http://(www\.)?bc\.vc/.+"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="novamov.com novaup.com"/>
+        <attribute id="services" value="bc.vc"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
+
     <runtime>
-        <library id="novamov.com" path="/" type="code"/>
+        <library id="bc.vc" path="/" type="code"/>
     </runtime>
 </plugin>

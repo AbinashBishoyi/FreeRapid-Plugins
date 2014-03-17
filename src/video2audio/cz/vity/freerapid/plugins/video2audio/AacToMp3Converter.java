@@ -15,11 +15,13 @@ class AacToMp3Converter {
 
     private final Decoder decoder;
     private final SampleBuffer sampleBuffer = new SampleBuffer();
+    private final int targetBitrate;
     private LameEncoder encoder;
 
     private final byte[] outputBuffer = new byte[4 * 1024];
 
-    public AacToMp3Converter(final byte[] decoderSpecificInfo) throws IOException {
+    public AacToMp3Converter(final byte[] decoderSpecificInfo, int targetBitrate) throws IOException {
+        this.targetBitrate = targetBitrate;
         decoder = new Decoder(decoderSpecificInfo);
     }
 
@@ -27,7 +29,7 @@ class AacToMp3Converter {
         decoder.decodeFrame(aacFrame, sampleBuffer);
         if (encoder == null) {
             final AudioFormat sourceFormat = new AudioFormat(sampleBuffer.getSampleRate(), sampleBuffer.getBitsPerSample(), sampleBuffer.getChannels(), true, sampleBuffer.isBigEndian());
-            encoder = new LameEncoder(sourceFormat, 192, LameEncoder.CHANNEL_MODE_AUTO, LameEncoder.QUALITY_HIGH, false);
+            encoder = new LameEncoder(sourceFormat, targetBitrate, LameEncoder.CHANNEL_MODE_AUTO, LameEncoder.QUALITY_HIGH, false);
         }
         try {
             final int outputLength = encoder.encodeBuffer(sampleBuffer.getData(), 0, sampleBuffer.getData().length, outputBuffer);

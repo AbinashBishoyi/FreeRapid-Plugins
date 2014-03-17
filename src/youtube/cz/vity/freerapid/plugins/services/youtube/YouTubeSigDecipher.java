@@ -33,8 +33,8 @@ class YouTubeSigDecipher {
     private static final int KIND_EXPLICIT = 25;
     private static final int KIND_STATIC_PROTECTED = 26;
     private static final int nameSpaceKinds[] = new int[]{KIND_NAMESPACE, KIND_PRIVATE, KIND_PACKAGE, KIND_PACKAGE_INTERNAL, KIND_PROTECTED, KIND_EXPLICIT, KIND_STATIC_PROTECTED};
-    private static final Pattern REVERSE_PATTERN = Pattern.compile("^\\Q\u005d\\E..\\Q\u00d2\u0046\\E..\\Q\u0001\u0080\u0014\\E$", Pattern.DOTALL);
-    private static final Pattern CLONE_SWAP_PATTERN = Pattern.compile("^\\Q\u005d\\E(..)\\Q\u00d2\u0024\\E(.)\\Q\u0046\\E..\\Q\u0002\u0080\u0014\\E$", Pattern.DOTALL);
+    private static final Pattern REVERSE_PATTERN = Pattern.compile("^\\Q\u005d\\E..\\Q\u00d2\u0046\\E..\\Q\u0001\u0080\\E.$", Pattern.DOTALL);
+    private static final Pattern CLONE_SWAP_PATTERN = Pattern.compile("^\\Q\u005d\\E(..)\\Q\u00d2\u0024\\E(.)\\Q\u0046\\E..\\Q\u0002\u0080\\E.$", Pattern.DOTALL);
     private static final String CHARSET_NAME = "ISO-8859-1";
 
     private final InputStream is;
@@ -75,8 +75,8 @@ class YouTubeSigDecipher {
             matcher = CLONE_SWAP_PATTERN.matcher(callBytecode);
             if (matcher.find()) {
                 String fps_index = matcher.group(1); //findpropstrict index/arg
-                InputStream bis = new ByteArrayInputStream(fps_index.getBytes(CHARSET_NAME));
-                int multiname_index = readU30(bis);
+                InputStream bais = new ByteArrayInputStream(fps_index.getBytes(CHARSET_NAME));
+                int multiname_index = readU30(bais);
                 if (multiname_map.containsKey(multiname_index)) {
                     if (multiname_map.get(multiname_index).contains("clone_")) { //clone
                         final int arg = matcher.group(2).charAt(0);
@@ -101,8 +101,8 @@ class YouTubeSigDecipher {
 
     private String getBytecode() throws Exception {
         final String swf = readSwfStreamToString(is);
-        final String regex = "(?s)\\Q\u00d0\u0030\u00d1\u002c\u0001\u0046\\E.\\Q\u002e\u0001\u0080\u0014\u00d6\\E"
-                + "(.+?)\\Q\u00d6\u00d2\u002c\u0001\u0046\\E.\\Q\u0030\u0001\u0048\\E";
+        final String regex = "(?s)\\Q\u00d0\u0030\u00d1\u002c\u0001\u0046\\E..\\Q\u0001\u0080\\E.\\Q\u00d6\\E"
+                + "(.+?)\\Q\u00d6\u00d2\u002c\u0001\u0046\\E..\\Q\u0001\u0048\\E";
         final Matcher matcher = PlugUtils.matcher(regex, swf);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing SWF (1)");
@@ -428,6 +428,7 @@ class YouTubeSigDecipher {
         //watch_as3-vflNr3l6D.swf
         //watch_as3-vflU4Jt6h.swf
         //watch_as3-vflW5qQCZ.swf
+        //watch_as3-vflmeWTlC.swf
         System.out.println(new YouTubeSigDecipher(new FileInputStream(new File("/media/DATA/kerja/javaProj/FRD/frd/youtube/watch_as3-vflU4Jt6h.swf")))
                 .decipher("BB5A7F095FE6874253FF152F0145151A6791478EE4.0691ADBB55103ABA1088D2B98BF6B4A3A1444EDCDC"));
     }

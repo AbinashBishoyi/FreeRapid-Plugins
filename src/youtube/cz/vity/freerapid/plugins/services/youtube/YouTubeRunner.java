@@ -8,7 +8,11 @@ import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.services.youtube.srt.Transcription2SrtUtil;
+import cz.vity.freerapid.plugins.video2audio.FlvToMp3InputStream;
+import cz.vity.freerapid.plugins.video2audio.Mp4ToMp3InputStream;
+import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
@@ -20,10 +24,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -39,8 +41,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:22.0) Gecko/20100101 Firefox/22.0";
 
     private YouTubeSettingsConfig config;
-    private int fmt = 0;
-    private String fileExtension = ".flv";
+    private YouTubeMedia youTubeMedia = null;
 
     @Override
     public void runCheck() throws Exception {
@@ -90,14 +91,15 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 return;
             }
 
-            checkFmtParameter();
+            processConfig();
             checkName();
 
             final String fmtStreamMap = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
             logger.info(fmtStreamMap);
-            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + fmt + "[^,]*|[^,]*itag=" + fmt + "\\\\u0026[^,]*)", fmtStreamMap);
+            int itagCode = youTubeMedia.getItagCode();
+            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + itagCode + "[^,]*|[^,]*itag=" + itagCode + "\\\\u0026[^,]*)", fmtStreamMap);
             if (!matcher.find()) {
-                throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
+                throw new PluginImplementationException("Cannot find specified video format (" + itagCode + ")");
             }
             final String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
             final String formatContent = matcher.group(1);
@@ -145,11 +147,19 @@ class YouTubeRunner extends AbstractRtmpRunner {
                         }
                     }
                 }
+
                 method = getGetMethod(URLDecoder.decode(videoURL, "UTF-8"));
                 setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
+                if (config.isConvertToAudio()) {
+                    if (!convertToAudio(method)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException("Error starting download");
+                    }
+                } else {
+                    if (!tryDownloadAndSaveFile(method)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException("Error starting download");
+                    }
                 }
             }
         } else {
@@ -187,8 +197,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
             PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- YouTube\n</title>");
         }
         String fileName = PlugUtils.unescapeHtml(PlugUtils.unescapeHtml(httpFile.getFileName()));
-        if (!isUserPage() && !isPlaylist() && !isCourseList()) {
-            fileName += fileExtension;
+        if (!isUserPage() && !isPlaylist() && !isCourseList() && !isSubtitles()) {
+            fileName += (youTubeMedia == null ? ".flv" : youTubeMedia.getFileExtension());
         }
         httpFile.setFileName(fileName);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -199,97 +209,143 @@ class YouTubeRunner extends AbstractRtmpRunner {
         config = service.getConfig();
     }
 
-    //deprecated per http://en.wikipedia.org/wiki/YouTube#ref_media_type_table_note_1 :
-    //itag is an undocumented parameter used internally by YouTube to differentiate between quality profiles.
-    //Until December 2010, there was also a URL parameter known as fmt that allowed a user to force a profile using itag codes.
-    private void checkFmtParameter() throws Exception {
-        final Matcher matcher = PlugUtils.matcher("fmt=(\\d+)", fileURL.toLowerCase(Locale.ENGLISH));
-        if (matcher.find()) {
-            final String fmtCode = matcher.group(1);
-            if (fmtCode.length() <= 2) {
-                fmt = Integer.parseInt(fmtCode);
-                fileExtension = getFileExtension(fmt);
-            }
-        } else {
-            processConfig();
-        }
-    }
-
     private void processConfig() throws ErrorDuringDownloadingException {
         final String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "\"fmt_list\": \"", "\"").replace("\\/", "/");
         logger.info(fmt_map);
         //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
         final String[] formats = fmt_map.split(",");
-        final String[][] formatParts = new String[formats.length][];
-        for (int f = 0; f < formats.length; f++) {
+        final SortedMap<Integer, YouTubeMedia> ytMediaMap = new TreeMap<Integer, YouTubeMedia>();
+        for (String format : formats) {
             //Example: 37/1920x1080/9/0/115
-            formatParts[f] = formats[f].split("/");
+            String formatParts[] = format.split("/");
+            int itagCode = Integer.parseInt(formatParts[0]);
+            String fileExt = getFileExtension(itagCode);
+            String container = getContainer(fileExt);
+            int videoResolution = Integer.parseInt(formatParts[1].split("x")[1]);
+            String audioEncoding = getAudioEncoding(itagCode);
+            int audioBitrate = getAudioBitrate(itagCode);
+            YouTubeMedia ytMedia = new YouTubeMedia(itagCode, container, fileExt, videoResolution, audioEncoding, audioBitrate);
+            ytMediaMap.put(itagCode, ytMedia);
         }
-        int qualityWidth = config.getQualityWidth();
-        int qualityIndex = -1;
-        if (qualityWidth == YouTubeSettingsConfig.MAX_WIDTH) {
-            logger.info("Selecting maximum quality");
-            qualityIndex = 0;
-        } else if (qualityWidth == YouTubeSettingsConfig.MIN_WIDTH) {
-            logger.info("Selecting minimum quality");
-            qualityIndex = formatParts.length - 1;
-        } else {
-            int nearestGreater = Integer.MAX_VALUE;
-            int nearestGreaterIndex = -1;
-            int nearestLower = Integer.MIN_VALUE;
-            int nearestLowerIndex = -1;
-            for (int f = 0; f < formatParts.length; f++) {
-                String[] wh = formatParts[f][1].split("x");
-                int h = Integer.parseInt(wh[1]);
-                if (h == qualityWidth) {
-                    qualityIndex = f;
-                    break;
-                } else {
-                    if ((h > qualityWidth) && (nearestGreater > h)) {
-                        nearestGreater = h;
-                        nearestGreaterIndex = f;
-                    }
-                    if ((h < qualityWidth) && (nearestLower < h)) {
-                        nearestLower = h;
-                        nearestLowerIndex = f;
-                    }
-                }
-            }
-            if (qualityIndex == -1) {
-                if (nearestLowerIndex != -1) {
-                    qualityIndex = nearestLowerIndex;
-                    logger.info("Selected quality not found, using nearest lower");
-                } else {
-                    qualityIndex = nearestGreaterIndex;
-                    logger.info("Selected quality not found, using nearest better");
-                }
-            }
-        }
+        int selectedItagCode = -1;
 
-        if (qualityIndex == -1) throw new PluginImplementationException("Cannot select quality");
+        if (config.isConvertToAudio()) { //convert to audio
+            final int NOT_SUPPORTED_PENALTY = 10000;
+            int configAudioBitrate = config.getAudioQuality().getBitrate();
+            int weight = Integer.MAX_VALUE;
 
-        final int selectedWidth = Integer.parseInt(formatParts[qualityIndex][1].split("x")[1]); //the concrete one
-        final int container = config.getContainer();
-        if (container != YouTubeSettingsConfig.ANY_CONTAINER) {
-            final List<YouTubeContainer> ytcSet = new LinkedList<YouTubeContainer>();
-            for (int f = 0; f < formatParts.length; f++) {
-                String[] wh = formatParts[f][1].split("x");
-                int h = Integer.parseInt(wh[1]);
-                if (h == selectedWidth) {
-                    final YouTubeContainer ytc = new YouTubeContainer(Integer.parseInt(formatParts[f][0]), f);
-                    ytcSet.add(ytc);
+            //select audio bitrate
+            int selectedAudioBitrate = -1;
+            for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
+                YouTubeMedia ytMedia = ytMediaEntry.getValue();
+                int audioBitrate = ytMedia.getAudioBitrate();
+                String container = ytMedia.getContainer();
+                String audioEncoding = ytMedia.getAudioEncoding();
+                int tempWeight = ((audioBitrate - configAudioBitrate) < 0) ? Math.abs(audioBitrate - configAudioBitrate) : audioBitrate - configAudioBitrate;
+                if (!isVid2AudContainerSupported(container) || !isVid2AudAudioEncodingSupported(audioEncoding)) {
+                    tempWeight += NOT_SUPPORTED_PENALTY;
+                }
+                if (tempWeight < weight) {
+                    weight = tempWeight;
+                    selectedAudioBitrate = audioBitrate;
                 }
             }
-            qualityIndex = Collections.max(ytcSet).getQualityIndex();
+            if (selectedAudioBitrate == -1) {
+                throw new PluginImplementationException("Cannot select audio bitrate");
+            }
+
+            //get all youtube media which audio bitrate == selected audio bitrate
+            List<YouTubeMedia> bitrateYtMediaList = new LinkedList<YouTubeMedia>();
+            for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
+                YouTubeMedia youTubeMedia = ytMediaEntry.getValue();
+                if (youTubeMedia.getAudioBitrate() == selectedAudioBitrate) {
+                    bitrateYtMediaList.add(youTubeMedia);
+                }
+            }
+            selectedItagCode = Collections.min(bitrateYtMediaList).getItagCode(); //the lowest video res to preserve bandwidth
+            String audioEncoding = ytMediaMap.get(selectedItagCode).getAudioEncoding();
+            if (!isVid2AudAudioEncodingSupported(audioEncoding)) {
+                throw new PluginImplementationException("Only supported MP3 or AAC audio encoding");
+            }
+
+
+        } else { //not converted to audio
+            //select video resolution
+            int configVideoResolution = config.getVideoResolution();
+            if (configVideoResolution == YouTubeSettingsConfig.MAX_WIDTH) {
+                logger.info("Selecting maximum quality");
+                selectedItagCode = ytMediaMap.lastKey();
+            } else if (configVideoResolution == YouTubeSettingsConfig.MIN_WIDTH) {
+                logger.info("Selecting minimum quality");
+                selectedItagCode = ytMediaMap.firstKey();
+            } else {
+                int nearestGreater = Integer.MAX_VALUE;
+                int nearestGreaterItagCode = -1;
+                int nearestLower = Integer.MIN_VALUE;
+                int nearestLowerItagCode = -1;
+                for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
+                    YouTubeMedia ytMedia = ytMediaEntry.getValue();
+                    int videoResolution = ytMedia.getVideoResolution();
+                    if (videoResolution == configVideoResolution) {
+                        selectedItagCode = ytMediaEntry.getKey();
+                        break;
+                    } else {
+                        if ((videoResolution > configVideoResolution) && (nearestGreater > videoResolution)) {
+                            nearestGreater = videoResolution;
+                            nearestGreaterItagCode = ytMediaEntry.getKey();
+                        }
+                        if ((videoResolution < configVideoResolution) && (nearestLower < videoResolution)) {
+                            nearestLower = videoResolution;
+                            nearestLowerItagCode = ytMediaEntry.getKey();
+                        }
+                    }
+                }
+                if (selectedItagCode == -1) {
+                    if (nearestLowerItagCode != -1) {
+                        selectedItagCode = nearestLowerItagCode;
+                        logger.info("Selected quality not found, using nearest lower");
+                    } else {
+                        selectedItagCode = nearestGreaterItagCode;
+                        logger.info("Selected quality not found, using nearest better");
+                    }
+                }
+            }
+
+            if (selectedItagCode == -1) {
+                throw new PluginImplementationException("Cannot select quality");
+            }
+
+            //select container
+            final int selectedVideoResolution = ytMediaMap.get(selectedItagCode).getVideoResolution();
+            final int container = config.getContainer();
+            if (container != YouTubeSettingsConfig.ANY_CONTAINER) {
+                final List<YouTubeContainer> ytcSet = new LinkedList<YouTubeContainer>();
+                for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
+                    YouTubeMedia ytMedia = ytMediaEntry.getValue();
+                    int videoResolution = ytMedia.getVideoResolution();
+                    if (videoResolution == selectedVideoResolution) {
+                        final YouTubeContainer ytc = new YouTubeContainer(ytMediaEntry.getKey());
+                        ytcSet.add(ytc);
+                    }
+                }
+                selectedItagCode = Collections.max(ytcSet).itagCode;
+            }
         }
-        logger.info("Quality to download: fmt" + formatParts[qualityIndex][0] + " " + formatParts[qualityIndex][1]);
-        fmt = Integer.parseInt(formatParts[qualityIndex][0]);
-        fileExtension = getFileExtension(fmt);
+        youTubeMedia = ytMediaMap.get(selectedItagCode);
+        logger.info(String.format("Quality to download: itagCode = %d, video resolution = %dp, audio bitrate = %d", youTubeMedia.getItagCode(), youTubeMedia.getVideoResolution(), youTubeMedia.getAudioBitrate()));
+    }
+
+    private boolean isVid2AudContainerSupported(String container) {
+        return (container.toUpperCase().equals("MP4") || container.toUpperCase().equals("FLV"));
+    }
+
+    private boolean isVid2AudAudioEncodingSupported(String audioEncoding) {
+        return (audioEncoding.toUpperCase().equals("MP3") || audioEncoding.toUpperCase().equals("AAC"));
     }
 
     //source : http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
-    private String getFileExtension(final int fmtCode) {
-        switch (fmtCode) {
+    private String getFileExtension(final int itagCode) {
+        switch (itagCode) {
             case 13:
             case 17:
             case 36:
@@ -313,6 +369,86 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 return ".webm";
             default:
                 return ".flv";
+        }
+    }
+
+    private String getContainer(String fileExt) {
+        return fileExt.replace(".", "").toUpperCase();
+    }
+
+    private String getAudioEncoding(int itagCode) {
+        switch (itagCode) {
+            case 5:
+            case 6:
+                return "MP3";
+            case 43:
+            case 44:
+            case 45:
+            case 46:
+                return "Vorbis";
+            default:
+                return "AAC";
+        }
+    }
+
+    private int getAudioBitrate(int itagCode) {
+        switch (itagCode) {
+            case 17:
+                return 24;
+            case 36:
+                return 38;
+            case 5:
+            case 6:
+                return 64;
+            case 18:
+            case 82:
+            case 83:
+                return 96;
+            case 34:
+            case 35:
+            case 43:
+            case 44:
+                return 128;
+            case 84:
+            case 85:
+                return 152;
+            default:
+                return 192;
+        }
+    }
+
+    //realtime video to audio conversion
+    private boolean convertToAudio(HttpMethod method) throws Exception {
+        if (httpFile.getState() == DownloadState.PAUSED || httpFile.getState() == DownloadState.CANCELLED)
+            return false;
+        else
+            httpFile.setState(DownloadState.GETTING);
+        if (logger.isLoggable(Level.INFO)) {
+            logger.info("Download link URI: " + method.getURI().toString());
+            logger.info("Making final request for file");
+        }
+
+        try {
+            httpFile.getProperties().remove(DownloadClient.START_POSITION);
+            httpFile.getProperties().remove(DownloadClient.SUPPOSE_TO_DOWNLOAD);
+            httpFile.setResumeSupported(false);
+            httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
+            client.getHTTPClient().getParams().setBooleanParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
+            final InputStream is = client.makeFinalRequestForFile(method, httpFile, true);
+            if (is != null) {
+                logger.info(youTubeMedia.toString());
+                int audioBitrate = youTubeMedia.getAudioBitrate();
+                InputStream v2ais = (youTubeMedia.getFileExtension().toUpperCase().equals(".FLV") ? new FlvToMp3InputStream(is, audioBitrate) : new Mp4ToMp3InputStream(is, audioBitrate));
+                logger.info("Saving to file");
+                downloadTask.saveToFile(v2ais);
+                return true;
+            } else {
+                logger.info("Saving file failed");
+                return false;
+            }
+        } finally {
+            method.abort();
+            method.releaseConnection();
         }
     }
 
@@ -483,16 +619,23 @@ class YouTubeRunner extends AbstractRtmpRunner {
         httpFile.getProperties().put("removeCompleted", true);
     }
 
+    private boolean isSubtitles() {
+        return fileURL.contains("#subtitles:");
+    }
+
     private boolean checkSubtitles() throws Exception {
         Matcher matcher = PlugUtils.matcher("#subtitles:(.*?):(.+)", fileURL);
         if (matcher.find()) {
+            runCheck();
             final String lang = matcher.group(1);
+            String fileExtension;
             if (!lang.isEmpty()) {
                 fileExtension = "." + lang + ".srt";
             } else {
                 fileExtension = ".srt";
             }
-            runCheck();
+            httpFile.setFileName(httpFile.getFileName() + fileExtension);
+
             final String url = "http://www.youtube.com/api/timedtext?type=track" + matcher.group(2);
             final HttpMethod method = getGetMethod(url);
             if (!makeRedirectedRequest(method)) {
@@ -574,23 +717,17 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private class YouTubeContainer implements Comparable<YouTubeContainer> {
-        private final int fmt;
-        private final int qualityIndex;
+        private final int itagCode;
         private int weight;
 
-        public YouTubeContainer(final int fmt, final int qualityIndex) {
-            this.fmt = fmt;
-            this.qualityIndex = qualityIndex;
+        public YouTubeContainer(final int itagCode) {
+            this.itagCode = itagCode;
             calcWeight();
-        }
-
-        public int getQualityIndex() {
-            return qualityIndex;
         }
 
         public void calcWeight() {
             weight = 0;
-            final String fmtFileExtension = getFileExtension(fmt).toLowerCase();
+            final String fmtFileExtension = getFileExtension(itagCode).toLowerCase();
             if (config.getContainerExtension().toLowerCase().equals(fmtFileExtension)) {
                 weight = 100;
             } else if (fmtFileExtension.equals(".mp4")) { //mp4 > flv > webm > 3gp

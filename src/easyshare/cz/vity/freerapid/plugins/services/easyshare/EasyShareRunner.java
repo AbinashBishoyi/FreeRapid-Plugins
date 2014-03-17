@@ -4,8 +4,8 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ class EasyShareRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        addCookie(new Cookie(".easy-share.com","language", "en", "/", null, false));
+        addCookie(new Cookie(".easy-share.com", "language", "en", "/", null, false));
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -41,15 +41,15 @@ class EasyShareRunner extends AbstractRunner {
 
         checkProblems();
 
-        PlugUtils.checkName(httpFile, contentAsString, "requesting<strong> ", "</strong>");
-        PlugUtils.checkFileSize(httpFile, contentAsString, " (", ")</h1>");
+        PlugUtils.checkName(httpFile, contentAsString, "requesting ", " (");
+        PlugUtils.checkFileSize(httpFile, contentAsString, " (", ")</p>");
 
     }
 
     @Override
     public void run() throws Exception {
         super.run();
-        addCookie(new Cookie(".easy-share.com","language", "en", "/", null, false));
+        addCookie(new Cookie(".easy-share.com", "language", "en", "/", null, false));
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         baseURL = fileURL;
         httpSite = fileURL.substring(0, fileURL.indexOf('/', 10));
@@ -59,7 +59,7 @@ class EasyShareRunner extends AbstractRunner {
 
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            if (!(getContentAsString().contains("kaptchacluster") || getContentAsString().contains("<th class=\"last\">"))) {
+            if (!(getContentAsString().contains("kaptchacluster") || getContentAsString().contains("<th class=\"last\">") || getContentAsString().contains("u='"))) {
                 checkProblems();
                 logger.warning(getContentAsString());
                 throw new PluginImplementationException("Plugin implementation problem");
@@ -86,7 +86,7 @@ class EasyShareRunner extends AbstractRunner {
             if (!getContentAsString().contains("kaptchacluster") && getContentAsString().contains("Download the file")) {
                 stepNoCaptcha(getContentAsString());
             } else while (true) {
-                if (!getContentAsString().contains("kaptchacluster")) {
+                if (!(getContentAsString().contains("kaptchacluster") || getContentAsString().contains("u='"))) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new PluginImplementationException("Plugin implementation problem");
@@ -127,11 +127,15 @@ class EasyShareRunner extends AbstractRunner {
 
     }
 
-    private boolean stepCaptcha(final String contentAsString) throws Exception {
+    private boolean stepCaptcha(String contentAsString) throws Exception {
+        if (!contentAsString.contains("kaptchacluster") && contentAsString.contains("u='")) {
+
+            loadCaptchaPage();
+            contentAsString = getContentAsString();
+        }
         if (contentAsString.contains("kaptchacluster")) {
             try {
-                String s = getMethodBuilder(contentAsString).setReferer(baseURL).
-                        setBaseURL(httpSite).
+                String s = httpSite + getMethodBuilder(contentAsString).setReferer(baseURL).
                         setActionFromImgSrcWhereTagContains("kaptchacluster").getAction();
                 logger.info("Captcha image url: " + s);
                 String captcha = getCaptchaSupport().getCaptcha(s);
@@ -182,5 +186,28 @@ class EasyShareRunner extends AbstractRunner {
         }
 
     }
+
+    private void loadCaptchaPage() throws Exception {
+        if (getContentAsString().contains("u='")) {
+            logger.info("Loading subpage with captcha ");
+            HttpMethod getMethod = getMethodBuilder().setBaseURL(httpSite).setReferer(baseURL).setActionFromTextBetween("u='", "';").toGetMethod();
+            if (!makeRedirectedRequest(getMethod)) {
+                logger.warning(getContentAsString());
+                throw new ServiceConnectionProblemException("Unknown error");
+            }
+            if (getContentAsString().contains("w=")) {
+                Matcher matcher = getMatcherAgainstContent("w='([0-9]+?)';");
+                if (matcher.find()) {
+                    int timeToWait = Integer.parseInt(matcher.group(1));
+                    if (timeToWait < 60) downloadTask.sleep(timeToWait);
+                    else throw new YouHaveToWaitException("Wait", Integer.parseInt(matcher.group(1)));
+                }
+            }
+
+        }
+
+
+    }
+
 
 }

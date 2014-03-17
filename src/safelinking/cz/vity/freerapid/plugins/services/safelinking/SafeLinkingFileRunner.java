@@ -139,7 +139,8 @@ class SafeLinkingFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("404 - not found") || content.contains("This link does not exist")) {
+        if (content.contains("404 - not found") || content.contains("404 Page/File not found") ||
+                content.contains("This link does not exist")) {
             throw new URLNotAvailableAnymoreException("Link does not exist"); //let to know user in FRD
         }
         if (content.contains("server is not currently responding")) {

@@ -101,7 +101,7 @@ class Keep2ShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("File not found")) {
+        if (content.contains("File not found") || content.contains("<title>Error 404</title>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (content.contains("File size to large")) {
@@ -110,20 +110,11 @@ class Keep2ShareFileRunner extends AbstractRunner {
     }
 
     private MethodBuilder doCaptcha(final MethodBuilder builder) throws Exception {
-        Matcher match = PlugUtils.matcher("url: \"(.+?captcha.+?)\",", getContentAsString());
-        if (!match.find())
-            throw new PluginImplementationException("captcha loading error");
-        final HttpMethod captchaMethod = getGetMethod(baseUrl + match.group(1).trim().replace("\\/", "/"));
-        if (!makeRedirectedRequest(captchaMethod)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkProblems();
-        match = PlugUtils.matcher("\"url\":\"(.+?)\"}", getContentAsString());
-        if (!match.find())
-            throw new PluginImplementationException("Captcha image not found");
+        final String imgUrl = baseUrl + "/file/captcha" + PlugUtils.getStringBetween(getContentAsString(), "src=\"/file/captcha", "\"");
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaTxt = captchaSupport.getCaptcha(baseUrl + match.group(1).trim().replace("\\/", "/"));
+        final String captchaTxt = captchaSupport.getCaptcha(imgUrl);
+        if (captchaTxt == null)
+            throw new CaptchaEntryInputMismatchException();
         builder.setParameter("CaptchaForm[code]", captchaTxt);
         return builder;
     }

@@ -13,22 +13,16 @@ import java.net.URL;
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
-        final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
+        final HttpFile httpFile = getHttpFile();
         try {
-            //we set file URL
-            httpFile.setNewURL(new URL("http://filepost.com/files/348afe9b/Syngress.The.Basics.of.Hacking.and.Penetration.Testing.Aug.2011.rar"));//TODO
-            //the way we connect to the internet
-            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final FilePostServiceImpl service = new FilePostServiceImpl(); //instance of service - of our plugin
-            //runcheck makes the validation
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
-            //all output goes to the console
-        } catch (Exception e) {//catch possible exception
-            e.printStackTrace(); //writes error output - stack trace to console
+            httpFile.setNewURL(new URL("http://filepost.com/files/348afe9b/Syngress.The.Basics.of.Hacking.and.Penetration.Testing.Aug.2011.rar"));
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
+            final FilePostServiceImpl service = new FilePostServiceImpl();
+            testRun(service, httpFile, connectionSettings);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        this.exit();//exit application
+        this.exit();
     }
 
     /**
@@ -38,6 +32,6 @@ public class TestApp extends PluginDevApplication {
      * @param args arguments for application
      */
     public static void main(String[] args) {
-        Application.launch(TestApp.class, args);//starts the application - calls startup() internally
+        Application.launch(TestApp.class, args);
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="bebasupload.com" version="1.0" vendor="Arthur Gunawan"
+<plugin id="bebasupload.com" version="1.1" vendor="Arthur Gunawan"
         class="cz.vity.freerapid.plugins.services.bebasupload.BebasUploadServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bebasupload\.com/.+"/>
@@ -8,6 +8,7 @@
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="bebasupload.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
+        <attribute id="resumeSupported" value="false"/>
     </attributes>
 
     <runtime>

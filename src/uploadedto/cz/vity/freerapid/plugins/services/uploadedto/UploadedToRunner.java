@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek
@@ -95,14 +96,14 @@ class UploadedToRunner extends AbstractRunner {
 
         }
 
-        matcher = PlugUtils.matcher("Filename: &nbsp;</td><td><b>\\s*(\\S*)", content);
+        matcher = Pattern.compile("Filename: &nbsp;</td><td><b>(.*?)</b></td></tr>", Pattern.DOTALL).matcher(content);
         if (matcher.find()) {
-            String fn = matcher.group(1);
+            String fn = matcher.group(1).trim();
             matcher = PlugUtils.matcher("Filetype: &nbsp;</td><td>(\\S*)</td></tr>", content);
             if (matcher.find()) {
                 fn = fn + matcher.group(1);
             }
-            logger.info("File name " + fn);
+            logger.info("File name '" + fn + "'");
             httpFile.setFileName(fn);
         } else logger.warning("File name was not found" + content);
 

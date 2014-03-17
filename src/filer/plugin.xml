@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="filer.net" version="0.8" vendor="benpicco"
+        class="cz.vity.freerapid.plugins.services.filer.FilerServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://www\.filer\.net/(folder|get)/.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.84"/>
+        <attribute id="services" value="filer.net"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="filer.net" path="/" type="code"/>
+    </runtime>
+</plugin>

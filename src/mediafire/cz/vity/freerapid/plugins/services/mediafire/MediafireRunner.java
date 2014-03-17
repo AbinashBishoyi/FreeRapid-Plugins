@@ -15,9 +15,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -30,7 +29,7 @@ class MediafireRunner extends AbstractRunner {
     /**
      * MediaFire asks for a captcha if it detects a lot of downloads from an IP.
      * The captcha has to be solved only once; after that, several downloads can
-     * proceed normally without entering further captchas. These locks are used
+     * proceed normally without entering further captchas. These states are used
      * to ensure that a captcha only has to be solved once per IP, and that
      * downloads without a captcha can still be processed in parallel.
      */
@@ -101,32 +100,21 @@ class MediafireRunner extends AbstractRunner {
             if (!isCaptcha()) {
                 break;
             }
-            final Lock lock = captchaState.getLock();
-            if (lock.tryLock()) {
-                try {
-                    final boolean alreadySolved = captchaState.setSolved();
-                    /**
-                     * Was the captcha solved while we were in the initial
-                     * request? If so, reload the page.
-                     */
-                    if (!alreadySolved) {
-                        /**
-                         * We were the first to notice the captcha. Solve it.
-                         */
-                        stepCaptcha();
-                        removeCaptchaState();
-                        break;
-                    }
-                } finally {
-                    lock.unlock();
-                }
+            if (captchaState.setSolved()) {
+                /**
+                 * We were the first to notice the captcha.
+                 * Solve it and signal others that we did so.
+                 */
+                stepCaptcha();
+                removeCaptchaState();
+                captchaState.getLatch().countDown();
+                break;
             } else {
                 /**
                  * Somebody else is already solving the captcha.
                  * Wait for that and reload the page.
                  */
-                lock.lockInterruptibly();
-                lock.unlock();
+                captchaState.getLatch().await();
             }
         }
 
@@ -153,12 +141,8 @@ class MediafireRunner extends AbstractRunner {
     }
 
     private static class CaptchaState {
-        private final Lock lock = new ReentrantLock();
         private final AtomicBoolean solved = new AtomicBoolean();
-
-        public Lock getLock() {
-            return lock;
-        }
+        private final CountDownLatch latch = new CountDownLatch(1);
 
         /**
          * Sets the state of this captcha to solved.
@@ -169,6 +153,10 @@ class MediafireRunner extends AbstractRunner {
          */
         public boolean setSolved() {
             return !solved.getAndSet(true);
+        }
+
+        public CountDownLatch getLatch() {
+            return latch;
         }
     }
 

@@ -4,8 +4,19 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,39 +61,33 @@ class NickFileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-
-            Matcher matcher = getMatcherAgainstContent("type\\s*:\\s*\"(.+?)\"");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("type not found");
+            final String mgid = getMgid();
+            method = getGetMethod("http://www.nick.com/dynamo/video/data/mrssGen.jhtml?mgid=" + mgid);
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
-            final String type = matcher.group(1);
-            matcher = getMatcherAgainstContent("site\\s*:\\s*\"(.+?)\"");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("site not found");
-            }
-            final String site = matcher.group(1);
-            matcher = getMatcherAgainstContent("cmsId\\s*:\\s*(\\d+)");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("cmsId not found");
-            }
-            final String cmsId = matcher.group(1);
-
-            final String mgid = "mgid:cms:" + type + ":" + site + ":" + cmsId;
-            method = getGetMethod("http://www.nick.com/dynamo/video/data/mediaGen.jhtml?mgid=" + mgid);
-            if (makeRedirectedRequest(method)) {
+            final List<URI> videoItems = getVideoItems();
+            if (videoItems.size() > 1) {
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, videoItems);
+                httpFile.getProperties().put("removeCompleted", true);
+            } else {
+                method = getGetMethod("http://www.nick.com/dynamo/video/data/mediaGen.jhtml?mgid=" + mgid);
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
                 final String url = getStreamUrl();
                 if (!url.startsWith("rtmp")) {
                     throw new NotRecoverableDownloadException("This video is unavailable from your location");
                 }
                 final RtmpSession rtmpSession = new RtmpSession(url);
-                if (!rtmpSession.getPlayName().startsWith("mp4:")) {
-                    rtmpSession.setPlayName("mp4:" + rtmpSession.getPlayName());
+                final String playName = rtmpSession.getPlayName();
+                if (playName.endsWith(".mp4") && !playName.startsWith("mp4:")) {
+                    rtmpSession.setPlayName("mp4:" + playName);
                 }
                 rtmpSession.getConnectParams().put("pageUrl", fileURL);
                 tryDownloadAndSaveFile(rtmpSession);
-            } else {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
             }
         } else {
             checkProblems();
@@ -90,16 +95,74 @@ class NickFileRunner extends AbstractRtmpRunner {
         }
     }
 
+    private String getMgid() throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("type\\s*:\\s*\"(.+?)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("type not found");
+        }
+        final String type = matcher.group(1);
+        matcher = getMatcherAgainstContent("site\\s*:\\s*\"(.+?)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("site not found");
+        }
+        final String site = matcher.group(1);
+        matcher = getMatcherAgainstContent("cmsId\\s*:\\s*(\\d+)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("cmsId not found");
+        }
+        final String cmsId = matcher.group(1);
+        return "mgid:cms:" + type + ":" + site + ":" + cmsId;
+    }
+
+    private List<URI> getVideoItems() throws ErrorDuringDownloadingException {
+        try {
+            final Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
+                    new ByteArrayInputStream(getContentAsString().getBytes("UTF-8"))
+            );
+            final XPath xpath = XPathFactory.newInstance().newXPath();
+            final NodeList nodeList = (NodeList) xpath.evaluate("/rss/channel/item/link", document, XPathConstants.NODESET);
+            final List<URI> list = new LinkedList<URI>();
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                try {
+                    list.add(new URI(nodeList.item(i).getTextContent()));
+                } catch (final URISyntaxException e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+            if (list.isEmpty()) {
+                throw new PluginImplementationException("No video items found");
+            }
+            return list;
+        } catch (final ErrorDuringDownloadingException e) {
+            throw e;
+        } catch (final Exception e) {
+            throw new PluginImplementationException(e);
+        }
+    }
+
     private String getStreamUrl() throws ErrorDuringDownloadingException {
-        final List<Stream> list = new LinkedList<Stream>();
-        final Matcher matcher = getMatcherAgainstContent("<rendition[^<>]+?bitrate=\"(\\d+)\"[^<>]+?>\\s*<src>([^<>]+?)</src>\\s*</rendition>");
-        while (matcher.find()) {
-            list.add(new Stream(matcher.group(2), Integer.parseInt(matcher.group(1))));
+        try {
+            final Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
+                    new ByteArrayInputStream(getContentAsString().getBytes("UTF-8"))
+            );
+            final XPath xpath = XPathFactory.newInstance().newXPath();
+            final NodeList nodeList = (NodeList) xpath.evaluate("/package/video/item/rendition[@bitrate!='']", document, XPathConstants.NODESET);
+            final List<Stream> list = new LinkedList<Stream>();
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                final Node node = nodeList.item(i);
+                final String src = xpath.evaluate("./src", node);
+                final int bitrate = Integer.parseInt(node.getAttributes().getNamedItem("bitrate").getTextContent());
+                list.add(new Stream(src, bitrate));
+            }
+            if (list.isEmpty()) {
+                throw new PluginImplementationException("No streams found");
+            }
+            return Collections.max(list).getUrl();
+        } catch (final ErrorDuringDownloadingException e) {
+            throw e;
+        } catch (final Exception e) {
+            throw new PluginImplementationException(e);
         }
-        if (list.isEmpty()) {
-            throw new PluginImplementationException("No streams found");
-        }
-        return Collections.max(list).getUrl();
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

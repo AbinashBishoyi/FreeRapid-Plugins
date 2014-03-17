@@ -83,7 +83,7 @@ public class RtmpSession {
     }
 
     public RtmpSession(String url) throws PluginImplementationException {
-        Pattern pattern = Pattern.compile("(rtmp.?)://([^/:]+)(:[0-9]+)?/([^/]+)/(.*)");
+        Pattern pattern = Pattern.compile("(rtmpe?)://([^/:]+)(:[0-9]+)?/([^/]+)/(.*)");
         Matcher matcher = pattern.matcher(url);
         if (!matcher.matches()) {
             throw new PluginImplementationException("Invalid RTMP url: " + url);
@@ -168,12 +168,14 @@ public class RtmpSession {
 
     public void initSwfVerification(File localSwfFile) {
         logger.fine("initializing swf verification data for: " + localSwfFile.getAbsolutePath());
-        byte[] bytes = Utils.readAsByteArray(localSwfFile);
-        logger.fine("swf size: " + bytes.length);
-        byte[] hash = Utils.sha256(bytes, Handshake.CLIENT_CONST);
-        logger.fine("swf hash: " + Utils.toHex(hash));
-        swfSize = bytes.length;
-        swfHash = hash;
+        try {
+            swfHash = new byte[32];
+            swfSize = SwfVerificationHelper.getSwfHash(localSwfFile, swfHash);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        logger.fine("swf hash: " + Utils.toHex(swfHash, false));
+        logger.fine("swf size: " + swfSize);
     }
 
     //==========================================================================

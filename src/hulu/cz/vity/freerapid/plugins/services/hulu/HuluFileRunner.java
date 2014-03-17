@@ -40,6 +40,24 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
     private final static String DECRYPT_KEY = "625298045c1db17fe3489ba7f1eba2f208b3d2df041443a72585038e24fc610b";
     private final static String DECRYPT_IV = "V@6i`q6@FTjdwtui";
 
+    private final static CryptographySupport crypto;
+
+    static {
+        try {
+            final byte[] key = Hex.decodeHex(DECRYPT_KEY.toCharArray());
+            final byte[] iv = DECRYPT_IV.getBytes("UTF-8");
+            for (int i = 0; i < key.length; i++) {
+                key[i] = (byte) (key[i] ^ 42);
+            }
+            for (int i = 0; i < iv.length; i++) {
+                iv[i] = (byte) (iv[i] ^ 1);
+            }
+            crypto = new CryptographySupport().setEngine(Engine.AES).setMode(Mode.CBC).setPadding(Padding.PKCS7).setKey(key).setIV(iv);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private final String sessionId = getSessionId();
 
     @Override
@@ -222,40 +240,17 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
 
     private static String getContentSelectUrl(final String pid) {
         final byte[] hash = md5(pid + MD5_SALT);
-        final StringBuilder sb = new StringBuilder(32);
-        for (final byte b : hash) {
-            final String hex = Integer.toHexString(b & 0xff);
-            if (hex.length() == 1) {
-                sb.append('0');
-            }
-            sb.append(hex);
-        }
-        return "http://s.hulu.com/select.ashx?pid=" + pid + "&auth=" + sb.toString() + "&v=713434170&np=1&pp=hulu&dp_id=hulu&cb=" + new Random().nextInt(1000);
+        final String auth = new String(Hex.encodeHex(hash));
+        return "http://s.hulu.com/select.ashx?pid=" + pid + "&auth=" + auth + "&v=713434170&np=1&pp=hulu&dp_id=hulu&cb=" + new Random().nextInt(1000);
     }
 
     private static String decryptContentSelect(final String toDecrypt) throws Exception {
-        final byte[] key = Hex.decodeHex(DECRYPT_KEY.toCharArray());
-        final byte[] iv = DECRYPT_IV.getBytes("UTF-8");
-        for (int i = 0; i < key.length; i++) {
-            key[i] = (byte) (key[i] ^ 42);
-        }
-        for (int i = 0; i < iv.length; i++) {
-            iv[i] = (byte) (iv[i] ^ 1);
-        }
-        return new CryptographySupport().setEngine(Engine.AES).setMode(Mode.CBC).setPadding(Padding.PKCS7).setKey(key).setIV(iv).decrypt(toDecrypt);
+        return crypto.decrypt(toDecrypt);
     }
 
     private static String getSessionId() {
         final byte[] hash = md5(String.valueOf(System.currentTimeMillis() + new Random().nextInt()));
-        final StringBuilder sb = new StringBuilder(32);
-        for (final byte b : hash) {
-            final String hex = Integer.toHexString(b & 0xff);
-            if (hex.length() == 1) {
-                sb.append('0');
-            }
-            sb.append(hex);
-        }
-        return sb.toString().toUpperCase(Locale.ENGLISH);
+        return new String(Hex.encodeHex(hash)).toUpperCase(Locale.ENGLISH);
     }
 
 }

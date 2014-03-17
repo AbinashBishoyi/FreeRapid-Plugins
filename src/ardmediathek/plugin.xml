@@ -1,20 +1,19 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hulu.com" version="1.0.1" vendor="ntoskrnl"
-        class="cz.vity.freerapid.plugins.services.hulu.HuluServiceImpl">
+<plugin id="ardmediathek.de" version="1.0.0" vendor="ntoskrnl"
+        class="cz.vity.freerapid.plugins.services.ardmediathek.ArdMediathekServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?hulu\.com/watch/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?ardmediathek\.de/ard/servlet/content/.+"/>
         <attribute id="minver" value="0.849"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="hulu.com"/>
+        <attribute id="services" value="ardmediathek.de"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
         <import plugin-id="rtmp" plugin-version="1.0.7" match="greater-or-equal"/>
-        <import plugin-id="cryptography" plugin-version="1.0" match="greater-or-equal"/>
     </requires>
     <runtime>
-        <library id="hulu.com" path="/" type="code"/>
+        <library id="ardmediathek.de" path="/" type="code"/>
     </runtime>
 </plugin>

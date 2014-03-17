@@ -38,8 +38,8 @@ class LetitbitRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Size of file::</span>", "</h1>");
-        PlugUtils.checkName(httpFile, contentAsString, "File::</span>", "</h1>");
+        PlugUtils.checkName(httpFile, contentAsString, "File:: <span>", "</span>");
+        PlugUtils.checkFileSize(httpFile, contentAsString, "[<span>", "</span>]");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

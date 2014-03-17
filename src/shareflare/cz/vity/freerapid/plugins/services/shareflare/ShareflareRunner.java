@@ -73,7 +73,7 @@ class ShareflareRunner extends AbstractRunner {
             captchatry++;
         } while (getContentAsString().contains("history.go(-1)"));
 
-        final HttpMethod httpMethod3 = getMethodBuilder().setReferer(methodBuilder.getEscapedURI()).setActionFromIFrameSrcWhereTagContains("topFrame").toGetMethod();
+        final HttpMethod httpMethod3 = getMethodBuilder().setReferer(methodBuilder.getEscapedURI()).setActionFromIFrameSrcWhereTagContains("name=\"topFrame\"").toGetMethod();
         if (!makeRedirectedRequest(httpMethod3)) {
             checkProblems();
             throw new ServiceConnectionProblemException();

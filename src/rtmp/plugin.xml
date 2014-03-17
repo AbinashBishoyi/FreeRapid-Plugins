@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="rtmp" version="1.0.7" vendor="ntoskrnl"
+<plugin id="rtmp" version="1.0.8" vendor="ntoskrnl"
         class="cz.vity.freerapid.plugins.LibraryPlugin">
     <attributes>
         <attribute id="libraryPlugin" value="true"/>

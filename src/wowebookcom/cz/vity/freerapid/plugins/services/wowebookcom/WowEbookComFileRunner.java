@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 /**
  * Class which contains main code
  *
- * @author CrazyCoder
+ * @author CrazyCoder, Abinash Bishoyi
  */
 class WowEbookComFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(WowEbookComFileRunner.class.getName());
@@ -52,8 +52,8 @@ class WowEbookComFileRunner extends AbstractRunner {
             if (makeRedirectedRequest(method)) {
                 checkProblems();
 
-                final String code = PlugUtils.getStringBetween(getContentAsString(), "download/", "/");
-                final String directURL = "http://www.wowebook.be/download/" + code + "/";
+                final String code = PlugUtils.getStringBetween(getContentAsString(), "download/", "\"");
+                final String directURL = "http://www.wowebook.be/download/" + code;
 
                 httpFile.setNewURL(new URL(getRedirectedLink(directURL)));
                 httpFile.setPluginID("");

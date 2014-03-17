@@ -11,6 +11,7 @@ import org.apache.commons.httpclient.URIException;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -68,6 +69,7 @@ class UploadBoxFileRunner extends AbstractRunner {
                         throw new IOException("File input stream is empty");
                     }
                 } else {
+                    checkAllProblems();
                     throw new PluginImplementationException("Captcha form was not found");
                 }
             } else {
@@ -98,6 +100,10 @@ class UploadBoxFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("You already download some file. Please finish download and try again", 2 * 60);
         }
 
+        if (contentAsString.contains("he limit of traffic for you is exceeded")) {
+            int wait = PlugUtils.getWaitTimeBetween(contentAsString, "wait <strong>", "</strong> minutes", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("The limit of traffic for you is exceeded.", wait);
+        }
 
     }
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="netload.in" version="1.0.6" vendor="Lukiz+JPEXS"
+<plugin id="netload.in" version="1.0.7" vendor="Lukiz+JPEXS"
         class="cz.vity.freerapid.plugins.services.netloadin.NetloadInShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?netload\.in/.+"/>

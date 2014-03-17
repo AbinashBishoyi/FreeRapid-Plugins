@@ -239,6 +239,9 @@ class NetloadInRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("404 - Not Found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
         Matcher matcher;
         matcher = getMatcherAgainstContent("You could download your next file in.*countdown\\(([0-9]+)");
         if (matcher.find()) {

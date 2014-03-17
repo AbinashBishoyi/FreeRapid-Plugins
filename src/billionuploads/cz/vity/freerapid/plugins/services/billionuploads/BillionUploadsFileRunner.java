@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.billionuploads;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
@@ -66,13 +67,29 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
 
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        final String secretInput = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "decodeURIComponent(\"", "\")"), "UTF-8");
+        final String content = getContentAsString();
+        if (!content.contains("decodeURIComponent("))
+            throw new PluginImplementationException("error loading page");
+        final String secretInput = URLDecoder.decode(PlugUtils.getStringBetween(content, "decodeURIComponent(\"", "\")"), "UTF-8");
         final String name = PlugUtils.getStringBetween(secretInput, " name=\"", "\"");
         final String value = PlugUtils.getStringBetween(secretInput, " value=\"", "\"");
-        final String hiddenInput = PlugUtils.getStringBetween(getContentAsString(), "$('form[name=\"F1\"]').append($(document.createElement('input'))", "))");
+        final String hiddenInput = PlugUtils.getStringBetween(content, "$('form[name=\"F1\"]').append($(document.createElement('input'))", "))");
         final String name2 = PlugUtils.getStringBetween(hiddenInput, "'name','", "'");
-        final String value2 = PlugUtils.getStringBetween(hiddenInput, ".val('", "'");
-        return super.getXFSMethodBuilder().setParameter(name, value).setParameter(name2, value2).removeParameter("rand");
+        String value2;
+        try {
+            value2 = PlugUtils.getStringBetween(hiddenInput, ".val('", "'");
+        } catch (Exception e) {
+            final String tag = PlugUtils.getStringBetween(hiddenInput, "source=\"", "\"");
+            final Matcher matchTag = PlugUtils.matcher("<.+?\"" + tag + "\".+?>(.+?)<", content);
+            if (!matchTag.find())
+                throw new PluginImplementationException("Error processing download form");
+            value2 = matchTag.group(1);
+        }
+        MethodBuilder builder = super.getXFSMethodBuilder().setParameter(name, value).setParameter(name2, value2);
+        final Matcher match2remove = PlugUtils.matcher("\\('input\\[name=\"(.+?)\"\\]'\\).remove\\(\\)", content);
+        while (match2remove.find())
+            builder.removeParameter(match2remove.group(1));
+        return builder;
     }
 
     @Override

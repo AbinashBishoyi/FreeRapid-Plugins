@@ -79,7 +79,9 @@ class QjwmRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("URL was not found") || getContentAsString().contains("404 Not Found")) {
+        if (getContentAsString().contains("www.safedog.cn")) {
+            throw new ErrorDuringDownloadingException("Proxy download forbidden");
+        } else if (getContentAsString().contains("URL was not found") || getContentAsString().contains("404 Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

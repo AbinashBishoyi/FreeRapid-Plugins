@@ -3,10 +3,12 @@ package cz.vity.freerapid.plugins.services.ctdisk;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.awt.image.BufferedImage;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -16,6 +18,8 @@ import java.util.regex.Matcher;
  */
 class CtdiskRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CtdiskRunner.class.getName());
+    private static final int CAPTCHA_MAX = 10;
+    private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
@@ -60,6 +64,8 @@ class CtdiskRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
                     break;
+                } else {
+                    makeRedirectedRequest(method);
                 }
             }
         } else {
@@ -88,7 +94,7 @@ class CtdiskRunner extends AbstractRunner {
         if (getContentAsString().contains("对不起，这个文件已到期或被删除。") || getContentAsString().contains("404 Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         } else if (getContentAsString().contains("<br />1.") && getContentAsString().contains("<br />2.")) {
-            throw new PluginImplementationException("Your IP is downloading.");
+            throw new ErrorDuringDownloadingException("Your IP is downloading.");
         }
     }
 
@@ -100,11 +106,37 @@ class CtdiskRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private HttpMethod stepCaptcha(final String fileId) throws Exception {
+    private HttpMethod stepCaptcha_old(final String fileId) throws Exception {
         String captcha = getCaptchaSupport().getCaptcha(String.format("http://www.ctdisk.com/randcodeV2.php?fid=%s&rand=%f", fileId, 1.0));
 
         return getMethodBuilder().setReferer(fileURL).setAction("http://www.ctdisk.com/guest_loginV2.php")
                 .setParameter("file_id", fileId).setParameter("randcode", captcha).toPostMethod();
     }
 
+    private HttpMethod stepCaptcha(final String fileId) throws Exception {
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final String captchaURL = String.format("http://www.ctdisk.com/randcodeV2.php?fid=%s&rand=%f", fileId, 1.0);
+        logger.info("Captcha URL " + captchaURL);
+        final String captcha;
+        String captcha_result;
+        if (captchaCounter <= CAPTCHA_MAX) {
+            final BufferedImage captchaImage = captchaSupport.getCaptchaImage(captchaURL);
+            captcha = PlugUtils.recognize(captchaImage, "-C 0-9");
+            if (captcha == null) {
+                logger.info("Could not separate captcha letters (attempt " + captchaCounter + " of " + CAPTCHA_MAX + ")");
+            }
+            captcha_result = captcha.replaceAll("\\D", "");
+            logger.info("Attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", OCR recognized " + captcha_result);
+            captchaCounter++;
+        } else {
+            captcha_result = captchaSupport.getCaptcha(captchaURL);
+            if (captcha_result == null) throw new CaptchaEntryInputMismatchException();
+            logger.info("Manual captcha " + captcha_result);
+        }
+        return getMethodBuilder(getContentAsString())
+                .setReferer(fileURL)
+                .setActionFromFormByName("user_form", true)
+                .setParameter("randcode", captcha_result)
+                .toPostMethod();
+    }
 }

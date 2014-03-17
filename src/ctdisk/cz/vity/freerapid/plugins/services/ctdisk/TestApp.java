@@ -22,7 +22,7 @@ public class TestApp extends PluginDevApplication {
 //            httpFile.setNewURL(new URL("http://www.ctdisk.com/file/2797200"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("61.50.138.124", 3128); //eg we can use local proxy to sniff HTTP communication
+//            connectionSettings.setProxy("61.50.138.124", 3128); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CtdiskShareServiceImpl service = new CtdiskShareServiceImpl(); //instance of service - of our plugin
 //            testRun(service, httpFile, connectionSettings);//download file with service and its Runner

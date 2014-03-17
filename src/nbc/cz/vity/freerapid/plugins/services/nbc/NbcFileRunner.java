@@ -86,7 +86,7 @@ class NbcFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer {
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
-            final String playName = PlugUtils.getStringBetween(getContentAsString(), "<ref src=\"", "\"");
+            final String playName = PlugUtils.getStringBetween(getContentAsString(), "<ref src=\"", "\"").replace(".flv", "");
 
             method = getGetMethod("http://videoservices.nbcuni.com/player/config?configId=16009&version=2&clear=true");
             if (!makeRedirectedRequest(method)) {
@@ -97,6 +97,7 @@ class NbcFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer {
 
             final RtmpSession rtmpSession = new RtmpSession(host, 1935, app, playName);
             rtmpSession.getConnectParams().put("swfUrl", "http://www.nbc.com/assets/video/4-0/swf/core/video_player_extension.swf");
+            rtmpSession.getConnectParams().put("pageUrl", fileURL);
             tryDownloadAndSaveFile(rtmpSession);
         } else {
             checkProblems();

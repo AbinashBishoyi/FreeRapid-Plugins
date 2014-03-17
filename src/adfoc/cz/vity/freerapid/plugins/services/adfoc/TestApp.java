@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.beemp3;
+package cz.vity.freerapid.plugins.services.adfoc;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,13 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://beemp3.com/download.php?file=901995&song=enter+sandman"));
-            httpFile.setNewURL(new URL("http://beemp3s.org/download.php?file=33464410&song=Bruno+Mars-Treasure"));
+            httpFile.setNewURL(new URL("http://adfoc.us/x34252449"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final BeeMP3ServiceImpl service = new BeeMP3ServiceImpl(); //instance of service - of our plugin
+            final AdFocServiceImpl service = new AdFocServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

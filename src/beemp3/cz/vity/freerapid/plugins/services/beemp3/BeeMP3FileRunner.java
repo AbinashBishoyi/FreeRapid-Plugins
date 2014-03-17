@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.beemp3;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -27,6 +24,7 @@ class BeeMP3FileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception { //this method validates file
+        if (fileURL.contains("beemp3.com/")) fileURL = fileURL.replaceFirst("beemp3.com/", "beemp3s.org/");
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
@@ -39,8 +37,12 @@ class BeeMP3FileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1><span>", "</span></h1>");
-        Matcher match = PlugUtils.matcher("Filesize:</th>\\s+?<td> <b>(.+?)</b></td>", content);
+        Matcher match = PlugUtils.matcher("<h1.*?>(.+?)<", content);
+        if (!match.find()) {
+            throw new PluginImplementationException("File size not found");
+        }
+        httpFile.setFileName(match.group(1).trim());
+        match = PlugUtils.matcher("Filesize:</th>\\s+?<td><b.*?>(.+?)<", content);
         if (!match.find()) {
             throw new PluginImplementationException("File size not found");
         }
@@ -50,6 +52,7 @@ class BeeMP3FileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
+        if (fileURL.contains("beemp3.com/")) fileURL = fileURL.replaceFirst("beemp3.com/", "beemp3s.org/");
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
@@ -63,9 +66,9 @@ class BeeMP3FileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
                 httpMethod = stepCaptcha(getMethodBuilder().setReferer(fileURL)
-                        .setAction("http://beemp3.com/chk_cd.php")
+                        .setAction("http://beemp3s.org/chk_cd.php")
                         .setParameter("id", PlugUtils.getStringBetween(getContentAsString(), "var idm =\"", "\";"))
-                ).toPostMethod();
+                ).toGetMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
                     throw new PluginImplementationException("Error processing captcha");
@@ -97,8 +100,10 @@ class BeeMP3FileRunner extends AbstractRunner {
 
     private MethodBuilder stepCaptcha(MethodBuilder method) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaImg = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
+        final String captchaImg = getMethodBuilder().setBaseURL("http://beemp3s.org/").setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
         String captchaTxt = captchaSupport.getCaptcha(captchaImg);
+        if (captchaTxt == null)
+            throw new CaptchaEntryInputMismatchException("Captcha responce is required");
 
         if (captchaTxt.contains("+") || captchaTxt.contains("-") || captchaTxt.contains("*") || captchaTxt.contains("/")) {
             ScriptEngineManager mgr = new ScriptEngineManager();

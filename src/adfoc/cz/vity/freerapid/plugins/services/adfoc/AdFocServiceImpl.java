@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.beemp3;
+package cz.vity.freerapid.plugins.services.adfoc;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -8,21 +8,21 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class BeeMP3ServiceImpl extends AbstractFileShareService {
+public class AdFocServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "beemp3s.org";
+        return "adfoc.us";
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;
+        return false;
     }
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new BeeMP3FileRunner();
+        return new AdFocFileRunner();
     }
 
 }

@@ -25,7 +25,7 @@ import java.util.regex.Matcher;
  */
 class Channel5FileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(Channel5FileRunner.class.getName());
-    private final static String SWF_URL = "http://admin.brightcove.com/viewer/us20120911.1533/connection/ExternalConnection_2.swf";
+    private final static String SWF_URL = "http://admin.brightcove.com/viewer/us20130204.1211/connection/ExternalConnection_2.swf";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     @Override
@@ -192,9 +192,10 @@ class Channel5FileRunner extends AbstractRtmpRunner {
                 logger.warning(s);
                 throw new PluginImplementationException("Error parsing stream URL");
             }
-            url = String.format("%s?videoId=%s&lineUpId=&pubId=%s&playerId=1707001745001&affiliateId=",
-                    matcher.group(1), videoId, pubId);
-            playName = matcher.group(2);
+            final String params = String.format("?videoId=%s&lineUpId=&pubId=%s&playerId=1707001745001&affiliateId=",
+                    videoId, pubId);
+            url = matcher.group(1) + params;
+            playName = matcher.group(2) + params;
             matcher = PlugUtils.matcher("\\b(\\d+)k\\b", playName);
             if (!matcher.find()) {
                 logger.warning(s);

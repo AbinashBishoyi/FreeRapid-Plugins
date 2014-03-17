@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 class DailymotionRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DailymotionRunner.class.getName());
     private final static String SUBTITLE_SEPARATOR = "?";
+    private final static String DEFAULT_FILE_EXT = ".mp4";
     private final static String[] qualityUrlKeyMap = {"ldURL", "sdURL", "hqURL", "hd720URL"};
     private DailymotionSettingsConfig config;
 
@@ -50,9 +51,7 @@ class DailymotionRunner extends AbstractRunner {
         addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
         addCookie(new Cookie(".dailymotion.com", "lang", "en_EN", "/", 86400, false));
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
-        if (isPlaylist() || isGroup() || isSubtitle()) {
-            //do nothing
-        } else {
+        if (!(isPlaylist() || isGroup() || isSubtitle())) {
             checkName();
         }
     }
@@ -70,7 +69,7 @@ class DailymotionRunner extends AbstractRunner {
         }
         checkProblems();
         PlugUtils.checkName(httpFile, getContentAsString(), "\"title\":\"", "\"");
-        httpFile.setFileName(httpFile.getFileName() + ".mp4");
+        httpFile.setFileName(httpFile.getFileName() + DEFAULT_FILE_EXT);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -108,7 +107,7 @@ class DailymotionRunner extends AbstractRunner {
                 final Matcher matcher = PlugUtils.matcher(urlRegex, sequence);
                 if (matcher.find()) {
                     final String url = matcher.group(1);
-                    DailymotionVideo dmv = new DailymotionVideo(i, urlKey, url);
+                    final DailymotionVideo dmv = new DailymotionVideo(i, urlKey, url);
                     logger.info(dmv.toString());
                     dmvList.add(dmv);
                 }
@@ -129,10 +128,7 @@ class DailymotionRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("We can't find the page you're looking for")
-                || contentAsString.contains("video has been removed")
-                || contentAsString.contains("Page Gone")
-                || contentAsString.contains("\"message\":\"Can not find the object")
+        if (contentAsString.contains("\"message\":\"Can not find the object")
                 || contentAsString.contains("\"message\":\"This video has been censored.\"")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
@@ -161,6 +157,7 @@ class DailymotionRunner extends AbstractRunner {
                     .setParameter("fields", uriListType == UriListType.VIDEOS ? "url" : "language,url")
                     .toGetMethod();
             if (!makeRedirectedRequest(method)) {
+                checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
@@ -177,7 +174,7 @@ class DailymotionRunner extends AbstractRunner {
                 final Matcher matcher = getMatcherAgainstContent("\"language\":\"(.+?)\",\"url\":\"(.+?)\"");
                 while (matcher.find()) {
                     try {
-                        final String title = httpFile.getFileName().replace(".mp4", "");
+                        final String title = httpFile.getFileName().replace(DEFAULT_FILE_EXT, "");
                         final String language = matcher.group(1);
                         //add title and language to tail, so we can extract it later
                         //http://static2.dmcdn.net/static/video/339/362/35263933:subtitle_en.srt -> original subtitle url
@@ -191,7 +188,6 @@ class DailymotionRunner extends AbstractRunner {
             }
         } while (getContentAsString().contains("\"has_more\":true"));
         return uriList;
-
     }
 
     private void queueLinks(final List<URI> uriList) throws PluginImplementationException {
@@ -248,7 +244,7 @@ class DailymotionRunner extends AbstractRunner {
     }
 
     private boolean isSubtitle() {
-        return fileURL.contains("dmcdn.net/static/");
+        return fileURL.matches("http://.*?dmcdn\\.net/static/.+?\\.srt/.+");
     }
 
     //reference : http://www.dailymotion.com/doc/api/obj-video.html#obj-video-cnx-subtitles
@@ -257,11 +253,11 @@ class DailymotionRunner extends AbstractRunner {
         final String action = String.format("https://api.dailymotion.com/video/%s/subtitles", videoId);
         final List<URI> uriList = getURIList(action, UriListType.SUBTITLES);
         if (uriList.isEmpty()) {
-            logger.warning("No subtitles found");
+            logger.info("No subtitles found");
+        } else {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+            logger.info(uriList.size() + " subtitles added");
         }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        logger.info(uriList.size() + " subtitles added");
-
     }
 
     private void downloadSubtitle() throws Exception {
@@ -282,6 +278,7 @@ class DailymotionRunner extends AbstractRunner {
     }
 
     private class DailymotionVideo implements Comparable<DailymotionVideo> {
+        private final static int NEAREST_LOWER_PENALTY = 10;
         private final int quality;
         private final String qualityUrlKey;
         private final String url;
@@ -296,7 +293,7 @@ class DailymotionRunner extends AbstractRunner {
 
         private void calcWeight() {
             final int configQuality = config.getQualitySetting();
-            weight = ((quality - configQuality) < 0) ? (Math.abs(quality - configQuality) + 10) : (quality - configQuality); //+10 = nearest lower penalty, prefer nearest better if the same quality doesn't exist
+            weight = ((quality - configQuality) < 0) ? (Math.abs(quality - configQuality) + NEAREST_LOWER_PENALTY) : (quality - configQuality); //prefer nearest better if the same quality doesn't exist
         }
 
         @Override

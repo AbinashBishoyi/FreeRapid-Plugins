@@ -113,7 +113,7 @@ class DailymotionRunner extends AbstractRunner {
             }
             final String swfStr = swfToString(is);
             final String sequence;
-            boolean sequenceInManifest = false;
+            List<DailyMotionVideo> dailyMotionVideos;
             if (swfStr.contains("ldURL")) { //mp4
                 //find sequence in swf
                 // \Q = begin quote, \E = end quote
@@ -123,14 +123,7 @@ class DailymotionRunner extends AbstractRunner {
                 }
                 sequence = matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/");
                 logger.info("Sequence found in SWF");
-            } else if (swfStr.contains("video_url") && (config.getVideoQuality() == VideoQuality._380)) { //380p mp4, higher priority than 380p flv
-                //find 380p mp4 single quality sequence in swf
-                Matcher matcher = PlugUtils.matcher("(\\Q\\\"video_url\\\":\\\"\\E[^,]+?),", swfStr);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Sequence (380p mp4) not found in SWF");
-                }
-                sequence = URLDecoder.decode(matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/").replace("video_url", "sdURL"), "UTF-8");
-                logger.info("Sequence (380p mp4) found in SWF");
+                dailyMotionVideos = getDailyMotionVideosFromSequence(sequence, "MP4");
             } else if (swfStr.contains("autoURL")) { //flv
                 //find manifest in swf
                 Matcher matcher = PlugUtils.matcher("\\Q\\\"autoURL\\\":\\\"\\E(.+?)(?:\\Q\\\",\\\"cdn\\E|\\Q\\\",\\\"allowStageVideo\\E)", swfStr);
@@ -148,21 +141,31 @@ class DailymotionRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
                 checkProblems();
+                logger.info("Manifest found in SWF");
                 logger.info("Manifest content : " + getContentAsString());
                 //find sequence in manifest
                 sequence = manifestToSequence(getContentAsString());
-                sequenceInManifest = true;
-                httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", ".flv"));
                 logger.info("Sequence found in manifest");
+                dailyMotionVideos = getDailyMotionVideosFromSequence(sequence, "FLV");
+
+                if (swfStr.contains("video_url")) { //380p mp4, higher priority than 380p flv
+                    //find 380p mp4 single quality sequence in swf
+                    matcher = PlugUtils.matcher("\\Q\\\"video_url\\\":\\\"\\E(.+?)\\Q\\\",\\E", swfStr);
+                    if (!matcher.find()) {
+                        throw new PluginImplementationException("Sequence (380p mp4) not found in SWF");
+                    }
+                    logger.info("Sequence (380p mp4) found in SWF");
+                    dailyMotionVideos.add(new DailyMotionVideo(VideoQuality._380, "MP4", URLDecoder.decode(matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/"), "UTF-8")));
+                }
             } else {
                 throw new PluginImplementationException("External video channel is not supported");
             }
 
-            final DailyMotionVideo dmv = getSelectedDailyMotionVideo(sequence);
+            final DailyMotionVideo dmv = getSelectedDailyMotionVideo(dailyMotionVideos);
             logger.info("Quality setting : " + config.getVideoQuality());
             logger.info("Video to be downloaded : " + dmv);
             String url = dmv.url;
-            if (sequenceInManifest) {
+            if (dmv.container.equalsIgnoreCase("FLV")) {
                 method = getMethodBuilder()
                         .setReferer(swfUrl)
                         .setAction(url)
@@ -176,6 +179,7 @@ class DailymotionRunner extends AbstractRunner {
                 final String baseUrl = "vid2.ec.dmcdn.net";
                 //get the original url, not the fragmented ones
                 url = "http://" + baseUrl + PlugUtils.getStringBetween(getContentAsString(), "\"template\":\"", "\",").replace("frag($fragment$)/", "");
+                httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", ".flv"));
             }
             client.setReferer(fileURL);
             method = getGetMethod(urlDecode(url).replace("\\", ""));
@@ -206,24 +210,30 @@ class DailymotionRunner extends AbstractRunner {
         return sequenceSb.toString();
     }
 
-    private DailyMotionVideo getSelectedDailyMotionVideo(String sequence) throws PluginImplementationException {
-        final List<DailyMotionVideo> dmvList = new LinkedList<DailyMotionVideo>();
-        logger.info("Available videos :");
+    private List<DailyMotionVideo> getDailyMotionVideosFromSequence(String sequence, String container) throws PluginImplementationException {
+        final List<DailyMotionVideo> dailyMotionVideos = new LinkedList<DailyMotionVideo>();
         for (VideoQuality videoQuality : VideoQuality.getItems()) {
             final String qualityToken = videoQuality.getQualityToken();
             final String urlRegex = String.format("\"%s\":\"(.+?)\"", qualityToken);
             final Matcher matcher = PlugUtils.matcher(urlRegex, sequence);
             if (matcher.find()) {
                 final String url = matcher.group(1);
-                final DailyMotionVideo dmv = new DailyMotionVideo(videoQuality, url);
-                logger.info(dmv.toString());
-                dmvList.add(dmv);
+                final DailyMotionVideo dmv = new DailyMotionVideo(videoQuality, container, url);
+                dailyMotionVideos.add(dmv);
             }
         }
-        if (dmvList.isEmpty()) {
+        return dailyMotionVideos;
+    }
+
+    private DailyMotionVideo getSelectedDailyMotionVideo(List<DailyMotionVideo> dailyMotionVideos) throws PluginImplementationException {
+        logger.info("Available videos :");
+        for (DailyMotionVideo dmv : dailyMotionVideos) {
+            logger.info(dmv.toString());
+        }
+        if (dailyMotionVideos.isEmpty()) {
             throw new PluginImplementationException("No available video");
         }
-        return Collections.min(dmvList);
+        return Collections.min(dailyMotionVideos);
     }
 
     private String swfToString(InputStream is) throws Exception {
@@ -407,12 +417,15 @@ class DailymotionRunner extends AbstractRunner {
 
     private class DailyMotionVideo implements Comparable<DailyMotionVideo> {
         private final static int NEAREST_LOWER_PENALTY = 10;
+        private final static int FLV_PENALTY = 1;
         private final VideoQuality videoQuality;
+        private final String container;
         private final String url;
         private int weight;
 
-        private DailyMotionVideo(final VideoQuality videoQuality, final String url) {
+        private DailyMotionVideo(final VideoQuality videoQuality, final String container, final String url) {
             this.videoQuality = videoQuality;
+            this.container = container;
             this.url = url;
             calcWeight();
         }
@@ -421,6 +434,9 @@ class DailymotionRunner extends AbstractRunner {
             final VideoQuality configQuality = config.getVideoQuality();
             final int deltaQ = videoQuality.getQuality() - configQuality.getQuality();
             weight = (deltaQ < 0 ? Math.abs(deltaQ) + NEAREST_LOWER_PENALTY : deltaQ); //prefer nearest better if the same quality doesn't exist
+            if (container.equalsIgnoreCase("FLV")) { //prefer MP4 on same quality
+                weight += FLV_PENALTY;
+            }
         }
 
         @Override
@@ -432,6 +448,7 @@ class DailymotionRunner extends AbstractRunner {
         public String toString() {
             return "DailyMotionVideo{" +
                     "videoQuality=" + videoQuality +
+                    ", container='" + container + '\'' +
                     ", url='" + url + '\'' +
                     ", weight=" + weight +
                     '}';

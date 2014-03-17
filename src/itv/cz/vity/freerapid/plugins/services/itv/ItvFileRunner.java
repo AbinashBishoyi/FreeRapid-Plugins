@@ -24,84 +24,90 @@ import java.util.regex.Matcher;
 class ItvFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(ItvFileRunner.class.getName());
 
-    private final static String SWF_URL = "http://www.itv.com/mercury/Mercury_VideoPlayer.swf";
+    private final static String SWF_URL = "https://www.itv.com/mediaplayer/ITVMediaPlayer.swf";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
-
-    private String id;
-    private String content;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod method = getMethodBuilder()
-                .setAction("http://mercury.itv.com/PlaylistService.svc")
-                .setReferer(SWF_URL)
-                .toPostMethod();
-        method.setRequestHeader("SOAPAction", "\"http://tempuri.org/PlaylistService/GetPlaylist\"");//double quotes on purpose
-        ((PostMethod) method).setRequestEntity(new StringRequestEntity(getPlaylistRequestContent(), "text/xml", "utf-8"));
-        if (!client.getSettings().isProxySet()) {
-            Tunlr.setupMethod(method);
-        }
-        makeRedirectedRequest(method);
-        checkProblems();
-        //getContentAsString() is set to something else in checkName(),
-        //but this content is required in run()
-        content = getContentAsString();
-        checkName();
-    }
-
-    private String getPlaylistRequestContent() throws ErrorDuringDownloadingException {
-        return String.format(PLAYLIST_REQUEST_BASE, getRandomGuid(), getId());
-    }
-
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<faultcode>(.+?)</faultcode>\\s*?<faultstring[^<>]*?>(.+?)</faultstring>");
-        if (matcher.find()) {
-            final String id = matcher.group(1).trim();
-            if (id.equals("s:InvalidVodcrid") || id.equals("s:ContentUnavailable")) {
-                throw new URLNotAvailableAnymoreException("File not found");
-            } else if (id.equals("s:InvalidGeoRegion")) {
-                throw new NotRecoverableDownloadException("This video is not available in your area");
-            } else {
-                throw new NotRecoverableDownloadException("Error fetching playlist: '" + id + "', '" + matcher.group(2).trim() + "'");
-            }
-        }
-        if (getContentAsString().contains("Page not found")) {
-            throw new URLNotAvailableAnymoreException("Page not found");
-        }
-    }
-
-    private void checkName() throws Exception {
-        setFileStreamContentTypes(new String[]{}, new String[]{"application/javascript"});
-        final HttpMethod method = getMethodBuilder()
-                .setReferer(fileURL)
-                .setAction("http://mercury.itv.com/api/html/dotcom/Episode/Index/" + getId() + "/?callback=jsCallBackEpisode")
-                .toGetMethod();
-        if (!makeRedirectedRequest(method)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
+        } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
-        PlugUtils.checkName(httpFile, getContentAsString(), "<h1>", "<\\/h1>");
-        httpFile.setFileName(httpFile.getFileName() + ".flv");
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private String getId() throws ErrorDuringDownloadingException {
-        if (id == null) {
-            final Matcher matcher = PlugUtils.matcher("Filter=(\\d+)", fileURL);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing file URL");
-            }
-            id = matcher.group(1);
+    private void checkNameAndSize() throws Exception {
+        String name = PlugUtils.unescapeHtml(PlugUtils.getStringBetween(
+                getContentAsString(), "<h2 class=\"title episode-title\">", "</h2>"));
+        final Matcher series = getMatcherAgainstContent("Series (?:<[^<>]+?>)+?(\\d+)");
+        final Matcher episode = getMatcherAgainstContent("Episode (?:<[^<>]+?>)+?(\\d+)");
+        if (series.find() && episode.find()) {
+            name = String.format("%s - S%02dE%02d", name, Integer.parseInt(series.group(1)), Integer.parseInt(episode.group(1)));
         }
-        return id;
+        httpFile.setFileName(name + ".flv");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        runCheck();
-        Matcher matcher = PlugUtils.matcher("(?s)<Video timecode=[^<>]*?>(.+?)</Video>", content);
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
+            final String videoId = PlugUtils.getStringBetween(getContentAsString(), "<param name=\"videoId\" value=\"", "\"");
+            method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction("https://www.itv.com/itvplayer/api/user/player-token/" + videoId)
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            final String userToken = PlugUtils.getStringBetween(getContentAsString(), "\"user_token\":\"", "\"");
+            method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction("http://mercury.itv.com/PlaylistService.svc?wsdl")
+                    .setHeader("SOAPAction", "http://tempuri.org/PlaylistService/GetPlaylist")
+                    .toPostMethod();
+            ((PostMethod) method).setRequestEntity(new StringRequestEntity(
+                    String.format(PLAYLIST_REQUEST_BASE, getRandomGuid(), userToken), "text/xml", "utf-8"));
+            if (!client.getSettings().isProxySet()) {
+                Tunlr.setupMethod(method);
+            }
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            final RtmpSession rtmpSession = getRtmpSession();
+            tryDownloadAndSaveFile(rtmpSession);
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("Page not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("InvalidGeoRegion")) {
+            throw new URLNotAvailableAnymoreException("This video is not available in your region");
+        }
+        if (getContentAsString().contains("UserToken Error 853")) {
+            throw new YouHaveToWaitException("Server error", 20);
+        }
+    }
+
+    private RtmpSession getRtmpSession() throws Exception {
+        Matcher matcher = getMatcherAgainstContent("(?s)<Video timecode=[^<>]*?>(.+?)</Video>");
         if (!matcher.find()) {
             throw new PluginImplementationException("'Video' tag not found in playlist");
         }
@@ -124,7 +130,7 @@ class ItvFileRunner extends AbstractRtmpRunner {
         rtmpSession.getConnectParams().put("pageUrl", fileURL);
         rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
         helper.setSwfVerification(rtmpSession, client);
-        tryDownloadAndSaveFile(rtmpSession);
+        return rtmpSession;
     }
 
     private static String getRandomGuid() {
@@ -140,31 +146,45 @@ class ItvFileRunner extends AbstractRtmpRunner {
     }
 
     private final static String PLAYLIST_REQUEST_BASE =
-            "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n" +
-                    "  <SOAP-ENV:Body>\r\n" +
-                    "    <tem:GetPlaylist xmlns:tem=\"http://tempuri.org/\" xmlns:itv=\"http://schemas.datacontract.org/2004/07/Itv.BB.Mercury.Common.Types\" xmlns:com=\"http://schemas.itv.com/2009/05/Common\">\r\n" +
-                    "      <tem:request>\r\n" +
-                    "        <itv:RequestGuid>%s</itv:RequestGuid>\r\n" +
-                    "        <itv:Vodcrid>\r\n" +
-                    "          <com:Id>%s</com:Id>\r\n" +
-                    "          <com:Partition>itv.com</com:Partition>\r\n" +
-                    "        </itv:Vodcrid>\r\n" +
-                    "      </tem:request>\r\n" +
-                    "      <tem:userInfo>\r\n" +
-                    "        <itv:GeoLocationToken>\r\n" +
-                    "          <itv:Token/>\r\n" +
-                    "        </itv:GeoLocationToken>\r\n" +
-                    "        <itv:RevenueScienceValue>.</itv:RevenueScienceValue>\r\n" +
-                    "      </tem:userInfo>\r\n" +
-                    "      <tem:siteInfo>\r\n" +
-                    "        <itv:AdvertisingRestriction>None</itv:AdvertisingRestriction>\r\n" +
-                    "        <itv:AdvertisingSite>ITV</itv:AdvertisingSite>\r\n" +
-                    "        <itv:Area>ITVPLAYER.VIDEO</itv:Area>\r\n" +
-                    "        <itv:Platform>DotCom</itv:Platform>\r\n" +
-                    "        <itv:Site>ItvCom</itv:Site>\r\n" +
-                    "      </tem:siteInfo>\r\n" +
-                    "    </tem:GetPlaylist>\r\n" +
-                    "  </SOAP-ENV:Body>\r\n" +
-                    "</SOAP-ENV:Envelope>";
+            "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://tempuri.org/\" xmlns:itv=\"http://schemas.datacontract.org/2004/07/Itv.BB.Mercury.Common.Types\" xmlns:com=\"http://schemas.itv.com/2009/05/Common\">\n" +
+                    "  <soapenv:Header/>\n" +
+                    "  <soapenv:Body>\n" +
+                    "    <tem:GetPlaylist>\n" +
+                    "      <tem:request>\n" +
+                    "        <itv:ProductionId>1/1658/0544#001</itv:ProductionId>\n" +
+                    "        <itv:RequestGuid>%s</itv:RequestGuid>\n" +
+                    "        <itv:Vodcrid>\n" +
+                    "          <com:Id/>\n" +
+                    "          <com:Partition>itv.com</com:Partition>\n" +
+                    "        </itv:Vodcrid>\n" +
+                    "      </tem:request>\n" +
+                    "      <tem:userInfo>\n" +
+                    "        <itv:Broadcaster>Itv</itv:Broadcaster>\n" +
+                    "        <itv:GeoLocationToken>\n" +
+                    "          <itv:Token/>\n" +
+                    "        </itv:GeoLocationToken>\n" +
+                    "        <itv:RevenueScienceValue>ITVPLAYER.12.18.4</itv:RevenueScienceValue>\n" +
+                    "        <itv:SessionId/>\n" +
+                    "        <itv:SsoToken/>\n" +
+                    "        <itv:UserToken>%s</itv:UserToken>\n" +
+                    "      </tem:userInfo>\n" +
+                    "      <tem:siteInfo>\n" +
+                    "        <itv:AdvertisingRestriction>None</itv:AdvertisingRestriction>\n" +
+                    "        <itv:AdvertisingSite>ITV</itv:AdvertisingSite>\n" +
+                    "        <itv:AdvertisingType>Any</itv:AdvertisingType>\n" +
+                    "        <itv:Area>ITVPLAYER.VIDEO</itv:Area>\n" +
+                    "        <itv:Category/>\n" +
+                    "        <itv:Platform>DotCom</itv:Platform>\n" +
+                    "        <itv:Site>ItvCom</itv:Site>\n" +
+                    "      </tem:siteInfo>\n" +
+                    "      <tem:deviceInfo>\n" +
+                    "        <itv:ScreenSize>Big</itv:ScreenSize>\n" +
+                    "      </tem:deviceInfo>\n" +
+                    "      <tem:playerInfo>\n" +
+                    "        <itv:Version>2</itv:Version>\n" +
+                    "      </tem:playerInfo>\n" +
+                    "    </tem:GetPlaylist>\n" +
+                    "  </soapenv:Body>\n" +
+                    "</soapenv:Envelope>";
 
 }

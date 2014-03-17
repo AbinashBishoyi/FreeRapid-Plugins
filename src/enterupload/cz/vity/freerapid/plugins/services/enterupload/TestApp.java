@@ -8,8 +8,6 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * Test application for enterupload.com
- *
  * @author Ladislav Vitasek
  */
 public class TestApp extends PluginDevApplication {
@@ -23,7 +21,7 @@ public class TestApp extends PluginDevApplication {
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final EnteruploadShareServiceImpl service = new EnteruploadShareServiceImpl(); //instance of service - of our plugin
+            final EnteruploadServiceImpl service = new EnteruploadServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

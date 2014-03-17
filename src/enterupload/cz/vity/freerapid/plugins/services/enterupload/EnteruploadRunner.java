@@ -58,7 +58,11 @@ class EnteruploadRunner extends AbstractRunner {
 
             matcher = PlugUtils.matcher("small>(([^)]+ bytes))", contentAsString);
             if (matcher.find()) {
-                long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+                String s = matcher.group(1) + " " + "b";
+                s=s.substring(1);
+                
+                
+                long a = PlugUtils.getFileSizeFromString(s);
                 logger.info("File size " + a);
                 httpFile.setFileSize(a);
                 httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -85,21 +89,12 @@ class EnteruploadRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
 
         GetMethod getMethod = getGetMethod(fileURL);
+        getMethod.setFollowRedirects(true);
 
         if (makeRequest(getMethod)) {
             final String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
-            //<input type="hidden" name="fid" id="fid" value="2847949">
-            // <input type="hidden" name="tid" id="tid" value="MjAwOC0xMi0wNQ==">
-            //<input name="securitycode" type="text" id="securitycode" size="10"/>
-            //<input type="hidden" name="fname" id="fname" value="1_458215942l.jpg.html"></td>
-            //<input type="hidden" name="securecode" id="securecode" value="xvefkc">
-            //     <img src="/CaptchaSecurityImages.php?width=100&height=38&characters=5" align="absmiddle" id="image" name="image"/>
-            //<input type="hidden" name="Keyword"  value="Keyword">
-            //   <input type="submit" name="submit" value="Download"></td>
-
-            //GET CAPTHA
-//(http://www\.enterupload\.com/captchas/[^\"]+)
+          
 //(http://www\.enterupload\.com/captchas/[^\"]+)
             Matcher matcher = PlugUtils.matcher("captchas", contentAsString);
             if (matcher.find()) {
@@ -145,28 +140,11 @@ class EnteruploadRunner extends AbstractRunner {
 
 
                 } else {
-                    //matcher = PlugUtils.matcher("action=\"([^\"]*)", contentAsString);
-                    //if (matcher.find()) {
-                        //s = "http://www.ziddu.com" + matcher.group(1);
-                        //logger.info(s);
 
-//                    <Form name="F1" method="POST" onSubmit="if($('btn_download').disabled)return false;$('btn_download').value='Sending File...';$('btn_download').disabled=true;return true;">
-//<input type="hidden" name="op" value="download2">
-//<input type="hidden" name="id" value="meybvc1ty6am">
-//<input type="hidden" name="rand" value="zcddl7mc">
+                        String spost = "http://www.enterupload.com/";
+                        final PostMethod method = getPostMethod(spost);
 
-//<input type="hidden" name="method_free" value="">
-//<input type="hidden" name="method_premium" value="">
-//<tr><td><img src="http://www.enterupload.com/captchas/meybvc1ty6amzcddl7mc.jpg"></td><td valign=middle><input type="text" name="code" class="captcha_code"></td></tr>
-//<br><span id="countdown_str">Wait <span id="countdown">15</span> seconds</span>
-//<input type="hidden" name="down_script" value="1">
-//<input type="submit" id="btn_download" value="Download File">
-
-
-//</Form>
-                        final PostMethod method = getPostMethod(baseURL);
-
-                        String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_premium","down_script","btn_download"}; //array of parameter names for parsing
+                        String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_premium","down_script"}; //array of parameter names for parsing
                         PlugUtils.addParameters(method, contentAsString, parameters);
                         //method.addParameter("Keyword", "Ok"); //it always sends 'Ok'
                         method.addParameter("code", code); //it does not work without captcha

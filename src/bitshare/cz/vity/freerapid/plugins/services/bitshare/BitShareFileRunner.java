@@ -153,5 +153,8 @@ class BitShareFileRunner extends AbstractRunner {
         if (getContentAsString().contains("Traffic is used up for today")) {
             throw new YouHaveToWaitException("Your free traffic is used up for today", 7200); // 2 hours
         }
+        if (getContentAsString().contains("Only Premium members can access this file")) {
+            throw new NotRecoverableDownloadException("Only Premium members can access this file");
+        }
     }
 }

@@ -62,7 +62,7 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/TestApp*"/>
+            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/Test*"/>
         </copy>
 
         <copy todir="${build.dir}">

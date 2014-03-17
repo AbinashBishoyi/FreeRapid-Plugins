@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.services.youtube.srt.Transcription2SrtUtil;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -13,6 +14,7 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -309,7 +311,17 @@ class YouTubeRunner extends AbstractRtmpRunner {
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
-            logger.info(getContentAsString());//TODO convert to srt and save to file
+         //   FileOutputStream stream = null;
+            try {
+                final String converted = Transcription2SrtUtil.convert(getContentAsString());
+                //TODO some language code into file name - videoname.lngcode.srt
+                downloadTask.saveToFile(new ByteArrayInputStream(converted.getBytes("UTF-8"))); //should be UTF-8? shouldn't be optionable?
+                //stream = new FileOutputStream(new File(httpFile.getSaveToDirectory(), httpFile.getFileName()));
+                //stream.write(); //should be UTF-8? shouldn't be optionable?
+            } catch (Exception e) {
+                LogUtils.processException(logger, e);
+                throw new PluginImplementationException("Converting and saving Srt failed", e);
+            }
             return true;
         } else if (config.isDownloadSubtitles()) {
             final String id = getIdFromUrl();

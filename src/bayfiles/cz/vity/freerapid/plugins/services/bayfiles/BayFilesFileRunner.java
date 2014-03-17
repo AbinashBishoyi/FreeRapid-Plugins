@@ -50,6 +50,7 @@ class BayFilesFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();//check for response
 
             checkProblems();//check problems
+            checkSecondaryProblems();
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
             final String vfid = PlugUtils.getStringBetween(contentAsString, "var vfid = ", ";");
@@ -108,11 +109,16 @@ class BayFilesFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("The link is incorrect")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
-        } else if (contentAsString.contains("is already downloading")) {
-            throw new ServiceConnectionProblemException("Your IP address is already downloading a file");
-        } else if (contentAsString.contains("has recently downloaded a file")) {
+        }
+    }
+
+    private void checkSecondaryProblems() throws ErrorDuringDownloadingException {
+        final String contentAsString = getContentAsString();
+        if (contentAsString.contains("has recently downloaded a file")) {
             final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "Upgrade to premium or wait", "minutes.</strong>", TimeUnit.MINUTES);
             throw new YouHaveToWaitException("Waiting time between downloads", waitTime);
+        } else if (contentAsString.contains("is already downloading")) {
+            throw new ServiceConnectionProblemException("Your IP address is already downloading a file");
         }
     }
 

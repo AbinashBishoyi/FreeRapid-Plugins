@@ -18,6 +18,6 @@ class ResponseParser {
     }
 
     public int getInt(String key) throws PluginImplementationException {
-        return PlugUtils.getNumberBetween(input, "'" + key + "' : ", "");
+        return PlugUtils.getNumberBetween(input, "'" + key + "' : ", ",");
     }
 }

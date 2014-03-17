@@ -69,7 +69,7 @@ class DailymotionRunner extends AbstractRunner {
         }
         checkProblems();
         PlugUtils.checkName(httpFile, getContentAsString(), "\"title\":\"", "\"");
-        httpFile.setFileName(httpFile.getFileName() + DEFAULT_FILE_EXT);
+        httpFile.setFileName(PlugUtils.unescapeUnicode(httpFile.getFileName()) + DEFAULT_FILE_EXT);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

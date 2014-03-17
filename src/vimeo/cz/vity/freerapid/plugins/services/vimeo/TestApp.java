@@ -13,23 +13,24 @@ import java.net.URL;
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
-        final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
+        final HttpFile httpFile = getHttpFile();
         try {
-            //we set file URL
             //httpFile.setNewURL(new URL("http://vimeo.com/9673593"));
-            httpFile.setNewURL(new URL("http://vimeo.com/47839067")); //pass : testing
-            //the way we connect to the internet
-            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
+            //httpFile.setNewURL(new URL("http://vimeo.com/47839067")); //pass : testing
+            httpFile.setNewURL(new URL("http://vimeo.com/20042866"));
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final VimeoServiceImpl service = new VimeoServiceImpl(); //instance of service - of our plugin
-            //runcheck makes the validation
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
-            //all output goes to the console
-        } catch (Exception e) {//catch possible exception
-            e.printStackTrace(); //writes error output - stack trace to console
+            final VimeoServiceImpl service = new VimeoServiceImpl();
+
+            VimeoSettingsConfig config = new VimeoSettingsConfig();
+            config.setQualitySetting(1);
+            service.setConfig(config);
+
+            testRun(service, httpFile, connectionSettings);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        this.exit();//exit application
+        this.exit();
     }
 
     /**

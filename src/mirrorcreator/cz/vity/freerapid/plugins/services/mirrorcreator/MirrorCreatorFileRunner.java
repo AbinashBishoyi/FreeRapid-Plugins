@@ -7,20 +7,21 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
  * @author tong2shot
+ * @author ntoskrnl
  */
 class MirrorCreatorFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MirrorCreatorFileRunner.class.getName());
@@ -28,36 +29,23 @@ class MirrorCreatorFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final String filenameregexStr = "<div class=\"file\">\\s*<h3>(.+?)\\(.*?</h3>";
-        final String filesizeregexStr = "<div class=\"file\">\\s*<h3>.*?\\((.+?)\\)</h3>";
-        final Matcher filenameMatcher = getMatcherAgainstContent(filenameregexStr);
-        final Matcher filesizeMatcher = getMatcherAgainstContent(filesizeregexStr);
-        if (filenameMatcher.find()) {
-            final String fileName = filenameMatcher.group(1).trim();
-            logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
-        } else {
-            throw new PluginImplementationException("File name not found");
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("<div class=\"file\">\\s*<h3>(.+?)\\((.+?)\\)</h3>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name/size not found");
         }
-        if (filesizeMatcher.find()) {
-            final String fileSize = filesizeMatcher.group(1);
-            logger.info("File size " + fileSize);
-            final long size = PlugUtils.getFileSizeFromString(filesizeMatcher.group(1));
-            httpFile.setFileSize(size);
-        } else {
-            throw new PluginImplementationException("File size not found");
-        }
+        httpFile.setFileName(matcher.group(1));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -65,60 +53,64 @@ class MirrorCreatorFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             String contentAsString = getContentAsString();
             checkProblems();
-            checkNameAndSize(contentAsString);
-
+            checkNameAndSize();
             fileURL = method.getURI().toString();
-            logger.info("fileURL : " + fileURL);
-            final String uid = PlugUtils.getStringBetween(contentAsString, "/status.php?uid=", "\",");
-            final HttpMethod httpMethod = getMethodBuilder()
+            final String uid = PlugUtils.getStringBetween(contentAsString, "/status.php?uid=", "\"");
+            method = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction("http://www.mirrorcreator.com/status.php?uid=" + uid)
+                    .setAjax()
+                    .setAction("/status.php?uid=" + uid)
                     .toGetMethod();
-            httpMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-            if (!makeRequest(httpMethod)) {
+            if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            contentAsString = getContentAsString();
-            logger.info("ajax response : " + contentAsString);
-            final List<URL> urlList = getMirrors(uid);
-            if (urlList.isEmpty())
+            final List<URI> list = getMirrors();
+            if (list.isEmpty()) {
                 throw new URLNotAvailableAnymoreException("No available mirrors");
-            getPluginService().getPluginContext().getQueueSupport().addLinkToQueueUsingPriority(httpFile, urlList);
-
+            }
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-
-    private List<URL> getMirrors(String uid) throws Exception {
-        final String regexPattern = "<td class=\"host\">.+?<a.+?href=\"/redirect/" + uid + "/(\\d+)\"";
-        final Matcher matcher = Pattern.compile(regexPattern, Pattern.MULTILINE + Pattern.DOTALL).matcher(getContentAsString());
-        final List<URL> urlList = new LinkedList<URL>();
+    private List<URI> getMirrors() throws Exception {
+        final Matcher matcher = getMatcherAgainstContent("<a href=\"(/redirect/.+?)\"");
+        final List<URI> list = new LinkedList<URI>();
         while (matcher.find()) {
-            final HttpMethod httpMethod = getMethodBuilder()
+            final HttpMethod method = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction("http://www.mirrorcreator.com/redirect/" + uid + "/" + matcher.group(1))
+                    .setAction(matcher.group(1))
                     .toGetMethod();
-            if (makeRequest(httpMethod)) {
-                final String mirrorURL = PlugUtils.getStringBetween(getContentAsString(), "redirecturl\">", "</div>");
-                urlList.add(new URL(mirrorURL));
+            if (makeRedirectedRequest(method)) {
+                final String url = PlugUtils.getStringBetween(getContentAsString(), "redirecturl\">", "</div>");
+                try {
+                    list.add(new URI(url));
+                } catch (final URISyntaxException e) {
+                    LogUtils.processException(logger, e);
+                }
             }
         }
-        return urlList;
+        return list;
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Link disabled or is invalid") || contentAsString.contains("the link you have clicked is not available")) {
+        if (contentAsString.contains("Link disabled or is invalid")
+                || contentAsString.contains("the link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://www.mirrorcreator.com";
     }
 
 }

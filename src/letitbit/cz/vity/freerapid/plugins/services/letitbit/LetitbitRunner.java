@@ -59,11 +59,11 @@ class LetitbitRunner extends AbstractRunner {
             checkNameAndSize();
 
             final MethodBuilder methodBuilder2 = getMethodBuilder().setReferer(fileURL);
-            if (getContentAsString().contains("???????")) {
-                //Russian IPs may see a different page here
-                methodBuilder2.setActionFromFormWhereTagContains("???????", true);
-            } else {
+            if (getContentAsString().contains("\"dvifree\"")) {
                 methodBuilder2.setActionFromFormByName("dvifree", true);
+            } else {
+                //Russian IPs may see a different page here
+                methodBuilder2.setActionFromFormByIndex(1, true);
             }
             final HttpMethod httpMethod2 = methodBuilder2.toPostMethod();
             final String secondPageUrl = httpMethod2.getURI().toString();

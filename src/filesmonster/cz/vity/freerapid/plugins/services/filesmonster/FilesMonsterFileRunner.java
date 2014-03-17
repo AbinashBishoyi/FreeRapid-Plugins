@@ -82,7 +82,7 @@ class FilesMonsterFileRunner extends AbstractRunner {
             checkContentOrConnectionProblems();
         }
         String reserveTicket = PlugUtils.getStringBetween(getContentAsString(),
-                "reserve_ticket('", "'),");
+                "reserve_ticket('", "');");
 
         final String referer = "http://filesmonster.com" + postMethodForTicket.getPath();
         final String dlPrefix = postMethodForTicket.getPath()

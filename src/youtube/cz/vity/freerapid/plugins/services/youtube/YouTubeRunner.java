@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 class YouTubeFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.youtube.com";
+    private YouTubeSettingsConfig config;
     private String fmtParameter = "";
     private String fileExtension = ".flv";
 
@@ -45,6 +46,7 @@ class YouTubeFileRunner extends AbstractRunner {
 
         if (makeRedirectedRequest(getMethod)) {
             checkAllProblems();
+            setConfig();
             checkFmtParameter();
             checkName();
 
@@ -103,21 +105,47 @@ class YouTubeFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private void checkFmtParameter() {
+    private void setConfig() throws Exception {
+        YouTubeServiceImpl service = (YouTubeServiceImpl) getPluginService();
+        config = service.getConfig();
+    }
+
+    private void checkFmtParameter() throws ErrorDuringDownloadingException {
         final Matcher matcher = PlugUtils.matcher("fmt=(\\d+)", fileURL.toLowerCase());
 
         if (matcher.find()) {
             final String fmtCode = matcher.group(1);
 
             if (fmtCode.length() <= 2) {
-                setFmtParameter("&fmt=" + fmtCode);
+                setFmtParameter(fmtCode);
                 setFileExtension(Integer.parseInt(fmtCode));
             }
+        } else {
+            processConfig();
+        }
+    }
+
+    private void processConfig() throws ErrorDuringDownloadingException {
+        switch (config.getQualitySetting()) {
+            case 1:
+                setFmtParameter(String.valueOf(17));
+                setFileExtension(17);
+                break;
+            case 2:
+                if (PlugUtils.getStringBetween(getContentAsString(), "\"fmt_map\": \"", "\"").contains("22/2000000/9/0/115")) {
+                    setFmtParameter(String.valueOf(22));
+                    setFileExtension(22);
+                } else {
+                    setFmtParameter(String.valueOf(18));
+                    setFileExtension(18);
+                }
+
+                break;
         }
     }
 
     private void setFmtParameter(String fmtParameter) {
-        this.fmtParameter = fmtParameter;
+        this.fmtParameter = "&fmt=" + fmtParameter;
     }
 
     private void setFileExtension(int fmtCode) {

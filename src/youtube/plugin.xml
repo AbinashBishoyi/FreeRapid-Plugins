@@ -7,6 +7,7 @@
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="youtube.com"/>
+        <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

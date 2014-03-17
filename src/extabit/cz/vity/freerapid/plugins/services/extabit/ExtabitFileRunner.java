@@ -5,6 +5,8 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -38,6 +40,7 @@ class ExtabitFileRunner extends AbstractRunner {
 		 */
 		private boolean makeFirstPossiblyRedirectedRequest() throws IOException {
 			final GetMethod getMethod = getGetMethod(fileURL);//make first request
+			downloadTask.getClient().getHTTPClient().getState().addCookie(new Cookie("extabit.com", "language", "ru", "/", -1, false));
 			if (!makeRequest(getMethod)) {
 				if(getMethod.getStatusCode()/100==3) {
 					fileURL = getMethod.getResponseHeader("Location").getValue();

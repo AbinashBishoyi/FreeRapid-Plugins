@@ -47,7 +47,7 @@ class FilesTubeFileRunner extends AbstractRunner {
                 final String content = getContentAsString();
                 if (content.contains(">&nbsp;<")) {//stage 1
                     logger.info("Stage 1");
-                    final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("&nbsp;").toGetMethod();
+                    final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.getStringBetween(content, "<a class=\"gobut\" href=\"", "\" title=\"")).toGetMethod();
                     if (!makeRedirectedRequest(httpMethod)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException();

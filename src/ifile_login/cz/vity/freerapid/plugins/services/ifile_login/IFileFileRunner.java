@@ -184,7 +184,7 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void stepReCaptcha() throws Exception {
-        cz.vity.freerapid.plugins.services.ifile_login.ReCaptcha r = new cz.vity.freerapid.plugins.services.ifile_login.ReCaptcha(__recaptcha_public, client);
+        ReCaptcha r = new ReCaptcha(__recaptcha_public, client);
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaSrc = r.getImageURL();
         logger.info("ReCaptcha URL " + captchaSrc);

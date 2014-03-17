@@ -36,15 +36,12 @@ class WowEbookFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
-        String url = "";
         if (makeRedirectedRequest(method)) { //we make the main request
             checkProblems();
-            if (fileURL.contains("/download/")) {
-                url = PlugUtils.getStringBetween(getContentAsString(), "urls=", "'});");
-            } else {
-                url = PlugUtils.getStringBetween(getContentAsString(), "Link: <a href=\"", "\"  target");
+            if (!fileURL.contains("/download/")) {
+                fileURL = PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\"  title");
             }
-            httpFile.setNewURL(new URL(url));
+            httpFile.setNewURL(new URL(fileURL));
             httpFile.setPluginID("");
             httpFile.setState(DownloadState.QUEUED);
         } else {

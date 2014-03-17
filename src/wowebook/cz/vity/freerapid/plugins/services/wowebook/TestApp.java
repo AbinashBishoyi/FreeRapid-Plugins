@@ -16,8 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.wowebook.org/download/1121"));//TODO
-            httpFile.setNewURL(new URL("http://www.wowebook.org/professional-asp-net-mvc-4.html"));
+            httpFile.setNewURL(new URL("http://www.wowebook.org/download/149"));
+            //httpFile.setNewURL(new URL("http://www.wowebook.org/drupal-7-themes.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

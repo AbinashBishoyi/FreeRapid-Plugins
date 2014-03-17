@@ -38,7 +38,7 @@ class StreamCzRunner extends AbstractRunner {
             if (getContentAsString().contains("stream.cz")) {
                 checkName(getContentAsString());
 
-                Matcher matcher = getMatcherAgainstContent("pFlvID=([^&]*)&");
+                Matcher matcher = getMatcherAgainstContent("cdnID=([^&]*)&");
                 if (!matcher.find()) {
                     checkProblems();
                     logger.warning(getContentAsString());

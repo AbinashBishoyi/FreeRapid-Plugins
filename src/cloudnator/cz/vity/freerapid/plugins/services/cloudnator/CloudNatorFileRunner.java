@@ -23,6 +23,7 @@ class CloudNatorFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        checkURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -45,6 +46,7 @@ class CloudNatorFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkURL();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
@@ -79,7 +81,7 @@ class CloudNatorFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Selected file not found")) {
+        if (contentAsString.contains("Selected file not found") || contentAsString.contains("was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("Ihre Session-ID ist ungültig")) //Session ID invalid  ...failed to wait
@@ -102,5 +104,14 @@ class CloudNatorFileRunner extends AbstractRunner {
         r.setRecognized(captcha);
 
         return r.modifyResponseMethod(methodBuilder).toPostMethod();
+    }
+
+    private void checkURL() {
+        fileURL = fileURL.replaceFirst("shragle\\.com/files/", "cloudnator.com/files/");
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://www.cloudnator.com/";
     }
 }

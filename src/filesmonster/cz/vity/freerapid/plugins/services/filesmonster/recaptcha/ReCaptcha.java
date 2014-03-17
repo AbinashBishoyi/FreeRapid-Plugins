@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.filesmonster.recaptcha;
 
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -7,23 +8,26 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.regex.Matcher;
 
 /**
- * Class for manipulating ReCaptcha
+ * Class for manipulating ReCaptcha.<p/>
+ * Example Usage:
+ * <pre>
+ *     ReCaptcha r = new ReCaptcha("...api key...", client);
+ *     String imageUrl = r.getImageURL();
+ *     ...display image, user enters text...
+ *     r.setRecognized(textUserEntered);
+ *     ... create new method for sending form...
+ *     HttpMethod m = r.modifyResponseMethod(getMethodBuilder()).toHttpMethod();
+ *     ...
+ * </pre>
  *
  * @author JPEXS
- *         <p/>
- *         <p/>
- *         Example Usage:
- *         ReCaptcha r=new ReCaptcha("...api key...",client);
- *         String imageUrl=r.getImageURL();
- *         ...display image, user enters text...
- *         r.setRecognized(textUserEntered);
- *         ... create new method for sending form...
- *         Method m=r.modifyResponseMethod(getMethodBuilder()).toHttpMethod();
- *         ...
  */
 public class ReCaptcha {
+    private static final String RECAPTCHA_URL = "http://www.google.com/recaptcha/api";
+
     private String challenge;
     private String publicKey;
     private HttpDownloadClient client;
@@ -33,14 +37,18 @@ public class ReCaptcha {
     /**
      * Constructor of ReCaptcha
      *
-     * @param publicKey Public API key for recaptcha (Included in every page which uses Recaptcha)
-     * @param client    Client to do requests with
+     * @param publicKey Public API key for ReCaptcha (Included in every page which uses ReCaptcha)
+     * @param c         Client to do requests with
      * @throws Exception When something goes wrong
      */
-    public ReCaptcha(String publicKey, HttpDownloadClient client) throws Exception {
-        HttpMethod httpMethod = new MethodBuilder(client).setAction("http://api.recaptcha.net/challenge?k=" + publicKey).toGetMethod();
+    public ReCaptcha(String publicKey, HttpDownloadClient c) throws Exception {
+        this.publicKey = publicKey;
+        this.client = c;
+        HttpMethod httpMethod = new MethodBuilder(client).setAction(RECAPTCHA_URL + "/challenge?k=" + publicKey).toGetMethod();
         client.makeRequest(httpMethod, true);
-        challenge = PlugUtils.getStringBetween(client.getContentAsString(), "challenge : '", "',");
+        Matcher matcher = PlugUtils.matcher("challenge\\s?:\\s?'(.+?)'", client.getContentAsString());
+        if (!matcher.find()) throw new PluginImplementationException("ReCaptcha challenge not found");
+        challenge = matcher.group(1);
     }
 
 
@@ -54,7 +62,7 @@ public class ReCaptcha {
         if (lastType.equals("audio")) {
             reloadImage();
         }
-        return "http://api.recaptcha.net/image?c=" + challenge;
+        return RECAPTCHA_URL + "/image?c=" + challenge;
     }
 
     /**
@@ -67,11 +75,11 @@ public class ReCaptcha {
         if (lastType.equals("image")) {
             reloadAudio();
         }
-        return "http://api.recaptcha.net/image?c=" + challenge;
+        return RECAPTCHA_URL + "/image?c=" + challenge;
     }
 
     private void reload(String type) throws Exception {
-        HttpMethod httpMethod = new MethodBuilder(client).setAction("http://api.recaptcha.net/reload?c=" + challenge + "&k=" + publicKey + "&reason=r&type=" + type + "&lang=en").toGetMethod();
+        HttpMethod httpMethod = new MethodBuilder(client).setAction(RECAPTCHA_URL + "/reload?c=" + challenge + "&k=" + publicKey + "&reason=r&type=" + type + "&lang=en").toGetMethod();
         client.makeRequest(httpMethod, true);
         challenge = PlugUtils.getStringBetween(client.getContentAsString(), ".finish_reload ('", "', '");
     }
@@ -89,7 +97,7 @@ public class ReCaptcha {
     /**
      * Generates new audio captcha
      *
-     * @throws Exception
+     * @throws Exception When something goes wrong
      */
     public void reloadAudio() throws Exception {
         reload("audio");
@@ -99,7 +107,7 @@ public class ReCaptcha {
     /**
      * Sets text/words which user read
      *
-     * @param recognized Text/words
+     * @param recognized text/words
      */
     public void setRecognized(String recognized) {
         this.recognized = recognized;

@@ -35,10 +35,6 @@ class OronFileRunner extends AbstractRunner {
         }
     }
 
-    /**
-     * @throws PluginImplementationException
-     *
-     */
     private void unimplemented() throws PluginImplementationException {
         logger.warning(getContentAsString());//log the info
         throw new PluginImplementationException();//some unknown problem

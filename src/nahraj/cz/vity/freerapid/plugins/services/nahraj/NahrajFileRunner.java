@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class NahrajFileRunner extends AbstractRunner {
-    private static final Logger LOGGER = Logger.getLogger(NahrajFileRunner.class.getName());
+    private static final Logger logger = Logger.getLogger(NahrajFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -32,7 +32,7 @@ class NahrajFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        LOGGER.info("Starting download in TASK " + fileURL);
+        logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -49,7 +49,7 @@ class NahrajFileRunner extends AbstractRunner {
 
                 if (!tryDownloadAndSaveFile(getMethod)) {
                     checkAllProblems();
-                    LOGGER.warning(getContentAsString());
+                    logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty");
                 }
             } else {
@@ -83,21 +83,21 @@ class NahrajFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            LOGGER.info("File name " + fileName);
+            logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("class=\"size\">(.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                LOGGER.info("File size " + fileSize);
+                logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                LOGGER.warning("File size was not found");
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            LOGGER.warning("File name was not found");
+            logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
 

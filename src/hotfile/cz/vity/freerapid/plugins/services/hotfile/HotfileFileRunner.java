@@ -3,7 +3,6 @@ package cz.vity.freerapid.plugins.services.hotfile;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -106,9 +105,7 @@ class HotfileFileRunner extends AbstractRunner {
     }
 
     private void processDownloadWithForm() throws Exception {
-        final MethodBuilder builder = getMethodBuilder();
-        builder.setActionFromFormByName("f", true);
-        final HttpMethod httpMethod = builder.setReferer(fileURL).setBaseURL(SERVICE_WEB).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("f", true).setBaseURL(SERVICE_WEB).toHttpMethod();
         final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "", "document.getElementById('dwltxt", TimeUnit.MILLISECONDS);
         downloadTask.sleep(waitTime);
 

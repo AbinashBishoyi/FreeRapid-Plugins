@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class FileFactoryFileRunner extends AbstractRunner {
-    private static final Logger LOGGER = Logger.getLogger(FileFactoryFileRunner.class.getName());
+    private static final Logger logger = Logger.getLogger(FileFactoryFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.filefactory.com";
 
     @Override
@@ -36,7 +36,7 @@ class FileFactoryFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        LOGGER.info("Starting download in TASK " + fileURL);
+        logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -70,7 +70,7 @@ class FileFactoryFileRunner extends AbstractRunner {
 
                             if (!tryDownloadAndSaveFile(getMethod)) {
                                 checkAllProblems();
-                                LOGGER.warning(getContentAsString());
+                                logger.warning(getContentAsString());
                                 throw new IOException("File input stream is empty");
                             }
                         } else {
@@ -140,21 +140,21 @@ class FileFactoryFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            LOGGER.info("File name " + fileName);
+            logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("<span>(.+?) file uploaded");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                LOGGER.info("File size " + fileSize);
+                logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                LOGGER.warning("File size was not found");
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            LOGGER.warning("File name was not found");
+            logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -168,7 +168,7 @@ class FileFactoryFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String captchaSrc = SERVICE_WEB + matcher.group(1);
-            LOGGER.info("Captcha URL " + captchaSrc);
+            logger.info("Captcha URL " + captchaSrc);
             final String captcha;
 
             if (captchaOCRCounter <= 0) { // TODO
@@ -196,7 +196,7 @@ class FileFactoryFileRunner extends AbstractRunner {
         String captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
 
         if (captcha != null) {
-            LOGGER.info("Captcha - OCR recognized " + captcha);
+            logger.info("Captcha - OCR recognized " + captcha);
         } else {
             captcha = "";
         }

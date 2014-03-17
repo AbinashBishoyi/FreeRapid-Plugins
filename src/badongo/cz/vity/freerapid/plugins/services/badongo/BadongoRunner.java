@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class BadongoFileRunner extends AbstractRunner {
-    private static final Logger LOGGER = Logger.getLogger(BadongoFileRunner.class.getName());
+    private static final Logger logger = Logger.getLogger(BadongoFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.badongo.com";
 
     @Override
@@ -43,7 +43,7 @@ class BadongoFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         fileURL = checkFileURL(fileURL);
-        LOGGER.info("Starting download in TASK " + fileURL);
+        logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -126,21 +126,21 @@ class BadongoFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            LOGGER.info("File name " + fileName);
+            logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("Filesize : (.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                LOGGER.info("File size " + fileSize);
+                logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                LOGGER.warning("File size was not found");
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            LOGGER.warning("File name was not found");
+            logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -194,7 +194,7 @@ class BadongoFileRunner extends AbstractRunner {
     private void downloadFile(HttpMethod httpMethod) throws Exception {
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkAllProblems();
-            LOGGER.warning(getContentAsString());
+            logger.warning(getContentAsString());
             throw new IOException("File input stream is empty");
         }
     }
@@ -210,7 +210,7 @@ class BadongoFileRunner extends AbstractRunner {
             try {
                 uriList.add(new URI(link));
             } catch (URISyntaxException e) {
-                LogUtils.processException(LOGGER, e);
+                LogUtils.processException(logger, e);
             }
 
             start = matcher.end();
@@ -226,7 +226,7 @@ class BadongoFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String captchaSrc = SERVICE_WEB + matcher.group(1);
-            LOGGER.info("Captcha URL " + captchaSrc);
+            logger.info("Captcha URL " + captchaSrc);
             final String captcha = captchaSupport.getCaptcha(captchaSrc);
 
             if (captcha == null) {

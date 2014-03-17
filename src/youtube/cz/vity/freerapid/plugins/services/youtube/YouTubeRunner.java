@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class YouTubeFileRunner extends AbstractRunner {
-    private static final Logger LOGGER = Logger.getLogger(YouTubeFileRunner.class.getName());
+    private static final Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.youtube.com";
     private String fmtParameter = "";
     private String fileExtension = ".flv";
@@ -38,7 +38,7 @@ class YouTubeFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        LOGGER.info("Starting download in TASK " + fileURL);
+        logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -60,7 +60,7 @@ class YouTubeFileRunner extends AbstractRunner {
 
                     if (!tryDownloadAndSaveFile(getMethod)) {
                         checkAllProblems();
-                        LOGGER.warning(getContentAsString());
+                        logger.warning(getContentAsString());
                         throw new IOException("File input stream is empty");
                     }
                 } else {
@@ -91,10 +91,10 @@ class YouTubeFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim() + fileExtension;
-            LOGGER.info("File name " + fileName);
+            logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
         } else {
-            LOGGER.warning("File name was not found");
+            logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
 

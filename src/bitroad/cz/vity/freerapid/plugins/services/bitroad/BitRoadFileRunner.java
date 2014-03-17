@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class BitRoadFileRunner extends AbstractRunner {
-    private static final Logger LOGGER = Logger.getLogger(BitRoadFileRunner.class.getName());
+    private static final Logger logger = Logger.getLogger(BitRoadFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
@@ -35,7 +35,7 @@ class BitRoadFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        LOGGER.info("Starting download in TASK " + fileURL);
+        logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
@@ -74,7 +74,7 @@ class BitRoadFileRunner extends AbstractRunner {
 
                                 if (!tryDownloadAndSaveFile(getMethod)) {
                                     checkAllProblems();
-                                    LOGGER.warning(getContentAsString());
+                                    logger.warning(getContentAsString());
                                     throw new IOException("File input stream is empty");
                                 }
                             } else {
@@ -114,21 +114,21 @@ class BitRoadFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            LOGGER.info("File name " + fileName);
+            logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("Size:<b style=\"padding-left:5px;\">(.+?)<");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                LOGGER.info("File size " + fileSize);
+                logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                LOGGER.warning("File size was not found");
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            LOGGER.warning("File name was not found");
+            logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -142,7 +142,7 @@ class BitRoadFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String captchaSrc = matcher.group(1);
-            LOGGER.info("Captcha URL " + captchaSrc);
+            logger.info("Captcha URL " + captchaSrc);
             final String captcha;
 
             if (captchaOCRCounter <= 3) {
@@ -171,7 +171,7 @@ class BitRoadFileRunner extends AbstractRunner {
         String captcha = PlugUtils.recognize(croppedCaptchaImage, "-C A-z-0-9");
 
         if (captcha != null) {
-            LOGGER.info("Captcha - OCR recognized " + captcha);
+            logger.info("Captcha - OCR recognized " + captcha);
         } else {
             captcha = "";
         }

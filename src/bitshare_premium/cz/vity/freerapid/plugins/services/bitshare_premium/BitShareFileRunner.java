@@ -52,6 +52,7 @@ class BitShareFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".bitshare.com", "language_selection", "EN", "/", 86400, false));
         login();
+        setFileStreamContentTypes("text/plain");
         HttpMethod method = getGetMethod(fileURL);
         if (!tryDownloadAndSaveFile(method)) {
             checkProblems();

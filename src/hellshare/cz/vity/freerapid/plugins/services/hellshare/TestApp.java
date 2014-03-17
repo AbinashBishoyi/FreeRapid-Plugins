@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
 
-           httpFile.setNewURL(new URL("http://download.cz.hellshare.com/starcraft-ii-beta-enus-13891-installer-part02.rar/981200"));
+            httpFile.setNewURL(new URL("http://download.cz.hellshare.com/starcraft-ii-beta-enus-13891-installer-part02.rar/981200"));
             testRun(new HellshareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();
@@ -27,5 +27,11 @@ public class TestApp extends PluginDevApplication {
 
     public static void main(String[] args) {
         Application.launch(TestApp.class, args);
+
+        /*try {
+            ImageIO.write(ImageIO.read(new File("E:\\projects\\captchatest\\letters1.png")), "png", new File("E:\\projects\\captchatest\\letters.png"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }*/
     }
 }

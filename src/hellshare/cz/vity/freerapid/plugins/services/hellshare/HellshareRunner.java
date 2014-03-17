@@ -4,22 +4,26 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
  */
 class HellshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HellshareRunner.class.getName());
     private final static Map<String, MethodBuilder> methodsMap = new HashMap<String, MethodBuilder>();
     private final static int WAIT_TIME = 20;
-
+    private final static int CAPTCHA_MAX = 5;
+    private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
@@ -28,8 +32,10 @@ class HellshareRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
             checkCaptcha();
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     @Override
@@ -65,11 +71,13 @@ class HellshareRunner extends AbstractRunner {
             }
 
 
-        } else
+        } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
+        }
     }
 
-    private void checkNameAndSize(String content) throws Exception {
+    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<strong id=\"FileName_master\">", "</strong>");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "<strong id=\"FileSize_master\">", "</strong>").replace("&nbsp;", " ")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -122,21 +130,19 @@ class HellshareRunner extends AbstractRunner {
         if (!getContentAsString().contains("captcha")) {
             throw new YouHaveToWaitException("Neur\u010Dit\u00E9 omezen\u00ED", 4 * WAIT_TIME);
         }
-        String img = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
-        boolean emptyCaptcha;
-        String captcha;
-        do {
-            logger.info("Captcha image " + img);
-            captcha = getCaptchaSupport().getCaptcha(img);
-            if (captcha == null) {
-                throw new CaptchaEntryInputMismatchException();
-            }
-            if (captcha.equals("")) {
-                emptyCaptcha = true;
-                img = img + "1";
-            } else emptyCaptcha = false;
-        } while (emptyCaptcha);
-
+        final String captchaURL = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final String captcha;
+        if (captchaCounter <= CAPTCHA_MAX) {
+            final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaURL));
+            captcha = new CaptchaRecognizer().recognize(captchaImage);
+            logger.info("Attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", OCR recognized " + captcha);
+            captchaCounter++;
+        } else {
+            captcha = captchaSupport.getCaptcha(captchaURL);
+            if (captcha == null) throw new CaptchaEntryInputMismatchException();
+            logger.info("Manual captcha " + captcha);
+        }
 
         final MethodBuilder method = getMethodBuilder().setActionFromFormByIndex(1, true).setParameter("captcha", captcha);
 
@@ -145,7 +151,15 @@ class HellshareRunner extends AbstractRunner {
         return method.toPostMethod();
     }
 
-    private HttpMethod getCaptchaPage() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, PluginImplementationException {
+    private BufferedImage prepareCaptchaImage(final BufferedImage input) {
+        final BufferedImage output = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
+        final Graphics g = output.getGraphics();
+        g.setXORMode(Color.WHITE);
+        g.drawImage(input, 0, 0, null);
+        return output;//almost too simple :)
+    }
+
+    private HttpMethod getCaptchaPage() throws ErrorDuringDownloadingException {
         Matcher matcher = getMatcherAgainstContent("button-download-free\" href=\"([^\"]+)\">St");
         if (!matcher.find()) {
             checkProblems();
@@ -156,7 +170,7 @@ class HellshareRunner extends AbstractRunner {
         return getMethodBuilder().setAction(downURL).toHttpMethod();
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         String content = getContentAsString();
         if (content.contains("Soubor nenalezen")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));

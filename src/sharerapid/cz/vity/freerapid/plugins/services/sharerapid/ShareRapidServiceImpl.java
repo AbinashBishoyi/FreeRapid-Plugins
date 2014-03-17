@@ -37,7 +37,7 @@ public class ShareRapidServiceImpl extends AbstractFileShareService {
     }
 
     public PremiumAccount showConfigDialog() throws Exception {
-        return showAccountDialog(getConfig(), "CZshare", PLUGIN_CONFIG_FILE);
+        return showAccountDialog(getConfig(), "ShareRapid", PLUGIN_CONFIG_FILE);
     }
 
     PremiumAccount getConfig() throws Exception {

@@ -104,7 +104,7 @@ class FileFactoryRunner {
     private void mainStep(String fileURL) throws Exception {
         if (--deep <= 0) {
             logger.warning(client.getContentAsString());
-            throw new InvalidURLOrServiceProblemException("Something is very bad");
+            throw new InvalidURLOrServiceProblemException("Captcha input timeout");
         }
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);

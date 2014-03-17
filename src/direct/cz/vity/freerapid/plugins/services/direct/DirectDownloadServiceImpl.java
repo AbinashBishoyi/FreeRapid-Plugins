@@ -15,7 +15,7 @@ public class DirectDownloadServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return false;
+        return true;
     }
 
     @Override

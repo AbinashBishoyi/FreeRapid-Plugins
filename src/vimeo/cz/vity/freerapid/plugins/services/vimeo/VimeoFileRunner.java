@@ -80,6 +80,18 @@ class VimeoFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             setConfig();
+            fileURL = method.getURI().toString();
+            if (fileURL.contains("/ondemand/") && getContentAsString().contains("Watch Trailer")) {
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setActionFromAHrefWhereATagContains("Watch Trailer")
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();
+            }
             VimeoVideo vimeoVideo = getSelectedVideo();
             logger.info("Config settings : " + config);
             logger.info("Downloading video : " + vimeoVideo);
@@ -179,7 +191,7 @@ class VimeoFileRunner extends AbstractRunner {
     }
 
     private class VimeoVideo implements Comparable<VimeoVideo> {
-        private final static int LOWER_PENALTY_PENALTY = 10;
+        private final static int LOWER_QUALITY_PENALTY = 10;
         private final VideoQuality videoQuality;
         private final String url;
         private final int weight;
@@ -195,7 +207,7 @@ class VimeoFileRunner extends AbstractRunner {
             final VideoQuality configQuality = config.getVideoQuality();
             //prefer nearest better if the same quality doesn't exist
             return videoQuality.compareTo(configQuality) < 0
-                    ? Math.abs(videoQuality.ordinal() - configQuality.ordinal()) + LOWER_PENALTY_PENALTY
+                    ? Math.abs(videoQuality.ordinal() - configQuality.ordinal()) + LOWER_QUALITY_PENALTY
                     : videoQuality.ordinal() - configQuality.ordinal();
         }
 

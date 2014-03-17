@@ -62,7 +62,7 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**, javazoom/**, resources/**"
+            <fileset dir="${classes.dir}" includes="**/${application}/**, com/**, resources/**"
                      excludes="**/TestApp*"/>
         </copy>
 
@@ -124,9 +124,10 @@
         <!--</fileset>-->
         <!--</zip>-->
     </target>
-    
+
     <target name="run" depends="clean, init, compile" description="runing TestApp">
-        <java dir="${classes.dir}" classname="cz.vity.freerapid.plugins.services.ulozto.TestApp" classpath="${classes.dir}" classpathref="cp" spawn="true" fork="true">
+        <java dir="${classes.dir}" classname="cz.vity.freerapid.plugins.services.ulozto.TestApp"
+              classpath="${classes.dir}" classpathref="cp" spawn="true" fork="true">
         </java>
     </target>
 

@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
@@ -22,9 +23,17 @@ import java.net.URLDecoder;
 class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognizer {
 
     @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
+        checkName();
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    @Override
     public void run() throws Exception {
         super.run();
         checkName();
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         final HttpMethod method = getGetMethod(fileURL);
         if (!tryDownloadAndSaveFile(method)) {
             throw new ServiceConnectionProblemException("Error starting download");

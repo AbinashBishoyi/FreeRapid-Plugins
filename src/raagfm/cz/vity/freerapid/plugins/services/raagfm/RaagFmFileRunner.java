@@ -24,7 +24,9 @@ import java.util.regex.Matcher;
  */
 class RaagFmFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RaagFmFileRunner.class.getName());
+    private final static String SEC_CODE = "sec1Code=robol111@123";
     private RaagFmSettingsConfig config;
+
 
     private void setConfig() throws Exception {
         RaagFmServiceImpl service = (RaagFmServiceImpl) getPluginService();
@@ -36,7 +38,7 @@ class RaagFmFileRunner extends AbstractRunner {
         super.run();
         setConfig();
         logger.info("Starting download in TASK " + fileURL);
-        if (fileURL.contains("music.raag.fm/")) {
+        if (isAlbumURL()) {
             final GetMethod method = getGetMethod(fileURL);
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
@@ -46,16 +48,15 @@ class RaagFmFileRunner extends AbstractRunner {
             checkProblems();
             processAlbum();
         } else if (fileURL.contains("player.raag.fm/player/")) {
-            final String referer = "http://player.raag.fm/player/flash/main.swf?xmlPath=" + fileURL.replace("&sec1Code=robol111@123", "");
+            final String referer = "http://player.raag.fm/player/flash/main.swf?xmlPath=" + fileURL;
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(referer)
-                    .setAction(fileURL)
+                    .setAction(String.format("%s&%s",fileURL,SEC_CODE))
                     .toGetMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            logger.info(getContentAsString());
             final String musicPath = PlugUtils.getStringBetween(getContentAsString(), "<musicpath><![CDATA[", "]]>");
             final String musicTitle = PlugUtils.getStringBetween(getContentAsString(), "<musictitle><![CDATA[", "]]>");
             final Matcher matcher = PlugUtils.matcher("http://.+?/[^/]+(\\.\\w+)\\??", musicPath);
@@ -96,13 +97,14 @@ class RaagFmFileRunner extends AbstractRunner {
         } else {
             throw new PluginImplementationException("Cannot recognize audio quality");
         }
-
-
         final String urlListRegex = "<input type=['\"]checkbox['\"] name=['\"]pick\\[\\]['\"] value=(\\d+)>";
         final Matcher urlListMatcher = getMatcherAgainstContent(urlListRegex);
         final List<URI> uriList = new LinkedList<URI>();
         while (urlListMatcher.find()) {
-            uriList.add(new java.net.URI(new org.apache.commons.httpclient.URI(String.format("http://player.raag.fm/player/flash/%s.asx?pick[]=%s&sec1Code=robol111@123", quality, urlListMatcher.group(1)), false, "UTF-8").toString()));
+            uriList.add(new java.net.URI(new org.apache.commons.httpclient.URI(String.format("http://player.raag.fm/player/flash/%s.asx?pick[]=%s", quality, urlListMatcher.group(1)), false, "UTF-8").toString()));
+        }
+        if (uriList.isEmpty()) {
+            throw new PluginImplementationException("No links found");
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
         httpFile.getProperties().put("removeCompleted", true);
@@ -110,9 +112,13 @@ class RaagFmFileRunner extends AbstractRunner {
 
     private void isAtHomepage(HttpMethod method) throws Exception {
         final String pageURL = method.getURI().toString();
-        if (pageURL.matches("http://(www\\.)?music\\.raag\\.fm/?")) {
+        if (pageURL.matches("http://(?:music\\.raag\\.fm|music.*?\\.pz10\\.com)/?")) {
             throw new URLNotAvailableAnymoreException("File/Album not found");
         }
+    }
+
+    private boolean isAlbumURL() {
+        return fileURL.matches("http://(?:music\\.raag\\.fm|music.*?\\.pz10\\.com)/.+");
     }
 
 }

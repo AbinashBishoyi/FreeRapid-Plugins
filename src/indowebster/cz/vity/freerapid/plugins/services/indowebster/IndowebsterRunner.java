@@ -62,7 +62,7 @@ class IndowebsterRunner extends AbstractRunner {
             final String filename = PlugUtils.getStringBetween(getContentAsString(), "<strong id=\"filename\">", "</strong>");
             final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "var s = ", ";");
             final PostMethod ajaxMethod = getPostMethod(PlugUtils.getStringBetween(getContentAsString(), "$.post('", "',{"));
-            httpFile.setFileName(filename.replace("[www.indowebster.com]", ""));
+            httpFile.setFileName(filename.replace("[www.indowebster.com]", "").replace("[files.indowebster.com]", ""));
             matcher = getMatcherAgainstContent("\\$\\.post\\('http://(?:.+?\\.)?indowebster\\.com/ajax/downloads/gdl',\\{(.+?)\\},function");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Ajax download params not found");
@@ -109,11 +109,11 @@ class IndowebsterRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("Download link not found");
                 }
                 final URI finalURI = new URI(method.getResponseHeader("location").getValue().replace("[", "%5B").replace("]", "%5D"), true, method.getParams().getUriCharset());
-                method = getMethodBuilder()
+                HttpMethod method2 = getMethodBuilder()
                         .setAction(finalURI.toString())
                         .setReferer(fileURL)
                         .toGetMethod();
-                if (super.tryDownloadAndSaveFile(method)) {
+                if (super.tryDownloadAndSaveFile(method2)) {
                     return true;
                 }
             }

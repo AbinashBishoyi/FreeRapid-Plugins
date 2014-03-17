@@ -12,6 +12,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,7 +38,7 @@ class MetaCafeFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             isAtHomePage(method);
-            if (getContentAsString().contains("mature%20audiences")) {
+            if (getContentAsString().contains("mature%20audiences") || method.getURI().toString().contains("/family_filter/")) {
                 setFamilyFilterOff();
             }
             checkProblems();
@@ -64,7 +65,7 @@ class MetaCafeFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             isAtHomePage(method);
-            if (getContentAsString().contains("mature%20audiences")) {
+            if (getContentAsString().contains("mature%20audiences") || method.getURI().toString().contains("/family_filter/")) {
                 setFamilyFilterOff();
             }
             checkProblems();
@@ -106,7 +107,8 @@ class MetaCafeFileRunner extends AbstractRunner {
         //addCookie(new Cookie(".metacafe.com", "ffilter", "false", "/", 86400, false)); //setting cookie doesn't work
         client.setReferer(fileURL);
         addCookie(new Cookie(".metacafe.com", "referrer", fileURL, "/", 86400, false));
-        final GetMethod method = getGetMethod("http://www.metacafe.com/f/index.php?inputType=filter&controllerGroup=user&filters=0");
+        final PostMethod method = getPostMethod("http://www.metacafe.com/f/index.php?inputType=filter&controllerGroup=user");
+        method.setParameter("filters", "0");
         if (!makeRedirectedRequest(method)) {
             checkProblems();
             throw new ServiceConnectionProblemException();

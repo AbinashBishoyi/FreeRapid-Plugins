@@ -30,9 +30,16 @@ class PutLockerFileRunner extends AbstractRunner {
         config = service.getConfig();
     }
 
+    private void checkUrl() {
+        if (!fileURL.startsWith("http://www.")) {
+            fileURL = fileURL.replaceFirst("http://", "http://www.");
+        }
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -52,6 +59,7 @@ class PutLockerFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {

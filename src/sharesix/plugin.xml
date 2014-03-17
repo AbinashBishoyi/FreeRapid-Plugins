@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.sharesix.ShareSixServiceImpl"
-        id="sharesix.com" vendor="tong2shot" version="1.0.0">
+        id="sharesix.com" vendor="tong2shot" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?sharesix\.com/.+"/>
         <attribute id="minver" value="0.854"/>
@@ -12,7 +12,7 @@
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-	<requires>
+    <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
                 plugin-version="1.0.10" reverse-lookup="false"/>
     </requires>

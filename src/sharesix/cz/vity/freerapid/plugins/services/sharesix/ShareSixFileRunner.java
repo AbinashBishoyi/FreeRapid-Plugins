@@ -20,6 +20,7 @@ class ShareSixFileRunner extends XFileSharingRunner {
     @Override
     protected List<FileNameHandler> getFileNameHandlers() {
         final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
+        fileNameHandlers.add(0, fileNameHandlers.remove(2));
         fileNameHandlers.add(0, new FileNameHandler() {
             @Override
             public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {

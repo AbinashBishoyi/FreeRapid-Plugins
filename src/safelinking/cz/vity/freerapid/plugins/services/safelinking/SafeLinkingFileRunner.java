@@ -89,6 +89,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
                 content = getContentAsString();
                 // check 4 & complete captcha
                 if (content.contains("Captcha loading, please wait") ||
+                        content.contains("Prove you are human") ||
                         content.contains("The CAPTCHA code you entered was wrong")) {
                     stepCaptcha(builder);
                 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.tv4play_premium.Tv4PlayServiceImpl"
-        id="tv4play.se_premium" vendor="ntoskrnl" version="1.0.0">
+        id="tv4play.se_premium" vendor="ntoskrnl" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?tv4play\.se/.+"/>
         <attribute id="minver" value="0.852"/>
@@ -13,7 +13,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="tv4play.se" plugin-version="1.0.1"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="tv4play.se" plugin-version="1.0.2"
                 reverse-lookup="false"/>
     </requires>
     <runtime>

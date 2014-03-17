@@ -16,7 +16,6 @@ import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URL;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -97,11 +96,11 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
                 methodBuilder.removeParameter("method_premium");
             }
-            int waitTime = stepGetWaitTime();
-            long startTime = new Date().getTime();
+            final int waitTime = getWaitTime();
+            final long startTime = System.currentTimeMillis();
             stepPassword(methodBuilder);
             stepCaptcha(methodBuilder);
-            stepDoWaitTime(waitTime, startTime);
+            sleepWaitTime(waitTime, startTime);
             method = methodBuilder.toPostMethod();
             final int httpStatus = client.makeRequest(method, false);
             if (httpStatus / 100 == 3) {
@@ -181,20 +180,21 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         throw new PluginImplementationException("File size not found");
     }
 
-    protected int stepGetWaitTime() throws Exception {
+    protected int getWaitTime() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
-            return (Integer.parseInt(matcher.group(1)) + 1);
+            return Integer.parseInt(matcher.group(1)) + 1;
         }
         return 0;
     }
 
-    protected void stepDoWaitTime(int waitTime, long startTime) throws Exception {
+    protected void sleepWaitTime(final int waitTime, final long startTime) throws Exception {
         if (waitTime > 0) {
-            long endTime = new Date().getTime();
-            // time taken to input password,captcha - no need to wait this time twice
-            int diffTime = Integer.parseInt(String.valueOf((endTime - startTime) / 1000));
-            downloadTask.sleep(waitTime - diffTime);
+            //time taken to input password and captcha - no need to wait this time twice
+            final int diffTime = (int) ((System.currentTimeMillis() - startTime) / 1000);
+            if (waitTime > diffTime) {
+                downloadTask.sleep(waitTime - diffTime);
+            }
         }
     }
 
@@ -250,6 +250,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
         if (content.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Plugin is broken - Undefined subroutine");
+        }
+        if (content.contains("Skipped countdown")) {
+            throw new PluginImplementationException("Plugin is broken - Skipped countdown");
         }
         if (content.contains("file reached max downloads limit")) {
             throw new ServiceConnectionProblemException("This file reached max downloads limit");

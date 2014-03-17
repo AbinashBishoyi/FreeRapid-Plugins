@@ -5,13 +5,22 @@ import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+import sun.org.mozilla.javascript.internal.NativeObject;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -62,7 +71,9 @@ public class LetitbitRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
-            List<String> urls = new LetitbitApi(client).getDownloadUrls(fileURL);
+            //the API doesn't work at the moment
+            //List<String> urls = new LetitbitApi(client).getDownloadUrls(fileURL);
+            List<String> urls = null;
             if (urls == null) {
                 for (int i = 1; i <= 3; i++) {
                     if (!postFreeForm()) {
@@ -122,7 +133,13 @@ public class LetitbitRunner extends AbstractRunner {
         final Matcher matcher = getMatcherAgainstContent("(?is)(<form\\b.+?</form>)");
         while (matcher.find()) {
             final String content = matcher.group(1);
-            if (content.contains("md5crypt") && !content.contains("/sms/check") && !content.contains("check_pinkod")) {
+            if (content.contains("id=\"ifree_form\"")) {
+                final HttpMethod method = handleJavascriptMess(content);
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+                return true;
+            } else if (content.contains("md5crypt") && !content.contains("/sms/check") && !content.contains("check_pinkod")) {
                 final HttpMethod method = getMethodBuilder(content).setActionFromFormByIndex(1, true).toPostMethod();
                 if (!makeRedirectedRequest(method)) {
                     throw new ServiceConnectionProblemException();
@@ -176,6 +193,78 @@ public class LetitbitRunner extends AbstractRunner {
                 return content;
             }
         }
+    }
+
+    private HttpMethod handleJavascriptMess(final String formContent) throws Exception {
+        final Object params = findParameters(formContent);
+        final Matcher matcher = PlugUtils.matcher("<script\\b[^<>]*?>(.+?)</script>", formContent);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Script not found on page");
+        }
+        final String js = matcher.group(1);
+        final ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
+        if (engine == null) {
+            throw new PluginImplementationException("JavaScript engine not found");
+        }
+        engine.put("__params", params);
+        engine.put("__cookies", cookiesToParam());
+        Reader reader = null;
+        try {
+            reader = new InputStreamReader(LetitbitRunner.class.getResourceAsStream("init.js"), "UTF-8");
+            engine.eval(reader);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (final Exception e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+        }
+        try {
+            engine.eval(js);
+        } catch (final Exception e) {
+            logger.warning(js);
+            throw new PluginImplementationException("Script execution failed", e);
+        }
+        @SuppressWarnings("unchecked")
+        final Map<String, String> formParams = (Map<String, String>) engine.get("__outParams");
+        final MethodBuilder mb = getMethodBuilder(formContent).setReferer(fileURL).setActionFromFormByIndex(1, false);
+        for (final Map.Entry<String, String> entry : formParams.entrySet()) {
+            logger.info(entry.getKey() + " = " + entry.getValue());
+            mb.setParameter(entry.getKey(), entry.getValue());
+        }
+        return mb.toPostMethod();
+    }
+
+    private Object findParameters(final String formContent) throws Exception {
+        final NativeObject params = new NativeObject();
+        final Matcher matcher = PlugUtils.matcher("(?i)<input\\b[^<>]*?>", formContent);
+        while (matcher.find()) {
+            Matcher m = PlugUtils.matcher("(?i)id=[\"'](.+?)[\"']", matcher.group());
+            if (!m.find()) {
+                continue;
+            }
+            final String id = m.group(1);
+            m = PlugUtils.matcher("(?i)value=[\"'](.+?)[\"']", matcher.group());
+            if (!m.find()) {
+                throw new PluginImplementationException("Input value not found in " + matcher.group());
+            }
+            final String value = m.group(1);
+            params.defineProperty(id, value, NativeObject.READONLY);
+        }
+        if (params.isEmpty()) {
+            throw new PluginImplementationException("Input parameters not found");
+        }
+        return params;
+    }
+
+    private Object cookiesToParam() throws Exception {
+        final NativeObject cookies = new NativeObject();
+        for (final Cookie cookie : client.getHTTPClient().getState().getCookies()) {
+            cookies.defineProperty(cookie.getName(), URLDecoder.decode(cookie.getValue(), "UTF-8"), NativeObject.READONLY);
+        }
+        return cookies;
     }
 
 }

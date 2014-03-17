@@ -51,9 +51,14 @@ class xHamsterFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
-            final String srv = PlugUtils.getStringBetween(getContentAsString(), "'srv': '", "',");
             final String file = PlugUtils.getStringBetween(getContentAsString(), "'file': '", "',");
-            final String videoURL = file.startsWith("http") ? URLDecoder.decode(file, "UTF-8") : srv + "/key=" + file;
+            final String videoURL;
+            if (file.startsWith("http")) {
+                videoURL = URLDecoder.decode(file, "UTF-8");
+            } else {
+                final String srv = PlugUtils.getStringBetween(getContentAsString(), "'srv': '", "',");
+                videoURL = srv + "/key=" + file;
+            }
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL.replace("88.208.24.43", "xhamster.com"))
                     .setAction(videoURL)

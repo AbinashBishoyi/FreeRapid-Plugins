@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -92,7 +93,7 @@ class YouTubeFileRunner extends AbstractRunner {
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim() + fileExtension;
             logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
+            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fileName), "_"));
         } else {
             logger.warning("File name was not found");
             throw new PluginImplementationException();

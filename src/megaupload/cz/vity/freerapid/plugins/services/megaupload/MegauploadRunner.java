@@ -10,6 +10,8 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -58,11 +60,15 @@ class MegauploadRunner extends AbstractRunner {
                     throw new PluginImplementationException();
                 }
 
-                final String downloadURL = matcher.group(1);
+                String downloadURL = matcher.group(1);
+                logger.info("XXXX========" + downloadURL);
                 final int i = downloadURL.lastIndexOf('/');
                 if (i > 0) {
-                    httpFile.setFileName(downloadURL.substring(i + 1));
+                    final String toEncode = downloadURL.substring(i + 1);
+                    httpFile.setFileName(toEncode);
+                    downloadURL = downloadURL.substring(0, i + 1) + encodeURL(toEncode);
                 }
+                logger.info("YYYYYYYY========" + downloadURL);
                 final GetMethod method = getGetMethod(downloadURL);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
@@ -72,11 +78,11 @@ class MegauploadRunner extends AbstractRunner {
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
 
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private void checkNameAndSize(String content) throws Exception {
@@ -125,7 +131,7 @@ class MegauploadRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("No free slot for your country.");
         }
 
-        if (contentAsString.contains("Unfortunately, the link you have clicked is not available")) {
+        if (contentAsString.contains("the link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
 
         }
@@ -175,11 +181,11 @@ class MegauploadRunner extends AbstractRunner {
         return false;
     }
 
-//    private String encodeURL(String s) throws UnsupportedEncodingException {
-//        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
-//        if (matcher.find()) {
-//            return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
-//        }
-//        return s;
-//    }
+    private String encodeURL(String s) throws UnsupportedEncodingException {
+        Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", s);
+        if (matcher.find()) {
+            return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
+        }
+        return s;
+    }
 }

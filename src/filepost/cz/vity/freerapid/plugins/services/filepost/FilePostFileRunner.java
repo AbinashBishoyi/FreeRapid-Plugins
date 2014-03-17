@@ -139,7 +139,7 @@ class FilePostFileRunner extends AbstractRunner {
             throw new PluginImplementationException("Time cookie not found");
         }
 
-        final String startUrl = getBaseURL() + "/files/get/?SID=" + sid.getValue() + "&JsHttpRequest=" + time.getValue() + "-xml";
+        final String startUrl = "http://filepost.com/files/get/?SID=" + sid.getValue() + "&JsHttpRequest=" + time.getValue() + "-xml";
         logger.info("Start URL: " + startUrl);
 
         MethodBuilder mb = getMethodBuilder();
@@ -153,7 +153,6 @@ class FilePostFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File not found")) {
-            logger.warning(getContentAsString());
             throw new URLNotAvailableAnymoreException("File not found");
         } else if (contentAsString.contains("already downloading a file")) {
             throw new YouHaveToWaitException("Your IP address is already downloading a file at the moment", 60);

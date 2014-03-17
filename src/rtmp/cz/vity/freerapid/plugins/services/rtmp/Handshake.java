@@ -259,7 +259,7 @@ class Handshake {
                 partOne.get(serverPublicKey);
                 session.setServerDigest(serverDigest);
             } else {
-                logger.warning("type 1 digest comparison failed, trying type 2 algorithm");
+                logger.fine("type 1 digest comparison failed, trying type 2 algorithm");
                 digestPointer = getFourBytesFrom(partOne, 772);
                 digestOffset = calculateOffset(digestPointer, 728, 776);
                 message = new byte[messageLength];
@@ -280,7 +280,7 @@ class Handshake {
                     partOne.get(serverPublicKey);
                     session.setServerDigest(serverDigest);
                 } else {
-                    throw new RuntimeException("type 2 digest comparison also failed, aborting");
+                    throw new RuntimeException("digest comparison failed");
                 }
             }
             logger.finest("server public key: " + Utils.toHex(serverPublicKey));

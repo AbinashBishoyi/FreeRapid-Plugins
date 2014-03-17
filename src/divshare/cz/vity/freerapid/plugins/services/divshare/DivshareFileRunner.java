@@ -92,17 +92,16 @@ class DivshareFileRunner extends AbstractRunner {
                 CONTENT_TYPE = "regular";
                 checkNameAndSize();
 
-                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL.replace("/download/", "/i/")).toGetMethod();
+                final String launchURL = fileURL.replace("/download/", "/download/launch/");
+
+                HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(launchURL).toGetMethod();
                 if (makeRedirectedRequest(httpMethod)) {
-                    httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Skip Ad >").toGetMethod();
-                    if (makeRedirectedRequest(httpMethod)) {
-                        httpMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("click here").toGetMethod();
-                        client.getHTTPClient().getParams().setParameter("noContentTypeInHeader", true);//accept everything
-                        if (!tryDownloadAndSaveFile(httpMethod)) {
-                            logger.warning(getContentAsString());
-                            throw new ServiceConnectionProblemException("Error starting download");
-                        }
-                    } else throw new ServiceConnectionProblemException();
+                    httpMethod = getMethodBuilder().setReferer(launchURL).setActionFromAHrefWhereATagContains("click here").toGetMethod();
+                    client.getHTTPClient().getParams().setParameter("noContentTypeInHeader", true);//accept everything
+                    if (!tryDownloadAndSaveFile(httpMethod)) {
+                        logger.warning(getContentAsString());
+                        throw new ServiceConnectionProblemException("Error starting download");
+                    }
                 } else throw new ServiceConnectionProblemException();
 
             } else {
@@ -129,6 +128,9 @@ class DivshareFileRunner extends AbstractRunner {
         }
         if (content.contains("this account has not been confirmed")) {
             throw new URLNotAvailableAnymoreException("The account this file has been uploaded from has not been confirmed");
+        }
+        if (content.contains("This file is secured")) {
+            throw new URLNotAvailableAnymoreException("This file is secured. Please contact the uploader to gain access.");
         }
     }
 

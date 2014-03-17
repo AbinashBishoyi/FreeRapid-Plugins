@@ -146,7 +146,7 @@ class HellshareRunner extends AbstractRunner {
 
         final MethodBuilder method = getMethodBuilder().setActionFromFormByIndex(1, true).setParameter("captcha", captcha);
 
-        logger.info("Adding file to map, final URL: " + method.getEscapedURI());
+        //logger.info("Adding file to map, final URL: " + method.getEscapedURI());
         methodsMap.put(fileURL, method);
         return method.toPostMethod();
     }
@@ -172,6 +172,10 @@ class HellshareRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         String content = getContentAsString();
+
+        if(content.contains(" limit free download")){
+            throw new YouHaveToWaitException("Dne\u0161n\u00ED limit free download\u016F jsi vy\u010Derpal", 60);
+        }
         if (content.contains("Soubor nenalezen")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }

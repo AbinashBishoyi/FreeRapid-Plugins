@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hellshare.com" version="1.1.0" vendor="Lukiz+Smisek+ntoskrnl"
+<plugin id="hellshare.com" version="1.1.1" vendor="Lukiz+Smisek+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.hellshare.HellshareServiceImpl">
     <attributes>
         <attribute id="urlRegex"

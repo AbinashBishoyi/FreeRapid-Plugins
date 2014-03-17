@@ -11,7 +11,7 @@
 
     <runtime>
         <library id="cryptography.com" path="/" type="code">
-            <export prefix="cz.*"/>
+            <export prefix="cz.vity.freerapid.plugins.services.cryptography.*"/>
         </library>
     </runtime>
 </plugin>

@@ -56,9 +56,18 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>Hulu - (.+?)(?: - Watch|</title>)");
+        Matcher matcher = getMatcherAgainstContent("<title>Hulu \\- (.+?)(?: \\- Watch|</title>)");
         if (!matcher.find()) throw new PluginImplementationException("File name not found");
-        final String name = matcher.group(1).replace(": ", " - ");
+        String name = matcher.group(1).replace(": ", " - ");
+        matcher = getMatcherAgainstContent("Season (\\d+) [^<>]*?Ep\\. (\\d+)");
+        if (matcher.find()) {
+            final String[] s = name.split(" \\- ", 2);
+            if (s.length >= 2) {
+                final int season = Integer.parseInt(matcher.group(1));
+                final int episode = Integer.parseInt(matcher.group(2));
+                name = String.format("%s - S%02dE%02d - %s", s[0], season, episode, s[1]);
+            }
+        }
         httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -97,7 +106,7 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
                             throw new ServiceConnectionProblemException();
                         }
                     }
-                    final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\" .+? cdn=\"akamai\"", content);
+                    final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"", content);
                     final List<Stream> list = new ArrayList<Stream>();
                     while (matcher.find()) {
                         list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));

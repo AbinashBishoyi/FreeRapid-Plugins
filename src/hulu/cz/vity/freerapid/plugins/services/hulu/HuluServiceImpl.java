@@ -22,7 +22,7 @@ public class HuluServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return false;//TODO
+        return true;
     }
 
     @Override

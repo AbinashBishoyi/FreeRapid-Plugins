@@ -27,9 +27,9 @@ class PluginDevHttpFile implements HttpFile {
     private long fileSize;
 
     /**
-     * Field state  - default state is DownloadState.PAUSED
+     * Field state
      */
-    private DownloadState state = DownloadState.PAUSED;
+    private DownloadState state = DownloadState.QUEUED;
     /**
      * Field fileName
      */

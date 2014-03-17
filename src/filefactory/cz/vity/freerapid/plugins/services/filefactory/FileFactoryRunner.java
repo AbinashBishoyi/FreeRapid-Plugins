@@ -18,7 +18,7 @@ import java.awt.image.BufferedImage;
  */
 class FileFactoryFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileFactoryFileRunner.class.getName());
-     private final static String SERVICE_WEB = "http://www.filefactory.com";
+    private final static String SERVICE_WEB = "http://www.filefactory.com";
 
     @Override
     public void runCheck() throws Exception {

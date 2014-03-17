@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.hulu.HuluServiceImpl" id="hulu.com" vendor="ntoskrnl" version="1.0.7">
+<plugin class="cz.vity.freerapid.plugins.services.hulu.HuluServiceImpl"
+        id="hulu.com" vendor="ntoskrnl" version="1.0.8">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?hulu\.com/watch/.+"/>
         <attribute id="minver" value="0.85"/>
@@ -10,7 +11,8 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.0.0" reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.0.0"
+                reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="hulu.com" path="/" type="code"/>

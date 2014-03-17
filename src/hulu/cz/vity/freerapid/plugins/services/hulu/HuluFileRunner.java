@@ -3,16 +3,12 @@ package cz.vity.freerapid.plugins.services.hulu;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 
 import javax.crypto.spec.IvParameterSpec;
@@ -27,11 +23,11 @@ import java.util.regex.Matcher;
  *
  * @author ntoskrnl
  */
-class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer {
+class HuluFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(HuluFileRunner.class.getName());
 
-    private final static String SWF_URL = "http://www.hulu.com/site-player/playback.swf";
-    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
+    private final static String SWF_URL = "http://www.hulu.com/site-player/82388/player.swf?cb=82388";
+    //private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     private final static String CID_KEY = "48555bbbe9f41981df49895f44c83993a09334d02d17e7a76b237d04c084e342";
     private final static String EID_CONST = "MAZxpK3WwazfARjIpSXKQ9cmg9nPe5wIOOfKuBIfz7bNdat6gQKHj69ZWNWNVB1";
@@ -98,8 +94,7 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            setClientParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
-            final String cid = PlugUtils.getStringBetween(getContentAsString(), "\"content_id\", \"", "\"");
+            final String cid = PlugUtils.getStringBetween(getContentAsString(), "\"content_id\", ", ")");
             final String eidUrl = "http://r.hulu.com/videos?eid=" + cidToEid(parseContentId(getContentId(cid)));
             logger.info("eidUrl = " + eidUrl);
             method = getGetMethod(eidUrl);
@@ -132,17 +127,11 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
                             }
                         }
                     }
-                    final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"", content);
-                    final List<Stream> list = new ArrayList<Stream>();
-                    while (matcher.find()) {
-                        list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
-                    }
-                    if (list.isEmpty()) throw new PluginImplementationException("No streams found");
-                    final Stream stream = Collections.min(list);
+                    final Stream stream = getStream(content);
                     final RtmpSession rtmpSession = new RtmpSession(stream.getServer(), 80, stream.getApp(), stream.getPlay(), true);
                     rtmpSession.getConnectParams().put("pageUrl", fileURL);
                     rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
-                    helper.setSwfVerification(rtmpSession, client);
+                    //helper.setSwfVerification(rtmpSession, client);
                     tryDownloadAndSaveFile(rtmpSession);
                 } else {
                     checkProblems();
@@ -165,12 +154,14 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
         }
     }
 
-    @Override
-    public boolean isStream(HttpMethod method, boolean showWarnings) {
-        final Header h = method.getResponseHeader("Content-Type");
-        if (h == null) return false;
-        final String contentType = h.getValue().toLowerCase(Locale.ENGLISH);
-        return (!contentType.startsWith("text/") && !contentType.contains("xml"));
+    private Stream getStream(final String content) throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"", content);
+        final List<Stream> list = new LinkedList<Stream>();
+        while (matcher.find()) {
+            list.add(new Stream(matcher.group(1), matcher.group(2), matcher.group(3), Integer.parseInt(matcher.group(4))));
+        }
+        if (list.isEmpty()) throw new PluginImplementationException("No streams found");
+        return Collections.min(list);
     }
 
     private class Stream implements Comparable<Stream> {
@@ -179,7 +170,7 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
         private final String app;
         private final int bitrate;
 
-        public Stream(String server, String stream, String token, int bitrate) throws Exception {
+        public Stream(String server, String stream, String token, int bitrate) throws ErrorDuringDownloadingException {
             Matcher matcher = PlugUtils.matcher("://(.+?)/(.+)", server);
             if (!matcher.find()) throw new PluginImplementationException("Error parsing stream server");
             server = matcher.group(1);
@@ -213,11 +204,15 @@ class HuluFileRunner extends AbstractRtmpRunner implements FileStreamRecognizer 
     }
 
     private static String getContentId(final String text) {
-        Thing _local3 = R.AK();
-        R.sdk(CID_KEY, CID_KEY.length() * 4, _local3);
-        String _local2 = R.e(text, _local3);
-        _local2 = R.h2s(_local2);
-        return _local2.split("~")[0];
+        if (text.length() > 12) {
+            Thing _local3 = R.AK();
+            R.sdk(CID_KEY, CID_KEY.length() * 4, _local3);
+            String _local2 = R.e(text, _local3);
+            _local2 = R.h2s(_local2);
+            return _local2.split("~")[0];
+        } else {
+            return text;
+        }
     }
 
     public static String parseContentId(final String _arg1) {

@@ -139,9 +139,9 @@ public class MediafireRunner extends AbstractRunner {
             logger.warning(rawScript);
             throw new PluginImplementationException("Last function in first JavaScript not found");
         }
-        // gysl8luzk='';oq1w66x=unescape(......;   var cb=Math.random();
-        //(.....................................) <-- this part is what we want
-        matcher = PlugUtils.matcher("((?:eval\\(\")?[a-z\\d]+?\\s*?=\\s*?\\\\?'\\\\?';\\s*?[a-z\\d]+?\\s*?=\\s*?unescape\\(.+?;)[^;]+?Math\\.random\\(\\)", rawScript);
+        // gysl8luzk='';oq1w66x=unescape(....;eval(gysl8luzk);
+        //(...................................................) <-- this part is what we want
+        matcher = PlugUtils.matcher("(([a-z\\d]+?)\\s*?=\\s*?\\\\?'\\\\?';\\s*?[a-z\\d]+?\\s*?=\\s*?unescape\\(.+?eval\\(\\2\\);)", rawScript);
         if (!matcher.find(lastFunctionIndex)) {
             logger.warning(rawScript);
             throw new PluginImplementationException("Error parsing last function in first JavaScript");

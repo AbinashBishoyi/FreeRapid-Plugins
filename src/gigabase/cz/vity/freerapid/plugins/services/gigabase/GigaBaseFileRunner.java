@@ -36,7 +36,7 @@ class GigaBaseFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<div id\\s*=\\s*\"fileName\".*?>(.+?)</div>\\s*\\((.+?)\\)");
+        final Matcher matcher = getMatcherAgainstContent("<span.*?\"fileName\".*?>(.+?)</span>\\s*\\((.+?)\\)");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name and size not found");
         }
@@ -55,8 +55,15 @@ class GigaBaseFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("but_dnld_regular.jpg").toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error finding download link");
+            }
+            checkProblems();
+            final HttpMethod dlMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download file").toGetMethod();
+
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //they trim filename
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            if (!tryDownloadAndSaveFile(dlMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }

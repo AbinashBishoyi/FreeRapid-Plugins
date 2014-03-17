@@ -11,6 +11,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -34,7 +35,11 @@ class WebShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "class=\"textbox\">", "</div>");
+        final Matcher match = PlugUtils.matcher("https?://.+?/.+?-(.+)", fileURL);
+        if (match.find())
+            httpFile.setFileName(match.group(1));
+        else
+            PlugUtils.checkName(httpFile, content, "class=\"textbox\">", "</div>");
         final int i = content.indexOf("Velikost souboru");
         if (i > 0) {
             final String s = content.substring(i).replaceAll("MiB", "MB").replaceAll("KiB", "KB").replaceAll("GiB", "GB");

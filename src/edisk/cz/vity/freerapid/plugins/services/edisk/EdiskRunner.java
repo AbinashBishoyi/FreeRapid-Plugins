@@ -39,7 +39,7 @@ class EdiskRunner extends AbstractRunner {
         super.run();
         final HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {
-            final HttpMethod httpMethod2 = getMethodBuilder().setActionFromAHrefWhereATagContains("POMALU").setBaseURL(SERVICE_WEB).toHttpMethod();
+            final HttpMethod httpMethod2 = getGetMethod(fileURL.replace("/stahni/", "/stahni-pomalu/"));
 
             if (makeRedirectedRequest(httpMethod2)) {
                 String action = PlugUtils.getStringBetween(getContentAsString(), "countDown('", "',");
@@ -82,7 +82,7 @@ class EdiskRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
         PlugUtils.checkFileSize(httpFile, content, "Velikost souboru: <strong>", "</strong>");
-        PlugUtils.checkName(httpFile, content, "nout soubor:&nbsp;<span class=\"bold\">", " (");
+        PlugUtils.checkName(httpFile, content, "nout soubor:&nbsp;<h1>", " (");
 
     }
 

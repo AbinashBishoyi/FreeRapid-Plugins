@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="Nahraj.cz" default="all" basedir=".">
-    <property name="application" value="nahrajcz"/>
+<project name="FileSend.net" default="all" basedir=".">
+    <property name="application" value="filesend"/>
 
     <property name="version" value="1.00"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="nahrajcz.jar"/>
+    <property name="mainjar.file" value="filesend.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 

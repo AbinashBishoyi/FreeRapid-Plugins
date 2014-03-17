@@ -16,7 +16,7 @@ public class FireGetFileNameHandler implements FileNameHandler {
     @Override
     public void checkFileName(final HttpFile httpFile, final String content) throws ErrorDuringDownloadingException {
 
-        final Matcher matcher = PlugUtils.matcher("File(?:name)?\\s*?:\\s*?<(?:[^>]+?><)*?[^>]+?>(.+?)<", content.replaceAll(">\\s+?<", "><"));
+        final Matcher matcher = PlugUtils.matcher("File(?:name)?\\s*?:\\s*?<(?:[^>]+?><)*[^>]+?>(.+?)<", content.replaceAll(">\\s+?<", "><"));
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found");
         }

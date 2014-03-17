@@ -15,7 +15,7 @@ public class FireGetFileSizeHandler implements FileSizeHandler {
 
     @Override
     public void checkFileSize(final HttpFile httpFile, final String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("ize\\s*?:\\s*?<(?:[^>]+?><)*?[^>]+?>(.+?)<", content.replaceAll(">\\s+?<", "><"));
+        Matcher matcher = PlugUtils.matcher("ize\\s*?:\\s*?<(?:[^>]+?><)*[^>]+?>(.+?)<", content.replaceAll(">\\s+?<", "><"));
         if (!matcher.find()) {
             throw new PluginImplementationException("File size not found");
         }

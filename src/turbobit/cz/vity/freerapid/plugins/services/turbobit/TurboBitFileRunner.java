@@ -98,6 +98,11 @@ class TurboBitFileRunner extends AbstractRunner {
         }
     }
 
+    /**
+     * @return
+     * @throws ErrorDuringDownloadingException
+     *
+     */
     private String getCaptcha() throws ErrorDuringDownloadingException {
         CaptchaSupport cs = getCaptchaSupport();
         Matcher captchaURLMatcher = PlugUtils.matcher("<img alt=\"Captcha\" src=\"([^\"]*)\"", getContentAsString());
@@ -106,6 +111,10 @@ class TurboBitFileRunner extends AbstractRunner {
         return cs.getCaptcha(captchaURLMatcher.group(1));
     }
 
+    /**
+     * @throws ErrorDuringDownloadingException
+     *
+     */
     private void unimplemented() throws ErrorDuringDownloadingException {
         logger.warning(getContentAsString());//log the info
         throw new PluginImplementationException();//some unknown problem

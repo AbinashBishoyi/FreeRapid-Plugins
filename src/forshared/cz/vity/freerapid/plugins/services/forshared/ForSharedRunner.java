@@ -27,6 +27,8 @@ class ForSharedRunner extends AbstractRunner {
     private void checkUrl() {
         fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
         addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
+        addCookie(new Cookie(".4shared.com", "Login", "97537138", "/", 86400, false));
+        addCookie(new Cookie(".4shared.com", "Password", "89768e17adf70fa33790fa71abdc8366", "/", 86400, false));
     }
 
     @Override
@@ -58,6 +60,7 @@ class ForSharedRunner extends AbstractRunner {
             } else {
                 method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
                 if (makeRedirectedRequest(method)) {
+                    checkProblems();
                     method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("ownload").toGetMethod();
                     downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var c =", ";") + 1);
                     if (!tryDownloadAndSaveFile(method)) {
@@ -101,6 +104,9 @@ class ForSharedRunner extends AbstractRunner {
         }
         if (content.contains("You must enter a password to access this file")) {
             throw new NotRecoverableDownloadException("Files with password are not supported");
+        }
+        if (content.contains("to download this file")) {
+            throw new PluginImplementationException("Downloading this file requires sign-up");
         }
     }
 

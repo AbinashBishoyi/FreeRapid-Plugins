@@ -23,15 +23,15 @@ class MaknyosRunner extends AbstractRunner {
 
     private boolean login() throws Exception {
         synchronized (MaknyosRunner.class) {
-            final MaknyosServiceImpl service = (MaknyosServiceImpl) getPluginService();
-            final String contentAsString = getContentAsString();
+            MaknyosServiceImpl service = (MaknyosServiceImpl) getPluginService();
+            String contentAsString;
             PremiumAccount pa = service.getConfig();
 
             if (pa == null || !pa.isSet()) {
                 logger.info("No account data set, skipping login");
                 return false;
             }
-
+            
             final HttpMethod httpMethod = getMethodBuilder()
                     .setAction("http://www.maknyos.com/login.html")
                     .setParameter("redirect", "")
@@ -45,6 +45,7 @@ class MaknyosRunner extends AbstractRunner {
 
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
+            contentAsString = getContentAsString();
             if (contentAsString.contains("Login dan Kata sandi tidak tepat"))
                 throw new BadLoginException("Invalid account login information!");
             if (contentAsString.contains("Incorrect Login or Password"))

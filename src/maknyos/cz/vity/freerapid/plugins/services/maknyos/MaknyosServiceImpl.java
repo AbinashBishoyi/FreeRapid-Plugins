@@ -15,7 +15,7 @@ public class MaknyosServiceImpl extends AbstractFileShareService {
     public String getName() {
         return SERVICE_NAME;
     }
-   
+
     @Override
     public boolean supportsRunCheck() {
         return true;
@@ -36,17 +36,13 @@ public class MaknyosServiceImpl extends AbstractFileShareService {
         return showAccountDialog(getConfig(), "Maknyos", PLUGIN_CONFIG_FILE);
     }
 
-    public PremiumAccount getConfig() {
-        synchronized (MaknyosServiceImpl.class) {
-            if (config == null) {
+    PremiumAccount getConfig() {
+        if (config == null) {
+            synchronized (MaknyosServiceImpl.class) {
                 config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
             }
         }
         return config;
-    }
-
-    public void setConfig(PremiumAccount config) {
-        this.config = config;
     }
 
 }

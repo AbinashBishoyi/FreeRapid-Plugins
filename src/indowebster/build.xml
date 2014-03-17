@@ -61,8 +61,7 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**,**/jpswfdec/**, resources/**"
-                     excludes="**/TestApp*"/>
+            <fileset dir="${classes.dir}" includes="**/${application}/**,**/jpswfdec/**, resources/**" excludes="**/TestApp*"/>
         </copy>
 
         <copy todir="${build.dir}">
@@ -72,50 +71,50 @@
     </target>
 
     <target name="yguard">
-        <taskdef name="yguard" classname="com.yworks.yguard.YGuardTask"
-                 classpath="yguard.jar"/>
-        <yguard>
-            <externalclasses>
-                <fileset refid="jars"/>
-            </externalclasses>
+      <taskdef name="yguard" classname="com.yworks.yguard.YGuardTask"
+      classpath="yguard.jar"/>
+      <yguard>
+    <externalclasses>
+      <fileset refid="jars"/>
+    </externalclasses>
 
-            <inoutpair in="${dist.dir}/${version.name}.frp" out="${dist.dir}/${version.name}.frp"/>
+        <inoutpair in="${dist.dir}/${version.name}.frp" out="${dist.dir}/${version.name}.frp"/>
 
-            <shrink logfile="shrinklog.xml">
-                <keep>
-                    <class classes="public"
-                           methods="public" fields="public">
-                        <patternset>
-                            <include name="cz.vity.**.*"/>
-                        </patternset>
-                    </class>
-                    <!--   <class classes="public"
-                    methods="public" fields="public">
-                      <patternset>
-                        <include name="jpswfdec.SWFDec"/>
-                      </patternset>
-                    </class>-->
-                </keep>
-            </shrink>
-            <rename>
-                <keep>
-                    <class classes="public"
-                           methods="public" fields="public">
-                        <patternset>
-                            <include name="cz.vity.**.*"/>
-                        </patternset>
-                    </class>
-                    <!--<class classes="public"
-                    methods="public" fields="public">
-                      <patternset>
-                        <include name="jpswfdec.SWFDec"/>
-                      </patternset>
-                    </class>-->
-                </keep>
-            </rename>
+        <shrink logfile="shrinklog.xml">
+          <keep>
+            <class classes="public"
+            methods="public" fields="public">
+              <patternset>
+                <include name="cz.vity.**.*"/>
+              </patternset>
+            </class>
+         <!--   <class classes="public"
+            methods="public" fields="public">
+              <patternset>
+                <include name="jpswfdec.SWFDec"/>
+              </patternset>
+            </class>-->
+          </keep>
+        </shrink>
+        <rename>
+          <keep>
+            <class classes="public"
+            methods="public" fields="public">
+              <patternset>
+                <include name="cz.vity.**.*"/>
+              </patternset>
+            </class>
+            <!--<class classes="public"
+            methods="public" fields="public">
+              <patternset>
+                <include name="jpswfdec.SWFDec"/>
+              </patternset>
+            </class>-->
+          </keep>
+        </rename>
 
-        </yguard>
-    </target>
+      </yguard>
+      </target>
 
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
@@ -164,14 +163,14 @@
             <fileset dir="${build.dir}" includes="**/*">
             </fileset>
         </zip> -->
-        <jar zipfile="${dist.dir}/${version.name}.frp">
+	<jar zipfile="${dist.dir}/${version.name}.frp">
             <fileset dir="${build.dir}" includes="**/*">
                 <!--<include name="${build.dir}/${version.name}"/>-->
                 <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->
             </fileset>
         </jar>
-
-        <antcall target="yguard"/>
+        
+	<!-- todle zapnout <antcall target="yguard" />	 -->
         <!--<zip destfile="${dist.dir}/${version.name}-src.frp">-->
         <!--<fileset dir=".">-->
         <!--<include name="${lib.dir}/"/>-->

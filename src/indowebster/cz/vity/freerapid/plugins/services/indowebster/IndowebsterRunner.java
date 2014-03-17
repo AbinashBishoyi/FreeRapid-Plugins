@@ -1,32 +1,33 @@
 package cz.vity.freerapid.plugins.services.indowebster;
 
 import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-
-import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * @author Alex, JPEXS
+ * @author JPEXS
  */
 class IndowebsterRunner extends AbstractRunner {
+
+    private static final String SERVICE_WEB = "http://www.indowebster.com/";
     private final static Logger logger = Logger.getLogger(IndowebsterRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        makeRequest(getMethod);        
-        checkNameandSize(getContentAsString());        
+        makeRequest(getMethod);
+        checkNameandSize(getContentAsString());
     }
 
     @Override
@@ -34,64 +35,45 @@ class IndowebsterRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method1 = getGetMethod(fileURL);
+
+
         if (makeRedirectedRequest(method1)) {
-            String contentAsString = getContentAsString();
-            checkNameandSize(contentAsString);
-            Matcher matcher=getMatcherAgainstContent("<b>Download Link</b>.*<textarea[^>]*>(http.*)</textarea>");
-            if(matcher.find()){
-                String secondUrl=matcher.group(1);
-                final HttpMethod method2=getMethodBuilder().setReferer(fileURL).setAction(secondUrl).toGetMethod();
-                client.getHTTPClient().getParams().setHttpElementCharset("iso-8859-1");
-                client.getHTTPClient().getParams().setParameter("pageCharset", "iso-8859-1");
-                if (makeRedirectedRequest(method2)){                    
-                    String content=getContentAsString();
-                    matcher=getMatcherAgainstContent("eval\\(.*\\)");
-                    if(matcher.find()){
-                        String script1=JSUnpacker.unpackJavaScript(matcher.group(0));
-                        if(matcher.find()){
-                            String script2=JSUnpacker.unpackJavaScript(matcher.group(0));
-                            matcher=Pattern.compile("var [a-zA-Z0-9]+='([^']+)';").matcher(script1);
-                            if(matcher.find()){
-                                String cipherText=matcher.group(1);
-                                matcher=Pattern.compile("var password='?([^']+)'?;var nBits='?([0-9]+)'?;").matcher(script2);
-                                if(matcher.find()){
-                                    String password=matcher.group(1);
-                                    int nBits=Integer.parseInt(matcher.group(2));
-                                    String openText=AES.AESDecryptCtr(cipherText, password, nBits);
-                                    matcher=Pattern.compile("location\\.href=\\\\'(http.*)\\\\';").matcher(openText);
-                                    if(matcher.find()){
-                                        final HttpMethod method3=getMethodBuilder().setReferer(secondUrl).setAction(matcher.group(1)).toGetMethod();
-                                        if (!tryDownloadAndSaveFile(method3)) {
-                                            checkProblems();
-                                            logger.warning(getContentAsString());
-                                            throw new IOException("File input stream is empty.");
-                                        }
-                                    }else{
-                                        throw new InvalidURLOrServiceProblemException("Final link not found");
-                                    }                                    
-                                }else{
-                                throw new InvalidURLOrServiceProblemException("Bad format of second javascript");
-                                }
-                            }else{
-                                throw new InvalidURLOrServiceProblemException("Bad format of first javascript");
-                            }
-                        }else{
-                            throw new InvalidURLOrServiceProblemException("Second javascript not found");
+            checkNameandSize(getContentAsString());
+            Matcher m = getMatcherAgainstContent("href=\"(download=[^\"]+)\"");
+            if (m.find()) {
+                final HttpMethod method2 = getMethodBuilder(getContentAsString()).setBaseURL(SERVICE_WEB).setAction(m.group(1)).toGetMethod();
+                if (makeRedirectedRequest(method2)) {
+                    final HttpMethod method3 = getMethodBuilder(getContentAsString()).setBaseURL(SERVICE_WEB).setActionFromFormByName("form1", true).toPostMethod();
+                    if (makeRedirectedRequest(method3)) {
+                        Header hRefresh = method3.getResponseHeader("refresh");
+                        if (hRefresh == null)
+                            throw new PluginImplementationException("No refresh header");
+                        String refreshVal = hRefresh.getValue();
+                        refreshVal = refreshVal.substring(refreshVal.indexOf("url=") + 4);
+                        GetMethod method4 = getGetMethod(refreshVal);
+                        if (!tryDownloadAndSaveFile(method4)) {
+                            checkProblems();
+                            throw new ServiceConnectionProblemException("Error starting download");
                         }
-                    }else{
-                        throw new InvalidURLOrServiceProblemException("First javascript not found");
-                    }                    
-                } else throw new InvalidURLOrServiceProblemException("Cant connect to link in textarea");
-                
-            } else {                
-                throw new InvalidURLOrServiceProblemException("Cant find download link in textarea");
+                    } else {
+                        throw new PluginImplementationException("Cannot connect to third link");
+                    }
+                } else {
+                    throw new PluginImplementationException("Cannot connect to second link");
+                }
+            } else {
+                throw new PluginImplementationException("Cannot find to second link");
             }
-           } else throw new InvalidURLOrServiceProblemException("Cant load first link");
+        } else {
+            throw new ServiceConnectionProblemException();
+        }
+
     }
 
     private void checkNameandSize(String content) throws Exception {
 
         if (!content.contains("indowebster.com")) {
+            checkProblems();
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
@@ -101,14 +83,31 @@ class IndowebsterRunner extends AbstractRunner {
         if (content.contains("File doesn")) {
             throw new URLNotAvailableAnymoreException("<b>Indowebster error:</b><br>File doesn't exist");
         }
-        PlugUtils.checkName(httpFile, content, "<b>Original name : </b><!--INFOLINKS_ON--> ", "<!--INFOLINKS_OFF-->");
-        PlugUtils.checkFileSize(httpFile, content, "<b>Size : </b>", "</div>");
+        Matcher m1 = getMatcherAgainstContent("<b> *Original name[^:]*:[^<]*</b>[^<]*<!--INFOLINKS_ON--> *([^<]+)<");
+        Matcher m2 = getMatcherAgainstContent("<b> *Original name[^:]*:[^<]*</b> *([^<]+)<");
+
+        if (m1.find()) {
+            httpFile.setFileName(m1.group(1));
+        } else if (m2.find()) {
+            httpFile.setFileName(m2.group(1));
+        } else {
+            throw new PluginImplementationException("File name not found");
+        }
+
+        Matcher m = getMatcherAgainstContent("<b> *Size[^:]*:[^<]*</b> *([^<]+)</div>");
+        if (m.find()) {
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(m.group(1)));
+        } else {
+            throw new PluginImplementationException("File size not found");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 
     }
 
-
     private void checkProblems() throws ServiceConnectionProblemException {
+        if (getContentAsString().contains("<b>Warning</b>:  session_start()")) {
+            throw new ServiceConnectionProblemException(String.format("<b>Indowebster Error:</b><br>PHP session error."));
+        }
         if (getContentAsString().contains("already downloading")) {
             throw new ServiceConnectionProblemException(String.format("<b>Indowebster Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
         }
@@ -116,5 +115,4 @@ class IndowebsterRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException(String.format("<b>Indowebster Error:</b><br>Currently a lot of users are downloading files."));
         }
     }
-
 }

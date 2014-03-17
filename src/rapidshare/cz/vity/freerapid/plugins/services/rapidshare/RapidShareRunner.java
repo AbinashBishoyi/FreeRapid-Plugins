@@ -27,8 +27,7 @@ class RapidShareRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
-        } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        } else throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     public void run() throws Exception {
@@ -41,7 +40,7 @@ class RapidShareRunner extends AbstractRunner {
             enterCheck();
             Matcher matcher = getMatcherAgainstContent("form id=\"ff\" action=\"([^\"]*)\"");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
             }
             String s = matcher.group(1);
             logger.info("Found File URL - " + s);
@@ -53,7 +52,7 @@ class RapidShareRunner extends AbstractRunner {
                 if (!matcher.find()) {
                     checkProblems();
                     logger.warning(getContentAsString());
-                    throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                 }
                 s = matcher.group(1);
 
@@ -76,9 +75,8 @@ class RapidShareRunner extends AbstractRunner {
                     logger.info(getContentAsString());
                     throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
                 }
-            }
-        } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            } else throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+        } else throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     private String getPrefferedMirror() throws Exception {

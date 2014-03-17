@@ -25,7 +25,10 @@ class FileFactoryFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        int httpStatus = client.makeRequest(method, false);
+        if (httpStatus / 100 == 3) {    // direct download
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        } else if (httpStatus == 200) {
             checkProblems();
             checkNameAndSize();
         } else {

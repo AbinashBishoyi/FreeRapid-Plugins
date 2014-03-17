@@ -38,7 +38,7 @@ class KewlshareFileRunner extends AbstractRunner {
         if (!content.contains("File Name")) {
             checkProblems();
             logger.warning(getContentAsString());
-            throw new PluginImplementationException("Kewlshare Server Error");
+            throw new ServiceConnectionProblemException("Kewlshare Server Error");
         }
 
         PlugUtils.checkName(httpFile, content, "File Name : <strong>", " || ");//TODO
@@ -60,6 +60,8 @@ class KewlshareFileRunner extends AbstractRunner {
 
             while (!isFinal) {
                 ProccessHTML(getContentAsString());
+                logger.info(getContentAsString());
+                
             }
 
         } else {
@@ -150,7 +152,10 @@ class KewlshareFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("Download Limit 1 hour is over", 3600); //let to know user in FRD
         }
         if (contentAsString.contains("Please Inform us if you see this Error")) {//TODO
-            throw new YouHaveToWaitException("Kewlshare server error", 3600); //let to know user in FRD
+            throw new ServiceConnectionProblemException("Kewlshare server error"); //let to know user in FRD
+        }
+        if (contentAsString.contains("This Server Usage is really high in this moment")) {//TODO
+            throw new ServiceConnectionProblemException("Kewlshare server error"); //let to know user in FRD
         }
     }
 

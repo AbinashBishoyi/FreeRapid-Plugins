@@ -7,20 +7,22 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author Saikek
  *         Class that provides basic info about plugin
  */
- public class FileStoreUaServiceImpl extends AbstractFileShareService {
+public class FileStoreUaServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "filestore.com.ua";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
-        return 8;//TODO - check!!!
+        return 8;
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//TODO - check!!!
+        return true;
     }
 
     @Override

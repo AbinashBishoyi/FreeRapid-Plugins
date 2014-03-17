@@ -7,11 +7,10 @@
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="filestore.com.ua"/>
+        <attribute id="maxDownloads" value="8"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-    <requires>
-        <import plugin-id="recaptcha.com" plugin-version="1.0" match="greater-or-equal"/>
-    </requires>
+
     <runtime>
         <library id="filestore.com.ua" path="/" type="code"/>
     </runtime>

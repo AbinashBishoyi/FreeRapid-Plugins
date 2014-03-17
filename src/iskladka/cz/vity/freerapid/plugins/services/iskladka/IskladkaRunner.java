@@ -1,15 +1,13 @@
 package cz.vity.freerapid.plugins.services.iskladka;
 
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
-import cz.vity.freerapid.plugins.webclient.*;
-import org.apache.commons.httpclient.HttpStatus;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -17,67 +15,69 @@ import java.util.regex.Matcher;
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
-class IskladkaRunner {
-    private final static Logger logger = Logger.getLogger(cz.vity.freerapid.plugins.services.iskladka.IskladkaRunner.class.getName());
-    private HttpDownloadClient client;
-    private HttpFileDownloader downloader;
-    private HttpFile httpFile;
+class IskladkaRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(IskladkaRunner.class.getName());
 
     public void run(HttpFileDownloader downloader) throws Exception {
-
-        httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        this.downloader = downloader;
-        String fileURL = httpFile.getFileUrl().toString();
+        super.run(downloader);
         fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
 
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-            if (client.getContentAsString().contains("bude zah")) {
-                Matcher matcher = PlugUtils.matcher("\\?file=[0-9]+_(.*)$", fileURL);
-                if (matcher.find()) {
-                    final String fn = URLDecoder.decode(matcher.group(1), "UTF-8");
-                    logger.info("File name " + fn);
-                    httpFile.setFileName(fn);
-                }
-                GetMethod method = parseMethod(client.getContentAsString());
-                downloader.sleep(getTimeToWait(client.getContentAsString()));
-                if (downloader.isTerminated())
-                    throw new InterruptedException();
-                httpFile.setState(DownloadState.GETTING);
+        if (makeRequest(getMethod)) {
 
-                if (!trydownload(method)) {
-                    boolean finish = false;
-                    int steps = 0;
-                    while (!finish && steps < 20 && client.getContentAsString().contains("ekejte!")) {
-                        matcher = PlugUtils.matcher("DL je ([0-9]+)", client.getContentAsString());
-                        if (matcher.find()) logger.info("Request wasnt final, length of queue is " + matcher.group(1));
-                        GetMethod method2 = parseMethod(client.getContentAsString());
-                        downloader.sleep(10 * getTimeToWait(client.getContentAsString()));
-                        if (downloader.isTerminated())
-                            throw new InterruptedException();
-                        httpFile.setState(DownloadState.GETTING);
-                        finish = trydownload(method2);
-                        steps++;
-                    }
-                    if (!finish) {
-                        checkProblems();
-                        throw new IOException("File input stream is empty.");
-                    }
+            checkName(client.getContentAsString());
+            GetMethod method = parseMethod(client.getContentAsString());
+            downloader.sleep(getTimeToWait(client.getContentAsString()));
+            if (downloader.isTerminated())
+                throw new InterruptedException();
+            httpFile.setState(DownloadState.GETTING);
+
+            if (!tryDownload(method)) {
+                boolean finish = false;
+                int steps = 0;
+                while (!finish && steps < 20 && client.getContentAsString().contains("ekejte!")) {
+                    Matcher matcher = PlugUtils.matcher("DL je ([0-9]+)", client.getContentAsString());
+                    if (matcher.find()) logger.info("Request wasnt final, length of queue is " + matcher.group(1));
+                    GetMethod method2 = parseMethod(client.getContentAsString());
+                    downloader.sleep(10 * getTimeToWait(client.getContentAsString()));
+                    if (downloader.isTerminated())
+                        throw new InterruptedException();
+                    httpFile.setState(DownloadState.GETTING);
+                    finish = tryDownload(method2);
+                    steps++;
                 }
-            } else {
-                checkProblems();
-                logger.info(client.getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                if (!finish) {
+                    checkProblems();
+                    throw new IOException("File input stream is empty.");
+                }
             }
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     private String checkURL(String fileURL) {
-        return fileURL.replaceFirst("iskladka.sk", "iskladka.cz");
+        String newurl = fileURL.replaceFirst("iskladka.sk", "iskladka.cz");
+        newurl = newurl.replaceFirst("download.php", "iCopy/index.php");
+        return newurl;
+    }
+
+    private void checkName(String content) throws Exception {
+        if (content.contains("bude zah")) {
+
+            Matcher matcher = PlugUtils.matcher("\\?file=[0-9]+_(.*)$", fileURL);
+            if (matcher.find()) {
+                final String fn = URLDecoder.decode(matcher.group(1), "UTF-8");
+                logger.info("File name " + fn);
+                httpFile.setFileName(fn);
+            }
+        } else {
+            checkProblems();
+            logger.warning(client.getContentAsString());
+            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+        }
+
     }
 
     private GetMethod parseMethod(String content) throws Exception {
@@ -116,21 +116,6 @@ class IskladkaRunner {
         final GetMethod method = client.getGetMethod(finallink);
         method.setFollowRedirects(true);
         return method;
-    }
-
-    private boolean trydownload(GetMethod method) throws Exception {
-        try {
-            final InputStream inputStream2 = client.makeFinalRequestForFile(method, httpFile);
-            if (inputStream2 != null) {
-                downloader.saveToFile(inputStream2);
-                return true;
-            } else {
-                return false;
-            }
-        } finally {
-            method.abort();
-            method.releaseConnection();
-        }
     }
 
     private int getTimeToWait(String content) {

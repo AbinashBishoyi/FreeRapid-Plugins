@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.spankwire;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -72,8 +69,11 @@ class SpankWireFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {//TODO
+        if (contentAsString.contains("Error Page Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("This article is temporarily unavailable.")) {
+            throw new YouHaveToWaitException("This article is temporarily unavailable. Please try again in a few minutes.", 5);
         }
     }
 

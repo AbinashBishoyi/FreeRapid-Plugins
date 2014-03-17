@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.easyshare;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.HttpFile;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
@@ -19,8 +22,6 @@ import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
- *         <p/>
- *         History: detekce ve strance The file you are trying to access is temporarily unavailable.
  */
 
 class EasyShareRunner {
@@ -46,47 +47,45 @@ class EasyShareRunner {
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
 
-           Matcher matcher = Pattern.compile("Download ([^,]+), upload", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                final String fn = matcher.group(1);
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-            } else logger.warning("File name was not found" + client.getContentAsString());
-                //TODO
-                if (client.getContentAsString().contains("trying to access is temporarily unavailable"))
-                    throw new YouHaveToWaitException("The file you are trying to access is temporarily unavailable.", 2 * 60);
-        if (client.getContentAsString().contains("w=")) {
-          matcher = PlugUtils.matcher("w='([0-9]*?)';", client.getContentAsString());
-            if (matcher.find()) {
-                downloader.sleep(Integer.parseInt(matcher.group(1)));
-            } else {
-                logger.warning(client.getContentAsString());
-                throw new PluginImplementationException("Plugin implementation problem");
-            }
 
+            while (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w=")) {
+                Matcher matcher = Pattern.compile("Download ([^,]+), upload", Pattern.MULTILINE).matcher(client.getContentAsString());
+                if (matcher.find()) {
+                    final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
+                    logger.info("File name " + fn);
+                    httpFile.setFileName(fn);
+                } else logger.warning("File name was not found" + client.getContentAsString());
 
-            matcher = PlugUtils.matcher("u='(/.*?)';", client.getContentAsString());
-            if (matcher.find()) {
-                final String link = matcher.group(1);
-                getMethod = client.getGetMethod(httpSite + link);
-                if (client.makeRequest(getMethod) != HttpStatus.SC_OK) {
+                if (client.getContentAsString().contains("w=")) {
+                    matcher = PlugUtils.matcher("w='([0-9]*?)';", client.getContentAsString());
+                    if (matcher.find()) {
+                        downloader.sleep(Integer.parseInt(matcher.group(1)));
+                    } else {
+                        logger.warning(client.getContentAsString());
+                        throw new PluginImplementationException("Plugin implementation problem");
+                    }
+
+                    matcher = PlugUtils.matcher("u='(/.*?)';", client.getContentAsString());
+                    if (matcher.find()) {
+                        final String link = matcher.group(1);
+                        getMethod = client.getGetMethod(httpSite + link);
+                        if (client.makeRequest(getMethod) != HttpStatus.SC_OK) {
+                            logger.warning(client.getContentAsString());
+                            throw new ServiceConnectionProblemException("Unknown error");
+                        }
+                    }
+
+                } else if (!client.getContentAsString().contains("Please enter")) {
+                    checkProblems();
                     logger.warning(client.getContentAsString());
-                    throw new ServiceConnectionProblemException("Unknown error");
+                    throw new PluginImplementationException("Plugin implementation problem");
                 }
-            }
-
-           }  else if (!client.getContentAsString().contains("Please enter")) {
-                logger.warning(client.getContentAsString());
-                throw new PluginImplementationException("Plugin implementation problem");
-            }
-           matcher = PlugUtils.matcher("File size: ([0-9.]+( )?.B).?</div>", client.getContentAsString());
-            if (matcher.find()) {
-                logger.info("File size " + matcher.group(1));
-                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
-            }
-            while (client.getContentAsString().contains("Please enter")) {
-                logger.info(client.getContentAsString());
-               if(stepCaptcha(client.getContentAsString())) break;
+                matcher = PlugUtils.matcher("File size: ([0-9.]+( )?.B).?</div>", client.getContentAsString());
+                if (matcher.find()) {
+                    logger.info("File size " + matcher.group(1));
+                    httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+                }
+                if (stepCaptcha(client.getContentAsString())) break;
             }
 
 
@@ -97,19 +96,9 @@ class EasyShareRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = Pattern.compile("Download limit exceeded", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = Pattern.compile("File not found", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {
-
-            throw new ServiceConnectionProblemException(String.format("Download limit exceeded."));
-        }
-        matcher = Pattern.compile("All download slots", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
-
-            throw new ServiceConnectionProblemException(String.format("No free slot for your country."));
-        }
-        matcher = Pattern.compile("Unfortunately, the link you have clicked is not available", Pattern.MULTILINE).matcher(client.getContentAsString());
-        if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>The file is not available</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
 
         }
 
@@ -129,44 +118,44 @@ class EasyShareRunner {
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info(httpSite + s);
-                    client.setReferer(baseURL);
+                client.setReferer(baseURL);
                 String captcha = downloader.getCaptcha(httpSite + s);
 
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
                     matcher = PlugUtils.matcher("<form action=\"([^\"]*file_contents[^\"]*)\"", contentAsString);
-                      if (matcher.find()) {
-                       s = matcher.group(1);
-                        logger.info( s);
+                    if (matcher.find()) {
+                        s = matcher.group(1);
+                        logger.info(s);
 
-                    final PostMethod method = client.getPostMethod(s);
-                  client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
-                    method.addParameter("id", id);
-                    method.addParameter("captcha", captcha);
+                        final PostMethod method = client.getPostMethod(s);
+                        client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
+                        method.addParameter("id", id);
+                        method.addParameter("captcha", captcha);
 
-                    try {
-                        final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                        if (inputStream != null) {
-                            downloader.saveToFile(inputStream);
-                            return true;
-                        } else {
-                            checkProblems();
-                            if (client.getContentAsString().contains("Please enter"))
-                                return false;
-                            logger.warning(client.getContentAsString());
-                            throw new IOException("File input stream is empty.");
+                        try {
+                            final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
+                            if (inputStream != null) {
+                                downloader.saveToFile(inputStream);
+                                return true;
+                            } else {
+                                checkProblems();
+                                if (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))
+                                    return false;
+                                logger.warning(client.getContentAsString());
+                                throw new IOException("File input stream is empty.");
+                            }
+
+                        } finally {
+                            method.abort();
+                            method.releaseConnection();
                         }
-
-                    } finally {
-                        method.abort();
-                        method.releaseConnection();
-                    }
                     } else {
                         logger.warning(client.getContentAsString());
-                          throw new PluginImplementationException("Action was not found");
-                          }
-                 }
+                        throw new PluginImplementationException("Action was not found");
+                    }
+                }
 
             } else throw new PluginImplementationException("Captcha picture was not found");
         }

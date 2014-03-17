@@ -29,7 +29,7 @@ class LinkToFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
-            final Matcher match = PlugUtils.matcher("<iframe id=\"iframe\".+?src=\"(.+?)\"", contentAsString);
+            final Matcher match = PlugUtils.matcher("<iframe id=\"iframe\".+?src=\"(.+?)\\s*\"", contentAsString);
             if (match.find()) {
                 this.httpFile.setNewURL(new URL(match.group(1))); //to setup new URL
                 this.httpFile.setFileState(FileState.NOT_CHECKED);

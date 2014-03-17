@@ -17,6 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             httpFile.setNewURL(new URL("http://linkto.net/?87750187150e7827f8df8f0.10233260"));
+            //httpFile.setNewURL(new URL("http://linkto.net/?96562651951142dfb012f58.46477830"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

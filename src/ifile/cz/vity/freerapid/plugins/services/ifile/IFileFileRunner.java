@@ -4,7 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.ifile.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -42,11 +41,11 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void finalRequest() throws Exception {
-        final HttpMethod method = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
-        makeRedirectedRequest(method);
-        //another link contains "download" too so we can't use setActionFromAHrefWhereATagContains()
-        final String finalURL = PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn2\" target=\"_blank\" href=\"", "\"");
-        final HttpMethod finalMethod = getMethodBuilder().setAction(finalURL).setReferer(REDIRECT_URL).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
+        //yes, the page needs to be downloaded twice
+        makeRedirectedRequest(httpMethod);
+        makeRedirectedRequest(httpMethod);
+        final HttpMethod finalMethod = getMethodBuilder().setActionFromAHrefWhereATagContains("click here").setReferer(REDIRECT_URL).toHttpMethod();
         if (!tryDownloadAndSaveFile(finalMethod)) {
             logger.warning(getContentAsString());
             throw new IOException("File input stream is empty.");
@@ -107,7 +106,6 @@ class IFileFileRunner extends AbstractRunner {
             // Retry is not used...
             //String respRetry = PlugUtils.getStringBetween(content, "\"retry\":\"", "\"");
             if (respStatus.equals("ok")) {
-                MethodBuilder mb = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL);
                 if (respCaptcha.equals("1")) {
                     stepReCaptcha();
                 } else{

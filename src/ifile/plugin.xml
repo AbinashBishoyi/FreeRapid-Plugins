@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="ifile.it" version="0.7.9" vendor="JPEXS"
+<plugin id="ifile.it" version="0.7.10" vendor="JPEXS"
         class="cz.vity.freerapid.plugins.services.ifile.IFileServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?ifile\.it/.+"/>

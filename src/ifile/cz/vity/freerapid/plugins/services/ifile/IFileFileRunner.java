@@ -23,12 +23,10 @@ class IFileFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(IFileFileRunner.class.getName());
     private final static String BASE_URL = "http://ifile.it/";
     private final static String REDIRECT_URL = BASE_URL + "dl";
-    private String __x_fsa;
-    private String __x_fs;
+    private String __alias_id;
     private String __x_c;
     private String __esn;
     private String __recaptcha_public;
-    private String additional;
 
     @Override
     public void runCheck() throws Exception {
@@ -47,7 +45,7 @@ class IFileFileRunner extends AbstractRunner {
         final HttpMethod method = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL).toHttpMethod();
         makeRedirectedRequest(method);
         //another link contains "download" too so we can't use setActionFromAHrefWhereATagContains()
-        final String finalURL = PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn\" target=\"_blank\" href=\"", "\"");
+        final String finalURL = PlugUtils.getStringBetween(getContentAsString(), "id=\"req_btn2\" target=\"_blank\" href=\"", "\"");
         final HttpMethod finalMethod = getMethodBuilder().setAction(finalURL).setReferer(REDIRECT_URL).toHttpMethod();
         if (!tryDownloadAndSaveFile(finalMethod)) {
             logger.warning(getContentAsString());
@@ -91,8 +89,8 @@ class IFileFileRunner extends AbstractRunner {
     }
 
     private void makeUrl(String type, String extra) throws Exception {
-        String c = BASE_URL + "download:dl_request?" + __x_fsa + "&type=" + type + "&esn=" + __esn + extra;
-        c += "&" + __x_fs + additional;
+        String c = BASE_URL + "download:dl_request?alias_id=" + __alias_id + "&type=" + type + "&esn=" + __esn + extra;
+        //c += "&" + __x_fs + additional;
         HttpMethod method = getMethodBuilder().setAction(c).toHttpMethod();
         method.addRequestHeader("X-Requested-With", "XMLHttpRequest"); //We use AJAX :-)
 
@@ -103,19 +101,17 @@ class IFileFileRunner extends AbstractRunner {
          */
         if (client.getHTTPClient().executeMethod(method) == 200) {
             String content = forcedGetContentAsString(method);
-            //Response looks like this: {"status":"ok","captcha":"none","retry":"none"}
+            //Response looks like this: {"status":"ok","captcha":1,"retry":0}
             String respStatus = PlugUtils.getStringBetween(content, "\"status\":\"", "\"");
-            String respCaptcha = PlugUtils.getStringBetween(content, "\"captcha\":\"", "\"");
+            String respCaptcha = PlugUtils.getStringBetween(content, "\"captcha\":", ",");
             // Retry is not used...
             //String respRetry = PlugUtils.getStringBetween(content, "\"retry\":\"", "\"");
             if (respStatus.equals("ok")) {
                 MethodBuilder mb = getMethodBuilder().setAction(REDIRECT_URL).setReferer(REDIRECT_URL);
-                if (respCaptcha.equals("none")) {
-                    finalRequest();
-                } else if (respCaptcha.equals("recaptcha")) {
+                if (respCaptcha.equals("1")) {
                     stepReCaptcha();
-                } else {
-                    stepCaptchaSimple();
+                } else{
+                    finalRequest();
                 }
             } else {
                 throw new PluginImplementationException("Server returned wrong status: " + respStatus);
@@ -134,13 +130,9 @@ class IFileFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize();
             String content = getContentAsString();
-            __x_fsa = PlugUtils.getStringBetween(content, "var __x_fsa = '", "';");
-            __x_fs = PlugUtils.getStringBetween(content, "var __x_fs = '", "';");
-            __x_c = PlugUtils.getStringBetween(content, "var __x_c = '", "';");
-//            __esn = PlugUtils.getStringBetween(getContentAsString(), "var	__esn = ", ";");
+            __alias_id = PlugUtils.getStringBetween(content, "var __alias_id				=	'", "';");
             __esn = "0";
             __recaptcha_public = PlugUtils.getStringBetween(content, "var __recaptcha_public		=	'", "';");
-            additional = PlugUtils.getStringBetween(content, "url += \"&\" + __x_fs + \"", "\";");
             makeUrl("na", "");
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");

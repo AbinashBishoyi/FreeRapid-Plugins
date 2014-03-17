@@ -30,10 +30,10 @@ class MegauploadRunner extends AbstractRunner {
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     @Override

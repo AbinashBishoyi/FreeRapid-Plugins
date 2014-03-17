@@ -3,8 +3,8 @@ package cz.vity.freerapid.plugins.services.shareator;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 

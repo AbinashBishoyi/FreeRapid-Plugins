@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.ulozto;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -18,12 +17,12 @@ public class UlozToServiceImpl extends AbstractFileShareService {
         return 1;
     }
 
-        @Override
+    @Override
     public boolean supportsRunCheck() {
         return true;
     }
 
-        @Override
+    @Override
     protected PluginRunner getPluginRunnerInstance() {
         return new UlozToRunner();
     }

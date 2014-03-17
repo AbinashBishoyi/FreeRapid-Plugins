@@ -2,9 +2,9 @@ package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpStatus;

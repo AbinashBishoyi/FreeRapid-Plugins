@@ -1,7 +1,8 @@
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloader;
+
 
 /**
  * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>

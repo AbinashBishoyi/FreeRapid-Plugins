@@ -2,7 +2,7 @@ package cz.vity.freerapid.plugins.services.easyshare;
 
 import cz.vity.freerapid.plugins.dev.PluginApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
 import java.net.URL;

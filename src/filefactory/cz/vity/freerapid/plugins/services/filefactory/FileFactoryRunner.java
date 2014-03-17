@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.filefactory;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.HttpFile;
@@ -113,7 +110,10 @@ class FileFactoryRunner {
             String contentAsString = client.getContentAsString();
             Matcher matcher = Pattern.compile("Size: ([0-9-\\.]*) MB", Pattern.MULTILINE).matcher(contentAsString);
             if (!matcher.find()) {
-                throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+                if (contentAsString.contains("This file has been deleted"))
+                    throw new URLNotAvailableAnymoreException("This file has been deleted.");
+                else
+                    throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
             }
             String s = matcher.group(1);
             httpFile.setFileSize((long) Float.parseFloat(s) * 1024 * 1024);

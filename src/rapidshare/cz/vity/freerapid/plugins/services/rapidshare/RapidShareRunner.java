@@ -78,9 +78,9 @@ class RapidShareRunner extends AbstractRunner {
     }
 
     private void checkURL() throws Exception {
-        Matcher matcher = PlugUtils.matcher("(https?)://.+?/%23!download%7C[^%]+%7C(\\d+)%7C([^%]+)", fileURL);
+        Matcher matcher = PlugUtils.matcher("!download(?:%7C|\\|)(?:[^%\\|]+)(?:%7C|\\|)(\\d+)(?:%7C|\\|)([^%\\|]+)", fileURL);
         if (matcher.find()) {
-            fileURL = matcher.group(1) + "://rapidshare.com/files/" + matcher.group(2) + "/" + matcher.group(3);
+            fileURL = "http://rapidshare.com/files/" + matcher.group(1) + "/" + matcher.group(2);
             httpFile.setNewURL(new URL(fileURL));
         }
         matcher = PlugUtils.matcher("/files/(\\d+)/(.+)", fileURL);

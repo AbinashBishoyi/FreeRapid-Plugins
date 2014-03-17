@@ -4,7 +4,7 @@
         id="RapidShare.com" vendor="Vity+ntoskrnl" version="1.1.16">
     <attributes>
         <attribute id="urlRegex"
-                   value="https?://((www\.)|(rs[0-9a-zA-Z]+\.))?rapidshare\.com/(files/|%23!download%7C).+"/>
+                   value="https?://((www\.)|(rs[0-9a-zA-Z]+\.))?rapidshare\.com/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="rapidshare.com"/>

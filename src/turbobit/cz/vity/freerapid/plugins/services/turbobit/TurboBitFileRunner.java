@@ -222,28 +222,38 @@ public class TurboBitFileRunner extends AbstractRunner {
         }
         contents = getContentAsString();
         int ii = 0;
-        while (!contents.contains("Waiting")) {                                          // decode contents into javascript function
-            if (ii++ > 10) throw new ServiceConnectionProblemException("XOR processing error");
+        try {
+            while (!contents.contains("Waiting")) {                 // decode contents into javascript function
+                if (ii++ > 10) throw new ServiceConnectionProblemException("XOR processing error");
+                String aaa[] = contents.split("eval");
+                int jpos = 0;                   // avoiding the dummy eval functions - - - keep trying turbobit :)-
+                for (int jj = 0, jmax = 0; jj < aaa.length; jj++) {
+                    if (aaa[jj].length() > jmax) {
+                        jmax = aaa[jj].length();
+                        jpos = jj;
+                    }
+                }
+                contents = aaa[jpos];
 
-            String aaa[] = contents.split("eval");
-            contents = aaa[aaa.length - 1];
+                String clVars = PlugUtils.getStringBetween(contents, "function(", "){");
+                String sFuncts = contents.substring(contents.indexOf("{") + 1, contents.lastIndexOf("}")).replace("return", "OUTPUT=");
+                String clVals = contents.substring(contents.lastIndexOf("(") + 1, contents.lastIndexOf(") );"));
 
-            String clVars = PlugUtils.getStringBetween(contents, "function(", "){");
-            String sFuncts = contents.substring(contents.indexOf("{") + 1, contents.lastIndexOf("}")).replace("return", "OUTPUT=");
-            String clVals = contents.substring(contents.lastIndexOf("(") + 1, contents.lastIndexOf(") );"));
+                String aVars[] = clVars.split(",");
+                String aVals[] = clVals.split(",");
+                String setVarVals = "";
+                for (int iPos = 0; iPos < aVars.length; iPos++) {
+                    setVarVals += aVars[iPos] + "=" + aVals[iPos] + ";";
+                }
+                ScriptEngineManager factory = new ScriptEngineManager();
+                ScriptEngine engine = factory.getEngineByName("JavaScript");
+                engine.eval(setVarVals + sFuncts).toString();
 
-            String aVars[] = clVars.split(",");
-            String aVals[] = clVals.split(",");
-            String setVarVals = "";
-            for (int iPos = 0; iPos < aVars.length; iPos++) {
-                setVarVals += aVars[iPos] + "=" + aVals[iPos] + ";";
+                contents = (String) engine.get("OUTPUT");
+                contents = contents.replaceAll("\n", " ").replaceAll("\r", " ");
             }
-            ScriptEngineManager factory = new ScriptEngineManager();
-            ScriptEngine engine = factory.getEngineByName("JavaScript");
-            engine.eval(setVarVals + sFuncts).toString();
-
-            contents = (String) engine.get("OUTPUT");
-            contents = contents.replaceAll("\n", " ").replaceAll("\r", " ");
+        } catch (Exception e) {
+            throw new PluginImplementationException("xor script has changed.!!");
         }
         // first variable declared is the number used for the XOR - get it and return it
         final String sTarget = contents.substring(contents.indexOf("var "), contents.indexOf("function"));

@@ -40,9 +40,15 @@ public class LetitbitRunner extends AbstractRunner {
     }
 
     protected void checkNameAndSize() throws Exception {
-        final String name = PlugUtils.getStringBetween(getContentAsString(), "<span class=\"file-info-name\">", "</span>");
-        httpFile.setFileName(PlugUtils.unescapeHtml(name).trim());
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"file-info-size\">[", "]</span>");
+        try {
+            final String name = PlugUtils.getStringBetween(getContentAsString(), "<span class=\"file-info-name\">", "</span>");
+            httpFile.setFileName(PlugUtils.unescapeHtml(name).trim());
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"file-info-size\">[", "]</span>");
+        } catch (Exception e) {
+            final String name = PlugUtils.getStringBetween(getContentAsString(), ": <span>", "</span>");
+            httpFile.setFileName(PlugUtils.unescapeHtml(name).trim());
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "[<span>", "</span>]");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

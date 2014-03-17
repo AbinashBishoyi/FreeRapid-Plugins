@@ -294,7 +294,7 @@ class RapidGatorFileRunner extends AbstractRunner {
             throw new PluginImplementationException("You have reached your daily downloads limit");
         }
         if (contentAsString.contains("You have reached your hourly downloads limit")) {
-            throw new PluginImplementationException("You have reached your hourly downloads limit");
+            throw new YouHaveToWaitException("You have reached your hourly downloads limit", 15 * 60);
         }
         final Matcher uptoMatcher = getMatcherAgainstContent("You can download files up to (.+?) in free mode");
         if (uptoMatcher.find()) {
@@ -307,7 +307,7 @@ class RapidGatorFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("Captcha expired. Try again in 15 minutes", 300);
         }
         if (contentAsString.contains("file can be downloaded by premium")) {
-            throw new PluginImplementationException("This file can be downloaded by premium only");
+            throw new NotRecoverableDownloadException("This file can be downloaded by premium only");
         }
     }
 

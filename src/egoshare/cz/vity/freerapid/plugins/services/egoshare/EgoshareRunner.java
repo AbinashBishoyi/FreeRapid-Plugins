@@ -31,7 +31,7 @@ class EgoshareRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
@@ -43,7 +43,7 @@ class EgoshareRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
 
             checkNameAndSize(getContentAsString());
             Matcher matcher;

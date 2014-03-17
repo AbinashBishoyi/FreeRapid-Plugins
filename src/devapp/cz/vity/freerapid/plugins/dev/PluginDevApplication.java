@@ -12,6 +12,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
 import cz.vity.freerapid.plugins.webclient.interfaces.ShareDownloadService;
 import org.jdesktop.application.Application;
 
+import java.net.ProxySelector;
 import java.util.logging.Logger;
 
 /**
@@ -21,6 +22,7 @@ import java.util.logging.Logger;
  */
 public abstract class PluginDevApplication extends Application {
     private final static Logger logger = Logger.getLogger(PluginDevApplication.class.getName());
+
 
     /**
      * Returns new instance of HttpFileDownloadTask
@@ -36,6 +38,7 @@ public abstract class PluginDevApplication extends Application {
     @Override
     protected void initialize(String[] args) {
         super.initialize(args);
+        ProxySelector.setDefault(null);
     }
 
     /**

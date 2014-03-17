@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -25,6 +26,7 @@ class OronFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        addCookie(new Cookie(".oron.com", "lang", "english", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
@@ -38,16 +40,15 @@ class OronFileRunner extends AbstractRunner {
     private void unimplemented() throws PluginImplementationException {
         logger.warning(getContentAsString());//log the info
         throw new PluginImplementationException();//some unknown problem
-
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher name_m = PlugUtils.matcher("Filename: <[^<>]*>([^<]+)<", getContentAsString());
+        Matcher name_m = getMatcherAgainstContent("Filename: <[^<>]*>([^<]+)<");
         if (!name_m.find())
             unimplemented();
         httpFile.setFileName(name_m.group(1));
 
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size: ", "<");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "ize: ", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -60,36 +61,27 @@ class OronFileRunner extends AbstractRunner {
         checkDownloadProblems();
 
         final HttpMethod method = getMethodBuilder()
+                .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("method_free", true)
                 .setAction(fileURL)
                 .setParameter("method_free", " Free Download ")
                 .toPostMethod();
 
-        if (!makeRequest(method))
+        if (!makeRedirectedRequest(method))
             throw new ServiceConnectionProblemException();
         checkProblems();
 
-        MethodBuilder request2 = getMethodBuilder()
-                .setActionFromFormByName("F1", true)
-                .setAction(fileURL);
-
-        ReCaptcha r = new ReCaptcha("6LdzWwYAAAAAAAzlssDhsnar3eAdtMBuV21rqH2N", client);
-        String imageURL = r.getImageURL();
-        CaptchaSupport cs = getCaptchaSupport();
-        r.setRecognized(cs.getCaptcha(imageURL));
-
-        final HttpMethod method2 = r.modifyResponseMethod(request2)
-                .toPostMethod();
-
-        if (!makeRequest(method2))
-            throw new ServiceConnectionProblemException();
-        checkProblems();
+        while (getContentAsString().contains("recaptcha")) {
+            if (!makeRedirectedRequest(stepCaptcha()))
+                throw new ServiceConnectionProblemException();
+            checkProblems();
+        }
 
         final HttpMethod method3 = getMethodBuilder()
+                .setReferer(fileURL)
                 .setActionFromAHrefWhereATagContains("Download")
-                .toHttpMethod();
+                .toGetMethod();
 
-        //here is the download link extraction
         if (!tryDownloadAndSaveFile(method3)) {
             checkProblems();//if downloading failed
             unimplemented();
@@ -97,17 +89,22 @@ class OronFileRunner extends AbstractRunner {
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Status: <b class=\"ok\">Premium Only</b><br>")) {
-            throw new URLNotAvailableAnymoreException("Premium only");
+        if (getContentAsString().contains("Status: <b class=\"ok\">Premium Only</b><br>")
+                || getContentAsString().contains("This file can only be downloaded by Premium Users")) {
+            throw new URLNotAvailableAnymoreException("This file can only be downloaded by Premium Users");
         }
         Matcher err_m = PlugUtils.matcher("<font class=\"err\">([^<>]+)<", getContentAsString());
         if (err_m.find()) {
             if (err_m.group(1).contains("No such file"))
-                throw new URLNotAvailableAnymoreException("File not found"); // we could as well repair the URL...
+                throw new URLNotAvailableAnymoreException("File not found");
         }
         if (getContentAsString().contains("<b>File Not Found</b>")
-                || getContentAsString().contains("<meta NAME=\"description\" CONTENT=\"ORON.com - File Not Found\">"))
-            throw new URLNotAvailableAnymoreException("File not found"); // we could as well repair the URL...
+                || getContentAsString().contains("<meta NAME=\"description\" CONTENT=\"ORON.com - File Not Found\">")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("Expired session")) {
+            throw new ServiceConnectionProblemException("Expired session");
+        }
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
@@ -115,12 +112,10 @@ class OronFileRunner extends AbstractRunner {
         if (err_m.find()) {
             Matcher m = PlugUtils.matcher("You have to wait(?:.*?\\b([0-9]+) hour)?(?:.*?\\b([0-9]+) minute)?(?:.*\\b([0-9]+) second)?", err_m.group(1));
             if (m.find())
-                throw new YouHaveToWaitException("You have to wait",
-                        Integer.valueOf("0" + m.group(1)) * 3600 +
-                                Integer.valueOf("0" + m.group(2)) * 60 +
-                                Integer.valueOf("0" + m.group(3)));
-            if (getContentAsString().contains("Wrong captcha"))
-                throw new CaptchaEntryInputMismatchException();
+                throw new YouHaveToWaitException(m.group(),
+                        Integer.parseInt("0" + m.group(1)) * 3600 +
+                                Integer.parseInt("0" + m.group(2)) * 60 +
+                                Integer.parseInt("0" + m.group(3)));
             unimplemented();
         }
     }
@@ -129,4 +124,25 @@ class OronFileRunner extends AbstractRunner {
         checkFileProblems();
         checkDownloadProblems();
     }
+
+    private HttpMethod stepCaptcha() throws Exception {
+        MethodBuilder request = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromFormByName("F1", true)
+                .setAction(fileURL)
+                .setParameter("method_free", " Free Download ");
+
+        Matcher m = getMatcherAgainstContent("api.recaptcha.net/noscript\\?k=([^\"]+)\"");
+        if (!m.find()) throw new PluginImplementationException("ReCaptcha key not found");
+
+        ReCaptcha r = new ReCaptcha(m.group(1), client);
+        String imageURL = r.getImageURL();
+        CaptchaSupport cs = getCaptchaSupport();
+        String captcha = cs.getCaptcha(imageURL);
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
+        r.setRecognized(captcha);
+
+        return r.modifyResponseMethod(request).toPostMethod();
+    }
+
 }

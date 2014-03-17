@@ -5,14 +5,17 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author Thumb
  */
 public class OronServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "oron.com";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }

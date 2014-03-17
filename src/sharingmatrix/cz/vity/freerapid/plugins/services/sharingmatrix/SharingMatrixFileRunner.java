@@ -149,8 +149,16 @@ class SharingMatrixFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString().replaceAll("&nbsp;", " ");
-        PlugUtils.checkName(httpFile, contentAsString, "Filename:</th>\n<td>", "<");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</th>\n<td>", "<");
+        try {
+            PlugUtils.checkName(httpFile, contentAsString, "Filename:</th>\n<td>", "<");
+        } catch(PluginImplementationException e) {
+            PlugUtils.checkName(httpFile, contentAsString, "<div id=\"fname\">", "</div>");
+        }
+        try {
+            PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</th>\n<td>", "<");
+        } catch(Exception e) {
+            PlugUtils.checkFileSize(httpFile, contentAsString, "<div id=\"fsize_div\">", "</div>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 }

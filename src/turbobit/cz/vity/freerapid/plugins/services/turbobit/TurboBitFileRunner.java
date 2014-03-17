@@ -19,7 +19,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Arthur Gunawan, RickCL, ntoskrnl, tong2shot
+ * @author Arthur Gunawan, RickCL, ntoskrnl, tong2shot, Abinash Bishoyi
  */
 public class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());

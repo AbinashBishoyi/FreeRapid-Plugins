@@ -15,7 +15,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author tong2shot
+ * @author tong2shot, Abinash Bishoyi
  */
 class LuckyShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LuckyShareFileRunner.class.getName());

@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, ntoskrnl, CapCap
+ * @author Ladislav Vitasek, Ludek Zika, ntoskrnl, CapCap, Abinash Bishoyi
  */
 class UploadingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadingRunner.class.getName());

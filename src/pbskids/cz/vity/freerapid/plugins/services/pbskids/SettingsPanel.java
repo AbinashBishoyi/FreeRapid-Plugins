@@ -20,6 +20,8 @@ public class SettingsPanel extends JPanel {
     private void initPanel() {
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
         final JComboBox<VideoQuality> qualityList = new JComboBox<VideoQuality>(VideoQuality.getItems());
+        final JCheckBox checkTunlr = new JCheckBox("Enable Tunlr *)", config.isTunlrEnabled());
+        final JLabel lblTunlrDesc = new JLabel("*) Unless you are in the US or using US proxy, you should enable Tunlr.");
 
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -32,9 +34,20 @@ public class SettingsPanel extends JPanel {
             }
         });
 
+        checkTunlr.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(final ActionEvent e) {
+                config.setTunlrEnabled(checkTunlr.isSelected());
+            }
+        });
+
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(qualityLabel);
         add(qualityList);
+        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(checkTunlr);
+        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(lblTunlrDesc);
         add(Box.createRigidArea(new Dimension(0, 15)));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }

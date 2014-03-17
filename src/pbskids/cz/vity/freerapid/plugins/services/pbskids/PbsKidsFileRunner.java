@@ -25,7 +25,7 @@ import java.util.regex.Matcher;
  * Class which contains main code
  *
  * @author tong2shot
- * @since 0.9u2
+ * @since 0.9u3
  */
 class PbsKidsFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(PbsKidsFileRunner.class.getName());
@@ -33,6 +33,8 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
     private final static String GET_VIDEOS_URL_SEASON = "http://pbskids.org/pbsk/video/api/getVideos/?type=Episode&status=available&encoding=&endindex=150&program=%s&return=type,airdate,tags,captions,images&orderby=-airdate&tags=cc-season%s&k=%s";
     private final static String GET_VIDEOS_URL = "http://pbskids.org/pbsk/video/api/getVideos/?status=available&encoding=&endindex=150&program=%s&return=type,airdate,tags,captions,images&orderby=-airdate&k=%s";
     private SettingsConfig config;
+    private Map<String, VideoClip> videoClipMap; //k=guid, v=video clip
+    private VideoClip videoClip;
 
     private void setConfig() throws Exception {
         PbsKidsServiceImpl service = (PbsKidsServiceImpl) getPluginService();
@@ -42,33 +44,10 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        HttpMethod httpMethod = getMethodBuilder()
-                .setReferer(fileURL)
-                .setAction(String.format(GET_HOST_PROGRAM_URL, fileURL.replaceFirst("\\?.+", "")).replace("#!", "&k=" + generateK() + "#!"))
-                .toGetMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkProblems();
-        String program = PlugUtils.getStringBetween(getContentAsString(), "\"defaultProgram\":\"", "\"");
-        checkNameAndSize(program);
+        checkNameAndSize();
     }
 
-    private void checkNameAndSize(String program) throws Exception {
-
-        if (!hasGuid(fileURL)) {
-            httpFile.setFileName("[All videos] " + program);
-        } else {
-            httpFile.setFileName(program);
-        }
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    @Override
-    public void run() throws Exception {
-        super.run();
-        logger.info("Starting download in TASK " + fileURL);
+    private void checkNameAndSize() throws Exception {
         HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction(String.format(GET_HOST_PROGRAM_URL, fileURL.replaceFirst("\\?.+", "")))
@@ -78,13 +57,15 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        String program = PlugUtils.getStringBetween(getContentAsString(), "\"defaultProgram\":\"", "\"");
-        checkNameAndSize(program);
-
-        String season = getSeasonFromUrl(fileURL);
+        String program;
+        try {
+            program = PlugUtils.getStringBetween(getContentAsString(), "\"defaultProgram\":\"", "\"");
+        } catch (PluginImplementationException e) {
+            throw new PluginImplementationException("Program name not found");
+        }
         httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
-                .setAction((hasSeason(fileURL) ? String.format(GET_VIDEOS_URL_SEASON, URLEncoder.encode(program, "UTF-8"), season, generateK())
+                .setAction((hasSeason(fileURL) ? String.format(GET_VIDEOS_URL_SEASON, URLEncoder.encode(program, "UTF-8"), getSeasonFromUrl(fileURL), generateK())
                         : String.format(GET_VIDEOS_URL, URLEncoder.encode(program, "UTF-8"), generateK())))
                 .toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
@@ -94,21 +75,38 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
         checkProblems();
         String videosInfoContent = getContentAsString();
         setConfig();
-        Map<String, VideoClip> videoClipMap = getVideoClipMap(videosInfoContent);  ////k=guid, v=video clip
-        if (hasGuid(fileURL)) { //has guid, download video
+        videoClipMap = getVideoClipMap(videosInfoContent);
+        if (videoClipMap.size() == 0) {
+            throw new URLNotAvailableAnymoreException("No available video");
+        }
+        if (!hasGuid(fileURL)) {
+            httpFile.setFileName("[All videos] " + PlugUtils.unescapeUnicode(program));
+        } else {
             String guidFromUrl = getGuidFromUrl(fileURL);
-            VideoClip videoClip = videoClipMap.get(guidFromUrl);
+            videoClip = videoClipMap.get(guidFromUrl);
             if (videoClip == null) {
-                throw new PluginImplementationException("No video which guid = " + guidFromUrl);
+                throw new PluginImplementationException("Video with GUID = " + guidFromUrl + " not found");
             }
+            httpFile.setFileName(PlugUtils.unescapeUnicode(program) + " - " + PlugUtils.unescapeUnicode(videoClip.title) + ".flv");
+        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
 
-            httpFile.setFileName(program + " - " + videoClip.title + ".flv");
-            Stream stream = Collections.min(videoClip.getStreamList());
+    @Override
+    public void run() throws Exception {
+        super.run();
+        logger.info("Starting download in TASK " + fileURL);
+        checkNameAndSize();
+        if (hasGuid(fileURL)) { //has guid, download video
             logger.info("Available streams :");
+            for (Stream stream : videoClip.getStreamList()) {
+                logger.info(stream.toString());
+            }
+            Stream selectedStream = Collections.min(videoClip.getStreamList());
             logger.info(videoClip.toString());
             logger.info("Config settings : " + config);
-            logger.info("Selected stream : " + stream);
-            RtmpSession session = getSession(stream);
+            logger.info("Selected stream : " + selectedStream);
+            RtmpSession session = getSession(selectedStream);
             tryDownloadAndSaveFile(session);
 
         } else { //no guid, queue videos
@@ -143,14 +141,17 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
             guidMatcher.region(videoClipContentStart, videoClipContentEnd);
             titleMatcher.region(videoClipContentStart, videoClipContentEnd);
             flashMatcher.region(videoClipContentStart, videoClipContentEnd);
+
             if (!guidMatcher.find()) {
                 throw new PluginImplementationException("GUID not found");
             }
             String guid = guidMatcher.group(1);
+
             if (!titleMatcher.find()) {
                 throw new PluginImplementationException("Title not found");
             }
             String title = titleMatcher.group(1);
+
             VideoClip videoClip = new VideoClip(guid, title);
             if (!flashMatcher.find()) {
                 throw new PluginImplementationException("Flash video not found");
@@ -159,7 +160,7 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
             while (bitrateUrlMatcher.find()) {
                 String bitrate = bitrateUrlMatcher.group(1);
                 try {
-                    VideoQuality videoQuality = (bitrate.equals("null") ? VideoQuality._800 : VideoQuality.valueOf("_" + bitrate));
+                    VideoQuality videoQuality = (bitrate.equals("null") ? VideoQuality._1200 : VideoQuality.valueOf("_" + bitrate));
                     String url = bitrateUrlMatcher.group(2).replace("\\/", "/");
                     videoClip.addStream(new Stream(videoQuality, url));
                 } catch (Exception e) {
@@ -174,7 +175,7 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
+        if (contentAsString.contains("\"defaultProgram\":\"\"")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
@@ -214,7 +215,7 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
 
     private RtmpSession getSession(Stream stream) throws Exception {
         GetMethod getMethod = getGetMethod(stream.url + "?format=json");
-        if (!client.getSettings().isProxySet()) {
+        if (!client.getSettings().isProxySet() && config.isTunlrEnabled()) {
             Tunlr.setupMethod(getMethod);
         }
         if (!makeRedirectedRequest(getMethod)) {
@@ -222,7 +223,12 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        String videoURL = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"");
+        String videoURL;
+        try {
+            videoURL = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"");
+        } catch (PluginImplementationException e) {
+            throw new PluginImplementationException("Video URL not found");
+        }
         logger.info("Video URL : " + videoURL);
         Matcher matcher = PlugUtils.matcher("://([^/]+)/(.+?)/(mp4:.+)", videoURL);
         if (!matcher.find()) {
@@ -250,16 +256,6 @@ class PbsKidsFileRunner extends AbstractRtmpRunner {
 
         public List<Stream> getStreamList() {
             return streamList;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            for (Stream stream : streamList) {
-                sb.append(stream);
-                sb.append("\n");
-            }
-            return sb.toString();
         }
     }
 

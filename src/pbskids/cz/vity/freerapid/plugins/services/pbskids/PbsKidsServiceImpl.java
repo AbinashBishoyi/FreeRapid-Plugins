@@ -31,7 +31,7 @@ public class PbsKidsServiceImpl extends AbstractFileShareService {
     @Override
     public void showOptions() throws Exception {
         super.showOptions();
-        if (getPluginContext().getDialogSupport().showOKCancelDialog(new SettingsPanel(this), "DailyMotion settings")) {
+        if (getPluginContext().getDialogSupport().showOKCancelDialog(new SettingsPanel(this), "PbsKids settings")) {
             getPluginContext().getConfigurationStorageSupport().storeConfigToFile(config, CONFIG_FILE);
         }
     }

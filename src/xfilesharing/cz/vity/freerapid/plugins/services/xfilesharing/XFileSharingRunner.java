@@ -35,8 +35,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     private final List<FileSizeHandler> fileSizeHandlers = getFileSizeHandlers();
     private final List<CaptchaType> captchaTypes = getCaptchaTypes();
 
-    private boolean skipWaitTime = false;
-
     protected List<FileNameHandler> getFileNameHandlers() {
         final List<FileNameHandler> fileNameHandlers = new LinkedList<FileNameHandler>();
         fileNameHandlers.add(new FileNameHandlerA());
@@ -101,9 +99,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             final int waitTime = getWaitTime();
             final long startTime = System.currentTimeMillis();
             stepPassword(methodBuilder);
-            stepCaptcha(methodBuilder);
-            if (!getSkipWaitTime()) {
-                sleepWaitTime(waitTime, startTime);
+            if (!stepCaptcha(methodBuilder)) {                // skip the wait timer if its on the same page
+                sleepWaitTime(waitTime, startTime);           //   as a captcha of type ReCaptcha
             }
             method = methodBuilder.toPostMethod();
             final int httpStatus = client.makeRequest(method, false);
@@ -184,10 +181,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         throw new PluginImplementationException("File size not found");
     }
 
-    protected boolean getSkipWaitTime() {
-        return skipWaitTime;
-    }
-
     protected int getWaitTime() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
@@ -217,17 +210,15 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
     }
 
-    protected void stepCaptcha(final MethodBuilder methodBuilder) throws Exception {
+    protected boolean stepCaptcha(final MethodBuilder methodBuilder) throws Exception {
         for (final CaptchaType captchaType : captchaTypes) {
             if (captchaType.canHandle(getContentAsString())) {
                 logger.info("Captcha type: " + captchaType.getClass().getSimpleName());
                 captchaType.handleCaptcha(methodBuilder, client, getCaptchaSupport());
-                if (captchaType instanceof ReCaptchaType) {
-                    skipWaitTime = true;
-                }
-                break;
+                return (captchaType instanceof ReCaptchaType);
             }
         }
+        return false;
     }
 
     protected void checkFileProblems() throws ErrorDuringDownloadingException {

@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 1401 2009-02-21 01:21:18Z Vity $
+ * $Id: RapidShareRunner.java 1440 2009-02-27 01:37:28Z Vity $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -211,6 +211,9 @@ class RapidShareRunner extends AbstractRunner {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);
             }
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Currently a lot of users are downloading files."));
+        }
+        if (getContentAsString().contains("momentarily not available")) {
+            throw new ServiceConnectionProblemException("The server is momentarily not available.");
         }
     }
 

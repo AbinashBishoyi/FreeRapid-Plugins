@@ -152,6 +152,9 @@ class RapidShareRunner extends AbstractRunner {
         if (getContentAsString().contains("you either need a Premium Account")) {
             throw new URLNotAvailableAnymoreException("This file is larger than 200 Megabyte. To download this file, you either need a Premium Account, or the owner of this file may carry the downloading cost by making use of \"TrafficShare\".");
         }
+        if (getContentAsString().contains("momentarily not available")) {
+            throw new ServiceConnectionProblemException("The server is momentarily not available.");
+        }
     }
 
 }

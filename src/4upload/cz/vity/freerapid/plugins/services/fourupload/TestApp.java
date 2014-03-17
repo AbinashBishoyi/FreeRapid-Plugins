@@ -15,7 +15,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://4upload.ru/file/2540d8cf9/mo_bbennett_s01.zip.html"));
+            httpFile.setNewURL(new URL("http://4upload.ru/file/2540dcffb/straceyxa07.rar.html"));
+            //httpFile.setNewURL(new URL("http://4upload.ru/file/2540d8cf9/mo_bbennett_s01.zip.html"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             // connectionSettings.setProxy("localhost", 8081);
             testRun(new FourUploadFilesShareServiceImpl(), httpFile, connectionSettings);

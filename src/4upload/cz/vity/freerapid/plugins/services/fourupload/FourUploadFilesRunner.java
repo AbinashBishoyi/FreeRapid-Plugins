@@ -77,18 +77,21 @@ class FourUploadFilesRunner extends AbstractRunner {
             String recaptcha = getActionFromScriptSrcWhereTagContains("recaptcha");
             logger.info( "Captcha URL: " + recaptcha );
             getMethod = getGetMethod(recaptcha);
-            if( !makeRequest(getMethod)) {
+            if( !makeRedirectedRequest(getMethod)) {
                 checkProblems(23);
             }
             //System.out.println( getContentAsString() );
-            matcher = getMatcherAgainstContent("challenge\\s:\\s'([\\w-]*)'");
+            matcher = getMatcherAgainstContent("challenge\\s?:\\s?'([\\w-]*)'");
             if( !matcher.find() ) {
                 checkProblems(24);
             }
             String recaptcha_challenge_field = matcher.group(1);
-            String captcha="http://api.recaptcha.net/image?c=" + recaptcha_challenge_field;
+            String captcha="http://www.google.com/recaptcha/api/image?c=" + recaptcha_challenge_field;
 
-            //URL=http://api.recaptcha.net/image?c=028OfOy4DmZzZh2LJZkai0FBz5N2yJNlRPqy1iYHirxt3uXUS0DQN0f1t2ht4CNWaRAmqi3ny9TJSK2onuwQRVnn_kKTzM4maMfH_y_WTTiAck-qETaRKiS78T9tN_PI76646BS577i8UQxHkqqOJeKRLwAe7-uo7LiOJsl8EK4TPKAQdvUDUP-QKBOovkZVPUTriKPJZ50VAChI9vzw4EbDiDjbhkJlIr1auap5gfnp4qfoMLAwMD
+            logger.info("Captcha URL: " + captcha);
+
+            //URL=http://api.recaptcha.net/image?c=03AHJ_VutklA4_ONVFIp9E8Ib8Oo30wpR4txlnv6R1kJJhfBQ65YRDj4E1w5hf2Q39b4FZB8wwqVCy1S-Ma_KhsgzMztLm9sNrBblLXrL7Ltl19RHat_0QiP_HshdPVECmCHTRQ8JBixFm3GosUWbKeGbTeue4bk729Q
+            //URL=http://www.google.com/recaptcha/api/image?c=03AHJ_VutklA4_ONVFIp9E8Ib8Oo30wpR4txlnv6R1kJJhfBQ65YRDj4E1w5hf2Q39b4FZB8wwqVCy1S-Ma_KhsgzMztLm9sNrBblLXrL7Ltl19RHat_0QiP_HshdPVECmCHTRQ8JBixFm3GosUWbKeGbTeue4bk729Q
             final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captcha);
             //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
             captcha = getCaptchaSupport().askForCaptcha(captchaImage);

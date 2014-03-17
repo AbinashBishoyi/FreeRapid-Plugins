@@ -220,16 +220,22 @@ public class TurboBitFileRunner extends AbstractRunner {
         if (!makeRedirectedRequest(method)) {
             throw new ServiceConnectionProblemException("XOR js load error");
         }
-        contents = evalScript(getContentAsString().split("eval"));
+        try {
+            contents = evalScript(getContentAsString());
+        } catch (Exception e) {
+            throw new PluginImplementationException("Site Scripts have changed - Plugin update needed");
+        }
         // first variable declared is the number used for the XOR - get it and return it
         final String sTarget = contents.substring(contents.indexOf("var "), contents.indexOf("function"));
         return PlugUtils.getNumberBetween(sTarget, " ", ";");
     }
 
-    private String evalScript(String scriptFuncts[]) {
-        for (int ii = 0; ii < scriptFuncts.length; ii++) {
+    private String evalScript(String scriptFunctions) {
+        final Matcher match = PlugUtils.matcher("eval\\(function\\(w,i,s,e\\)\\{var . = .\\}\\);", scriptFunctions);
+        scriptFunctions = match.replaceAll(" ");                   // remove all useless eval functions
+        final String[] scriptFuncts = scriptFunctions.split("eval");
+        for (String contentTest : scriptFuncts) {
             try {
-                final String contentTest = scriptFuncts[ii];
                 logger.info("Contents = " + contentTest);
                 final String clVars = PlugUtils.getStringBetween(contentTest, "function(", "){");
                 final String sFuncts = contentTest.substring(contentTest.indexOf("{") + 1, contentTest.lastIndexOf("}")).replace("return", "OUTPUT=");
@@ -251,7 +257,7 @@ public class TurboBitFileRunner extends AbstractRunner {
                 if (output.contains("Waiting")) {
                     return output;
                 } else if (output.contains("eval")) {
-                    String out = evalScript(output.split("eval"));
+                    String out = evalScript(output);
                     if (out != null)
                         return out;
                 }

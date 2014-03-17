@@ -5,10 +5,13 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.ByteArrayInputStream;
 import java.util.logging.Logger;
 
 /**
@@ -47,11 +50,24 @@ class BezvaDataFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-            final HttpMethod httpMethod = getMethodBuilder()
+            HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("frm-stahnoutForm", true)
-                    .setParameter("stahnoutSoubor", "Stáhnout")
-                    .toPostMethod();
+                    .setActionFromAHrefWhereATagContains("Stáhnout soubor")
+                    .toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            while (getContentAsString().contains("frm-stahnoutFreeForm")) {
+                stepCaptcha();
+            }
+            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "countdown\">00:", "</"));
+
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromAHrefWhereATagContains("Stáhnout soubor")
+                    .toGetMethod();
             setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
@@ -61,6 +77,23 @@ class BezvaDataFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void stepCaptcha() throws Exception {
+        final String captchaImgBase64Str = PlugUtils.getStringBetween(getContentAsString(), "data:image/png;base64,", "\"");
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final String captcha = captchaSupport.askForCaptcha(captchaSupport.loadCaptcha(new ByteArrayInputStream(Base64.decodeBase64(captchaImgBase64Str))));
+        final HttpMethod method = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("frm-stahnoutFreeForm", true)
+                .setParameter("stahnoutSoubor", "Stáhnout")
+                .setParameter("captcha", captcha)
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

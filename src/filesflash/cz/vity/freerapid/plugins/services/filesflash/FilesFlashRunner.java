@@ -3,8 +3,10 @@ package cz.vity.freerapid.plugins.services.filesflash;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -21,13 +23,13 @@ class FilesFlashRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FilesFlashRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -45,36 +47,31 @@ class FilesFlashRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        HttpMethod method = getGetMethod(fileURL); //create GET request
-
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String content = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(content);//extract file name and size from the page
-
-            //here is the download link extraction
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            final String content = getContentAsString();
+            checkProblems();
+            checkNameAndSize(content);
             method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("freedownload.php", true).toPostMethod();
-
             if (makeRedirectedRequest(method)) {
+                checkProblems();
+                while (getContentAsString().contains("recaptcha")) {
+                    stepCaptcha();
+                }
                 if (getContentAsString().contains("Please Wait")) {
                     final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "count=", ";", TimeUnit.SECONDS);
                     downloadTask.sleep(waitTime);
-
                     if (getContentAsString().contains("Click here to start free download")) {
                         method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to start free download").toPostMethod();
                     }
-
                 }
-
                 if (getContentAsString().contains("Your IP address is already downloading another link.")) {
                     throw new ServiceConnectionProblemException("Free users may only download one file at a time.");
                 }
-
                 if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();//if downloading failed
-                    throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
-
             } else {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -85,11 +82,25 @@ class FilesFlashRunner extends AbstractRunner {
         }
     }
 
+    private void stepCaptcha() throws Exception {
+        final String publicKey = PlugUtils.getStringBetween(getContentAsString(), "k=", "\">");
+        final MethodBuilder methodBuilder = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("freedownload.php", true);
+        final ReCaptcha reCaptcha = new ReCaptcha(publicKey, client);
+        final String captcha = getCaptchaSupport().getCaptcha(reCaptcha.getImageURL());
+        reCaptcha.setRecognized(captcha);
+        if (!makeRedirectedRequest(reCaptcha.modifyResponseMethod(methodBuilder).toPostMethod())) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+    }
+
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-
         if (contentAsString.contains("File Not Found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
 
     }

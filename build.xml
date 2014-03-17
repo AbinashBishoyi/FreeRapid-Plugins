@@ -83,6 +83,7 @@
         <ant dir="${src.dir}/tinyurl/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/usercash/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/enterupload/" antfile="build.xml" inheritall="false"/>
+	<ant dir="${src.dir}/radikalru/" antfile="build.xml" inheritall="false"/>
 
     </target>
 

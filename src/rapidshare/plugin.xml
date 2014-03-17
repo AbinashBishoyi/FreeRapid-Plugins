@@ -13,6 +13,5 @@
 
     <runtime>
         <library id="rapidshare.com" path="/" type="code"/>
-        <library id="res" path="/resources" type="resources"/>
     </runtime>
 </plugin>

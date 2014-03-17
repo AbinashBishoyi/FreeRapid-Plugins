@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author zhou_id
+ * @author zid
  */
 class IndowebsterRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(IndowebsterRunner.class.getName());
@@ -41,7 +41,7 @@ class IndowebsterRunner extends AbstractRunner {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        makeRequest(getMethod);
+        makeRedirectedRequest(getMethod);
         if (isPassworded()) {
             stepPasswordPage();
         }
@@ -104,7 +104,7 @@ class IndowebsterRunner extends AbstractRunner {
         if (content.contains("File doesn")) {
             throw new URLNotAvailableAnymoreException("<b>Indowebster error:</b><br>File doesn't exist");
         }
-        PlugUtils.checkName(httpFile, content, "class=\"dl-title\" title=\"", "\">");
+        PlugUtils.checkName(httpFile, content, "Description :</span>\n" + "            <p>", "</p>");
         PlugUtils.checkFileSize(httpFile, content, "Size : <span style=\"float:none;\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 

@@ -52,7 +52,7 @@ class ShareNeoFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
-            final int wait = PlugUtils.getNumberBetween(contentAsString, "var seconds = ", ";");
+            final int wait = PlugUtils.getNumberBetween(contentAsString, "var seconds=", ";");
             downloadTask.sleep(wait + 1);
             final String nextPage = PlugUtils.getStringBetween(contentAsString, ".download-timer').html(\"<a href='", "'>download now</a>\");");
             if (!makeRedirectedRequest(getGetMethod(nextPage))) {

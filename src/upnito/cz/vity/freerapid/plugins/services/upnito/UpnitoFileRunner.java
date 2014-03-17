@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
  */
 class UpnitoFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UpnitoFileRunner.class.getName());
-
+    private String newUrl;
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
@@ -71,8 +71,8 @@ class UpnitoFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-            client.setReferer(fileURL);
-            final PostMethod postMethod = getPostMethod(fileURL);
+            client.setReferer(newUrl);
+            final PostMethod postMethod = getPostMethod(newUrl);
             PlugUtils.addParameters(postMethod, contentAsString, new String[]{"dl2", "verifytext", "sid", "auth_token"});
 
             postMethod.addParameter("file", "");
@@ -95,7 +95,8 @@ class UpnitoFileRunner extends AbstractRunner {
     private String getURLPresmerovanie() throws PluginImplementationException {
         Matcher matcher = getMatcherAgainstContent("Prebieha\\s*<a href='([^']+)'>presmerovanie");
         if (matcher.find()) {
-            return matcher.group(1);
+            newUrl = matcher.group(1);
+            return newUrl;
         } else {
             logger.warning("redirect not found");
             throw new PluginImplementationException();

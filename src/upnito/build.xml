@@ -2,7 +2,7 @@
 <project name="Upnito.sk Plugin" default="all" basedir=".">
     <property name="application" value="upnito"/>
 
-    <property name="version" value="1.0.1"/>
+    <property name="version" value="1.0.2"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="upnito.jar"/>

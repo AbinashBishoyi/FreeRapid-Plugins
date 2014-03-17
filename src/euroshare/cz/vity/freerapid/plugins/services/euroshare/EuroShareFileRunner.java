@@ -53,7 +53,7 @@ class EuroShareFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
-                    .setActionFromAHrefWhereATagContains("STIAHNUŤ AKO FREE").toHttpMethod();
+                    .setActionFromAHrefWhereATagContains("STIAHNUŤ BEZ REGISTRÁCIE").toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {

@@ -34,7 +34,7 @@ class RapidShareRunner extends AbstractRunner {
         super.run();
  //       storage = getPluginService().getPluginContext().getConfigurationStorageSupport();
        context =  getPluginService().getPluginContext();
-
+ 
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
@@ -81,18 +81,13 @@ class RapidShareRunner extends AbstractRunner {
     }
 
     private String getPrefferedMirror() throws Exception{
-       MirrorChooser chooser = new MirrorChooser(context,getContentAsString());
-        return chooser.getPreferredURL();
+       RapidShareServiceImpl service = (RapidShareServiceImpl) getPluginService();
+      RapidShareMirrorConfig config = service.getConfig();
+       MirrorChooser chooser = new MirrorChooser(context,config);
+        chooser.setContent(getContentAsString());
+        return chooser.getPreferredURL(getContentAsString());
     }
- /*
-    private String chooseFromMirrorList(String defaultURL) throws Exception {
-    
-         logger.info( "je? "+  storage.configFileExists(CONFIGFILE));
-     /* if (!storage.configFileExists(CONFIGFILE)) */ //makeMirrorList(defaultURL);
-  /*
-     return defaultURL;
-    }
-       */
+
     private void enterCheck() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException {
         Matcher matcher;
         if (!getContentAsString().contains("form id=\"ff\" action=")) {
@@ -130,39 +125,7 @@ class RapidShareRunner extends AbstractRunner {
         }
 
     }
- /*
-  private String makeMirrorList(String defaultURL) throws Exception {
-     MirrorChooser mirrorChooser = new MirrorChooser();
-       mirrorChooser.add("default", "default");
-     Matcher matcher = getMatcherAgainstContent("<input (checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'http://rs...([^.]+)[^']*.';\" /> ([^<]*)<br");
-           while (matcher.find()) {
 
-               String mirrorName = matcher.group(3);
-               String ident = matcher.group(2);
-
-            logger.info("Mirror " + mirrorName + " ident " + ident);
-               mirrorChooser.add(mirrorName, ident);
-
-            }
-     MirrorChooserUI ms = new MirrorChooserUI(mirrorChooser);
-     if (getDialogSupport().showOKCancelDialog(ms, "Vyber"))  {
-         mirrorChooser.setPreffered(ms.getChoosen());
-          storage.storeConfigToFile(mirrorChooser.getMirrorConfig(),CONFIGFILE);
-     }
-    return defaultURL;
-   // <input checked type="radio" name="mirror" onclick="document.dlf.action=\'http://rs332gc.rapidshare.com/files/168531395/2434660/rkdr.part3.rar\';" /> GlobalCrossing<br />
-  }
-
-  private String getMirrorURL(String ident)  {
-      if (ident.equals("default")) return "";
-       Matcher matcher = getMatcherAgainstContent("<input (checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'(http://rs..."+ident+"[^']*).';\" />");
-           if (matcher.find()) {
-              return  matcher.group(2);
-            }
-      else return "";
-  }
-
-   */
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         if (getContentAsString().contains("You have reached the")) {

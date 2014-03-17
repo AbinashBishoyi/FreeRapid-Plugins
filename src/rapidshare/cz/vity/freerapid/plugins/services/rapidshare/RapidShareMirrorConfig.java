@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class RapidShareMirrorConfig {
     ArrayList<MirrorBean> ar;
-   String choosen;
+   String chosen;
 
     public ArrayList<MirrorBean> getAr() {
         return ar;
@@ -15,12 +15,12 @@ public class RapidShareMirrorConfig {
         this.ar = ar;
     }
 
-    public String getChoosen() {
-        return choosen;
+    public String getChosen() {
+        return chosen;
     }
 
-    public void setChoosen(String choosen) {
-        this.choosen = choosen;
+    public void setChosen(String chosen) {
+        this.chosen = chosen;
     }
 }
 

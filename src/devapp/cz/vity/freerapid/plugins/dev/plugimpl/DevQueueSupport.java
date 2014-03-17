@@ -16,33 +16,37 @@ public class DevQueueSupport implements MaintainQueueSupport {
 
     @Override
     public boolean addLinksToQueue(HttpFile parentFile, List<URI> uriList) {
-        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n");
+        StringBuilder builder = new StringBuilder().append("The following files will be added into the queue:\n");
         for (URI uri : uriList) {
-            builder.append(String.format("%s%n", uri));
+            builder.append(uri).append('\n');
         }
         logger.info(builder.toString());
         return false;
     }
 
+    @Override
     public boolean addLinksToQueue(HttpFile parentFile, String data) {
-        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n").append(data);
+        StringBuilder builder = new StringBuilder().append("The following data will be parsed for links to be added into the queue:\n\n").append(data);
         logger.info(builder.toString());
         return false;
     }
 
-    public boolean addLinkToQueueUsingPriority(HttpFile parentFile, String data) throws Exception {
-        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n").append(data);
-        logger.info(builder.toString());
-        return false;
-    }
-
+    @Override
     public boolean addLinkToQueueUsingPriority(HttpFile parentFile, List<URL> urlList) throws Exception {
-        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n");
+        StringBuilder builder = new StringBuilder().append("One of the following files will be added into the queue:\n");
         for (URL uri : urlList) {
-            builder.append(String.format("%s%n", uri));
+            builder.append(uri).append('\n');
         }
         logger.info(builder.toString());
         return false;
 
     }
+
+    @Override
+    public boolean addLinkToQueueUsingPriority(HttpFile parentFile, String data) throws Exception {
+        StringBuilder builder = new StringBuilder().append("The following data will be parsed for links of which one will be chosen to be added into the queue:\n\n").append(data);
+        logger.info(builder.toString());
+        return false;
+    }
+
 }

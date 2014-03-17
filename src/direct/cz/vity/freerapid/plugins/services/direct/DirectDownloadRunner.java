@@ -5,8 +5,11 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.interfaces.FileStreamRecognizer;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+
+import java.io.IOException;
 
 /**
  * @author ntoskrnl
@@ -17,12 +20,8 @@ class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognize
     public void run() throws Exception {
         super.run();
         checkName();
-        setClientParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
         final HttpMethod method = getGetMethod(fileURL);
         if (!tryDownloadAndSaveFile(method)) {
-            if (method.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                throw new URLNotAvailableAnymoreException("File not found");
-            }
             throw new ServiceConnectionProblemException("Error starting download");
         }
     }
@@ -51,6 +50,36 @@ class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognize
     @Override
     public boolean isStream(HttpMethod method, boolean showWarnings) {
         return true;
+    }
+
+    @Override
+    protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
+        Header locationHeader;
+        String action = method.getURI().toString();
+        do {
+            final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
+            processHttpMethod(method2);
+            if (method2.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                throw new URLNotAvailableAnymoreException("File not found");
+            }
+            locationHeader = method2.getResponseHeader("Location");
+            if (locationHeader != null) {
+                action = locationHeader.getValue();
+            }
+            method2.abort();
+            method2.releaseConnection();
+        } while (locationHeader != null);
+        httpFile.setFileName(findName(action));
+        setClientParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
+        method = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
+        return super.tryDownloadAndSaveFile(method);
+    }
+
+    private void processHttpMethod(HttpMethod method) throws IOException {
+        if (client.getHTTPClient().getHostConfiguration().getProtocol() != null) {
+            client.getHTTPClient().getHostConfiguration().setHost(method.getURI().getHost(), 80, client.getHTTPClient().getHostConfiguration().getProtocol());
+        }
+        client.getHTTPClient().executeMethod(method);
     }
 
 }

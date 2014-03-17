@@ -4,13 +4,12 @@
         vendor="Lukiz+JPEXS+tonyk" version="1.0.14">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?netload\.in/.+"/>
-        <attribute id="minver" value="0.851"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="netload.in"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
 
     <runtime>
         <library id="netload.in" path="/" type="code"/>

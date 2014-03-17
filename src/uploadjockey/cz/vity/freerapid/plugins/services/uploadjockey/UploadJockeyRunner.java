@@ -1,13 +1,14 @@
 package cz.vity.freerapid.plugins.services.uploadjockey;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-//import java.net.MalformedURLException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -18,19 +19,19 @@ import java.util.regex.Matcher;
  */
 class UploadJockeyRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadJockeyRunner.class.getName());
-    public String dpOK ="Invalid";
-    public String upOK = "Invalid";
-    public String rsOK = "Invalid";
-    public String esOK = "Invalid";
-    public String ffOK = "Invalid";
-    public String muOK = "Invalid";
+    public boolean dpOK;
+    public boolean upOK;
+    public boolean rsOK;
+    public boolean esOK;
+    public boolean ffOK;
+    public boolean muOK;
 
-    public String dpURL ="Invalid";
-    public String upURL = "Invalid";
-    public String rsURL = "Invalid";
-    public String esURL = "Invalid";
-    public String ffURL = "Invalid";
-    public String muURL = "Invalid";
+    public String dpURL;
+    public String upURL;
+    public String rsURL;
+    public String esURL;
+    public String ffURL;
+    public String muURL;
 
 
     @Override
@@ -38,7 +39,7 @@ class UploadJockeyRunner extends AbstractRunner {
         super.run();
         logger.info("Starting run task " + fileURL);
         //<div class="uplink uplink_finished">
-		//<a href="http://www.uploadjockey.com/redirect.php?url=aHR0cDovL3d3dy5maWxlZmFjdG9yeS5jb20vZmlsZS8=&key=297425" target="_blank" >FileFactory.com</a> </div>
+        //<a href="http://www.uploadjockey.com/redirect.php?url=aHR0cDovL3d3dy5maWxlZmFjdG9yeS5jb20vZmlsZS8=&key=297425" target="_blank" >FileFactory.com</a> </div>
         //<a href="http://www.uploadjockey.com/redirect.php?url=aHR0cDovL3cxMy5lYXN5LXNoYXJlLmNvbS8xNzAyNTY3NTYzLmh0bWw=&key=297425" target="_blank" >Easy-Share.com</a> </div>
         //<a href="http://www.uploadjockey.com/redirect.php?url=aHR0cDovL3JhcGlkc2hhcmUuY29tL2ZpbGVzLzE2NzU1NTM0OC9TaG9ydEtleXMudjIuMy4yLjEuSW5jbC5LZXltYWtlci1DT1JFLnJhcg==&key=297425" target="_blank" >Rapidshare.com</a> </div>
         //<a href="http://www.uploadjockey.com/redirect.php?url=aHR0cDovL3VwbG9hZGVkLnRv&key=297425" target="_blank" >Uploaded.to</a> </div>
@@ -58,54 +59,48 @@ class UploadJockeyRunner extends AbstractRunner {
         if (makeRequest(mJockey)) { //Load Jockey Page
             //Find File Factory // First for testing file removed error later make this last because there is >> Captcha
 
-                    final String mContent = getContentAsString();
+            final String mContent = getContentAsString();
 
 
-                    dpURL = checkServer(mContent,"DepositFiles");
-                     if (dpOK.equals("ok")) {
-                        this.httpFile.setNewURL(new URL(dpURL));
-                        this.httpFile.setPluginID("");
-                        this.httpFile.setState(DownloadState.QUEUED);
+            dpURL = checkServer(mContent, "DepositFiles");
+            if (dpOK) {
+                setNewURL(dpURL);
+            } else {
+
+                upURL = checkServer(mContent, "Uploaded");
+                if (upOK) {
+                    setNewURL(upURL);
+                } else {
+                    rsURL = checkServer(mContent, "Rapidshare");
+                    if (rsOK) {
+                        setNewURL(rsURL);
                     } else {
-
-                        upURL = checkServer(mContent,"Uploaded");
-                        if (upOK.equals("ok")) {
-                            this.httpFile.setNewURL(new URL(upURL));
-                            this.httpFile.setPluginID("");
-                            this.httpFile.setState(DownloadState.QUEUED);
+                        esURL = checkServer(mContent, "Easy");
+                        if (esOK) {
+                            setNewURL(esURL);
                         } else {
-                            rsURL = checkServer(mContent,"Rapidshare");
-                            if (rsOK.equals("ok")) {
-                                this.httpFile.setNewURL(new URL(rsURL));
-                                this.httpFile.setPluginID("");
-                                this.httpFile.setState(DownloadState.QUEUED);
+                            ffURL = checkServer(mContent, "FileFactory");
+                            if (ffOK) {
+                                setNewURL(ffURL);
                             } else {
-                                esURL = checkServer(mContent,"Easy");
-                                if (esOK.equals("ok")) {
-                                    this.httpFile.setNewURL(new URL(esURL));
-                                    this.httpFile.setPluginID("");
-                                    this.httpFile.setState(DownloadState.QUEUED);
-                                } else {
-                                    ffURL = checkServer(mContent,"FileFactory");
-                                    if (ffOK.equals("ok")) {
-                                        this.httpFile.setNewURL(new URL(ffURL));
-                                        this.httpFile.setPluginID("");
-                                        this.httpFile.setState(DownloadState.QUEUED);
-                                    } else {
-                                        muURL = checkServer(mContent,"Megaupload");
-                                        if (muOK.equals("ok")) {
-                                            this.httpFile.setNewURL(new URL(muURL));
-                                            this.httpFile.setPluginID("");
-                                            this.httpFile.setState(DownloadState.QUEUED);
-                                        } else throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-                                    }
-                                }
+                                muURL = checkServer(mContent, "Megaupload");
+                                if (muOK) {
+                                    setNewURL(muURL);
+                                } else
+                                    throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
                             }
                         }
                     }
                 }
+            }
+        }
     }
 
+    private void setNewURL(String url) throws MalformedURLException {
+        this.httpFile.setNewURL(new URL(url));
+        this.httpFile.setPluginID("");
+        this.httpFile.setState(DownloadState.QUEUED);
+    }
 
 
     //private void checkProblems() throws ErrorDuringDownloadingException {
@@ -114,146 +109,129 @@ class UploadJockeyRunner extends AbstractRunner {
     //        throw new URLNotAvailableAnymoreException("The page you requested was not found in our database.");
     //    }
     //}
-        private String checkServer(String tContent, String tService) throws Exception {
+    private String checkServer(String tContent, String tService) throws Exception {
 
 
-             final Matcher dpMatch = PlugUtils.matcher("<a href=\"([^\"]+)\" target=\"_blank\" >" + tService, tContent);
-                    if (dpMatch.find()) {
-                        //System.out.println("Processing DP");
-                        final GetMethod gDP = getGetMethod(dpMatch.group(1));
-                            if (makeRedirectedRequest(gDP)) {
-                                final Matcher dpMatch2 = getMatcherAgainstContent("<iframe src=\"([^\"]+)");
-                                    if(dpMatch2.find()) {
-                                        String cURL = dpMatch2.group(1);
-                                        final GetMethod gDP2 = getGetMethod(cURL);
-                                            if (makeRedirectedRequest(gDP2)) {
-                                                String dpContent = getContentAsString();
+        final Matcher dpMatch = PlugUtils.matcher("<a href=\"([^\"]+)\" target=\"_blank\" >" + tService, tContent);
+        if (dpMatch.find()) {
+            //System.out.println("Processing DP");
+            final GetMethod gDP = getGetMethod(dpMatch.group(1));
+            if (makeRedirectedRequest(gDP)) {
+                final Matcher dpMatch2 = getMatcherAgainstContent("<iframe src=\"([^\"]+)");
+                if (dpMatch2.find()) {
+                    String cURL = dpMatch2.group(1);
+                    final GetMethod gDP2 = getGetMethod(cURL);
+                    if (makeRedirectedRequest(gDP2)) {
+                        String dpContent = getContentAsString();
 
-                                                if (tService.equals("DepositFiles")) {
-                                                    dpOK = checkDepositFiles(dpContent);
-                                                } else
-                                                if (tService.equals("Uploaded")) {
-                                                    upOK = checkUploaded(dpContent);
-                                                }
-                                                if (tService.equals("Rapidshare")) {
-                                                    rsOK = checkRapidshare(dpContent);
-                                                }
-                                                if (tService.equals("Easy")) {
-                                                    esOK = checkEasy(dpContent);
-                                                }
+                        if (tService.equals("DepositFiles")) {
+                            dpOK = checkDepositFiles(dpContent);
+                        } else if (tService.equals("Uploaded")) {
+                            upOK = checkUploaded(dpContent);
+                        }
+                        if (tService.equals("Rapidshare")) {
+                            rsOK = checkRapidshare(dpContent);
+                        }
+                        if (tService.equals("Easy")) {
+                            esOK = checkEasy(dpContent);
+                        }
 
-                                                if (tService.equals("FileFactory")) {
-                                                    ffOK = checkFileFactory(dpContent);
-                                                }
-                                                if (tService.equals("Megaupload")) {
-                                                    muOK = checkMegaupload(dpContent);
-                                                }
+                        if (tService.equals("FileFactory")) {
+                            ffOK = checkFileFactory(dpContent);
+                        }
+                        if (tService.equals("Megaupload")) {
+                            muOK = checkMegaupload(dpContent);
+                        }
 
-                                                //dpURL = checkServer(mContent,"DepositFiles");
-                                                //upURL = checkServer(mContent,"Uploaded");
-                                                //rsURL = checkServer(mContent,"Rapidshare");
-                                                //esURL = checkServer(mContent,"Easy");
-                                                //ffURL = checkServer(mContent,"FileFactory");
-                                                //muURL = checkServer(mContent,"Megaupload");
+                        //dpURL = checkServer(mContent,"DepositFiles");
+                        //upURL = checkServer(mContent,"Uploaded");
+                        //rsURL = checkServer(mContent,"Rapidshare");
+                        //esURL = checkServer(mContent,"Easy");
+                        //ffURL = checkServer(mContent,"FileFactory");
+                        //muURL = checkServer(mContent,"Megaupload");
 
-                                                return cURL;
-                                            }
-                                    }
-                            }
+                        return cURL;
                     }
-            return "Invalid";
+                }
+            }
         }
+        return "Invalid";
+    }
 
-        private String checkDepositFiles(String content) throws Exception {
+    private boolean checkDepositFiles(String content) throws Exception {
         if (!content.contains("depositfiles")) {
             logger.warning(getContentAsString());
             //throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
-            return "not available";
+            return false;
 
         }
 
         if (content.contains("file does not exist")) {
-            return "not available";
+            return false;
             //throw new URLNotAvailableAnymoreException(String.format("<b>Such file does not exist or it has been removed for infringement of copyrights.</b><br>"));
         }
-        Matcher matcher = getMatcherAgainstContent("<b>([0-9.]+&nbsp;.B)</b>");
+        //Matcher matcher = getMatcherAgainstContent("<b>([0-9.]+&nbsp;.B)</b>");
 
-        matcher = getMatcherAgainstContent("class\\=\"info[^=]*\\=\"([^\"]*)\"");
-        if (matcher.find()) {
-  //          final String fn = matcher.group(1);
- //           logger.info("File name " + fn);
- //           httpFile.setFileName(fn);
-            return "ok";
-        } else return "not available";
-            
-   }
+        Matcher matcher = getMatcherAgainstContent("class\\=\"info[^=]*\\=\"([^\"]*)\"");
+        return matcher.find();
 
-        private String checkUploaded(String content) throws Exception {
+    }
+
+    private boolean checkUploaded(String content) throws Exception {
 
         if (!content.contains("uploaded.to")) {
-            return "not available";
+            return false;
         }
         if (content.contains("File doesn")) {
-            return "not available";
+            return false;
         }
 
-       Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
-        if (matcher.find()) {
- //           final String fileSize = matcher.group(1);
-//            logger.info("File size " + fileSize);
-//            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-            return "ok";
-        } else return "not available";
+        Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
+        return matcher.find();
         //httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 
 
     }
-        
-        private String checkMegaupload(String content) throws Exception {
+
+    private boolean checkMegaupload(String content) throws Exception {
 
         if (content.contains("link you have clicked is not available")) {
-            return "not available";
+            return false;
 
         }
 
         Matcher matcher = PlugUtils.matcher("Filename:(</font>)?</b> ([^<]*)", content);
-        if (matcher.find()) {
-            //final String fn = PlugUtils.unescapeHtml(matcher.group(2));
-            //logger.info("File name " + fn);
-            //httpFile.setFileName(fn);
-            //httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-            return "ok";
-        } else return "not available";
+        return matcher.find();
 
     }
 
 
-        private String checkFileFactory(String content) throws URLNotAvailableAnymoreException, YouHaveToWaitException, InvalidURLOrServiceProblemException {
+    private boolean checkFileFactory(String content) throws URLNotAvailableAnymoreException, YouHaveToWaitException, InvalidURLOrServiceProblemException {
         Matcher matcher = PlugUtils.matcher("Size: ([0-9-\\.]* .B)", content);
         if (!matcher.find()) {
             if (content.contains("file has been deleted") || content.contains("file is no longer available")) {
-                return "not available";
+                return false;
             } else {
                 if (content.contains("no free download slots")) {
                     throw new YouHaveToWaitException("Sorry, there are currently no free download slots available on this server.", 120);
                 }
-                return "not available";
+                return false;
             }
         }
         //String s = matcher.group(1);
         //httpFile.setFileSize(PlugUtils.getFileSizeFromString(s));
         //httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        return "ok";
-        }
+        return true;
+    }
 
-        private String checkEasy(String content) throws Exception {
+    private boolean checkEasy(String content) throws Exception {
 
         if (!content.contains("easy-share")) {
-            return "not available";
+            return false;
         }
 
         if (content.contains("File not found")) {
-            return "not available";
+            return false;
 
         }
         Matcher matcher = PlugUtils.matcher("Download ([^,]+), upload", content);
@@ -261,38 +239,38 @@ class UploadJockeyRunner extends AbstractRunner {
             //final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
             //logger.info("File name " + fn);
             //httpFile.setFileName(fn);
-            return "ok";
+            return true;
         } else logger.warning("File name was not found" + content);
-        return "not available";
+        return false;
     }
 
-        private String checkRapidshare(String content) throws URLNotAvailableAnymoreException {
+    private boolean checkRapidshare(String content) throws URLNotAvailableAnymoreException {
         Matcher matcher;
         if (!content.contains("form id=\"ff\" action=")) {
 
-            matcher = PlugUtils.matcher("class=\"klappbox\">((\\s|.)*?)</div>",content);
+            matcher = PlugUtils.matcher("class=\"klappbox\">((\\s|.)*?)</div>", content);
 
             if (matcher.find()) {
                 final String error = matcher.group(1);
                 if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed") || error.contains("file is neither allocated to") || error.contains("limit is reached"))
-                    return "not available";
+                    return false;
                 if (error.contains("file could not be found"))
-                    return "not available";
+                    return false;
 
 
-            if (content.contains("has removed file") || content.contains("file could not be found") || content.contains("illegal content") || content.contains("file has been removed") || content.contains("limit is reached"))
-                return "not available";
+                if (content.contains("has removed file") || content.contains("file could not be found") || content.contains("illegal content") || content.contains("file has been removed") || content.contains("limit is reached"))
+                    return false;
+
+            }
+            //| 5277 KB</font>
+            matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
+            if (matcher.find()) {
+                //Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+                return true;
+            }
 
         }
-        //| 5277 KB</font>
-        matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
-        if (matcher.find()) {
-            //Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-            return "ok";
-        }
-
+        return false;
     }
-       return "not available";
-}
 }
 

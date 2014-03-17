@@ -214,6 +214,10 @@ class CzshareRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("<b>Soubor byl smazán jeho odesilatelem</b><br>");
         }
+        matcher = getMatcherAgainstContent("Tento soubor byl na upozorn.n. identifikov.n jako warez.</strong>");
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException("<b>Tento soubor byl na upozornìní identifikován jako warez</b><br>");
+        }
         matcher = getMatcherAgainstContent("Bohu.el je vy.erp.na maxim.ln. kapacita FREE download.");
         if (matcher.find()) {
             throw new YouHaveToWaitException("Bohužel je vyèerpána maximální kapacita FREE downloadù", WAIT_TIME);

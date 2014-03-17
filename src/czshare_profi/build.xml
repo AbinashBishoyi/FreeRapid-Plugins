@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="CzshareProfi Plugin" default="all" basedir=".">
     <property name="application" value="czshare_profi"/>
-    <property name="version" value="1.0"/>
+    <property name="version" value="1.0.5"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="czshare_profi.jar"/>

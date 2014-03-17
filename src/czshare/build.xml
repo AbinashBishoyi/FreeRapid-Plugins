@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="Czshare Plugin" default="all" basedir=".">
     <property name="application" value="czshare"/>
-    <property name="version" value="1.0"/>
+    <property name="version" value="1.0.4"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="czshare.jar"/>

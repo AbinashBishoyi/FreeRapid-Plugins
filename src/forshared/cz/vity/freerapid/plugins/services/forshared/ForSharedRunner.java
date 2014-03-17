@@ -61,8 +61,8 @@ class ForSharedRunner extends AbstractRunner {
                 method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
                 if (makeRedirectedRequest(method)) {
                     checkProblems();
-                    method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("ownload").toGetMethod();
-                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var c =", ";") + 1);
+                    method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("Download file").toGetMethod();
+                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "id=\"secondsLeft\" value=\"", "\"") + 1);
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
@@ -104,9 +104,6 @@ class ForSharedRunner extends AbstractRunner {
         }
         if (content.contains("You must enter a password to access this file")) {
             throw new NotRecoverableDownloadException("Files with password are not supported");
-        }
-        if (content.contains("to download this file")) {
-            throw new PluginImplementationException("Downloading this file requires sign-up");
         }
     }
 

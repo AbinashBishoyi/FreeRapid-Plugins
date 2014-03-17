@@ -5,11 +5,13 @@ import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.services.turbobit.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -21,7 +23,7 @@ import java.util.regex.Matcher;
  */
 class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
-    private final static String LANG_REF = "http://www.turbobit.net/en";
+    private final static String LANG_REF = "http://www.turbobit.net/lang/en";
 
     private String urlCode;
 
@@ -54,7 +56,7 @@ class TurboBitFileRunner extends AbstractRunner {
             throw new PluginImplementationException("Error parsing download link");
         }
         urlCode = matcher.group(1);
-        return "http://www.turbobit.net/" + urlCode + ".html";
+        return "http://turbobit.net/" + urlCode + ".html";
     }
 
     /**
@@ -78,6 +80,7 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        /*
         try {
             httpFile.setFileName(findNextTextAfter("File name:"));
         } catch (Exception e) {
@@ -89,7 +92,20 @@ class TurboBitFileRunner extends AbstractRunner {
         } catch (Exception e) {
             throw new PluginImplementationException("File size not found", e);
         }
+        */
+        final Matcher filenameMatcher = getMatcherAgainstContent("<title>\\s+Download (.+?). Free download");
+        if (filenameMatcher.find()) {
+            httpFile.setFileName(filenameMatcher.group(1));
+        } else {
+            throw new PluginImplementationException("File name not found");
+        }
 
+        final Matcher filesizeMatcher = getMatcherAgainstContent("<span.+?</span>\\s+\\((.+?)\\)");
+        if (filesizeMatcher.find()) {
+           httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
+        } else {
+            new PluginImplementationException("File size not found");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -98,6 +114,7 @@ class TurboBitFileRunner extends AbstractRunner {
         super.run();
         fileURL = checkFileURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
+        String contentAsString;
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(httpMethod)) {
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
@@ -105,7 +122,8 @@ class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
                 checkNameAndSize();
 
-                final String freeAction = "http://www.turbobit.net/download/free/" + urlCode + "/";
+                contentAsString = getContentAsString();
+                final String freeAction = "http://turbobit.net/download/free/" + urlCode + "/";
                 httpMethod = getMethodBuilder().setReferer(fileURL).setAction(freeAction).toGetMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
@@ -124,29 +142,31 @@ class TurboBitFileRunner extends AbstractRunner {
                     }
                 }
 
-                matcher = getMatcherAgainstContent("limit: (\\d+),");
-                if (!matcher.find()) {
-                    checkProblems();
-                    throw new PluginImplementationException("Waiting time not found");
-                }
-                downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
+                contentAsString=getContentAsString();
+                final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString,"minLimit : ",",", TimeUnit.SECONDS);
+                downloadTask.sleep(waitTime);
 
-                final String timeoutAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
-                httpMethod = getMethodBuilder().setReferer(freeAction).setAction(timeoutAction).toGetMethod();
+                final String timeoutAction = "http://turbobit.net/download/getLinkAfterTimeout/" + urlCode ;
+                httpMethod = getMethodBuilder()
+                        .setReferer(freeAction)
+                        .setAction(timeoutAction)
+                        .toGetMethod();
+                httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                contentAsString=getContentAsString();
+                //logger.info(contentAsString);
 
-                final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(getContentAsString(), "/download/redirect/", "'");
+                final String finalURL = "http://turbobit.net/download/redirect/"+PlugUtils.getStringBetween(contentAsString,"<a href='/download/redirect/","'");
                 logger.info("Final URL: " + finalURL);
                 httpMethod = getMethodBuilder().setReferer(timeoutAction).setAction(finalURL).toGetMethod();
-
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
                     throw new ServiceConnectionProblemException("Error starting download");
-                }
+                } 
             } else {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -158,13 +178,14 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
-        Matcher err404Matcher = PlugUtils.matcher("<div class=\"text-404\">(.*?)</div", getContentAsString());
+        final String contentAsString = getContentAsString();
+        Matcher err404Matcher = PlugUtils.matcher("<div class=\"text-404\">(.*?)</div", contentAsString);
         if (err404Matcher.find()) {
             if (err404Matcher.group(1).contains("\u00d0\u2014\u00d0\u00b0\u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d1?\u00d0\u00b5\u00d0\u00bd\u00d0\u00bd\u00d1\u2039\u00d0\u00b9 \u00d0\u00b4\u00d0\u00be\u00d0\u00ba\u00d1?\u00d0\u00bc\u00d0\u00b5\u00d0\u00bd\u00d1\u201a \u00d0\u00bd\u00d0\u00b5 \u00d0\u00bd\u00d0\u00b0\u00d0\u00b9\u00d0\u00b4\u00d0\u00b5\u00d0\u00bd"))
                 throw new URLNotAvailableAnymoreException(err404Matcher.group(1));
         }
-        if (getContentAsString().contains("\u0424\u0430\u0439\u043B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D")
-                || getContentAsString().contains("File was not found"))
+        if (contentAsString.contains("\u0424\u0430\u0439\u043B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D")
+                || contentAsString.contains("File was not found") || contentAsString.contains("Probably it was deleted"))
             throw new URLNotAvailableAnymoreException("File not found");
     }
 
@@ -215,7 +236,8 @@ class TurboBitFileRunner extends AbstractRunner {
             return r.modifyResponseMethod(
                     getMethodBuilder(content)
                             .setReferer(action)
-                            .setActionFromFormWhereTagContains("recaptcha", true)
+                            .setActionFromFormByIndex(3,true)
+                            //.setActionFromFormWhereTagContains("recaptcha", true)
                             .setAction(action)
             ).toPostMethod();
         } else {

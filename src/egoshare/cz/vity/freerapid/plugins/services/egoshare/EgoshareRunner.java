@@ -85,7 +85,7 @@ class EgoshareRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Your requested file could not be found");
         }
 
-        PlugUtils.checkName(httpFile, content, "<td align=left><b>", "</b></td>");
+        PlugUtils.checkName(httpFile, content, "font-weight: bold; margin-left: 10px;\">", "(Download)</span></td>");
         PlugUtils.checkFileSize(httpFile, content, "</font> (", ")");
     }
 

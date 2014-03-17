@@ -96,6 +96,7 @@ class MediafireRunner extends AbstractRunner {
                     stepCaptcha();
                     break;
                 } finally {
+                    CaptchaState.removeFor(client.getSettings());
                     captchaState.signalSolved();
                 }
             } else {
@@ -125,22 +126,23 @@ class MediafireRunner extends AbstractRunner {
     private static class CaptchaState {
         private final static Map<ConnectionSettings, CaptchaState> STATES = new WeakHashMap<ConnectionSettings, CaptchaState>(1);
 
-        private final ConnectionSettings connectionSettings;
         private final AtomicBoolean solved = new AtomicBoolean();
         private final CountDownLatch latch = new CountDownLatch(1);
-
-        private CaptchaState(final ConnectionSettings connectionSettings) {
-            this.connectionSettings = connectionSettings;
-        }
 
         public static CaptchaState getFor(final ConnectionSettings connectionSettings) {
             synchronized (STATES) {
                 CaptchaState state = STATES.get(connectionSettings);
                 if (state == null) {
-                    state = new CaptchaState(connectionSettings);
+                    state = new CaptchaState();
                     STATES.put(connectionSettings, state);
                 }
                 return state;
+            }
+        }
+
+        public static void removeFor(final ConnectionSettings connectionSettings) {
+            synchronized (STATES) {
+                STATES.remove(connectionSettings);
             }
         }
 
@@ -156,9 +158,6 @@ class MediafireRunner extends AbstractRunner {
         }
 
         public void signalSolved() {
-            synchronized (STATES) {
-                STATES.remove(connectionSettings);
-            }
             latch.countDown();
         }
 

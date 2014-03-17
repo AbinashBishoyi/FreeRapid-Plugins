@@ -51,6 +51,8 @@ class LinkBucksRunner extends AbstractRunner {
         if (contentAsString.contains("Unable to find site")) {
             throw new URLNotAvailableAnymoreException("Unable to find site's URL to redirect to");
         }
+        if (contentAsString.contains("The link you have requested could not be found"))
+            throw new URLNotAvailableAnymoreException("Link not found");
     }
 
 }

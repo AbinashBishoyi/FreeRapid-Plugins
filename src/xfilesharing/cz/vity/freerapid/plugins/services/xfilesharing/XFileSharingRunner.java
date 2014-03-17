@@ -14,6 +14,7 @@ import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URL;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -79,9 +80,11 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                     .setAction(fileURL)
                     .removeParameter("method_premium");
             checkDownloadProblems();
-            stepWaitTime();
+            int waitTime = stepGetWaitTime();
+            long startTime = new Date().getTime();
             stepPassword(methodBuilder);
             stepCaptcha(methodBuilder);
+            stepDoWaitTime(waitTime, startTime);
             method = methodBuilder.toPostMethod();
             final int httpStatus = client.makeRequest(method, false);
             if (httpStatus / 100 == 3) {
@@ -129,10 +132,20 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         addCookie(new Cookie(getCookieDomain(), "lang", "english", "/", 86400, false));
     }
 
-    protected void stepWaitTime() throws Exception {
+    protected int stepGetWaitTime() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
-            downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
+            return (Integer.parseInt(matcher.group(1)) + 1);
+        }
+        return 0;
+    }
+
+    protected void stepDoWaitTime(int waitTime, long startTime) throws Exception {
+        if (waitTime > 0) {
+            long endTime = new Date().getTime();
+            // time taken to input password,captcha - no need to wait this time twice
+            int diffTime = Integer.parseInt(String.valueOf((endTime - startTime) / 1000));
+            downloadTask.sleep(waitTime - diffTime);
         }
     }
 

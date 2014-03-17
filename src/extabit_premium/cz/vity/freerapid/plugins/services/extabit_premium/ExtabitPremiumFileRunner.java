@@ -32,8 +32,8 @@ class ExtabitPremiumFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<div title=\"", "\">");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<td class=\"col-fileinfo\">", "</td>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "download Extabit.com - file hosting</title>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size:", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -49,17 +49,17 @@ class ExtabitPremiumFileRunner extends AbstractRunner {
             login();
 
             if (!tryDownloadAndSaveFile(method)) {
-                checkProblems();
+                checkDownloadProblems();
                 //Redirection download Failed.....Using Button from page
                 final String download = PlugUtils.getStringBetween(getContentAsString(), "download-file-btn\" href=\"", "\" onClick");
                 method = getGetMethod(download);
                 if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
+                    checkDownloadProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
         } else {
-            checkProblems();
+            checkDownloadProblems();
             throw new ServiceConnectionProblemException();
         }
     }
@@ -72,6 +72,11 @@ class ExtabitPremiumFileRunner extends AbstractRunner {
         if (content.contains("File is temporary unavailable")) {
             throw new ServiceConnectionProblemException("File is temporarily unavailable");
         }
+    }
+
+    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        checkProblems();
         if (content.contains("Next free download from your ip will be available in")) {
             final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "Next free download from your ip will be available in <b>", " minutes</b>", TimeUnit.MINUTES);
             throw new YouHaveToWaitException("Next free download from your ip will be available in", waitTime);

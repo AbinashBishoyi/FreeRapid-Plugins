@@ -33,8 +33,8 @@ class ExtabitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<div title=\"", "\">");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<td class=\"col-fileinfo\">", "</td>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "download Extabit.com - file hosting</title>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "Size:", "</div>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -44,7 +44,7 @@ class ExtabitFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            checkProblems();
+            checkDownloadProblems();
             checkNameAndSize();
 
             Matcher matcher;
@@ -58,7 +58,7 @@ class ExtabitFileRunner extends AbstractRunner {
                     downloadTask.sleep((int) Math.ceil(toWait / 1000d));
                 }
                 if (!makeRedirectedRequest(method)) {
-                    checkProblems();
+                    checkDownloadProblems();
                     throw new ServiceConnectionProblemException();
                 }
             } while (!(matcher = getMatcherAgainstContent("\"href\"\\s*:\\s*\"(.+?)\"")).find());
@@ -70,11 +70,11 @@ class ExtabitFileRunner extends AbstractRunner {
                     .setAction(matcher.group(1).replace("\\/", "/"))
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(method)) {
-                checkProblems();
+                checkDownloadProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
-            checkProblems();
+            checkDownloadProblems();
             throw new ServiceConnectionProblemException();
         }
     }
@@ -86,9 +86,13 @@ class ExtabitFileRunner extends AbstractRunner {
         if (getContentAsString().contains("File is temporary unavailable")) {
             throw new ServiceConnectionProblemException("File is temporarily unavailable");
         }
+    }
+
+    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        checkProblems();
         if (getContentAsString().contains("Next free download from your ip will be available in")) {
-            final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(),"Next free download from your ip will be available in <b>"," minutes</b>", TimeUnit.MINUTES);
-            throw new YouHaveToWaitException("Next free download from your ip will be available in",waitTime);
+            final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "Next free download from your ip will be available in <b>", " minutes</b>", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("Next free download from your ip will be available in", waitTime);
         }
     }
 
@@ -100,7 +104,7 @@ class ExtabitFileRunner extends AbstractRunner {
         }
         return getMethodBuilder(content)
                 .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("cmn_form",false)
+                .setActionFromFormWhereTagContains("cmn_form", false)
                 .setParameter("link", "1")
                 .setParameter("capture", captcha)
                 .toGetMethod();

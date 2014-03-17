@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.extabit.ExtabitServiceImpl"
-        id="extabit.com" vendor="Thumb+ntoskrnl" version="1.1.1">
+        id="extabit.com" vendor="Thumb+ntoskrnl" version="1.1.2">
     <attributes>
         <attribute id="urlRegex" value="https?://(www\.)?extabit\.com/file/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="extabit.com"/>
         <attribute id="maxDownloads" value="1"/>

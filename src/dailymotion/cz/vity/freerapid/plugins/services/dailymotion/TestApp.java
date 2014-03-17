@@ -26,7 +26,9 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xupie7_zapping-tele-du-30"));
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/x11gd1n_edson-montano-marque-un-but-d-anthologie_news"));
             //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/x11hdie_le-lob-magnifique-de-neymar-face-a-messi_news"));
-            httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xxaw7v_fast-furious-6-official-extended-trailer_shortfilms"));
+            //httpFile.setNewURL(new URL("http://www.dailymotion.com/video/xxaw7v_fast-furious-6-official-extended-trailer_shortfilms"));
+            //httpFile.setNewURL(new URL("http://www.dailymotion.com/swf/k6h59Y5LgLjPJV4F6L5?syndication=114649"));
+            httpFile.setNewURL(new URL("http://www.dailymotion.com/embed/video/k1b1ljpZYmHb9V4EpEs?syndication=114649"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("23.29.113.100", 3128);
             final DailymotionServiceImpl service = new DailymotionServiceImpl();

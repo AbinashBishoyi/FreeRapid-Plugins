@@ -44,6 +44,10 @@ class DailymotionRunner extends AbstractRunner {
         config = service.getConfig();
     }
 
+    private void checkURL() {
+        fileURL = fileURL.replace("/embed/video/", "/video/").replace("/swf/", "/video/");
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
@@ -51,6 +55,7 @@ class DailymotionRunner extends AbstractRunner {
         addCookie(new Cookie(".dailymotion.com", "lang", "en_EN", "/", 86400, false));
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
         if (!(isPlaylist() || isGroup() || isSubtitle())) {
+            checkURL();
             checkName();
         }
     }
@@ -91,6 +96,7 @@ class DailymotionRunner extends AbstractRunner {
     }
 
     private void downloadVideo() throws Exception {
+        checkURL();
         checkName();
         setConfig();
         if (config.isSubtitleDownload()) {
@@ -338,7 +344,7 @@ class DailymotionRunner extends AbstractRunner {
     }
 
     private String getVideoIdFromURL() throws PluginImplementationException {
-        final Matcher matcher = PlugUtils.matcher("/video/([^_#/]+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("/video/([^_#/?]+)", fileURL);
         if (!matcher.find()) throw new PluginImplementationException("Unable to get video id");
         return matcher.group(1);
     }
@@ -421,22 +427,23 @@ class DailymotionRunner extends AbstractRunner {
         private final VideoQuality videoQuality;
         private final String container;
         private final String url;
-        private int weight;
+        private final int weight;
 
         private DailyMotionVideo(final VideoQuality videoQuality, final String container, final String url) {
             this.videoQuality = videoQuality;
             this.container = container;
             this.url = url;
-            calcWeight();
+            this.weight = calcWeight();
         }
 
-        private void calcWeight() {
+        private int calcWeight() {
             final VideoQuality configQuality = config.getVideoQuality();
             final int deltaQ = videoQuality.getQuality() - configQuality.getQuality();
-            weight = (deltaQ < 0 ? Math.abs(deltaQ) + NEAREST_LOWER_PENALTY : deltaQ); //prefer nearest better if the same quality doesn't exist
+            int weight = (deltaQ < 0 ? Math.abs(deltaQ) + NEAREST_LOWER_PENALTY : deltaQ); //prefer nearest better if the same quality doesn't exist
             if (container.equalsIgnoreCase("FLV")) { //prefer MP4 on same quality
                 weight += FLV_PENALTY;
             }
+            return weight;
         }
 
         @Override

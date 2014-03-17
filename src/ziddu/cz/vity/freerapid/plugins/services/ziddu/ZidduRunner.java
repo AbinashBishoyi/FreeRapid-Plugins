@@ -8,7 +8,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
-import java.io.IOException;
+//import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -117,13 +117,47 @@ class ZidduRunner extends AbstractRunner {
 
             Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
             if (matcher.find()) {
+
+
+                String result = "error";
+                int count =0;
+
+                while ((result.equals("error")) && count<3) {
+                       result = stepCaptcha(contentAsString);
+
+                       if (result.equals("success") || result.equals("Cancel")) {
+                           count=4;
+
+                       }
+
+                        count++;
+                }
+
+               
+                }
+
+
+           
+
+
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+ private String stepCaptcha(String contentAsString) throws Exception {
+
+     Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
+            if (matcher.find()) {
                 String s = "http://www.ziddu.com" + matcher.group(1);
                 logger.info(httpSite + s);
                 client.setReferer(baseURL);
                 String securitycode = getCaptchaSupport().getCaptcha(s); //returns "" when user pressed OK with no input
 
                 if (securitycode == null) {
-                    throw new CaptchaEntryInputMismatchException();
+                    //throw new CaptchaEntryInputMismatchException();
+                    return "error";
+
+
                 } else {
                     matcher = PlugUtils.matcher("action=\"([^\"]*)", contentAsString);
                     if (matcher.find()) {
@@ -143,21 +177,25 @@ class ZidduRunner extends AbstractRunner {
                             //if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))
                             //   return false;
                             logger.warning(getContentAsString());
-                            throw new IOException("File input stream is empty.");
-                        }
+                            //logger.warning("Wrong captcha");
+                            return "error";
+                            //throw new IOException("File input stream is empty.");
+                            
+
+                        } else return "success";
 
                     } else throw new InvalidURLOrServiceProblemException("Cant find action - " + contentAsString);
 
 
-                }
+                } 
 
 
-            }
+            } return "error";
 
 
-        } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
-    }
+
+
+ }
 
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {

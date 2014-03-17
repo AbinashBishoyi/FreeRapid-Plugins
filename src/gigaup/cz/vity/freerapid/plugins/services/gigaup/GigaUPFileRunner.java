@@ -25,7 +25,7 @@ import java.util.regex.Matcher;
  */
 class GigaUPFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(GigaUPFileRunner.class.getName());
-    private final int captchaMax = 5;
+    private final static int CAPTCHA_MAX = 5;
     private int captchaCounter = 1;
 
     @Override
@@ -42,11 +42,9 @@ class GigaUPFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcherName = getMatcherAgainstContent("Nom :</td>\\s+?<td>(.+?)</td>");
-        if (!matcherName.find()) throw new PluginImplementationException("File name not found");
-        httpFile.setFileName(matcherName.group(1));
+        PlugUtils.checkName(httpFile, getContentAsString(), "<div class=\"text_t\">", "</div>");
 
-        final Matcher size = getMatcherAgainstContent("Taille :</td>\\s+?<td>(.+?)o</td>");
+        final Matcher size = getMatcherAgainstContent("Taille de (.+?)o\\s*?<");
         if (!size.find()) throw new PluginImplementationException("File size not found");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1) + "B")); //they use "o" instead of "B" for byte in french
 
@@ -67,17 +65,21 @@ class GigaUPFileRunner extends AbstractRunner {
                     if (!makeRedirectedRequest(stepCaptcha())) {
                         throw new ServiceConnectionProblemException("Error posting captcha");
                     }
+                    if (getContentAsString().contains("Le code de vÃ©rification")) {
+                        if (!makeRedirectedRequest(method)) {
+                            throw new ServiceConnectionProblemException();
+                        }
+                    }
                 }
             } else {
                 throw new PluginImplementationException("Captcha not found");
             }
 
-            final Matcher matcher = getMatcherAgainstContent("<a href=\"(ftp://.+?)\">");
+            final Matcher matcher = getMatcherAgainstContent("href=\"(ftp://.+?)\"");
             if (!matcher.find()) throw new PluginImplementationException("Download link not found");
 
             if (!tryDownloadAndSaveFileFTP(matcher.group(1))) {
                 checkProblems();
-                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
@@ -88,29 +90,29 @@ class GigaUPFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Avec Gigaup, uploadez vos fichiers gratuitement") || content.contains("<h1>Not Found</h1>")) {
-            throw new URLNotAvailableAnymoreException("Page not found, bad URL?");
+        if (content.contains("file_upload.php") || content.contains("<h1>Not Found</h1>")) {
+            throw new URLNotAvailableAnymoreException("Page not found");
         }
-        if (content.contains("Le fichier que vous tentez de télécharger n'existe pas")) {
-            throw new URLNotAvailableAnymoreException("File not found");
+        if (content.contains("Le fichier que vous tentez de tÃ©lÃ©charger n'existe pas")) {
+            throw new URLNotAvailableAnymoreException("File does not exist");
         }
-        if (content.contains("Le fichier a été désigné illégal par les administrateurs et donc supprimé")) {
-            throw new URLNotAvailableAnymoreException("File not found - illegal content");
+        if (content.contains("Le fichier a Ã©tÃ© dÃ©signÃ© illÃ©gal par les administrateurs et donc supprimÃ©")) {
+            throw new URLNotAvailableAnymoreException("File was deleted â€“ illegal content");
         }
-        if (content.contains("Fichier supprimé car non utilisé sur une période trop longue")) {
-            throw new URLNotAvailableAnymoreException("File not found - too long since last download");
+        if (content.contains("Fichier supprimÃ© car non utilisÃ© sur une pÃ©riode trop longue")) {
+            throw new URLNotAvailableAnymoreException("File was deleted â€“ too long since last download");
         }
     }
 
     private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = "http://www.gigaup.fr/" + PlugUtils.getStringBetween(getContentAsString(), "<img src=\"../../", "\"");
+        final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("bot_sucker").getEscapedURI().replace("/..", "");
         logger.info("Captcha URL " + captchaSrc);
 
-        String captcha;
-        if (captchaCounter <= captchaMax) {
+        final String captcha;
+        if (captchaCounter <= CAPTCHA_MAX) {
             captcha = PlugUtils.recognize(captchaSupport.getCaptchaImage(captchaSrc), "-d -1 -C 0-9");
-            logger.info("OCR attempt " + captchaCounter + " of " + captchaMax + ", recognized " + captcha);
+            logger.info("OCR attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", recognized " + captcha);
             captchaCounter++;
         } else {
             captcha = captchaSupport.getCaptcha(captchaSrc);
@@ -118,7 +120,12 @@ class GigaUPFileRunner extends AbstractRunner {
             logger.info("Manual captcha " + captcha);
         }
 
-        return getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.gigaup.fr/").setActionFromFormWhereTagContains("Télécharger le fichier", true).setParameter("bot_sucker", captcha).toPostMethod();
+        return getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("bot_sucker", true).setParameter("bot_sucker", captcha).toPostMethod();
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://www.gigaup.fr/";
     }
 
     private boolean tryDownloadAndSaveFileFTP(final String uri) throws Exception {

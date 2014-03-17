@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class GigaUPServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "gigaup.fr";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 10;
     }

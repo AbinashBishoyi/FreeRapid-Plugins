@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.mojofile;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class MojoFileServiceImpl extends AbstractFileShareService {
+public class MojoFileServiceImpl extends XFileSharingServiceImpl {
+
+    @Override
+    public String getServiceTitle() {
+        return "MojoFile";
+    }
 
     @Override
     public String getName() {
         return "mojofile.com";
-    }
-
-    @Override
-    public boolean supportsRunCheck() {
-        return true;
     }
 
     @Override

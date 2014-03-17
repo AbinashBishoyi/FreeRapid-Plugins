@@ -119,20 +119,18 @@ class MegauploadRunner extends AbstractRunner {
     }
 
 
-    private void checkProblems() throws Exception {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         if (content.contains("trying to access is temporarily unavailable")) {
             throw new ServiceConnectionProblemException("The file you are trying to access is temporarily unavailable");
         }
-        if (content.contains("Download limit exceeded")) {
-            final HttpMethod getMethod = getGetMethod("/premium/???????????????");
-            if (makeRequest(getMethod)) {
-                Matcher matcher = getMatcherAgainstContent("Please wait ([0-9]+)");
-                if (matcher.find()) {
-                    throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60 * Integer.parseInt(matcher.group(1)));
-                }
+        if (content.contains("then try your download again")) {
+            final Matcher matcher = getMatcherAgainstContent("Your IP address [\\d\\.]+? has just downloaded \\d+? bytes. Please wait (\\d+?) minutes, then try your download again.");
+            if (matcher.find()) {
+                throw new YouHaveToWaitException(matcher.group(), 10 + 60 * Integer.parseInt(matcher.group(1)));
+            } else {
+                throw new PluginImplementationException("Download limit exceeded, but waiting time was not found");
             }
-            throw new ServiceConnectionProblemException("Download limit exceeded.");
         }
         if (content.contains("All download slots")) {
             throw new ServiceConnectionProblemException("No free slot for your country.");
@@ -251,7 +249,7 @@ class MegauploadRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException("Error posting login info");
 
             if (getContentAsString().contains("Username and password do not match"))
-                throw new NotRecoverableDownloadException("Invalid MegaUpload account login information!");
+                throw new BadLoginException("Invalid MegaUpload account login information!");
 
             return true;
         }
@@ -294,18 +292,12 @@ class MegauploadRunner extends AbstractRunner {
                 } catch (Exception e) {
                     return false;
                 }
-            } else {
-                if (!makeRedirectedRequest(getGetMethod(fileURL))) {
-                    throw new ServiceConnectionProblemException();
-                }
-                return false;
             }
-        } else {
-            if (!makeRedirectedRequest(getGetMethod(fileURL))) {
-                throw new ServiceConnectionProblemException();
-            }
-            return false;
         }
+        if (!makeRedirectedRequest(getGetMethod(fileURL))) {
+            throw new ServiceConnectionProblemException();
+        }
+        return false;
     }
 
 }

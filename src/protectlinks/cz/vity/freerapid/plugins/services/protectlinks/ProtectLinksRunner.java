@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
@@ -28,17 +29,11 @@ public class ProtectLinksRunner extends AbstractRunner {
 
         if (makeRequest(getMethod)) {
             // <iframe name="pagetext" height="100%" frameborder="no" width="100%" src="http://rapidshare.com/files/340304382/Natali_Klaudia_Sascha_and_Beatrice_Table_Tonguers.part1.rar"></iframe>
-            Matcher matcher = getMatcherAgainstContent( "<iframe(?:\\s|.)*src=\"(.*?[^\\\"]*)\"" );
-            if (matcher.find()) {
-            	String redirect = matcher.group(1);
-            	
-                logger.info( redirect );
-                this.httpFile.setNewURL(new URL(redirect));
-                this.httpFile.setPluginID("");
-                this.httpFile.setState(DownloadState.QUEUED);
-            } else {
-                throw new ServiceConnectionProblemException();
-            }
+            String redirect = getMethodBuilder().setActionFromIFrameSrcWhereTagContains("pagetext").getAction();
+
+            this.httpFile.setNewURL(new URL(redirect));
+            this.httpFile.setPluginID("");
+            this.httpFile.setState(DownloadState.QUEUED);
         } else {
         	throw new ServiceConnectionProblemException();
         }

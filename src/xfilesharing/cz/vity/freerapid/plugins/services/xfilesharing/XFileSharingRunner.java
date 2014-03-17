@@ -70,6 +70,17 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         return downloadLinkRegexes;
     }
 
+    protected MethodBuilder getXFSMethodBuilder() throws Exception {
+        final MethodBuilder methodBuilder = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("method_free", true)
+                .setAction(fileURL);
+        if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
+            methodBuilder.removeParameter("method_premium");
+        }
+        return methodBuilder;
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
@@ -103,13 +114,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                 //avoid infinite loops
                 throw new PluginImplementationException("Cannot proceed to download link");
             }
-            final MethodBuilder methodBuilder = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("method_free", true)
-                    .setAction(fileURL);
-            if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
-                methodBuilder.removeParameter("method_premium");
-            }
+            final MethodBuilder methodBuilder = getXFSMethodBuilder();
             final int waitTime = getWaitTime();
             final long startTime = System.currentTimeMillis();
             stepPassword(methodBuilder);

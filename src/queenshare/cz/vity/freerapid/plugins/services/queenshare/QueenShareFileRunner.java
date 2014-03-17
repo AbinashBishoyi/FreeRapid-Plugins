@@ -1,11 +1,13 @@
 package cz.vity.freerapid.plugins.services.queenshare;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.List;
 
@@ -17,77 +19,31 @@ import java.util.List;
 class QueenShareFileRunner extends XFileSharingRunner {
 
     @Override
-    public void run() throws Exception {
-        //   super.run();
-        setLanguageCookie();
-        //  logger.info("Starting download in TASK " + fileURL);
-        login();
-        HttpMethod method = getGetMethod(fileURL);
-        if (!makeRedirectedRequest(method)) {
-            checkFileProblems();
-            throw new ServiceConnectionProblemException();
+    protected MethodBuilder getXFSMethodBuilder() throws Exception {
+        final MethodBuilder methodBuilder;
+        if (getContentAsString().contains("fname")) {
+            methodBuilder = getMethodBuilder()
+                    .setReferer(fileURL).setAction(fileURL)
+                    .setParameter("op", PlugUtils.getStringBetween(getContentAsString(), "name=\"op\" value=\"", "\">"))
+                    .setParameter("id", PlugUtils.getStringBetween(getContentAsString(), "name=\"id\" value=\"", "\">"))
+                    .setParameter("fname", PlugUtils.getStringBetween(getContentAsString(), "name=\"fname\" value=\"", "\">"))
+                    .setParameter("method_free", PlugUtils.getStringBetween(getContentAsString(), "name=\"method_free\" value=\"", "\">"))
+                    .setParameter("method_premium", "");
+        } else {
+            methodBuilder = getMethodBuilder()
+                    .setReferer(fileURL).setAction(fileURL)
+                    .setParameter("op", PlugUtils.getStringBetween(getContentAsString(), "name=\"op\" value=\"", "\">"))
+                    .setParameter("id", PlugUtils.getStringBetween(getContentAsString(), "name=\"id\" value=\"", "\">"))
+                    .setParameter("rand", PlugUtils.getStringBetween(getContentAsString(), "name=\"rand\" value=\"", "\">"))
+                    .setParameter("method_free", PlugUtils.getStringBetween(getContentAsString(), "name=\"method_free\" value=\"", "\">"))
+                    .setParameter("method_premium", "")
+                    .setParameter("down_direct", PlugUtils.getStringBetween(getContentAsString(), "name=\"down_direct\" value=\"", "\">"));
         }
-        checkFileProblems();
-        checkNameAndSize();
-        checkDownloadProblems();
-        for (int loopCounter = 0; ; loopCounter++) {
-            if (loopCounter >= 8) {
-                //avoid infinite loops
-                throw new PluginImplementationException("Cannot proceed to download link");
-            }
-            String contentAsString = getContentAsString();
-            MethodBuilder methodBuilder;
-            if (contentAsString.contains("fname")) {      // XFS found this section
-                methodBuilder = getMethodBuilder()
-                        .setReferer(fileURL).setAction(fileURL)
-                        .setParameter("op", PlugUtils.getStringBetween(contentAsString, "name=\"op\" value=\"", "\">"))
-                        .setParameter("id", PlugUtils.getStringBetween(contentAsString, "name=\"id\" value=\"", "\">"))
-                        .setParameter("fname", PlugUtils.getStringBetween(contentAsString, "name=\"fname\" value=\"", "\">"))
-                        .setParameter("method_free", PlugUtils.getStringBetween(contentAsString, "name=\"method_free\" value=\"", "\">"))
-                        .setParameter("method_premium", "");
-            } else {
-                methodBuilder = getMethodBuilder()        // XFS DID NOT found this section
-                        .setReferer(fileURL).setAction(fileURL)
-                        .setParameter("op", PlugUtils.getStringBetween(contentAsString, "name=\"op\" value=\"", "\">"))
-                        .setParameter("id", PlugUtils.getStringBetween(contentAsString, "name=\"id\" value=\"", "\">"))
-                        .setParameter("rand", PlugUtils.getStringBetween(contentAsString, "name=\"rand\" value=\"", "\">"))
-                        .setParameter("method_free", PlugUtils.getStringBetween(contentAsString, "name=\"method_free\" value=\"", "\">"))
-                        .setParameter("method_premium", "")
-                        .setParameter("down_direct", PlugUtils.getStringBetween(contentAsString, "name=\"down_direct\" value=\"", "\">"));
-            }
-            if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
-                methodBuilder.removeParameter("method_premium");
-            }
-            final int waitTime = getWaitTime();
-            final long startTime = System.currentTimeMillis();
-            stepPassword(methodBuilder);
-            if (!stepCaptcha(methodBuilder)) {                // skip the wait timer if its on the same page
-                sleepWaitTime(waitTime, startTime);           //   as a captcha of type ReCaptcha
-            }
-            method = methodBuilder.toPostMethod();
-            final int httpStatus = client.makeRequest(method, false);
-            if (httpStatus / 100 == 3) {
-                //redirect to download file location
-                method = stepRedirectToFileLocation(method);
-                break;
-            } else if (checkDownloadPageMarker()) {
-                //page containing download link
-                final String downloadLink = getDownloadLinkFromRegexes();
-                method = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setAction(downloadLink)
-                        .toGetMethod();
-                break;
-            }
-            checkDownloadProblems();
+        if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
+            methodBuilder.removeParameter("method_premium");
         }
-        setFileStreamContentTypes("text/plain");
-        if (!tryDownloadAndSaveFile(method)) {
-            checkDownloadProblems();
-            throw new ServiceConnectionProblemException("Error starting download");
-        }
+        return methodBuilder;
     }
-
 
     @Override
     protected List<String> getDownloadPageMarkers() {
@@ -123,6 +79,9 @@ class QueenShareFileRunner extends XFileSharingRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("You can download files up to")) {
             throw new NotRecoverableDownloadException(PlugUtils.getStringBetween(contentAsString, "<p class=\"err\">", "<br>"));
+        }
+        if (contentAsString.contains("may wish to try again at a later time")) {
+            throw new ServiceConnectionProblemException("The Web Server may be down, too busy, or experiencing other problems preventing it from responding to requests. You may wish to try again at a later time");
         }
         super.checkDownloadProblems();
     }

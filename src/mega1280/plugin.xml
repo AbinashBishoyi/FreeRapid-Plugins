@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="mega.1280.com" version="1.1.0" vendor="Vity+ntoskrnl"
+<plugin id="mega.1280.com" version="1.1.1" vendor="Vity+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.mega1280.Mega1280ServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?mega\.1280\.com/file/.+"/>

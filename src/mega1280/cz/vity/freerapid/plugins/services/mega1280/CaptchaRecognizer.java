@@ -17,7 +17,7 @@ final class CaptchaRecognizer {
 
     public CaptchaRecognizer() throws IOException {
         //final BufferedImage image = ImageIO.read(new File("E:\\projects\\captchatest\\letters\\letters.png"));
-        final BufferedImage image = ImageIO.read((new CaptchaRecognizer()).getClass().getResourceAsStream("/resources/letters.png"));
+        final BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream("/resources/letters.png"));
         int pos = 0;
         for (final char c : LETTERS) {
             final BufferedImage subimage = image.getSubimage(pos, 0, 20, 28);

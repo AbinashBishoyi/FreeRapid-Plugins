@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.io.UnsupportedEncodingException;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -121,6 +122,11 @@ class YouTubeFileRunner extends AbstractRunner {
 
     private void processConfig() throws ErrorDuringDownloadingException {
         String fmt_map=PlugUtils.getStringBetween(getContentAsString(), "\"fmt_map\": \"", "\"");
+        try {
+            fmt_map=URLDecoder.decode(fmt_map, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+
+        }
         String formats[]=fmt_map.split(",");
         int quality=config.getQualitySetting();
         if(quality>=formats.length) quality=formats.length-1;

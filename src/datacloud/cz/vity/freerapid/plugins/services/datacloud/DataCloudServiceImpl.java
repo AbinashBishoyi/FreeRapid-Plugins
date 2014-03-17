@@ -1,0 +1,28 @@
+package cz.vity.freerapid.plugins.services.datacloud;
+
+import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
+
+/**
+ * Class that provides basic info about plugin
+ *
+ * @author birchie
+ */
+public class DataCloudServiceImpl extends AbstractFileShareService {
+
+    @Override
+    public String getName() {
+        return "datacloud.to";
+    }
+
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
+
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new DataCloudFileRunner();
+    }
+
+}

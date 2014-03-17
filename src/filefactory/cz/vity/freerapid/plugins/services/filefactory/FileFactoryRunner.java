@@ -125,7 +125,10 @@ class FileFactoryRunner extends AbstractRunner {
         if (contentAsString.contains("Sorry, there are currently no free download slots available on this server")
                 || contentAsString.contains("All of the available ")
                 || contentAsString.contains("All free download slots are in use")) {
-            throw new ServiceConnectionProblemException("All free download slots are in use");
+            throw new YouHaveToWaitException("All free download slots are in use", 10 * 60);
+        }
+        if (contentAsString.contains("Sorry, the server hosting the file you are requesting is currently down for maintenance")) {
+            throw new YouHaveToWaitException("File's server currently down for maintenance", 30 * 60);
         }
         if (contentAsString.contains("this file can only be downloaded by FileFactory Premium")
                 || contentAsString.contains("This file is only available to Premium Members")) {

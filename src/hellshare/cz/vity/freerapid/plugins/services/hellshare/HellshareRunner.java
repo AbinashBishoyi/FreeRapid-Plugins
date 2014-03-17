@@ -3,9 +3,9 @@ package cz.vity.freerapid.plugins.services.hellshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,9 +17,9 @@ import java.util.regex.Matcher;
  */
 class HellshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HellshareRunner.class.getName());
-    private final static Map<String, HttpMethod> methodsMap = new HashMap<String, HttpMethod>();
+    private final static Map<String, MethodBuilder> methodsMap = new HashMap<String, MethodBuilder>();
     private final static int WAIT_TIME = 20;
-    
+
 
     @Override
     public void runCheck() throws Exception {
@@ -36,14 +36,14 @@ class HellshareRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-       if (checkInQueue()) return;
+        if (checkInQueue()) return;
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
 
             checkNameAndSize(getContentAsString());
 
             if (getContentAsString().contains("100%,"))
-                throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", WAIT_TIME);
+                throw new YouHaveToWaitException("Na serveru jsou vyu\u017Eity v\u0161echny free download sloty", WAIT_TIME);
             final HttpMethod captchaPageMethod = getCaptchaPage();
             if (makeRedirectedRequest(captchaPageMethod)) {
                 client.setReferer("http://www.hellshare.com" + captchaPageMethod.getPath());
@@ -97,12 +97,9 @@ class HellshareRunner extends AbstractRunner {
             return false;
 
         logger.info("File is in queue");
-        final HttpMethod met = methodsMap.get(fileURL);
-        final PostMethod method = getPostMethod(met.getURI().toString());
- 
-        if (met instanceof PostMethod)
-            method.addParameters(((PostMethod) met).getParameters());
-         
+        final MethodBuilder met = methodsMap.get(fileURL);
+        final HttpMethod method = met.toPostMethod();
+
         logger.info("File is in queue, trying to download");
         if (tryDownloadAndSaveFile(method))
             methodsMap.remove(fileURL);
@@ -115,7 +112,7 @@ class HellshareRunner extends AbstractRunner {
             if (getContentAsString().contains("img id=\"captcha-img\""))
                 stepCaptcha();
 
-            throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou vyu\u017Eity v\u0161echny free download sloty", WAIT_TIME);
         }
 
         return true;
@@ -123,7 +120,7 @@ class HellshareRunner extends AbstractRunner {
 
     private HttpMethod stepCaptcha() throws Exception {
         if (!getContentAsString().contains("captcha")) {
-            throw new YouHaveToWaitException("Neur�it� omezen�", 4 * WAIT_TIME);
+            throw new YouHaveToWaitException("Neur\u010Dit\u00E9 omezen\u00ED", 4 * WAIT_TIME);
         }
         String img = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
         boolean emptyCaptcha;
@@ -140,15 +137,16 @@ class HellshareRunner extends AbstractRunner {
             } else emptyCaptcha = false;
         } while (emptyCaptcha);
 
-        final HttpMethod method = getMethodBuilder().setActionFromFormByIndex(1, true).setParameter("captcha", captcha).toPostMethod();
 
-        logger.info("Adding file to map, final URL: " + method.getURI().toString());
+        final MethodBuilder method = getMethodBuilder().setActionFromFormByIndex(1, true).setParameter("captcha", captcha);
+
+        logger.info("Adding file to map, final URL: " + method.getEscapedURI());
         methodsMap.put(fileURL, method);
-        return method;
+        return method.toPostMethod();
     }
 
     private HttpMethod getCaptchaPage() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, PluginImplementationException {
-        Matcher matcher = getMatcherAgainstContent("'src','([^\']+)'");
+        Matcher matcher = getMatcherAgainstContent("button-download-free\" href=\"([^\"]+)\">St");
         if (!matcher.find()) {
             checkProblems();
             logger.info(getContentAsString());
@@ -164,10 +162,10 @@ class HellshareRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }
         if (content.contains(" free download|Na serveri")) {
-            throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou vyu\u017Eity v\u0161echny free download sloty", WAIT_TIME);
         }
         if (content.contains("Stahujete soub")) {
-            throw new YouHaveToWaitException("Na serveru jsou vyu�ity v�echny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou vyu\u017Eity v\u0161echny free download sloty", WAIT_TIME);
         }
     }
 }

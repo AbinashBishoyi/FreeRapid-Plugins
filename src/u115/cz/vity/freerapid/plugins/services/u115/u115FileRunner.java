@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Meow
+ * @author Meow, tonyk
  */
 class u115FileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(u115FileRunner.class.getName());
@@ -35,9 +35,20 @@ class u115FileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<title>", " - 115\u7F51\u7EDCU\u76D8");
-        PlugUtils.checkFileSize(httpFile, content, "\">\u6587\u4EF6\u5927\u5C0F\uFF1A", "</td>");
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+
+        if (getContentAsString().contains("\u6587\u4EF6\u5927\u5C0F\uFF1A")) {
+            Matcher matcher = PlugUtils.matcher("<div class=\"fl\"><i class=\"file-type (.*?)\"></i>(.*?)</div>", content);
+            if (matcher.find()) {
+                String fn = matcher.group(2);
+                httpFile.setFileName(fn);
+            }
+            PlugUtils.checkFileSize(httpFile, content, "\u6587\u4EF6\u5927\u5C0F\uFF1A", "</li>");
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        } else {
+            checkProblems();
+            logger.info(getContentAsString());
+            throw new PluginImplementationException();
+        }
     }
 
     @Override

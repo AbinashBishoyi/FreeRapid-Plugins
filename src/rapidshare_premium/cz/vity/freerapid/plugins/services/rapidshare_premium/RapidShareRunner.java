@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 3730 2012-06-22 18:33:42Z ntoskrnl $
+ * $Id: RapidShareRunner.java 4736 2013-11-04 11:16:52Z tong2shot $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -78,22 +78,47 @@ class RapidShareRunner extends AbstractRunner {
         } catch (BadLoginException ex) {
             // not important at checking phase
         }
-        chechFile();
+        checkFile();
     }
 
     private void tryDownloadAndSaveFile(HttpFileDownloadTask downloadTask) throws Exception {
         checkLogin();
         if (finalUrl == null) {
-            chechFile();
+            checkFile();
         }
         finalDownload(finalUrl, downloadTask);
     }
 
-    private void chechFile() throws Exception {
+    private void checkFile() throws Exception {
         Matcher matcher = PlugUtils.matcher("!download(?:%7C|\\|)(?:[^%\\|]+)(?:%7C|\\|)(\\d+)(?:%7C|\\|)([^%\\|]+)", fileURL);
         if (matcher.find()) {
             fileURL = "http://rapidshare.com/files/" + matcher.group(1) + "/" + matcher.group(2);
             httpFile.setNewURL(new URL(fileURL));
+        } else {
+            matcher = PlugUtils.matcher("/share/([A-Z0-9]+)", fileURL);
+            if (matcher.find()) {
+                HttpMethod method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction("https://api.rapidshare.com/cgi-bin/rsapi.cgi")
+                        .setParameter("rsource", "web")
+                        .setParameter("sub", "sharelinkcontent")
+                        .setParameter("share", matcher.group(1))
+                        .setParameter("cbid", "2")
+                        .setParameter("cbf", "rsapi.system.jsonp.callback")
+                        .setParameter("callt", String.valueOf(System.currentTimeMillis()))
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkFileProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkFileProblems();
+                matcher = getMatcherAgainstContent("\"file:(\\d+),([^,]+),");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Error getting file ID and file name");
+                }
+                fileURL = "http://rapidshare.com/files/" + matcher.group(1) + "/" + matcher.group(2);
+                httpFile.setNewURL(new URL(fileURL));
+            }
         }
         matcher = PlugUtils.matcher("/files/(\\d+)/(.+)", fileURL);
         if (!matcher.find()) {
@@ -148,6 +173,17 @@ class RapidShareRunner extends AbstractRunner {
         }
     }
 
+    private void checkFileProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("File deleted")
+                || content.contains("File not found")
+                || content.contains("Folder not found")
+                || content.contains("File physically not found")
+                || content.contains("Share not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+    }
+
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
         Matcher matcher;
         final String contentAsString = client.getContentAsString();
@@ -163,7 +199,8 @@ class RapidShareRunner extends AbstractRunner {
             }
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Currently a lot of users are downloading files."));
         }
-        if (getContentAsString().contains("momentarily not available")) {
+        if (getContentAsString().contains("momentarily not available")
+                || getContentAsString().contains("Server under repair")) {
             throw new ServiceConnectionProblemException("The server is momentarily not available.");
         }
     }

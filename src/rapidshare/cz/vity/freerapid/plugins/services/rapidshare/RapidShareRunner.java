@@ -85,6 +85,31 @@ class RapidShareRunner extends AbstractRunner {
         if (matcher.find()) {
             fileURL = "http://rapidshare.com/files/" + matcher.group(1) + "/" + matcher.group(2);
             httpFile.setNewURL(new URL(fileURL));
+        } else {
+            matcher = PlugUtils.matcher("/share/([A-Z0-9]+)", fileURL);
+            if (matcher.find()) {
+                HttpMethod method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction("https://api.rapidshare.com/cgi-bin/rsapi.cgi")
+                        .setParameter("rsource", "web")
+                        .setParameter("sub", "sharelinkcontent")
+                        .setParameter("share", matcher.group(1))
+                        .setParameter("cbid", "2")
+                        .setParameter("cbf", "rsapi.system.jsonp.callback")
+                        .setParameter("callt", String.valueOf(System.currentTimeMillis()))
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkFileProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkFileProblems();
+                matcher = getMatcherAgainstContent("\"file:(\\d+),([^,]+),");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Error getting file ID and file name");
+                }
+                fileURL = "http://rapidshare.com/files/" + matcher.group(1) + "/" + matcher.group(2);
+                httpFile.setNewURL(new URL(fileURL));
+            }
         }
         matcher = PlugUtils.matcher("/files/(\\d+)/(.+)", fileURL);
         if (!matcher.find()) {
@@ -121,7 +146,8 @@ class RapidShareRunner extends AbstractRunner {
                 || content.contains("Download session invalid")
                 || content.contains("Download session modified")
                 || content.contains("Download ticket not ready")
-                || content.contains("download: session invalid")) {
+                || content.contains("download: session invalid")
+                || content.contains("Server under repair")) {
             throw new ServiceConnectionProblemException("Temporary server problem");
         }
         if (content.contains("Secure download link modified")
@@ -152,7 +178,8 @@ class RapidShareRunner extends AbstractRunner {
         if (content.contains("File deleted")
                 || content.contains("File not found")
                 || content.contains("Folder not found")
-                || content.contains("File physically not found")) {
+                || content.contains("File physically not found")
+                || content.contains("Share not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("This file is too big to download it for free")) {

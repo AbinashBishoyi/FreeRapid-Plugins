@@ -20,6 +20,7 @@ import java.util.regex.Matcher;
 
 /**
  * @author Kajda
+ * @since 0.82
  */
 class BadongoFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(BadongoFileRunner.class.getName());

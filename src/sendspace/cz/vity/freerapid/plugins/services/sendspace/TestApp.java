@@ -8,9 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * Test application for sendspace.com
- *
- * @author Alex
+ * @author Kajda
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -18,12 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.sendspace.com/file/z0cal8"));
+            httpFile.setNewURL(new URL("http://www.sendspace.com/file/c8eypz"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final SendSpaceServiceImpl service = new SendSpaceServiceImpl(); //instance of service - of our plugin
+            final SendspaceServiceImpl service = new SendspaceServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

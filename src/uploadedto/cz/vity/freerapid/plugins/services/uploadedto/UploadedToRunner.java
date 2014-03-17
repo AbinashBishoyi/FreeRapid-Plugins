@@ -125,16 +125,11 @@ class UploadedToRunner extends AbstractRunner {
 
     private HttpMethod stepCaptcha(final String fileId) throws Exception {
         final ReCaptcha r = new ReCaptcha("6Lcqz78SAAAAAPgsTYF3UlGf2QFQCNuPMenuyHF3", client);
-        /**
-         * Abinash: Bypassing the captcha check
-         */
-        /*
         final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
         }
         r.setRecognized(captcha);
-        */
         return r.modifyResponseMethod(
                 getMethodBuilder().setReferer(fileURL).setAction("http://uploaded.net/io/ticket/captcha/" + fileId)
         ).toPostMethod();

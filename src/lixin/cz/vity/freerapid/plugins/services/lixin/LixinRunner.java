@@ -48,10 +48,10 @@ class LixinRunner extends AbstractRunner {
             String cVal = getCaptchaSupport().getCaptcha(cImage);
             if (cVal == null) {
                 throw new CaptchaEntryInputMismatchException();
-            } else result = !("".equals(cVal));
+            } else result = !cVal.isEmpty(); // isn't it useless ?
             logger.info("Result : " + result);
 
-            if ("".equals(cVal)) {
+            if (cVal.isEmpty()) {
                 result = false;
                 return "";
             }

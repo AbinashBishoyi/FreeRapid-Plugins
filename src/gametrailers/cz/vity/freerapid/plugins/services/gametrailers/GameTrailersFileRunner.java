@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.gametrailers;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import org.apache.commons.httpclient.HttpMethod;
@@ -23,9 +20,12 @@ class GameTrailersFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        final HttpMethod loginMethod = getMethodBuilder().setAction("http://www.gametrailers.com/users/Bob01/gamepad/?un=Bob01&un=Bob01&un=Bob01&un=Bob01&").setParameter("username", "Bob01").setParameter("password", "bob01").toPostMethod();
+        if (!makeRedirectedRequest(loginMethod)) //it will set cookies
+            throw new PluginImplementationException("Couldn't log in to");
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
+//            final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("WMV");
             final HttpMethod httpMethod = methodBuilder.toHttpMethod();
@@ -51,6 +51,9 @@ class GameTrailersFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("<title>404")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("You must be logged in to download movies")) {
+            throw new NotRecoverableDownloadException("You must be logged in to download movies");
         }
     }
 

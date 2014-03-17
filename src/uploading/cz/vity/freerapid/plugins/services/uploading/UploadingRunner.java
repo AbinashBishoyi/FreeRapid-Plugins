@@ -90,6 +90,9 @@ class UploadingRunner extends AbstractRunner {
         if (content.contains("FILE REMOVED")) {
             throw new URLNotAvailableAnymoreException("FILE REMOVED BECAUSE OF ABUSE OR DELETED BY OWNER");
         }
+        if (content.contains("You have reached the daily downloads limit")) {
+            throw new YouHaveToWaitException("You have reached the daily downloads limit. Please come back later", 2 * 60);
+        }
 
         Matcher matcher = PlugUtils.matcher("Download file </h.> <b>([^<]+)", content);
         // odebiram jmeno

@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import cz.vity.freerapid.utilities.LogUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
@@ -63,12 +64,17 @@ class PluginDevDownloadTask implements HttpFileDownloadTask {
 
     /**
      * Method that handles direct saving file onto physical disc.
-     * file download state is set to COMPLETED automatically
+     * file download state is set to COMPLETED automatically <br>
+     * Checks if it is possible to write file on disk with current given name.
      *
      * @param inputStream - Http response stream, which contains data to be saved on the disk - should not be null
      * @throws Exception Error during writing or if inputStream is null
      */
     public void saveToFile(InputStream inputStream) throws Exception {
+        logger.info("Writing temporary file on disk");
+        final File tempFile = File.createTempFile(file.getFileName(), "");
+        tempFile.deleteOnExit();
+
         logger.info("Simulating saving file from a stream - trying to read 2KB of data");
         final byte[] buffer = new byte[1024 * 2];
         try {
@@ -84,7 +90,8 @@ class PluginDevDownloadTask implements HttpFileDownloadTask {
                 LogUtils.processException(logger, e1);
             }
         }
-
+        logger.info("Deleting temporary file on disk");
+        tempFile.delete();
     }
 
     /**

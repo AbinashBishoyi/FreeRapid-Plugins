@@ -50,7 +50,7 @@ class GrooveSharkFileRunner extends AbstractRunner {
     }
 
     private void setVariables() throws Exception {
-        final HttpMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod("http://grooveshark.com/");
         if (!makeRedirectedRequest(method)) {
             throw new ServiceConnectionProblemException();
         }

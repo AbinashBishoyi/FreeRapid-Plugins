@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.depositfiles_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -78,9 +79,13 @@ class DepositFilesFileRunner extends AbstractRunner {
             if (getContentAsString().contains("Advantages of the Gold account"))
                 throw new BadLoginException("Problem logging in, account not premium?");
 
+            final Matcher matcher = getMatcherAgainstContent("=\"download_url\">\\s*<a href=\"(.+?)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download link not found");
+            }
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromAHrefWhereATagContains("Download the file")
+                    .setAction(matcher.group(1))
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
@@ -130,20 +135,37 @@ class DepositFilesFileRunner extends AbstractRunner {
             if (!pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
-                    throw new BadLoginException("No DepositFiles Premium account login information!");
+                    throw new BadLoginException("No DepositFiles Premium account login information");
                 }
             }
-            final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction("/login.php")
-                    .setParameter("go", "1")
+            HttpMethod httpMethod = getMethodBuilder()
+                    .setAction("/api/user/login")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
                     .toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
-                throw new ServiceConnectionProblemException("Error posting login info");
+                throw new ServiceConnectionProblemException();
             }
-            if (getContentAsString().contains("Your password or login is incorrect")) {
-                throw new BadLoginException("Invalid DepositFiles Premium account login information!");
+            if (getContentAsString().contains("CaptchaRequired")) {
+                do {
+                    final ReCaptcha rc = new ReCaptcha("6LdRTL8SAAAAAE9UOdWZ4d0Ky-aeA7XfSqyWDM2m", client);
+                    final String captcha = getCaptchaSupport().getCaptcha(rc.getImageURL());
+                    if (captcha == null) {
+                        throw new CaptchaEntryInputMismatchException();
+                    }
+                    rc.setRecognized(captcha);
+                    httpMethod = rc.modifyResponseMethod(getMethodBuilder()
+                            .setAction("/api/user/login")
+                            .setParameter("login", pa.getUsername())
+                            .setParameter("password", pa.getPassword()))
+                            .toPostMethod();
+                    if (!makeRedirectedRequest(httpMethod)) {
+                        throw new ServiceConnectionProblemException();
+                    }
+                } while (getContentAsString().contains("CaptchaInvalid"));
+            }
+            if (getContentAsString().contains("Error")) {
+                throw new BadLoginException("Invalid DepositFiles Premium account login information");
             }
             for (final Header h : httpMethod.getResponseHeaders("Set-Cookie")) {
                 final Matcher matcher = PlugUtils.matcher("autologin=(.+?);", h.getValue());

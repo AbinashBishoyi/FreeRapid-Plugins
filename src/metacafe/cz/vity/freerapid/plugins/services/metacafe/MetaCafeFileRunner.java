@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.metacafe;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -12,6 +13,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.net.URLDecoder;
 import java.util.Locale;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -35,7 +37,14 @@ class MetaCafeFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<h1 id=\"ItemTitle\" >", "<");
+        final Matcher filenameMatcher = PlugUtils.matcher("<h1 id=\"ItemTitle\".*?>\\s*(.+?)\\s*</h1>", getContentAsString());
+        if (filenameMatcher.find()) {
+            final String fileName = filenameMatcher.group(1).trim();
+            logger.info("File name " + fileName);
+            httpFile.setFileName(fileName);
+        } else {
+            throw new PluginImplementationException("File name not found");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

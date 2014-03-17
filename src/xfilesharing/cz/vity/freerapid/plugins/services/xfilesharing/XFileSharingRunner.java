@@ -96,7 +96,12 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
         checkFileProblems();
         checkNameAndSize();
+
+        int loopCounter = 0;
         while (true) {
+            if (loopCounter++ >= 5) {
+                throw new PluginImplementationException("Max captcha retry or broken plugin");
+            }
             MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("method_free", true)
@@ -130,7 +135,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                 break;
             }
             checkDownloadProblems();
-            //stepWaitTime();
         }
         setFileStreamContentTypes("text/plain");
         if (!tryDownloadAndSaveFile(method)) {

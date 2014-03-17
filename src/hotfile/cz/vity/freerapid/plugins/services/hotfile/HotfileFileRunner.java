@@ -10,9 +10,10 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.net.URL;
 
 /**
- * @author Kajda
+ * @author Kajda & Arthur Gunawan
  * @since 0.82
  */
 class HotfileFileRunner extends AbstractRunner {
@@ -22,8 +23,8 @@ class HotfileFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-
+        fileURL = checkURL(fileURL); //added support for http://hotfile.com/links/....
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {
             checkSeriousProblems();
             checkNameAndSize();
@@ -35,8 +36,9 @@ class HotfileFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
@@ -78,6 +80,21 @@ class HotfileFileRunner extends AbstractRunner {
             }
         }
     }
+
+    private String checkURL(String cURL) throws Exception {   //added support for http://hotfile.com/links/....
+        if (cURL.contains("hotfile.com/links/")) {
+            final HttpMethod httpMethod = getMethodBuilder().setAction(cURL).toHttpMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkAllProblems();
+                throw new PluginImplementationException();
+            }
+            final String xURL = PlugUtils.getStringBetween(getContentAsString(), "<input type=text size=85 value=\"", "\">");
+            final String escapedURI = getMethodBuilder().setAction(xURL).toHttpMethod().getURI().getEscapedURI();
+            logger.info("New Link : " + escapedURI);     //Debug purpose, show the new found link
+            this.httpFile.setNewURL(new URL(escapedURI));
+            return escapedURI;
+       } else return cURL;
+ }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         Matcher matcher = getMatcherAgainstContent("20px'>Downloading (.+?) \\(");

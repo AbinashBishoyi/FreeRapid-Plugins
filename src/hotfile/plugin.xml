@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="hotfile.com" version="0.5" vendor="Kajda"
+<plugin id="hotfile.com" version="0.6" vendor="Kajda+Arthur Gunawan"
         class="cz.vity.freerapid.plugins.services.hotfile.HotfileServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?hotfile\.com/dl/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?hotfile\.com/(dl|links)/.+"/>
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="hotfile.com"/>

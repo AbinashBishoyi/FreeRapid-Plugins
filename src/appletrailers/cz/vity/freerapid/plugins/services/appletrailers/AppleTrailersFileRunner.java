@@ -68,7 +68,7 @@ class AppleTrailersFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             final List<URI> uriList = new ArrayList<URI>();
-            final Matcher videos = getMatcherAgainstContent("(?s-m)<li class=\"trailer[^<>]*?>(.+?)(?:<!--/trailer-->|$)");
+            final Matcher videos = getMatcherAgainstContent("(?s-m)<li class=[\"']trailer[^<>]*?>(.+?)(?:<!--/trailer-->|$)");
             while (videos.find()) {
                 final List<String> list = new ArrayList<String>();
                 final Matcher qualities = PlugUtils.matcher("href=\"(http://trailers\\.apple\\.com/.+?\\d+?p\\.mov)\"", videos.group(1));

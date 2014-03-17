@@ -8,7 +8,6 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.util.URIUtil;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -35,8 +34,7 @@ class RdioFileRunner extends AbstractRunner {
         HttpMethod method = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction("http://www.rdio.com/api/1/")
-                .setParameter("url", new org.apache.commons.httpclient.URI(URIUtil.decode(fileURL), false, "UTF-8").getEscapedPath().replaceAll(",", "%2C"))  //both java.net.URI & apache's URI mess up some chars, great !! :))
-                //.setParameter("url", new URI(fileURL).getRawPath().replaceAll("%28","(").replaceAll("%29",")"))  //above's alternative?
+                .setParameter("url", new URI(fileURL).getRawPath().replaceAll("%28", "(").replaceAll("%29", ")"))
                 .setParameter("extras", "tracks")
                 .setParameter("method", "getObjectFromUrl")
                 .setParameter("_authorization_key", authorizationKey)
@@ -53,7 +51,11 @@ class RdioFileRunner extends AbstractRunner {
             return;
         }
         checkNameAndSize();
-        final String id = PlugUtils.getStringBetween(getContentAsString(), "\"key\": \"", "\"");
+        Matcher matcher = getMatcherAgainstContent("\"key\": \"(\\w+?)\",");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Unable to find key");
+        }
+        final String id = matcher.group(1);
         method = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction("http://www.rdio.com/api/1/")

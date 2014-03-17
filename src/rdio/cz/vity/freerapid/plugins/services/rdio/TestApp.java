@@ -22,9 +22,11 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Miriam_Makeba/album/Makeba!/track/Emavungwini_[Down_In_The_Dumps]/"));
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Miriam_Makeba/album/Makeba!/track/Emavungwini_%5BDown_In_The_Dumps%5D/"));
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Les_Mis%C3%A9rables_Cast/album/Les_Mis%C3%A9rables_The_Motion_Picture_Soundtrack_Deluxe_%28Deluxe_Edition%29/"));
-            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Les_Mis%C3%A9rables_Cast/album/Les_Mis%C3%A9rables_The_Motion_Picture_Soundtrack_Deluxe_(Deluxe_Edition)/track/Look_Down/"));
-            httpFile.setNewURL(new URL("http://www.rdio.com/artist/Anna_Veleva/album/Famous_Soprano_Opera_Arias/track/Lucia_Lammermoor%2C_Act_1_-_%22Regnava_nel_silenzio%22/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Les_Mis%C3%A9rables_Cast/album/Les_Mis%C3%A9rables_The_Motion_Picture_Soundtrack_Deluxe_(Deluxe_Edition)/track/Look_Down_(Deluxe_Version)/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Anna_Veleva/album/Famous_Soprano_Opera_Arias/track/Lucia_Lammermoor%2C_Act_1_-_%22Regnava_nel_silenzio%22/"));
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Anna_Veleva/album/Famous_Soprano_Opera_Arias/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Barros_De_Alencar/album/Grandes_Sucessos_-_Barros_De_Alencar/track/N%C3%A3o_V%C3%A1_Embora_(Tu_Me_Plais_Et_Je_T%27Aime)/"));
+            httpFile.setNewURL(new URL("http://www.rdio.com/artist/Nouman_Khalid%2CBilal_Saeed/album/Jugni_(feat._Bilal_Saeed)/track/Jugni_(feat._Bilal_Saeed)/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

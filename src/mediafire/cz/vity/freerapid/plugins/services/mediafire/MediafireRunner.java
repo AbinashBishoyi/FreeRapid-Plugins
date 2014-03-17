@@ -8,7 +8,6 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -125,7 +124,7 @@ class MediafireRunner extends AbstractRunner {
                 }
             } else {
                 checkProblems();
-                throw new ServiceConnectionProblemException();
+                throw new PluginImplementationException();
             }
         } else {
             checkProblems();
@@ -134,10 +133,9 @@ class MediafireRunner extends AbstractRunner {
 
     }
 
-    private String processUnescapeSection(String cont) throws UnsupportedEncodingException, PluginImplementationException {
-        String regx = "var [a-zA-Z0-9]+=unescape\\('([^']*)'\\);var [a-zA-Z0-9]+=([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
+    private String processUnescapeSection(String cont) throws Exception {
+        String regx = "var\\s+?[a-zA-Z0-9]+=unescape\\('([^']*)'\\);var\\s+?[a-zA-Z0-9]+=([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
         Boolean loop = true;
-        String globalCont = cont;
         String tuReturn = "";
         while (loop) {
             cont = cont.replace("\\", "");
@@ -146,12 +144,6 @@ class MediafireRunner extends AbstractRunner {
             while (matcher.find()) {
                 if (findTime++ == 0) cont = "";
                 String esc = matcher.group(1);
-                int toFor = 0;
-                try {
-                    toFor = Integer.parseInt(matcher.group(2));
-                } catch (NumberFormatException e) {
-                    toFor = Integer.parseInt(getVar(matcher.group(2), cont + tuReturn + globalCont));
-                }
                 String shift = matcher.group(3);
                 String shiftA[] = shift.split("\\^");
                 int nax = Integer.parseInt((shiftA[0]));
@@ -160,14 +152,11 @@ class MediafireRunner extends AbstractRunner {
                 }
                 String new_cont = "";
                 esc = URLDecoder.decode(esc, "UTF-8");
-                //  toFor = Math.min(toFor,esc.length());
-                toFor = esc.length();
+                int toFor = esc.length();
                 for (int i = 0; i < toFor; i++) {
-                    //  System.out.println(esc.codePointAt(i));
                     new_cont = new_cont + ((char) (esc.codePointAt(i) ^ nax));
                 }
                 cont = cont + "\n" + new_cont.replace("\\", "");
-                //   logger.info(cont);
             }
 
             tuReturn = tuReturn + "\n" + cont;

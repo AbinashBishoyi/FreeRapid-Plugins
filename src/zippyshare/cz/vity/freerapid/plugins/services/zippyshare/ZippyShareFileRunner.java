@@ -71,9 +71,20 @@ class ZippyShareFileRunner extends AbstractRunner {
                             case 3:
                                 url = matcher.group(1) + "&time=" + (24 * time % 6743256);  //20.2 12:00
                                 break;
-                            case 0:
+                            case 5:
                                 url = matcher.group(1) + "&time=" + (11 * time % 9809328); //19.2
                                 break;
+                            case 6:
+                                url = matcher.group(1) + "&time=" + (15 * time % 12860893); //19.2
+                                break;
+                            case 7:
+                                url = matcher.group(1) + "&time=" + (7 * time % 31241678); //19.2
+                                break;
+                            case 0:
+                                url = matcher.group(1) + "&time=" + (16 * time % 8977777); //19.2
+                                break;
+
+
                             default:
                                 checkProblems();
                                 variant = 0;

@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.wat;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -47,33 +48,17 @@ class WatFileRunner extends AbstractRunner {
             checkProblems(method);
             checkNameAndSize();
             final String id = PlugUtils.getStringBetween(getContentAsString(), "id=\"media\" value=\"", "\"");
-            final String url = "/webhd/" + id;
-            method = getMethodBuilder()
-                    .setAction("/get" + url)
-                    .setParameter("token", getToken(url))
-                    .setParameter("domain", "www.wat.tv")
-                    .setParameter("domain2", "null")
-                    .setParameter("revision", "4.1.028")
-                    .setParameter("synd", "0")
-                    .setParameter("helios", "1")
-                    .setParameter("context", "swf2")
-                    .setParameter("pub", "1")
-                    .setParameter("country", "FR")
-                    .setParameter("sitepage", "")
-                    .setParameter("lieu", "wat")
-                    .setParameter("playerContext", "CONTEXT_WAT")
-                    .setParameter("getURL", "1")
-                    .setParameter("version", "WIN%202011,1,102,55")
-                    .toGetMethod();
-            if (makeRedirectedRequest(method)) {
-                method = getGetMethod(getContentAsString().trim());
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems(method);
-                    throw new ServiceConnectionProblemException("Error starting download");
+            String url = getStreamUrl("/webhd/" + id);
+            if (url == null) {
+                url = getStreamUrl("/web/" + id);
+                if (url == null) {
+                    throw new PluginImplementationException("Stream URL not found");
                 }
-            } else {
+            }
+            method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems(method);
-                throw new ServiceConnectionProblemException();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems(method);
@@ -84,6 +69,32 @@ class WatFileRunner extends AbstractRunner {
     private void checkProblems(final HttpMethod method) throws Exception {
         if ("http://www.wat.tv/".equals(method.getURI().toString())) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+    }
+
+    private String getStreamUrl(final String url) throws Exception {
+        final HttpMethod method = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction("/get" + url)
+                .setParameter("token", getToken(url))
+                .setParameter("domain", "www.wat.tv")
+                .setParameter("domain2", "null")
+                .setParameter("revision", "4.1.028")
+                .setParameter("synd", "0")
+                .setParameter("helios", "1")
+                .setParameter("context", "swf2")
+                .setParameter("pub", "1")
+                .setParameter("country", "FR")
+                .setParameter("sitepage", "")
+                .setParameter("lieu", "wat")
+                .setParameter("playerContext", "CONTEXT_WAT")
+                .setParameter("getURL", "1")
+                .setParameter("version", "WIN%202011,1,102,55")
+                .toGetMethod();
+        if (makeRedirectedRequest(method)) {
+            return getContentAsString().trim();
+        } else {
+            return null;
         }
     }
 

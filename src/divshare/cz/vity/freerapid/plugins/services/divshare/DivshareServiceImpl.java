@@ -6,7 +6,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 /**
  * Class that provides basic info about plugin
  *
- * @author Vity
+ * @author Vity, ntoskrnl
  */
 public class DivshareServiceImpl extends AbstractFileShareService {
 
@@ -15,7 +15,7 @@ public class DivshareServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 4;
+        return 9;
     }
 
     @Override

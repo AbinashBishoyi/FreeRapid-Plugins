@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Vity
+ * @author Vity, ntoskrnl
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,7 +16,14 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.divshare.com/download/9127502-5bc"));
+            httpFile.setNewURL(new URL("http://www.divshare.com/download/8976227-560"));//regular file
+            //httpFile.setNewURL(new URL("http://www.divshare.com/download/9127502-5bc"));//image
+            //httpFile.setNewURL(new URL("http://www.divshare.com/download/2280157-d49"));//video
+            //httpFile.setNewURL(new URL("http://www.divshare.com/download/9637954-b5f"));//audio
+            //httpFile.setNewURL(new URL("http://www.divshare.com/folder/572568-fdf"));//folder
+            //httpFile.setNewURL(new URL("http://www.divshare.com/playlist/596628-66a"));//playlist
+            //httpFile.setNewURL(new URL("http://www.divshare.com/gallery/625909-90a"));//gallery
+
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

@@ -1,0 +1,30 @@
+package cz.vity.freerapid.plugins.services.leteckaposta;
+
+import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
+
+/**
+ * @author Ladislav Vitasek
+ */
+public class LeteckaPostaServiceImpl extends AbstractFileShareService {
+    private static final String SERVICE_NAME = "leteckaposta.cz";
+
+    public String getName() {
+        return SERVICE_NAME;
+    }
+
+    public int getMaxDownloadsFromOneIP() {
+        return 3;
+    }
+
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
+
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new LeteckaPostaFileRunner();
+    }
+
+}

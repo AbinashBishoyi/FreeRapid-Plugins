@@ -1,17 +1,17 @@
 package cz.vity.freerapid.plugins.services.missupload;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -41,7 +41,7 @@ class MissUploadFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<h2>Download File ", "</h2>");
+        PlugUtils.checkName(httpFile, content, "<h1>Download File ", "</h1>");
         PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -67,6 +67,7 @@ class MissUploadFileRunner extends AbstractRunner {
 
             if (!makeRedirectedRequest(httpMethod)) throw new ServiceConnectionProblemException();
 
+            /*
             if (getContentAsString().contains("Enter code below")) {
                 while (getContentAsString().contains("Enter code below")) {
                     //they have this fugly waiting time between captcha tries which severely limits our possibilities of brute-forcing through it
@@ -82,6 +83,22 @@ class MissUploadFileRunner extends AbstractRunner {
                 }
             } else
                 throw new PluginImplementationException("Captcha not found");
+            */
+
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setBaseURL(fileURL)
+                    .setActionFromFormByName("F1", true)
+                    .removeParameter("method_premium")
+                    .toPostMethod();
+
+            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "<span id=\"countdown\">", "</span>") + 1);
+
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();
+                logger.warning(getContentAsString());
+                throw new ServiceConnectionProblemException("Error starting download");
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -90,11 +107,15 @@ class MissUploadFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("File Not Found") || content.contains("No such user exist")) {
+        if (content.contains("File Not Found") || content.contains("No such user exist") || content.contains("No such file")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("<Title>Files of ")) {
+            throw new PluginImplementationException("Support for link lists not implemented");
         }
     }
 
+    /*
     private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
 
@@ -124,5 +145,6 @@ class MissUploadFileRunner extends AbstractRunner {
                 .setParameter("code", captcha)
                 .toPostMethod();
     }
+    */
 
 }

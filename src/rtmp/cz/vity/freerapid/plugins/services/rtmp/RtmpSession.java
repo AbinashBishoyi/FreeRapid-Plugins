@@ -64,6 +64,7 @@ public class RtmpSession {
     private int pauseMode = 0;
     private HttpFile httpFile;
     private ConnectionSettings connectionSettings;
+    private String secureToken;
 
     /**
      * Empty constructor. Mainly for internal use.
@@ -108,7 +109,7 @@ public class RtmpSession {
     public RtmpSession(String host, int port, String app, String playName, String protocol) {
         initConnectParams(host, port, app, playName, protocol);
     }
-
+    
     /**
      * Constructs a new RtmpSession with the specified play name and other parameters parsed from a URL.
      *
@@ -288,9 +289,21 @@ public class RtmpSession {
         return swfVerification;
     }
 
+    public String getSecureToken() {
+        return secureToken;
+    }
+    
+    
+
     public void setSwfVerification(byte[] swfVerification) {
         this.swfVerification = swfVerification;
     }
+
+    public void setSecureToken(String secureToken) {
+       this.secureToken = secureToken;
+    }
+    
+    
 
     public int getSwfSize() {
         return swfSize;

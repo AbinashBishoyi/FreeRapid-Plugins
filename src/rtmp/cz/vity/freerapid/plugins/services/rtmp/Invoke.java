@@ -107,7 +107,7 @@ public class Invoke {
         if (properties.size() > 2) {
             int argsLength = properties.size() - 2;
             args = new Object[argsLength];
-            for (int i = 0; i < argsLength; i++) {
+            for (int i = 0; i < argsLength; i++) {              
                 args[i] = properties.get(i + 2).getValue();
             }
         }

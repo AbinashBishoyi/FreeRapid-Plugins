@@ -108,6 +108,19 @@ class DefaultPacketHandler implements PacketHandler {
                     String resultFor = session.getInvokedMethods().get(invoke.getSequenceId());
                     logger.fine("result for method call: " + resultFor);
                     if (resultFor.equals("connect")) {
+                          AmfObject amf=invoke.getSecondArgAsAmfObject();
+                          if(amf!=null)
+                          {
+                             AmfProperty amfprop=amf.getProperty("secureToken");
+                             String secureToken=null;
+                             if(amfprop!=null){
+                                secureToken=(String)amfprop.getValue();
+                             }
+                             if((secureToken!=null)&&(session.getSecureToken()!=null)){
+                                 logger.warning("Sending secureToken challenge response");
+                                 session.send(new Invoke("secureTokenResponse", 3, null, XXTEA.decrypt(secureToken, session.getSecureToken())));                            
+                             }
+                          }
                         session.send(Packet.serverBw(0x001312d0)); // hard coded for now
                         session.send(new Invoke("createStream", 3));
                     } else if (resultFor.equals("createStream")) {
@@ -122,7 +135,7 @@ class DefaultPacketHandler implements PacketHandler {
                     }
                 } else if (methodName.equals("onStatus")) {
                     AmfObject temp = invoke.getSecondArgAsAmfObject();
-                    String code = (String) temp.getProperty("code").getValue();
+                    String code = (String) temp.getProperty("code").getValue();                    
                     logger.fine("onStatus code: " + code);
                     if (code.equals("NetStream.Failed")
                             || code.equals("NetStream.Play.Failed")

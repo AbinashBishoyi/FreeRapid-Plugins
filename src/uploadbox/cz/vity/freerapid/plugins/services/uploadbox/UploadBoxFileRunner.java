@@ -45,7 +45,7 @@ class UploadBoxFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkAllProblems();
             checkNameAndSize();
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("free", true).setBaseURL(SERVICE_WEB).toHttpMethod();
+            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).setBaseURL(SERVICE_WEB).toHttpMethod();
 
             if (makeRedirectedRequest(httpMethod)) {
                 if (getContentAsString().contains("Enter CAPTCHA code here")) {
@@ -55,7 +55,7 @@ class UploadBoxFileRunner extends AbstractRunner {
                     }
 
                     checkAllProblems();
-                    httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.getStringBetween(getContentAsString(), "please <a href=\"", "\">click here")).toHttpMethod();
+                    httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Download File", true).toHttpMethod();
 
                     if (!tryDownloadAndSaveFile(httpMethod)) {
                         checkContentType(httpMethod);
@@ -99,15 +99,14 @@ class UploadBoxFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "<b>", "</b>");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</td>\n<td>\n<b>", "</b>");
+        PlugUtils.checkName(httpFile, contentAsString, "File name:</span>", "</p>");
+        PlugUtils.checkFileSize(httpFile, contentAsString, "Size:</span>", "<span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException, URIException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaSrc = getMethodBuilder().setBaseURL(SERVICE_WEB).setActionFromImgSrcWhereTagContains("id=\"captcha\"").toGetMethod().getURI().toString();
-        //final String captchaSrc = SERVICE_WEB + PlugUtils.getStringBetween(getContentAsString(), "class=\"captcha\"><img src=\"", "\"");
         logger.info("Captcha URL " + captchaSrc);
         final String captcha = captchaSupport.getCaptcha(captchaSrc);
 
@@ -118,7 +117,7 @@ class UploadBoxFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkContentType(HttpMethod httpMethod) throws ErrorDuringDownloadingException { // TODO
+    private void checkContentType(HttpMethod httpMethod) throws ErrorDuringDownloadingException {
         final Header contentType = httpMethod.getResponseHeader("Content-Type");
         final String contentTypeValue = contentType.getValue().toLowerCase(Locale.ENGLISH);
 

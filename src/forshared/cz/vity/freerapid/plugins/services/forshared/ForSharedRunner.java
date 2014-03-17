@@ -106,7 +106,9 @@ class ForSharedRunner extends AbstractRunner {
         } else logger.warning("File name was not found" + content);
         nMatcher = PlugUtils.matcher("(([0-9,.]* .B))<", content);
         if (nMatcher.find()) {
-            final String fileSize = nMatcher.group(1);
+            String fileSize = nMatcher.group(1);
+            fileSize = fileSize.replaceAll(",", "");
+            
             logger.info("File size " + fileSize);
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
             //long x = PlugUtils.getFileSizeFromString(fileSize);

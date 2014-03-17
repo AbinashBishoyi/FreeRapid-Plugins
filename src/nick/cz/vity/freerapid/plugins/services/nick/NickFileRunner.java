@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.nick;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -63,8 +66,9 @@ class NickFileRunner extends AbstractRtmpRunner {
             checkNameAndSize();
             final String mgid = getMgid();
             logger.info("mgid = " + mgid);
-            method = getGetMethod("http://www.nick.com/dynamo/video/data/mrssGen.jhtml?type=normal&demo=nill&mgid=" + mgid);
-            method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
+            method = getGetMethod("http://udat.mtvnservices.com/service1/dispatch.htm?feed=nick_arc_player_prime&mgid=" + mgid);
+            //there seems to be no geocheck
+            //method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -74,16 +78,13 @@ class NickFileRunner extends AbstractRtmpRunner {
                 getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, videoItems);
                 httpFile.getProperties().put("removeCompleted", true);
             } else {
-                method = getGetMethod("http://www.nick.com/dynamo/video/data/mediaGen.jhtml?mgid=" + mgid);
-                method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
+                method = getGetMethod("http://media-utils.mtvnservices.com/services/MediaGenerator/" + mgid + "?arcStage=live&acceptMethods=fms,hdn1,hds");
+                //method.setRequestHeader("X-Forwarded-For", "129.228.25.181");
                 if (!makeRedirectedRequest(method)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
                 final String url = getStreamUrl();
-                if (!url.startsWith("rtmp")) {
-                    throw new NotRecoverableDownloadException("This video is unavailable from your location");
-                }
                 final RtmpSession rtmpSession = new RtmpSession(url);
                 final String playName = rtmpSession.getPlayName();
                 if (playName.endsWith(".mp4") && !playName.startsWith("mp4:")) {
@@ -99,11 +100,11 @@ class NickFileRunner extends AbstractRtmpRunner {
     }
 
     private String getMgid() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<meta content=\"http://media.nick.com/mgid:cms:[^\":]+?:([^\":]+?):(\\d+?)\"");
+        final Matcher matcher = getMatcherAgainstContent("mgid:arc:[^:]+:([^:]+):([a-z\\d\\-]+)");
         if (!matcher.find()) {
             throw new PluginImplementationException("Video ID not found");
         }
-        return "mgid:cms:video:" + matcher.group(1) + ":" + matcher.group(2);
+        return "mgid:arc:video:" + matcher.group(1) + ":" + matcher.group(2);
     }
 
     private List<URI> getVideoItems() throws ErrorDuringDownloadingException {

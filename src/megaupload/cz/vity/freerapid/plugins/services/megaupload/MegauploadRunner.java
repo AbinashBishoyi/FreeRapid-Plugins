@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.services.megaupload.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -14,17 +15,22 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, JPEXS
+ * @author Ladislav Vitasek, Ludek Zika, JPEXS, ntoskrnl
  */
 
 class MegauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
     private String HTTP_SITE = "http://www.megaupload.com";
+    private String LINK_TYPE = "single";
     private int captchaCount;
 
     @Override
@@ -36,15 +42,20 @@ class MegauploadRunner extends AbstractRunner {
             HTTP_SITE = "http://www.megaporn.com";
         final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
-            checkNameAndSize(getContentAsString());
+            if (getContentAsString().contains("folderid\",\"")) {
+                LINK_TYPE = "folder";
+            } else {
+                checkNameAndSize(getContentAsString());
+            }
         } else
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
+
         if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
             HTTP_SITE = "http://www.megarotic.com";
         else if (httpFile.getFileUrl().getHost().contains("megaporn"))
@@ -55,6 +66,37 @@ class MegauploadRunner extends AbstractRunner {
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
+            checkProblems();
+
+            if (getContentAsString().contains("folderid\",\"")) {
+                LINK_TYPE = "folder";
+                final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid\",\"", "\");");
+                final String xmlURL = HTTP_SITE + "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
+                final HttpMethod folderHttpMethod = getMethodBuilder().setReferer(fileURL).setAction(xmlURL).toGetMethod();
+
+                if (makeRequest(folderHttpMethod)) {
+                    if (getContentAsString().contains("<FILES></FILES>"))
+                        throw new URLNotAvailableAnymoreException("No files in folder. Invalid link?");
+
+                    final Matcher matcher = getMatcherAgainstContent("url=\"(.+?)\"");
+                    int start = 0;
+                    final List<URI> uriList = new LinkedList<URI>();
+                    while (matcher.find(start)) {
+                        String link = matcher.group(1);
+                        try {
+                            uriList.add(new URI(link));
+                        } catch (URISyntaxException e) {
+                            LogUtils.processException(logger, e);
+                        }
+                        start = matcher.end();
+                    }
+                    getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+                } else
+                    throw new ServiceConnectionProblemException();
+
+                return;
+            }
+
             checkNameAndSize(getContentAsString());
 
             if (tryManagerDownload(fileURL)) return;
@@ -90,7 +132,6 @@ class MegauploadRunner extends AbstractRunner {
                 }
             } else {
                 checkProblems();
-                logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
 

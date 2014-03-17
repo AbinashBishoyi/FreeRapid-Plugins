@@ -79,6 +79,9 @@ class PutLockerFileRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                if (getContentAsString().contains("exceeded the daily download limit for your country")) {
+                   throw new PluginImplementationException("The daily download limit for your country has been exceeded");
+                }
             }
             final String downloadURL;
             boolean isVideoStream = false;
@@ -91,7 +94,11 @@ class PutLockerFileRunner extends AbstractRunner {
                 } else { // small file (download the stream)
                     isVideoStream = true;
                     String filename = httpFile.getFileName();
-                    filename = filename.substring(0, filename.lastIndexOf(".")) + ".flv";
+                    try {
+                        filename = filename.substring(0, filename.lastIndexOf(".")) + ".flv";
+                    } catch (Exception StringIndexOutOfBoundsException) { //doesn't have extension
+                        filename += ".flv";
+                    }
                     httpFile.setFileName(filename);
                     downloadURL = PlugUtils.getStringBetween(getContentAsString(), "playlist: '/get_file.php", "',");
                 }

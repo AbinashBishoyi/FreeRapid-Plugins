@@ -20,8 +20,9 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.sockshare.com/file/C979D1BB2F4387D3"));
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/65AADB926B140666"));
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/B982BF0B0F93EA0D"));
-            httpFile.setNewURL(new URL("http://www.sockshare.com/file/815F22F09D74B38F"));
+            //httpFile.setNewURL(new URL("http://www.sockshare.com/file/815F22F09D74B38F"));
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/359B64625F4CBEA4"));
+            httpFile.setNewURL(new URL("http://www.putlocker.com/file/7777D7AA580C02A4"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

@@ -103,15 +103,8 @@ class BarrandovFileRunner extends AbstractRtmpRunner {
         {
             throw new PluginImplementationException("Cannot connect to url");
         }
-        Matcher playerMatcher=getMatcherAgainstContent("rel=\"video_src\" href=\"([^\"]+)\"");
-        if(!playerMatcher.find()){
-            throw new PluginImplementationException("Cannot find player url");
-        }
-       
         RtmpSession rtmpSession = new RtmpSession(server, 1935, appName, streamName,true);
-        String playerUrl=playerMatcher.group(1);
         rtmpSession.getConnectParams().put("pageUrl", fileURL);
-        rtmpSession.getConnectParams().put("swfUrl", playerUrl);
         helper.setSwfVerification(rtmpSession, client);
         rtmpSession.setSecureToken("#ed%h0#w@1");
         if (!tryDownloadAndSaveFile(rtmpSession)) {

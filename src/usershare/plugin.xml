@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="usershare.net" version="1.0" vendor="Vity"
+        class="cz.vity.freerapid.plugins.services.usershare.UserShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?usershare\.net/.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="usershare.net"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="usershare.net" path="/" type="code"/>
+    </runtime>
+</plugin>

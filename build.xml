@@ -139,6 +139,14 @@
         <ant dir="${src.dir}/gigasize/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filebox/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/sharingmatrix/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/ifolder/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/imagebam/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/imagehaven/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/myurl/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/rsmonkey/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/co/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/gametrailers/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/usershare/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

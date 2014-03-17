@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.bbcarchive;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -66,6 +67,9 @@ class BbcArchiveFileRunner extends AbstractRtmpRunner {
                     .setParameter("application", "ondemand")
                     .setParameter("cb", String.valueOf(new Random().nextInt(100000)))
                     .toGetMethod();
+            if (!client.getSettings().isProxySet()) {
+                Tunlr.setupMethod(method);
+            }
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }

@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.edisk;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.edisk.captcha.SoundReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -11,9 +12,10 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, JPEXS (Sound Captcha)
  */
 class EdiskRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(EdiskRunner.class.getName());
@@ -78,7 +80,7 @@ class EdiskRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (content.contains("neexistuje z ")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Poï¿½adovanï¿½ soubor nebyl nalezen.</b><br>"));
         }
         PlugUtils.checkFileSize(httpFile, content, "Velikost souboru:", "<br");
         PlugUtils.checkName(httpFile, content, "ut soubor:", "(");
@@ -88,7 +90,7 @@ class EdiskRunner extends AbstractRunner {
 
     private PostMethod stepCaptcha(String contentAsString, boolean hack) throws Exception {
         if (contentAsString.contains("text z obr")) {
-            String captcha;
+            String captcha="";
             Matcher matcher;
 
             if (hack) {
@@ -98,14 +100,34 @@ class EdiskRunner extends AbstractRunner {
 
                 CaptchaSupport captchaSupport = getCaptchaSupport();
                 String host = "http://" + httpFile.getFileUrl().getHost();
-                String s = getMethodBuilder(contentAsString).setActionFromImgSrcWhereTagContains("captcha").getAction();
-                s = host + s;
-                logger.info("Captcha URL " + s);
-                String captchaR = captchaSupport.getCaptcha(s);
-                if (captchaR == null) {
-                    throw new CaptchaEntryInputMismatchException();
+                String captchaImgUrl = getMethodBuilder(contentAsString).setActionFromImgSrcWhereTagContains("captcha").getAction();                
+                captchaImgUrl = host + captchaImgUrl;
+                Matcher m=Pattern.compile("/([0-9]+)$").matcher(captchaImgUrl);
+                String captchaNumber="";
+                logger.info("Captcha Image URL " + captchaImgUrl);
+                if(m.find()){
+                    captchaNumber=m.group(1);
+                    String captchaSoundUrl="http://www.edisk.cz/x-generate-member-audio-captcha/"+captchaNumber;
+                    logger.info("Captcha Sound URL " + captchaSoundUrl);
+                    //request for image must be done first in order to download sound
+                    HttpMethod imageMethod=getMethodBuilder().setAction(captchaImgUrl).toGetMethod();
+                    client.makeRequestForFile(imageMethod);
+                    imageMethod.releaseConnection();
+
+                    //download sound
+                    HttpMethod soundMethod=getMethodBuilder().setAction(captchaSoundUrl).toGetMethod();
+                    soundMethod.setFollowRedirects(true);
+                    captcha=SoundReader.readWav(client.makeRequestForFile(soundMethod));
+                    soundMethod.releaseConnection();
+                    logger.info("Captcha read: " + captcha);
+                }                
+                if((captcha==null)||(captcha.length()<4)){
+                    String captchaR = captchaSupport.getCaptcha(captchaImgUrl);
+                    if (captchaR == null) {
+                        throw new CaptchaEntryInputMismatchException();
+                    }
+                    captcha = captchaR;
                 }
-                captcha = captchaR;
             }
             matcher = PlugUtils.matcher("form method=\"post\"\\s*action=\"([^\"]*)\"", contentAsString);
             if (!matcher.find()) {
@@ -143,10 +165,10 @@ class EdiskRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         if (getContentAsString().contains("neexistuje z ")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Poï¿½adovanï¿½ soubor nebyl nalezen.</b><br>"));
         }
         if (getContentAsString().contains("stahovat pouze jeden soubor")) {
-            throw new ServiceConnectionProblemException(String.format("<b>Mùžete stahovat pouze jeden soubor naráz</b><br>"));
+            throw new ServiceConnectionProblemException(String.format("<b>Mï¿½ete stahovat pouze jeden soubor narï¿½z</b><br>"));
 
         }
 

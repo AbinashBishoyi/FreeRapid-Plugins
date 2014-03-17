@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="Edisk Plugin" default="all" basedir=".">
     <property name="application" value="edisk"/>
-    <property name="version" value="1.0.1"/>
+    <property name="version" value="1.0.3"/>
     <property name="version.name" value="${application}"/>
 
 

@@ -1,23 +1,23 @@
 package cz.vity.freerapid.plugins.services.bitshare;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.Locale;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
  * @author Stan
+ * @author RubinX
  */
 class BitShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(BitShareFileRunner.class.getName());
@@ -26,12 +26,17 @@ class BitShareFileRunner extends AbstractRunner {
     private static final String PARAM_AJAXID = "ajaxid";
     private static final String AJAX_HEADER_FIELD = "X-Requested-With";
     private static final String AJAX_HEADER_VALUE = "XMLHttpRequest";
-    private static final String[] CONTENT_TYPE_TO = new String[]{"text/plain"};
-    private static final String[] CONTENT_TYPE_FROM = new String[]{"application/json"};
+    private static final String[] CONTENT_TYPE_TO = {"text/plain"};
+    private static final String[] CONTENT_TYPE_FROM = {"application/json"};
+
+    private void setLanguageEN() {
+        addCookie(new Cookie(".bitshare.com", "language_selection", "EN", "/", 86400, false));
+    }
 
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        setLanguageEN();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -58,6 +63,7 @@ class BitShareFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        setLanguageEN();
         logger.info("Starting download in TASK " + fileURL);
 
         final String content;
@@ -143,16 +149,19 @@ class BitShareFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("File not available")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
-        }
-        if (contentAsString.contains("cant download more then 1 files at time")) {
-            throw new ServiceConnectionProblemException("Cannot download more then 1 files at time");
-        }
-        if (contentAsString.contains("SESSION ERROR")) {
-            throw new ServiceConnectionProblemException("Session expired");
+        Matcher matcher = PlugUtils.matcher("(?s)</h1>\\s*<div[^>]+class=\"quotbox2\"[^>]*>\\s*(.*?)\\s*</div>", getContentAsString());
+        if (matcher.find()) {
+            final String errorString = matcher.group(1).replaceFirst("(?s)\\s*<.*$", "");
+            if (!errorString.isEmpty()) {
+                if (errorString.contains("requested file was not found in our database"))
+                    throw new URLNotAvailableAnymoreException(errorString); // permanent
+                else if (errorString.contains("cant download more then 1 files at time"))
+                    throw new YouHaveToWaitException(errorString, 900); // 15 minutes
+                else if (errorString.contains("Traffic is used up for today"))
+                    throw new YouHaveToWaitException(errorString, 21600); // 6 hours
+                else // unknown reason
+                    throw new ServiceConnectionProblemException(errorString); // default: 2 minutes
+            }
         }
     }
 }

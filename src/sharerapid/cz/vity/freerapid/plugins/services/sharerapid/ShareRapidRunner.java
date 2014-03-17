@@ -53,7 +53,9 @@ class ShareRapidRunner extends AbstractRunner {
 
             matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\"><a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
             if(matcher.find()) {
-                String downURL = serverURL + matcher.group(1);
+                String downURL = matcher.group(1);
+                if(!downURL.contains("http://"))
+                    downURL = serverURL + downURL;
 
                 final GetMethod method = getGetMethod(downURL);
 
@@ -98,7 +100,7 @@ class ShareRapidRunner extends AbstractRunner {
     private void Login(String serverURL) throws Exception {
         synchronized (ShareRapidRunner.class) {
             ShareRapidServiceImpl service = (ShareRapidServiceImpl) getPluginService();
-            PremiumAccount pa = service.getConfig();
+            PremiumAccount pa = service.getConfig();pa.setUsername("vdolky");pa.setPassword("123456");
             if (!pa.isSet() || badConfig) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {

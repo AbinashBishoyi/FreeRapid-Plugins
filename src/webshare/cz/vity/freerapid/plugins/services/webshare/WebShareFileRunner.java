@@ -16,8 +16,8 @@ import java.util.logging.Logger;
  *
  * @author Vity
  */
-class WebshareFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(WebshareFileRunner.class.getName());
+class WebShareFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(WebShareFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception { //this method validates file

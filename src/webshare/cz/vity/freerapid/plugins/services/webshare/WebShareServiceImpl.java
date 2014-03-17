@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author Vity
  */
-public class WebshareServiceImpl extends AbstractFileShareService {
+public class WebShareServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
@@ -22,7 +22,7 @@ public class WebshareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new WebshareFileRunner();
+        return new WebShareFileRunner();
     }
 
 }

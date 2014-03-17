@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.forshared;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -56,7 +59,7 @@ class ForSharedRunner extends AbstractRunner {
                 method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
                 if (makeRedirectedRequest(method)) {
                     method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("ownload").toGetMethod();
-                    downloadTask.sleep(getWaitingTime() + 1);
+                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var c =", ";") + 1);
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
@@ -70,14 +73,6 @@ class ForSharedRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException("Can't load download page");
         }
-    }
-
-    private int getWaitingTime() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("Please wait <span[^<>]*>(\\d+)");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Waiting time not found");
-        }
-        return Integer.parseInt(matcher.group(1));
     }
 
     private void checkNameAndSize() throws Exception {

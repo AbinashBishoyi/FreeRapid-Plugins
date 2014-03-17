@@ -13,8 +13,9 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -54,7 +55,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             final String callSoapParams = PlugUtils.getStringBetween(getContentAsString(), "callSOAP(", ");");
             final ScriptEngineManager factory = new ScriptEngineManager();
             final ScriptEngine engine = factory.getEngineByName("JavaScript");
-            final SortedMap<String, String> params = new TreeMap<String, String>(); //rhino is buggy in "for(var key in a)", sort the key as workaround
+            final Map<String, String> params = new HashMap<String, String>();
             engine.put("params", params);
             try {
                 engine.eval("function isArray(a){return Object.prototype.toString.apply(a) === '[object Array]';}; "
@@ -93,12 +94,11 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             getPlayListMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
             getPlayListMethod.setRequestHeader("x-addr", "127.0.0.1");
             if (makeRequest(getPlayListMethod)) {
-                if (!getMatcherAgainstContent("http.*").matches()) {
-                    logger.info(getContentAsString());
+                if (!getContentAsString().startsWith("http")) {
                     throw new PluginImplementationException("Server returned invalid playlist URL");
                 }
                 final String playlistURL = getContentAsString();
-                final HttpMethod playlistMethod = new GetMethod(playlistURL);
+                final HttpMethod playlistMethod = new GetMethod(URLDecoder.decode(playlistURL, "UTF-8"));
                 if (!makeRedirectedRequest(playlistMethod)) {
                     throw new PluginImplementationException("Cannot connect to playlist");
                 }
@@ -108,7 +108,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 while (switchMatcher.find()) {
                     SwitchItem newItem = new SwitchItem();
                     String swItemText = switchMatcher.group(0);
-                    newItem.base = switchMatcher.group(2).replace("&amp;", "&");
+                    newItem.base = PlugUtils.replaceEntities(switchMatcher.group(2));
                     newItem.duration = Double.parseDouble(switchMatcher.group(4));
                     Matcher videoMatcher = Pattern.compile("<video src=\"([^\"]+)\" system-bitrate=\"([0-9]+)\" label=\"([0-9]+)p\" enabled=\"true\" */>").matcher(swItemText);
                     while (videoMatcher.find()) {
@@ -189,11 +189,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
 
         RtmpSession rtmpSession = new RtmpSession(base, videoSrc);
         rtmpSession.disablePauseWorkaround();
-        if (!tryDownloadAndSaveFile(rtmpSession)) {
-            checkProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
-        }
+        tryDownloadAndSaveFile(rtmpSession);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -53,20 +52,29 @@ class WarServerCzFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
-            fileURL = URLDecoder.decode(PlugUtils.getStringBetween(contentAsString, "'http://www.warserver.cz/uzivatele/prihlaseni?ret=", "'>"), "UTF-8");
+            final String captchaPageUrl = fileURL + getMethodBuilder().setActionFromAHrefWhereATagContains("Stáhnout soubor").getAction();
+            HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(captchaPageUrl)
+                    .toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
             while (getContentAsString().contains("recaptcha/api/noscript?k=")) {
                 final HttpMethod capMethod = reCaptcha(getMethodBuilder()
                         .setActionFromFormWhereTagContains("manual_challenge", true)
-                        .setAction(fileURL)
-                        .setReferer(fileURL)
+                        .setAction(captchaPageUrl)
+                        .setReferer(captchaPageUrl)
                 ).toPostMethod();
                 if (!makeRedirectedRequest(capMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error processing captcha");
                 }
                 checkProblems();
+                fileURL = capMethod.getURI().toString();
             }
-
             Matcher matcher = getMatcherAgainstContent("startFreeDownload\\(.+?,\\s*(.+?),\\s*(.+?),\\s*(.+?)\\)");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File id/wait time not found ");
@@ -76,7 +84,7 @@ class WarServerCzFileRunner extends AbstractRunner {
             final String server = PlugUtils.unescapeHtml(matcher.group(3).trim()).replace("\"", "").replace("\\/", "/");
             final String downloadLink = server + "/dwn-free.php?fid=" + fid;
             downloadTask.sleep(waitTime + 1);
-            final HttpMethod httpMethod = getMethodBuilder()
+            httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(downloadLink)
                     .toGetMethod();

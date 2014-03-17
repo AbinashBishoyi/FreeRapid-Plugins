@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Vity + ntoskrnl
+ * @author Vity + ntoskrnl + JPEXS
  */
 class SuperFastFileFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SuperFastFileFileRunner.class.getName());
@@ -41,8 +41,8 @@ class SuperFastFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h3>", "</h3>");
-        PlugUtils.checkFileSize(httpFile, content, "<h2>", "</h2>");
+        PlugUtils.checkName(httpFile, content, "<table><tr><td><font face=\"calibri, verdana\" size=\"3\" color=\"#000000\">", "</td>");
+        PlugUtils.checkFileSize(httpFile, content, "&nbsp;&nbsp;</td><td><font face=\"calibri, verdana\" size=\"3\" color=\"#000000\">", "</td></tr></table>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -64,12 +64,12 @@ class SuperFastFileFileRunner extends AbstractRunner {
                 checkProblems();//check problems                
                 final int sleep = PlugUtils.getNumberBetween(getContentAsString(), "\"countdown\">", "</span>");
 
-                final Matcher matcher = getMatcherAgainstContent("padding-left: ?(\\d+)px; ?padding-top: ?\\d+px;'>(\\d)</span>");
+                final Matcher matcher = getMatcherAgainstContent("padding-left: ?(\\d+)px; ?padding-top: ?\\d+px;'>&#(\\d+);</span>");
                 int start = 0;
 
                 List<CaptchaEntry> list = new ArrayList<CaptchaEntry>(4);
                 while (matcher.find(start)) {
-                    list.add(new CaptchaEntry(matcher.group(1), matcher.group(2)));
+                    list.add(new CaptchaEntry(matcher.group(1),  ""+(char)Integer.parseInt(matcher.group(2))));
                     start = matcher.end();
                 }
                 Collections.sort(list);

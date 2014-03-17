@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -20,12 +21,12 @@ class WebShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(WebShareFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -46,17 +47,22 @@ class WebShareFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("hnout soubor").toHttpMethod();
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            final String contentAsString = getContentAsString();
+            checkProblems();
+            checkNameAndSize(contentAsString);
 
-            //here is the download link extraction
+            final String l = PlugUtils.getStringBetween(getContentAsString(), "var l =", ";").trim().replace("'", "").replace("\"", "");
+            final String downloadLink = new String(Base64.decodeBase64(l));
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(downloadLink)
+                    .toHttpMethod();
+
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -66,8 +72,8 @@ class WebShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("soubor nebyl nalezen")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (contentAsString.contains("soubor nebyl nalezen") || contentAsString.contains("Soubor nenalezen")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 

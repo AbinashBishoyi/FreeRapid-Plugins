@@ -60,7 +60,7 @@ class DepositFilesRunner extends AbstractRunner {
                 if (!getContentAsString().contains("Free downloading mode")) {
                     matcher = getMatcherAgainstContent("FREE downloading");
                     if (matcher.find()) {
-                        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("FREE downloading", true).toHttpMethod();
+                        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("free_btn", "FREE downloading").toPostMethod();
                         if (!makeRequest(httpMethod)) {
                             logger.info(getContentAsString());
                             throw new PluginImplementationException();

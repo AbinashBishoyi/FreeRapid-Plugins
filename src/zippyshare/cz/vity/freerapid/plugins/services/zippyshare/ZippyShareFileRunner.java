@@ -86,15 +86,21 @@ class ZippyShareFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("The requsted file does not exist on this server")
+                || contentAsString.contains("File has expired")
                 || contentAsString.contains("<h1>HTTP Status")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "<strong>Name: </strong>", "<");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Size: </strong>", "<");
+        final Matcher name = getMatcherAgainstContent("Name:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
+        if (!name.find()) throw new PluginImplementationException("File name not found");
+        httpFile.setFileName(name.group(1));
+
+        final Matcher size = getMatcherAgainstContent("Size:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
+        if (!size.find()) throw new PluginImplementationException("File size not found");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
+
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -49,7 +50,7 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher filenameMatcher = getMatcherAgainstContent("<title>\\s+Download (.+?). Free download");
+        final Matcher filenameMatcher = getMatcherAgainstContent("<title>\\s+Download (.+?)\\. Free download");
         if (filenameMatcher.find()) {
             httpFile.setFileName(filenameMatcher.group(1));
         } else {
@@ -112,9 +113,18 @@ class TurboBitFileRunner extends AbstractRunner {
                 waitTime = waitTime / waitTimeDivider;
             }
 
+            matcher = getMatcherAgainstContent("var\\s*url\\s*=\\s*(.+?);");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download link not found");
+            }
+            final String script = matcher.group(1);
+            logger.info(script);
+            final String url = ScriptUtils.evaluateJavaScriptToString(script);
+            logger.info(url);
+
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
-                    .setActionFromTextBetween("var url = \"", "\"")
+                    .setAction(url)
                     .toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
 
@@ -141,37 +151,14 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        Matcher err404Matcher = PlugUtils.matcher("<div class=\"text-404\">(.*?)</div", contentAsString);
-        if (err404Matcher.find()) {
-            if (err404Matcher.group(1).contains("\u00d0\u2014\u00d0\u00b0\u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d1?\u00d0\u00b5\u00d0\u00bd\u00d0\u00bd\u00d1\u2039\u00d0\u00b9 \u00d0\u00b4\u00d0\u00be\u00d0\u00ba\u00d1?\u00d0\u00bc\u00d0\u00b5\u00d0\u00bd\u00d1\u201a \u00d0\u00bd\u00d0\u00b5 \u00d0\u00bd\u00d0\u00b0\u00d0\u00b9\u00d0\u00b4\u00d0\u00b5\u00d0\u00bd"))
-                throw new URLNotAvailableAnymoreException(err404Matcher.group(1));
-        }
-        if (contentAsString.contains("\u0424\u0430\u0439\u043B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D")
-                || contentAsString.contains("File was not found") || contentAsString.contains("Probably it was deleted"))
+        if (getContentAsString().contains("File was not found")
+                || getContentAsString().contains("Probably it was deleted"))
             throw new URLNotAvailableAnymoreException("File not found");
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        try {
-            Matcher waitMatcher = PlugUtils.matcher("\u00d0\u0178\u00d0\u00be\u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d0\u00b1\u00d1?\u00d0\u00b9\u00d1\u201a\u00d0\u00b5\\s+\u00d0\u00bf\u00d0\u00be\u00d0\u00b2\u00d1\u201a\u00d0\u00be\u00d1\u20ac\u00d0\u00b8\u00d1\u201a\u00d1\u0152.*<span id='timeout'>([^>]*)<", getContentAsString());
-            if (waitMatcher.find()) {
-                throw new YouHaveToWaitException("You have to wait", Integer.valueOf(waitMatcher.group(1)));
-            }
-            Matcher errMatcher = PlugUtils.matcher("<div[^>]*class='error'[^>]*>([^<]*)<", getContentAsString());
-            if (errMatcher.find() && !errMatcher.group(1).isEmpty()) {
-                if (errMatcher.group(1).contains("\u00d0?\u00d0\u00b5\u00d0\u00b2\u00d0\u00b5\u00d1\u20ac\u00d0\u00bd\u00d1\u2039\u00d0\u00b9 \u00d0\u00be\u00d1\u201a\u00d0\u00b2\u00d0\u00b5\u00d1\u201a")
-                        || errMatcher.group(1).contains("\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442!"))
-                    throw new CaptchaEntryInputMismatchException();
-                throw new PluginImplementationException();
-            }
-            if (getContentAsString().contains("The file is not avaliable now because of technical problems")) {
-                throw new ServiceConnectionProblemException("The file is not available now because of technical problems");
-            }
-            if (getContentAsString().contains("\u00d0\u00a1\u00d1?\u00d1\u2039\u00d0\u00bb\u00d0\u00ba\u00d0\u00b0 \u00d0\u00bf\u00d1\u20ac\u00d0\u00be\u00d1?\u00d1\u20ac\u00d0\u00be\u00d1\u2021\u00d0\u00b5\u00d0\u00bd\u00d0\u00b0")) // it's unlikely we get this...
-                throw new YouHaveToWaitException("Trying again...", 10);
-        } catch (NumberFormatException e) {
-            throw new PluginImplementationException();
+        if (getContentAsString().contains("The file is not avaliable now because of technical problems")) {
+            throw new ServiceConnectionProblemException("The file is not available now because of technical problems");
         }
     }
 

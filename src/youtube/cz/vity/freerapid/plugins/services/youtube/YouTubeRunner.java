@@ -3,7 +3,10 @@ package cz.vity.freerapid.plugins.services.youtube;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
+import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
@@ -25,7 +28,7 @@ import java.util.regex.Matcher;
  * @author Kajda, JPEXS, ntoskrnl
  * @since 0.82
  */
-class YouTubeFileRunner extends AbstractRunner {
+class YouTubeFileRunner extends AbstractRtmpRunner {
     private static final Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.youtube.com";
     private static final URI SERVICE_URI = URI.create(SERVICE_WEB);
@@ -37,7 +40,6 @@ class YouTubeFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkName();
@@ -51,8 +53,8 @@ class YouTubeFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod getMethod = getGetMethod(fileURL);
 
+        GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             setConfig();
@@ -63,22 +65,28 @@ class YouTubeFileRunner extends AbstractRunner {
                 return;
             }
 
-            checkFmtParameter();
-            checkName();
+            if (getContentAsString().contains("&fmt_map=&")) {
+                RtmpSession rtmpSession = handleStreamMap();
+                tryDownloadAndSaveFile(rtmpSession);
 
-            String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_url_map=", "&");
-            fmt_url_map = URLDecoder.decode(fmt_url_map, "UTF-8");
-            Matcher matcher = PlugUtils.matcher("," + fmt + "\\|(http[^\\|]+)(,[0-9]+\\||$)", "," + fmt_url_map);
-
-            if (matcher.find()) {
-                client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
-                getMethod = getGetMethod(matcher.group(1));
-                if (!tryDownloadAndSaveFile(getMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
-                }
             } else {
-                throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
+                checkFmtParameter();
+                checkName();
+
+                String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_url_map=", "&");
+                fmt_url_map = URLDecoder.decode(fmt_url_map, "UTF-8");
+                Matcher matcher = PlugUtils.matcher("," + fmt + "\\|(http[^\\|]+)(,[0-9]+\\||$)", "," + fmt_url_map);
+
+                if (matcher.find()) {
+                    setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
+                    getMethod = getGetMethod(matcher.group(1));
+                    if (!tryDownloadAndSaveFile(getMethod)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException("Error starting download");
+                    }
+                } else {
+                    throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
+                }
             }
         } else {
             checkProblems();
@@ -86,7 +94,12 @@ class YouTubeFileRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkProblems() throws Exception {
+        if (getContentAsString().contains("I confirm that I am 18 years of age or older")) {
+            if (!makeRedirectedRequest(getGetMethod(fileURL + "&has_verified=1"))) {
+                throw new ServiceConnectionProblemException();
+            }
+        }
         /* Causes false positives
         final Matcher matcher = getMatcherAgainstContent("<div\\s+?class=\"yt-alert-content\">\\s*([^<>]+?)\\s*</div>");
         if (matcher.find()) {
@@ -137,55 +150,55 @@ class YouTubeFileRunner extends AbstractRunner {
             LogUtils.processException(logger, e);
         }
         //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
-        String formats[] = fmt_map.split(",");
-        String formatParts[][]=new String[formats.length][];
-        for(int f=0;f<formats.length;f++){
-           //Example: 37/1920x1080/9/0/115
-           formatParts[f]=formats[f].split("\\/"); 
+        String[] formats = fmt_map.split(",");
+        String[][] formatParts = new String[formats.length][];
+        for (int f = 0; f < formats.length; f++) {
+            //Example: 37/1920x1080/9/0/115
+            formatParts[f] = formats[f].split("/");
         }
-        int qualityWidth=config.getQualityWidth();
-        int qualityIndex=-1;
-        if(qualityWidth==YouTubeSettingsConfig.MAX_WIDTH){
+        int qualityWidth = config.getQualityWidth();
+        int qualityIndex = -1;
+        if (qualityWidth == YouTubeSettingsConfig.MAX_WIDTH) {
             logger.info("Selecting maximal quality");
-            qualityIndex=0;
-        }else if(qualityWidth==YouTubeSettingsConfig.MIN_WIDTH){
+            qualityIndex = 0;
+        } else if (qualityWidth == YouTubeSettingsConfig.MIN_WIDTH) {
             logger.info("Selecting minimal quality");
-            qualityIndex=formatParts.length-1;
-        }else{
-            int nearestGreater=Integer.MAX_VALUE;
-            int nearestGreaterIndex=-1;
-            int nearestLower=Integer.MIN_VALUE;
-            int nearestLowerIndex=-1;
-            for(int f=0;f<formatParts.length;f++){
-                String wh[]=formatParts[f][1].split("x");
-                int h=Integer.parseInt(wh[1]);
-                if(h==qualityWidth){
-                    qualityIndex=f;
+            qualityIndex = formatParts.length - 1;
+        } else {
+            int nearestGreater = Integer.MAX_VALUE;
+            int nearestGreaterIndex = -1;
+            int nearestLower = Integer.MIN_VALUE;
+            int nearestLowerIndex = -1;
+            for (int f = 0; f < formatParts.length; f++) {
+                String[] wh = formatParts[f][1].split("x");
+                int h = Integer.parseInt(wh[1]);
+                if (h == qualityWidth) {
+                    qualityIndex = f;
                     break;
-                }else{
-                    if((h>qualityWidth)&&(nearestGreater>h)){
-                        nearestGreater=h;
-                        nearestGreaterIndex=f;
+                } else {
+                    if ((h > qualityWidth) && (nearestGreater > h)) {
+                        nearestGreater = h;
+                        nearestGreaterIndex = f;
                     }
-                    if((h<qualityWidth)&&(nearestLower<h)){
-                        nearestLower=h;
-                        nearestLowerIndex=f;
+                    if ((h < qualityWidth) && (nearestLower < h)) {
+                        nearestLower = h;
+                        nearestLowerIndex = f;
                     }
                 }
             }
-            if(qualityIndex==-1){
-               if(nearestLowerIndex!=-1){
-                   qualityIndex=nearestLowerIndex;
-                   logger.info("Selected quality not found, using nearest lower");
-               }else{
-                   qualityIndex=nearestGreaterIndex;
-                   logger.info("Selected quality not found, using nearest greater");
-               }
+            if (qualityIndex == -1) {
+                if (nearestLowerIndex != -1) {
+                    qualityIndex = nearestLowerIndex;
+                    logger.info("Selected quality not found, using nearest lower");
+                } else {
+                    qualityIndex = nearestGreaterIndex;
+                    logger.info("Selected quality not found, using nearest greater");
+                }
             }
         }
 
-        if(qualityIndex==-1) throw new PluginImplementationException("Cannot select quality");
-        logger.info("Quality to download: fmt"+formatParts[qualityIndex][0]+" "+formatParts[qualityIndex][1]);
+        if (qualityIndex == -1) throw new PluginImplementationException("Cannot select quality");
+        logger.info("Quality to download: fmt" + formatParts[qualityIndex][0] + " " + formatParts[qualityIndex][1]);
         fmt = Integer.parseInt(formatParts[qualityIndex][0]);
         setFileExtension(fmt);
     }
@@ -203,6 +216,33 @@ class YouTubeFileRunner extends AbstractRunner {
                 fileExtension = ".mp4";
                 break;
         }
+    }
+
+    private RtmpSession handleStreamMap() throws Exception {
+        String fmt_stream_map = PlugUtils.getStringBetween(getContentAsString(), "&fmt_stream_map=", "&");
+        try {
+            fmt_stream_map = URLDecoder.decode(fmt_stream_map, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            LogUtils.processException(logger, e);
+        }
+        //Example: 34|c4/id/31ff2b12315eb686/itag/34|rtmpe://...,18|mp4:c1/id/31ff2b12315eb686/itag/18|rtmpe://...,5|c1/id/31ff2b12315eb686/itag/5|rtmpe://...
+        String[] formats = fmt_stream_map.split(",");
+        String[][] formatParts = new String[formats.length][];
+        for (int f = 0; f < formats.length; f++) {
+            //Example: 34|c4/id/31ff2b12315eb686/itag/34|rtmpe://...
+            formatParts[f] = formats[f].split("\\|");
+        }
+        //TODO quality selection?
+        final RtmpSession rtmpSession = new RtmpSession(formatParts[0][2], formatParts[0][1]);
+        final String swfUrl = getSwfUrl();
+        rtmpSession.getConnectParams().put("swfUrl", swfUrl);
+        rtmpSession.getConnectParams().put("pageUrl", fileURL);
+        new SwfVerificationHelper(swfUrl).setSwfVerification(rtmpSession, client);
+        return rtmpSession;
+    }
+
+    private String getSwfUrl() throws ErrorDuringDownloadingException {
+        return PlugUtils.getStringBetween(getContentAsString(), "<param name=\\\"movie\\\" value=\\\"", "\\\"").replace("\\/", "/");
     }
 
     private void parseUserPage() throws Exception {

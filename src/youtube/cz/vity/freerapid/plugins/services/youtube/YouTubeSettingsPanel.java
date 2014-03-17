@@ -18,8 +18,8 @@ public class YouTubeSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"Highest available","1080p (HD)","720p (HD)","480p","360p","240p","Lowest available"};
-        final int[] qualityIndexMap={4,6,5,3,2,1,0}; //Due to quality settings in older versions, 4 is Highest available
+        final String[] qualityStrings = {"Highest available", "1080p (HD)", "720p (HD)", "480p", "360p", "240p", "Lowest available"};
+        final int[] qualityIndexMap = {4, 6, 5, 3, 2, 1, 0}; //Due to quality settings in older versions, 4 is Highest available
 
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);
@@ -27,12 +27,12 @@ public class YouTubeSettingsPanel extends JPanel {
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         orderCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        int qs=config.getQualitySetting();
-        for(int i=0;i<qualityIndexMap.length;i++){
-           if(qualityIndexMap[i]==qs){
-               qualityList.setSelectedIndex(i);
-               break;
-           }
+        int qs = config.getQualitySetting();
+        for (int i = 0; i < qualityIndexMap.length; i++) {
+            if (qualityIndexMap[i] == qs) {
+                qualityList.setSelectedIndex(i);
+                break;
+            }
         }
 
         orderCheckBox.setSelected(config.isReversePlaylistOrder());

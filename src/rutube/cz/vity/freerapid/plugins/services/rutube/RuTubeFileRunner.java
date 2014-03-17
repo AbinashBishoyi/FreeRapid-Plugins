@@ -52,11 +52,21 @@ class RuTubeFileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final Matcher matcher = getMatcherAgainstContent("video.rutube.ru/([A-Za-z\\d]{32})");
+            final Matcher matcher = getMatcherAgainstContent("http://video.rutube.ru/(\\d+)");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Playlist URL not found");
+                throw new PluginImplementationException("Track id not found");
             }
-            final String playlistUrl = "http://bl.rutube.ru/" + matcher.group(1) + ".f4m?referer=" + fileURL;
+            final String trackId = matcher.group(1);
+            method = getMethodBuilder()
+                    .setReferer(String.format("%s/?hash=%s&referer=%s", SWF_URL, trackId, fileURL))
+                    .setAction(String.format("http://rutube.ru/trackinfo/%s.xml?referer=%s", trackId, fileURL))
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            final String playlistUrl = PlugUtils.getStringBetween(getContentAsString(), "<default>", "</default>") + "?referer=" + fileURL;
             logger.info("playlistUrl = " + playlistUrl);
             method = getGetMethod(playlistUrl);
             if (!makeRedirectedRequest(method)) {

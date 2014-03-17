@@ -84,6 +84,9 @@ class TurboBitFileRunner extends AbstractRunner {
         if (getContentAsString().contains("Probably it was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (getContentAsString().contains("<u>Turbo Access</u> denied")) {
+            throw new BadLoginException("Turbo Access denied");
+        }
     }
 
     private void login() throws Exception {

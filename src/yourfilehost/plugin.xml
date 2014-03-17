@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="yourfilehost.com" version="0.1" vendor="Alex"
+        class="cz.vity.freerapid.plugins.services.yourfilehost.YourFileHostServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?yourfilehost\.com/media\.php.+"/>
+        <attribute id="minver" value="0.7"/>
+        <attribute id="maxver" value="0.799"/>
+        <attribute id="services" value="yourfilehost.com"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="yourfilehost.com" path="/" type="code"/>
+    </runtime>
+</plugin>

@@ -4,10 +4,10 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Kajda
  */
 public class UploadBoxServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "uploadbox.com";
+    private final static String SERVICE_NAME = "uploadbox.com";
 
     public String getName() {
         return SERVICE_NAME;
@@ -24,8 +24,6 @@ public class UploadBoxServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new UploadBoxRunner();
+        return new UploadBoxFileRunner();
     }
-
-
 }

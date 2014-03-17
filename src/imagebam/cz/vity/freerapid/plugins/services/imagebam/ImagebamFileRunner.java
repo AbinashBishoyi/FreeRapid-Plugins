@@ -25,14 +25,19 @@ class ImagebamFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("save image").toGetMethod();
-            String filename = URLDecoder.decode(httpMethod.getPath().substring(httpMethod.getPath().lastIndexOf("/") + 1), "UTF-8");
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("save image").toGetMethod();
+            String path = httpMethod.getPath();
+            String filename = URLDecoder.decode(path.substring(path.lastIndexOf("/") + 1), "UTF-8");
             if (!filename.contains(".")) filename += ".jpg";
             httpFile.setFileName(filename);
             setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+                String action = httpMethod.getURI().toString().replace("?download=1", "");
+                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
             }
         } else {
             checkProblems();

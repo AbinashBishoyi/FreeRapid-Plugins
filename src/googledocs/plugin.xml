@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.googledocs.GoogleDocsServiceImpl"
-        id="googledocs.com" vendor="tong2shot" version="1.0.2">
-    <attributes>
+        id="googledocs.com" vendor="tong2shot" version="1.0.3">
+<attributes>
         <attribute id="urlRegex" value="https?://(www\.)?(docs|drive)\.google\.com/file/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>

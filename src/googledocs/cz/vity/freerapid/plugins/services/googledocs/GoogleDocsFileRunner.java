@@ -68,6 +68,8 @@ class GoogleDocsFileRunner extends AbstractRunner {
             } catch (PluginImplementationException e) {
                 throw new PluginImplementationException("Download URL not found");
             }
+            setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
+            httpFile.setResumeSupported(true);
             HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(downloadUrl).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 httpMethod = getMethodBuilder().setReferer(fileURL).setAction(downloadUrl).toGetMethod();
@@ -90,8 +92,6 @@ class GoogleDocsFileRunner extends AbstractRunner {
                         .setBaseURL(baseUrl)
                         .setAction(downloadLink)
                         .toGetMethod();
-                setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
-                httpFile.setResumeSupported(true);
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");

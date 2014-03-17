@@ -72,10 +72,15 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
             final String show = engine.eval("data[\"show\"][\"name\"]").toString();
             final String title = engine.eval("data[\"title\"]").toString();
-            final int season = Integer.parseInt(engine.eval("data[\"season_number\"].toString()").toString());
-            final int episode = Integer.parseInt(engine.eval("data[\"episode_number\"].toString()").toString());
-
-            final String name = String.format("%s - S%02dE%02d - %s", show, season, episode, title);
+            String name;
+            try {
+                final int season = Integer.parseInt(engine.eval("data[\"season_number\"].toString()").toString());
+                final int episode = Integer.parseInt(engine.eval("data[\"episode_number\"].toString()").toString());
+                name = String.format("%s - S%02dE%02d - %s", show, season, episode, title);
+            } catch (final Exception e) {
+                //non episode
+                name = title;
+            }
             httpFile.setFileName(name + ".flv");
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
 

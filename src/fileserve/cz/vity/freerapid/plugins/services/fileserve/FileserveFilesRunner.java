@@ -130,6 +130,10 @@ class FileserveFilesRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)));
         }
+        matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds to start another download");
+        if (matcher.find()) {
+            throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)));
+        }
     }
 
 }

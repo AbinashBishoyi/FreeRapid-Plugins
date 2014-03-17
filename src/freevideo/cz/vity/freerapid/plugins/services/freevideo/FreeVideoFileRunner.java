@@ -79,11 +79,11 @@ class FreeVideoFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             String url=PlugUtils.getStringBetween(contentAsString, "url: \"", "\",");
-            String baseUrl=PlugUtils.getStringBetween(contentAsString, "baseUrl: \"", "\",");
-            String timeStamp=PlugUtils.getStringBetween(contentAsString, "timestamp: \"", "\"");
-            String downloadUrl=baseUrl+"/"+generateProtection(timeStamp, url)+"/"+url;
+            //String baseUrl=PlugUtils.getStringBetween(contentAsString, "baseUrl: \"", "\",");
+            //String timeStamp=PlugUtils.getStringBetween(contentAsString, "timestamp: \"", "\"");
+            //String downloadUrl=baseUrl+"/"+generateProtection(timeStamp, url)+"/"+url;
 
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(downloadUrl).toHttpMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {

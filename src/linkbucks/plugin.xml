@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.linkbucks.LinkBucksServiceImpl"
-        id="linkbucks.com" vendor="Vity+ntoskrnl" version="1.1.12">
+        id="linkbucks.com" vendor="Vity+ntoskrnl" version="1.1.13">
     <attributes>
         <attribute id="urlRegex"
-                   value="http://[0-9a-z]+?\.((linkbucks\.com)|(baberepublic\.com)|(blahetc\.com)|(linkgalleries\.net)|(linkseer\.net)|(miniurls\.co)|(picturesetc\.net)|(placepictures\.com)|(qvvo\.com)|(realfiles\.net)|(seriousfiles\.com)|(seriousurls\.com)|(thatsprime\.com)|(thesefiles\.com)|(thesegalleries\.com)|(thosegalleries\.com)|(tinybucks\.net)|(uberpicz\.com)|(ubervidz\.com)|(ubucks\.net)|(ugalleries\.net)|(urlpulse\.net)|(viraldatabase\.com)|(whackyvidz\.com)|(youfap\.com)|(yyv\.co)|(zxxo\.net)|(qqc\.co))/?"/>
+                   value="http://[0-9a-z]+?\.((linkbucks\.com)|(baberepublic\.com)|(blahetc\.com)|(filesonthe\.net)|(linkgalleries\.net)|(linkseer\.net)|(miniurls\.co)|(picturesetc\.net)|(placepictures\.com)|(qvvo\.com)|(realfiles\.net)|(seriousfiles\.com)|(seriousurls\.com)|(thatsprime\.com)|(thesefiles\.com)|(thesegalleries\.com)|(thosegalleries\.com)|(tinybucks\.net)|(uberpicz\.com)|(ubervidz\.com)|(ubucks\.net)|(ugalleries\.net)|(urlpulse\.net)|(viraldatabase\.com)|(whackyvidz\.com)|(youfap\.com)|(yyv\.co)|(zxxo\.net)|(qqc\.co))/?"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="linkbucks.com"/>

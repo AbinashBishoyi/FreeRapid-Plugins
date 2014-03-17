@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.rapidgator_premium.RapidGatorServiceImpl"
-        id="rapidgator.net_premium" vendor="ntoskrnl" version="1.1.0">
+        id="rapidgator.net_premium" vendor="ntoskrnl" version="1.1.1">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?rapidgator\.net/(file|folder)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?rapidgator\.net(rapidgator\.net|rg\.to)/(file|folder)/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="rapidgator.net"/>
+        <attribute id="services" value="rapidgator.net rg.to"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>

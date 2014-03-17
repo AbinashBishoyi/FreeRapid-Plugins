@@ -107,7 +107,7 @@ class MyZukaRuFileRunner extends AbstractRunner {
 
     private void parseAlbum() throws Exception {
         final List<URI> uriList = new LinkedList<URI>();
-        final Matcher urlMatcher = getMatcherAgainstContent("<a href=[\"'](.+?)[\"']>Скачать</a>");
+        final Matcher urlMatcher = getMatcherAgainstContent("<a href=[\"'](.+?)[\"'][^>]*?>Скачать</a>");
         while (urlMatcher.find()) {
             final String url = SERVICE_BASE_URL + urlMatcher.group(1);
             if (!isSongUrl(url)) {

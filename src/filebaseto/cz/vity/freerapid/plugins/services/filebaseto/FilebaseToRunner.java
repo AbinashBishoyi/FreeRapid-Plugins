@@ -52,7 +52,7 @@ class FilebaseToRunner extends AbstractRunner {
                     }
             }
 
-            final Matcher matcher1 = getMatcherAgainstContent("<center><form action=\"(http.+?)\"");
+            final Matcher matcher1 = getMatcherAgainstContent("<form action=\"(http.+?)\"");
             final Matcher matcher2 = getMatcherAgainstContent("a href=\"(.*?download/ticket.*?)\"");
             if (matcher1.find()) {
                 PostMethod postMethod = getPostMethod(matcher1.group(1));

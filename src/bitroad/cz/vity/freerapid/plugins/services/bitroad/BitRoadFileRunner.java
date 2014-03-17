@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.bitroad;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -11,6 +8,7 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Kajda
@@ -79,8 +77,11 @@ class BitRoadFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "class=\"content_text\">\n<h1>", " [");
         PlugUtils.checkFileSize(httpFile, contentAsString, "[ ", " ]</h1>");
+        final Matcher nameMatch = PlugUtils.matcher(".*/([^/]+)\\.html", fileURL);
+        if (! nameMatch.matches() )
+        	throw new PluginImplementationException("Error parsing URL: "+fileURL);
+        httpFile.setFileName(nameMatch.group(1));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="bitroad.net" version="0.7.1" vendor="Kajda"
+<plugin id="bitroad.net" version="0.7.2" vendor="Kajda"
         class="cz.vity.freerapid.plugins.services.bitroad.BitRoadServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bitroad\.net/download/.+"/>

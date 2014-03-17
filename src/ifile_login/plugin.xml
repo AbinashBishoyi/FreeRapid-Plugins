@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="ifile.it_login" version="0.7.2" vendor="JPEXS"
+        class="cz.vity.freerapid.plugins.services.ifile_login.IFileServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?ifile\.it/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="ifile.it"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="ifile.it" path="/" type="code"/>
+    </runtime>
+</plugin>

@@ -15,11 +15,10 @@ import java.util.logging.Logger;
 /**
  * Class which contains main code
  *
- * @author Arthur Gunawan
+ * @author Arthur Gunawan,JPEXS
  */
 class ImagehavenFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ImagehavenFileRunner.class.getName());
-
 
 
     @Override
@@ -36,7 +35,15 @@ class ImagehavenFileRunner extends AbstractRunner {
 
 
         if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
+            String contentAsString = getContentAsString();//check for response
+            if(contentAsString.contains("This ad is shown once a day")){ //There is ad on adult images
+              if(!makeRedirectedRequest(method)){ //We have to reload page (Cookies was already stored)
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+              }
+              contentAsString = getContentAsString();
+            }
+             
             checkProblems();//check problems
         
             String mLink = PlugUtils.getStringBetween(contentAsString,"<img src='.","'");

@@ -39,7 +39,12 @@ class DailymotionRunner extends AbstractRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<span class=\"title\"[^<>]*?>(.+?)</span>");
+        final Matcher matcher;
+        if (getContentAsString().contains("<h1 class=\"title\"")) {
+            matcher = getMatcherAgainstContent("<h1 class=\"title\"[^<>]*?>(.+?)</h1>");
+        } else {
+            matcher = getMatcherAgainstContent("<span class=\"title\"[^<>]*?>(.+?)</span>");
+        }
         if (!matcher.find()) throw new PluginImplementationException("File name not found");
         httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)) + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

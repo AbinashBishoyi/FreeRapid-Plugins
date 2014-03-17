@@ -35,7 +35,7 @@ class CrockoFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<span class=\"fz24\">Download:</span>\\s*<br />\\s*<strong>(.+?)</strong>\\s*<span class=\"tip1\">\\s*<span class=\"inner\">(.+?)</span>");
+        final Matcher matcher = getMatcherAgainstContent("<span class=\"fz24\">\\s*Download:\\s*<strong>(.+?)</strong>\\s*</span>\\s*<span class=\"tip1\">\\s*<span class=\"inner\">(.+?)</span>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name/size not found");
         }
@@ -78,7 +78,7 @@ class CrockoFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("the page you're looking for")) {
+        if (content.contains("the page you're looking for") || content.contains("Requested file is deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("The requested file is temporarily unavailable")) {

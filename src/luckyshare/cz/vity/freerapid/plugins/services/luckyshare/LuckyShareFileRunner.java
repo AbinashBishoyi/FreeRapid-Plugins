@@ -53,12 +53,11 @@ class LuckyShareFileRunner extends AbstractRunner {
                 final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "<span id=\"waitingtime\">", "</span>", TimeUnit.SECONDS);
                 throw new YouHaveToWaitException("Waiting time between downloads", waitTime);
             }
-
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
             final String reCaptchaKey = PlugUtils.getStringBetween(contentAsString, "Recaptcha.create(\"", "\",");
-            final Matcher fileIdMatcher = PlugUtils.matcher("/([^/]+)$", fileURL);
+            final Matcher fileIdMatcher = PlugUtils.matcher("/(\\d+)/?", fileURL);
             fileIdMatcher.find();
 
             final String fileId = fileIdMatcher.group(1);
@@ -68,66 +67,63 @@ class LuckyShareFileRunner extends AbstractRunner {
                     .toGetMethod();
             getTimeMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
 
-            if (makeRequest(getTimeMethod)) {
-                contentAsString = getContentAsString();
-                logger.info("getTime : " + contentAsString);
-
-                final String hash = PlugUtils.getStringBetween(contentAsString, "\"hash\":\"", "\",");
-                final int time = PlugUtils.getWaitTimeBetween(contentAsString, "\"time\":", "}", TimeUnit.SECONDS);
-
-                downloadTask.sleep(time);
-
-                //captcha
-                final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
-                final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-                if (captcha == null) {
-                    throw new CaptchaEntryInputMismatchException();
-                }
-                r.setRecognized(captcha);
-
-                //there is no method to access "challenge" field directly,
-                //get "challenge" field from response params instead..
-                final String captchaChallenge = PlugUtils.getStringBetween(r.getResponseParams(), "recaptcha_challenge_field=", "&recaptcha_response_field=");
-                final String captchaURL = "http://luckyshare.net/download/verify/challenge/" + captchaChallenge + "/response/" + captcha + "/hash/" + hash;
-                logger.info("captcha   : " + captcha);
-                logger.info("challenge : " + captchaChallenge);
-                logger.info("hash      : " + hash);
-
-                HttpMethod captchaMethod = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setAction(captchaURL)
-                        .toGetMethod();
-                captchaMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
-
-                if (makeRequest(captchaMethod)) {
-                    contentAsString = getContentAsString();
-                    logger.info("download link : " + contentAsString);
-
-                    final String downloadLink = PlugUtils.getStringBetween(contentAsString, "\"link\":\"", "\"}").replace("\\", "");
-                    final HttpMethod httpMethod = getMethodBuilder()
-                            .setReferer(fileURL)
-                            .setAction(downloadLink)
-                            .toHttpMethod();
-
-                    //here is the download link extraction
-                    if (!tryDownloadAndSaveFile(httpMethod)) {
-                        checkProblems();//if downloading failed
-                        throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
-                    }
-                } else {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-            } else {
+            if (!makeRequest(getTimeMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
+            }
+            contentAsString = getContentAsString();
+            logger.info("getTime : " + contentAsString);
+
+            final String hash = PlugUtils.getStringBetween(contentAsString, "\"hash\":\"", "\",");
+            final int time = PlugUtils.getWaitTimeBetween(contentAsString, "\"time\":", "}", TimeUnit.SECONDS);
+
+            downloadTask.sleep(time);
+
+            //captcha
+            final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+            final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            r.setRecognized(captcha);
+
+            //there is no method to access "challenge" field directly,
+            //get "challenge" field from response params instead..
+            final String captchaChallenge = PlugUtils.getStringBetween(r.getResponseParams(), "recaptcha_challenge_field=", "&recaptcha_response_field=");
+            final String captchaURL = "http://luckyshare.net/download/verify/challenge/" + captchaChallenge + "/response/" + captcha + "/hash/" + hash;
+            logger.info("captcha   : " + captcha);
+            logger.info("challenge : " + captchaChallenge);
+            logger.info("hash      : " + hash);
+
+            HttpMethod captchaMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(captchaURL)
+                    .toGetMethod();
+            captchaMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+            if (!makeRequest(captchaMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            contentAsString = getContentAsString();
+            logger.info("download link : " + contentAsString);
+
+            final String downloadLink = PlugUtils.getStringBetween(contentAsString, "\"link\":\"", "\"}").replace("\\", "");
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(downloadLink)
+                    .toHttpMethod();
+
+            //here is the download link extraction
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();//if downloading failed
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
-
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
@@ -137,6 +133,9 @@ class LuckyShareFileRunner extends AbstractRunner {
             final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "<span id=\"waitingtime\">", "</span>", TimeUnit.SECONDS);
             throw new YouHaveToWaitException("Waiting time between downloads", waitTime);
         }   */
+        if (contentAsString.contains("This file is Premium only. Only Premium Users can download this file")) {
+            throw new NotRecoverableDownloadException("Only Premium Users can download this file");
+        }
     }
 
 }

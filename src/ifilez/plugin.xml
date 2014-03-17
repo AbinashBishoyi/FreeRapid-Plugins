@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.ifilez.IFilezServiceImpl" id="i-filez.com" vendor="RickCL" version="0.1.4">
+<plugin class="cz.vity.freerapid.plugins.services.ifilez.IFilezServiceImpl" id="i-filez.com" vendor="RickCL" version="0.1.5">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?i-filez\.com/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?(i-filez|depfile)\.com/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="i-filez.com"/>
+        <attribute id="services" value="i-filez.com depfile.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
         <attribute id="maxDownloads" value="1"/>
     </attributes>

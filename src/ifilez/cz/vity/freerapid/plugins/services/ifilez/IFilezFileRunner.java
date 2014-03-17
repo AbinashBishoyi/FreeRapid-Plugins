@@ -1,15 +1,12 @@
 package cz.vity.freerapid.plugins.services.ifilez;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.awt.image.BufferedImage;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.concurrent.TimeUnit;
@@ -23,25 +20,21 @@ import java.util.regex.Matcher;
 class IFilezFileRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(IFilezFileRunner.class.getName());
-    private static final String HTTP_IFILEZ = "http://i-filez.com";
+    private final static String SERVICE_BASE_URL = "http://depfile.com";
+    private final static String SERVICE_COOKIE_DOMAIN = ".depfile.com";
+
+    private void checkURL() {
+        fileURL = fileURL.replaceFirst("i-filez\\.com", "depfile.com");
+    }
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-
+        checkURL();
+        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "sdlanguageid", "2", "/", 86400, false));
         HttpMethod httpMethod = getMethodBuilder()
                 .setAction(fileURL)
                 .toGetMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            throw new ServiceConnectionProblemException();
-        }
-
-        //set language to english
-        httpMethod = getMethodBuilder()
-                .setAction(fileURL)
-                .setParameter("language", "2") //2 = english
-                .setParameter("SetLng", "SetLng")
-                .toPostMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             throw new ServiceConnectionProblemException();
         }
@@ -52,55 +45,32 @@ class IFilezFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-
+        checkURL();
+        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "sdlanguageid", "2", "/", 86400, false));
         HttpMethod httpMethod = getMethodBuilder()
                 .setAction(fileURL)
                 .toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             throw new ServiceConnectionProblemException();
         }
-
-        //set language to english
-        httpMethod = getMethodBuilder()
-                .setAction(fileURL)
-                .setParameter("language", "2") //2 = english
-                .setParameter("SetLng", "SetLng")
-                .toPostMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            throw new ServiceConnectionProblemException();
-        }
-
-        String content = getContentAsString();
         checkProblems();
         checkNameAndSize();
 
-        while (content.contains("verifycode")) {
-            final PostMethod postMethod = (PostMethod) getMethodBuilder().setActionFromFormByIndex(3, true).removeParameter("verifycode").toPostMethod();
-            logger.info(httpMethod.getURI().toString());
-
-            Matcher matcher = getMatcherAgainstContent("src=\"(/includes/vvc.php[^\"]*)\"");
-            if (matcher.find()) {
-                String s = HTTP_IFILEZ + PlugUtils.replaceEntities(matcher.group(1));
-                logger.info("Captcha - image " + s);
-                String captcha;
-                final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
-                //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
-                captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-
-                postMethod.addParameter("verifycode", captcha);
-
-                if (!makeRedirectedRequest(postMethod)) {
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
-                }
+        while (getContentAsString().contains("verifycode")) {
+            final MethodBuilder methodBuilder = getMethodBuilder()
+                    .setBaseURL(SERVICE_BASE_URL)
+                    .setActionFromFormWhereTagContains("verifycode", true)
+                    .setParameter("verifycode", stepCaptcha());
+            httpMethod = methodBuilder.toPostMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
-            content = getContentAsString();
+            checkProblems();
         }
 
-        String url = PlugUtils.getStringBetween(content, "document.getElementById(\"wait_input\").value= unescape('", "');");
-        url = URLDecoder.decode(url, "UTF-8");
-
-        int waitTime = PlugUtils.getWaitTimeBetween(content, "var sec=", ";", TimeUnit.SECONDS);
+        final String url = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "document.getElementById(\"wait_input\").value= unescape('", "');"), "UTF-8");
+        final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var sec=", ";", TimeUnit.SECONDS);
         downloadTask.sleep(waitTime);
 
         httpMethod = getMethodBuilder()
@@ -108,25 +78,46 @@ class IFilezFileRunner extends AbstractRunner {
                 .setReferer(fileURL)
                 .toGetMethod();
         if (!tryDownloadAndSaveFile(httpMethod)) {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
+    private String stepCaptcha() throws Exception {
+        final MethodBuilder methodBuilder = getMethodBuilder().setBaseURL(SERVICE_BASE_URL).setActionFromImgSrcWhereTagContains("/vvc.php");
+        final String captchaURL = methodBuilder.getEscapedURI();
+        logger.info("Captcha URL " + captchaURL);
+        final String captcha = getCaptchaSupport().getCaptcha(captchaURL);
+        if (captcha == null) {
+            throw new CaptchaEntryInputMismatchException();
+        }
+        return captcha;
+    }
+
     private void checkNameAndSize() throws ErrorDuringDownloadingException, UnsupportedEncodingException {
         String content = getContentAsString();
-
         String fileName = PlugUtils.getStringBetween(content, "<th>File name:</th>", "</td>").replaceAll("<[^>]*>", "").trim();
         String fileSize = PlugUtils.getStringBetween(content, "<th>Size:</th>", "</td>").replaceAll("<[^>]*>", "").trim();
         final long lsize = PlugUtils.getFileSizeFromString(fileSize);
-
         httpFile.setFileName(URLDecoder.decode(fileName, "UTF-8"));
         httpFile.setFileSize(lsize);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File was not found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (contentAsString.contains("File was not found") || contentAsString.contains("0 byte")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("File is available only for Premium users")) {
+            throw new PluginImplementationException("File is available only for Premium users");
+        }
+        if (contentAsString.contains("A file was recently downloaded from your IP address")) {
+            final Matcher waitTimeMatcher = getMatcherAgainstContent("No less than (\\d+) min should");
+            int waitTime = 5 * 60;
+            if (waitTimeMatcher.find()) {
+                waitTime = Integer.parseInt(waitTimeMatcher.group(1)) * 60;
+            }
+            throw new YouHaveToWaitException("A file was recently downloaded from your IP address", waitTime);
         }
     }
 

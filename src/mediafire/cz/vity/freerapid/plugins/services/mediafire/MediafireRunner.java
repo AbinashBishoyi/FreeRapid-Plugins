@@ -3,6 +3,8 @@ package cz.vity.freerapid.plugins.services.mediafire;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.DefaultFileStreamRecognizer;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -37,7 +39,9 @@ public class MediafireRunner extends AbstractRunner {
         if (isList()) return;
         final String content = getContentAsString();
         PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
-        PlugUtils.checkFileSize(httpFile, content, "Download <span>(", ")</span>");
+        if (!getContentAsString().contains("dh('');")) { // if not passworded
+            PlugUtils.checkFileSize(httpFile, content, "Download <span>(", ")</span>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -60,7 +64,9 @@ public class MediafireRunner extends AbstractRunner {
                 return;
             }
             checkNameAndSize();
+            boolean isPassworded = false;
             while (getContentAsString().contains("dh('');")) { //handle password
+                isPassworded = true;
                 HttpMethod postPwd = getMethodBuilder()
                         .setReferer(fileURL)
                         .setBaseURL("http://www.mediafire.com/")
@@ -71,8 +77,14 @@ public class MediafireRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("Some issue while posting password");
                 }
             }
+            if (isPassworded) {
+                PlugUtils.checkFileSize(httpFile, getContentAsString(), "Download <span>(", ")</span>");
+            }
             method = getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
-            setFileStreamContentTypes("text/plain");
+            //setFileStreamContentTypes("text/plain");
+            String allowedCT[] = {"text/plain"}; //add allowed content-type
+            DefaultFileStreamRecognizer refileRecognizer = new DefaultFileStreamRecognizer(allowedCT,false);
+            client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER,refileRecognizer);
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

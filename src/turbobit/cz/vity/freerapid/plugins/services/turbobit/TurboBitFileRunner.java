@@ -220,27 +220,23 @@ public class TurboBitFileRunner extends AbstractRunner {
         if (!makeRedirectedRequest(method)) {
             throw new ServiceConnectionProblemException("XOR js load error");
         }
-        contents = getContentAsString();
-        int ii = 0;
-        try {
-            while (!contents.contains("Waiting")) {                 // decode contents into javascript function
-                if (ii++ > 10) throw new ServiceConnectionProblemException("XOR processing error");
-                String aaa[] = contents.split("eval");
-                int jpos = 0;                   // avoiding the dummy eval functions - - - keep trying turbobit :)-
-                for (int jj = 0, jmax = 0; jj < aaa.length; jj++) {
-                    if (aaa[jj].length() > jmax) {
-                        jmax = aaa[jj].length();
-                        jpos = jj;
-                    }
-                }
-                contents = aaa[jpos];
+        contents = evalScript(getContentAsString().split("eval"));
+        // first variable declared is the number used for the XOR - get it and return it
+        final String sTarget = contents.substring(contents.indexOf("var "), contents.indexOf("function"));
+        return PlugUtils.getNumberBetween(sTarget, " ", ";");
+    }
 
-                String clVars = PlugUtils.getStringBetween(contents, "function(", "){");
-                String sFuncts = contents.substring(contents.indexOf("{") + 1, contents.lastIndexOf("}")).replace("return", "OUTPUT=");
-                String clVals = contents.substring(contents.lastIndexOf("(") + 1, contents.lastIndexOf(") );"));
+    private String evalScript(String scriptFuncts[]) {
+        for (int ii = 0; ii < scriptFuncts.length; ii++) {
+            try {
+                final String contentTest = scriptFuncts[ii];
+                logger.info("Contents = " + contentTest);
+                final String clVars = PlugUtils.getStringBetween(contentTest, "function(", "){");
+                final String sFuncts = contentTest.substring(contentTest.indexOf("{") + 1, contentTest.lastIndexOf("}")).replace("return", "OUTPUT=");
+                final String clVals = contentTest.substring(contentTest.lastIndexOf("(") + 1, contentTest.lastIndexOf(") );"));
 
-                String aVars[] = clVars.split(",");
-                String aVals[] = clVals.split(",");
+                final String aVars[] = clVars.split(",");
+                final String aVals[] = clVals.split(",");
                 String setVarVals = "";
                 for (int iPos = 0; iPos < aVars.length; iPos++) {
                     setVarVals += aVars[iPos] + "=" + aVals[iPos] + ";";
@@ -249,14 +245,21 @@ public class TurboBitFileRunner extends AbstractRunner {
                 ScriptEngine engine = factory.getEngineByName("JavaScript");
                 engine.eval(setVarVals + sFuncts).toString();
 
-                contents = (String) engine.get("OUTPUT");
-                contents = contents.replaceAll("\n", " ").replaceAll("\r", " ");
+                String output = (String) engine.get("OUTPUT");
+                output = output.replaceAll("\n", " ").replaceAll("\r", " ");
+
+                if (output.contains("Waiting")) {
+                    return output;
+                } else if (output.contains("eval")) {
+                    String out = evalScript(output.split("eval"));
+                    if (out != null)
+                        return out;
+                }
+            } catch (Exception e) {
+                //error wrong script function
             }
-        } catch (Exception e) {
-            throw new PluginImplementationException("xor script has changed.!!");
         }
-        // first variable declared is the number used for the XOR - get it and return it
-        final String sTarget = contents.substring(contents.indexOf("var "), contents.indexOf("function"));
-        return PlugUtils.getNumberBetween(sTarget, " ", ";");
+        return null;
     }
+
 }

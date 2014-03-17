@@ -65,7 +65,8 @@ public class MediafireRunner extends AbstractRunner {
             }
             checkNameAndSize();
             boolean isPassworded = false;
-            while (getContentAsString().contains("dh('');")) { //handle password
+            final String passwordRule = "dh\\('.*?'\\);";
+            while (PlugUtils.matcher(passwordRule,getContentAsString()).find()) {
                 isPassworded = true;
                 HttpMethod postPwd = getMethodBuilder()
                         .setReferer(fileURL)

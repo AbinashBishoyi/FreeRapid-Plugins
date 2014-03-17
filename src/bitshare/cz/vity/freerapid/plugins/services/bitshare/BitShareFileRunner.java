@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.bitshare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -20,6 +17,13 @@ import java.util.logging.Logger;
  */
 class BitShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(BitShareFileRunner.class.getName());
+
+    private static final String PARAM_REQUEST = "request";
+    private static final String PARAM_AJAXID = "ajaxid";
+    private static final String AJAX_HEADER_FIELD = "X-Requested-With";
+    private static final String AJAX_HEADER_VALUE = "XMLHttpRequest";
+    private static final String[] CONTENT_TYPE_TO = new String[]{"text/plain"};
+    private static final String[] CONTENT_TYPE_FROM = new String[]{"application/json"};
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -61,11 +65,11 @@ class BitShareFileRunner extends AbstractRunner {
         final String action = PlugUtils.getStringBetween(content, "http://bitshare.com", "request.html")
                 + "request.html";
 
-        final HttpMethod postMethodWithID = getMethodBuilder() // click to Download button
-                .setAction(action).setParameter("request", "generateID").setParameter("ajaxid", ajaxdl)
-                .setReferer(fileURL).toPostMethod();
-        postMethodWithID.addRequestHeader("X-Requested-With", "XMLHttpRequest"); // send as AJAX
-        setFileStreamContentTypes(new String[]{"text/plain"}, new String[]{"application/json"});
+        final HttpMethod postMethodWithID = getMethodBuilder() // click to "Regular Download" button
+                .setAction(action).setParameter(PARAM_REQUEST, "generateID")
+                .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL).toPostMethod();
+        postMethodWithID.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
+        setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
 
         String[] typeTimeCaptcha;
         if (makeRequest(postMethodWithID)) {
@@ -75,34 +79,27 @@ class BitShareFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
 
-        downloadTask.sleep(Integer.parseInt(typeTimeCaptcha[1]));
+        downloadTask.sleep(Integer.parseInt(typeTimeCaptcha[1])); // waiting
 
-        if (Integer.parseInt(typeTimeCaptcha[2]) == 1) {
+        if (Integer.parseInt(typeTimeCaptcha[2]) == 1) { // recognize captcha if is necessary
             String captchaKey = PlugUtils.getStringBetween(content, "api.recaptcha.net/noscript?k=", "\"");
-            HttpMethod captchaMethod;
-            while (true) {
-                captchaMethod = processCaptcha(captchaKey).modifyResponseMethod(getMethodBuilder(content)
-                        .setAction(action).setParameter("request", "validateCaptcha").setParameter("ajaxid", ajaxdl)
-                        .setReferer(fileURL)).toPostMethod();
-                postMethodWithID.addRequestHeader("X-Requested-With", "XMLHttpRequest"); // send as AJAX
-                setFileStreamContentTypes(new String[]{"text/plain"}, new String[]{"application/json"});
+            HttpMethod captchaMethod = processCaptcha(captchaKey).modifyResponseMethod(getMethodBuilder(content)
+                    .setAction(action).setParameter(PARAM_REQUEST, "validateCaptcha")
+                    .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL)).toPostMethod();
+            postMethodWithID.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
+            setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
 
-                if (makeRequest(captchaMethod)) {
-                    if (getContentAsString().equals("SUCCESS")) {
-                        break;
-                    }
-                } else {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
+            if (!makeRequest(captchaMethod) || !getContentAsString().equals("SUCCESS")) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
         }
 
-        final HttpMethod postMethodForUrl = getMethodBuilder()
-              .setAction(action).setParameter("request", "getDownloadURL").setParameter("ajaxid", ajaxdl)
-              .setReferer(fileURL).toPostMethod();
-        postMethodWithID.addRequestHeader("X-Requested-With", "XMLHttpRequest"); // send as AJAX
-        setFileStreamContentTypes(new String[]{"text/plain"}, new String[]{"application/json"});
+        final HttpMethod postMethodForUrl = getMethodBuilder() // click to "Download" button
+                .setAction(action).setParameter(PARAM_REQUEST, "getDownloadURL")
+                .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL).toPostMethod();
+        postMethodWithID.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
+        setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
 
         if (makeRequest(postMethodForUrl)) {
             final HttpMethod getMethodForDownload = getMethodBuilder()
@@ -112,7 +109,7 @@ class BitShareFileRunner extends AbstractRunner {
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(getMethodForDownload)) {
                 checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//se unknown problem
+                throw new ServiceConnectionProblemException("Error starting download");//set unknown problem
             }
         } else {
             checkProblems();
@@ -133,11 +130,18 @@ class BitShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
+
         if (contentAsString.contains("File not available")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (contentAsString.contains("cant download more then 1 files at time")) {
             throw new YouHaveToWaitException("Cannot download more then 1 files at time", 60);
+        }
+        if (contentAsString.contains("SESSION ERROR")) {
+            throw new ServiceConnectionProblemException("Connection problem");
+        }
+        if (contentAsString.contains("incorrect-captcha-sol")) {
+            throw new CaptchaEntryInputMismatchException("Captcha recognition failed");
         }
     }
 

@@ -59,9 +59,8 @@ class UploKingFileRunner extends AbstractRunner {
             final String actionCheck = "ajax.php?mode=check&function=";
 
             final Matcher matchFullUrl = PlugUtils.matcher("window.location.href='.+?=(.+?)'\"><div class=\"link_slow\">", getContentAsString());
-            if (!matchFullUrl.find())
-                throw new PluginImplementationException("err 1");
-            final String fullUrl = matchFullUrl.group(1);
+            String fullUrl = fileURL;
+            if (matchFullUrl.find()) fullUrl = matchFullUrl.group(1);
 
             final Matcher matchKey = PlugUtils.matcher("<input.+?id=\"fk\".+?value=\"(.+?)\"", getContentAsString());
             if (!matchKey.find())

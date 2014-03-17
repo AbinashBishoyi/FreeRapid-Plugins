@@ -14,6 +14,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -51,7 +52,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
     private URI stepDirectLink(final String directLinkURL) throws Exception {
         final GetMethod method = getGetMethod(directLinkURL);
         if (makeRedirectedRequest(method)) {
-            return new URI(method.getURI().getURI().replace(" ", "%20"));
+            return encodeUri(method.getURI().getURI());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -119,7 +120,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
 
             final Matcher m = PlugUtils.matcher("<a href=\"([^\"]+)\" class=\"result-a\">", content);
             while (m.find()) {
-                list.add(new URI(m.group(1).trim().replace(" ", "%20")));
+                list.add(encodeUri(m.group(1).trim()));
             }
             if (getContentAsString().contains(HEADER_LINK_TYPE_1)) {
                 for (int ii = 0; ii < list.size(); ii++)
@@ -155,6 +156,10 @@ class SafeLinkingFileRunner extends AbstractRunner {
         final SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport());
         solveMediaCaptcha.modifyResponseMethod(method);
         method.setParameter("solvemedia_response", solveMediaCaptcha.getResponse());
+    }
+
+    private URI encodeUri(final String sUri) throws Exception {
+        return new URI(URLEncoder.encode(sUri, "UTF-8").replaceAll("%3A", ":").replaceAll("%2F", "/"));
     }
 
 }

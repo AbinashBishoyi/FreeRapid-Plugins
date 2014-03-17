@@ -112,7 +112,7 @@ class MegauploadRunner extends AbstractRunner {
     }
 
 
-    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, IOException, YouHaveToWaitException {
+    private void checkProblems() throws ServiceConnectionProblemException, NotRecoverableDownloadException, IOException, YouHaveToWaitException {
 
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("trying to access is temporarily unavailable"))
@@ -131,13 +131,15 @@ class MegauploadRunner extends AbstractRunner {
         }
 
         if (contentAsString.contains("All download slots")) {
-
             throw new ServiceConnectionProblemException("No free slot for your country.");
+        }
+
+        if (contentAsString.contains("to download is larger than")) {
+            throw new NotRecoverableDownloadException("Only premium users are entitled to download files larger than 1 GB from Megaupload.");
         }
 
         if (contentAsString.contains("the link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
-
         }
 
     }

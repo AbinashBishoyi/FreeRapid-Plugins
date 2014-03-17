@@ -14,7 +14,7 @@ public class LeteckaPostaServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 3;
+        return 2;
     }
 
     @Override

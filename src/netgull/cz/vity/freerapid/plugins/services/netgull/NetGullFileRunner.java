@@ -43,7 +43,10 @@ class NetGullFileRunner extends AbstractRunner {
             if (getContentAsString().contains("captcha")) {
                 while (getContentAsString().contains("captcha")) {
                     httpMethod = stepCaptcha();
-                    makeRedirectedRequest(httpMethod);
+
+                    if (!makeRedirectedRequest(httpMethod)) {
+                        throw new ServiceConnectionProblemException();
+                    }
                 }
 
                 httpMethod = getMethodBuilder().setReferer(fileURL).setAction(PlugUtils.getStringBetween(getContentAsString(), "document.location=\"", "\";")).toHttpMethod();

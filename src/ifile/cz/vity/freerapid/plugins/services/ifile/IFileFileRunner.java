@@ -44,7 +44,7 @@ class IFileFileRunner extends AbstractRunner {
 
             if (filePath.length > 1) {
                 client.setReferer(fileURL);
-                String redirectURL = "http://ifile.it/download:dl_request?if=" + filePath[1] + ",type=simple,captcha=";
+                String redirectURL = PlugUtils.getStringBetween(getContentAsString(), "var url = \"", "\"") + filePath[1] + ",type=simple,captcha=";
                 getMethod = getGetMethod(redirectURL);
 
                 if (!makeRedirectedRequest(getMethod)) {

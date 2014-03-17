@@ -6,12 +6,16 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.BrowserUtil;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -37,6 +41,16 @@ class RapidShareRunner extends AbstractRunner {
         super.run();
         //       storage = getPluginService().getPluginContext().getConfigurationStorageSupport();
         context = getPluginService().getPluginContext();
+
+        if (Locale.getDefault().equals(new Locale("cs", "CZ")) && !context.getConfigurationStorageSupport().configFileExists("opensource2010.txt")) {
+            final JPanel panel = new JPanel();
+            final Component component = panel.add(new JLabel("<html><h3>Používáte rádi FreeRapid Downloader a pøipadá Vám užiteèný?</h3><br />I vy nám mùžete pomoci.<br>Jak? - Jednoduše a nezabere vám to víc jak 1 minutu.<br><b>Hlasujte pro nás, prosím, v anketì Czech Open Source 2010.</b><br>Kliknutím na OK pøejdete na stránku s hlasováním.</html>"));
+            final boolean result = context.getDialogSupport().showOKCancelDialog(component, "Czech Open source 2010");
+            context.getConfigurationStorageSupport().storeConfigToFile(new Object(), "opensource2010.txt");
+            if (result) {
+                BrowserUtil.openBrowser("http://www.root.cz/akce/cos/nominace/");
+            }
+        }
 
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {

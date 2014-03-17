@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="RapidShare.com" version="1.0.17" vendor="Vity"
+<plugin id="RapidShare.com" version="1.0.18" vendor="Vity"
         class="cz.vity.freerapid.plugins.services.rapidshare.RapidShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="https?://((www\.)|(rs[0-9]+\.))?rapidshare\.com/files/[0-9]+/.*"/>

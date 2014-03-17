@@ -20,7 +20,7 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.megashare.com/?r=SDFGXVHYE"));//redirection
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+//            connectionSettings.setProxy("localhost", 8099); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final MegaShareServiceImpl service = new MegaShareServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

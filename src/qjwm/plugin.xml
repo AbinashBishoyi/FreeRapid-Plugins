@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.qjwm.QjwmServiceImpl"
-        id="qjwm.com" vendor="Tommy" version="1.0.2">
+        id="qjwm.com" vendor="Tommy" version="1.0.3">
     <attributes>
         <attribute id="urlRegex" value="http://(.+?\.)?(qjwm)\.com/.+"/>
         <attribute id="minver" value="0.852"/>
@@ -10,6 +10,10 @@
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
+                plugin-version="1.0.4" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="qjwm.com" path="/" type="code"/>
     </runtime>

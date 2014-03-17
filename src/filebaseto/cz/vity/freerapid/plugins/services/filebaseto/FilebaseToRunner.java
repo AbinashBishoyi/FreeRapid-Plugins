@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, RickCL
  */
 class FilebaseToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FilebaseToRunner.class.getName());
@@ -73,10 +73,29 @@ class FilebaseToRunner extends AbstractRunner {
                     logger.warning(getContentAsString());
                     throw new IOException("File input stream is empty.");
                 }
-
-            } else throw new PluginImplementationException("Download link or captcha not found");
-
-
+            } else {
+                Matcher matcher = getMatcherAgainstContent("<input.*name=\"uid\".*value=\"(\\w*)\".*/>");
+                if( matcher.find() ) {
+                    PostMethod pMethod = getPostMethod(fileURL);
+                    pMethod.addParameter( "uid", matcher.group(1) );
+                    if (makeRedirectedRequest(pMethod)) {
+                        checkProblems();
+                        matcher = getMatcherAgainstContent("<form action=\"(http.*)\" method.*>");
+                        if( matcher.find() ) {
+                            logger.info("Try download " + matcher.group(1));
+                            pMethod = getPostMethod(matcher.group(1));
+                            if (!tryDownloadAndSaveFile(pMethod)) {
+                                checkProblems();
+                                logger.warning(getContentAsString());
+                                throw new IOException("File input stream is empty.");
+                            }
+                        } else
+                            throw new PluginImplementationException("Download link or captcha not found");
+                    } else
+                        throw new PluginImplementationException("Download link or captcha not found");
+                } else
+                    throw new PluginImplementationException("Download link or captcha not found");
+            }
         } else
             throw new ServiceConnectionProblemException();
     }

@@ -17,12 +17,8 @@ import java.util.regex.Pattern;
 /**
  * @author Ladislav Vitasek
  */
-class RapidShareRunner extends AbstractRunner<RapidShareServiceImpl> {
+class RapidShareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
-
-    public RapidShareRunner(RapidShareServiceImpl shareDownloadService) {
-        super(shareDownloadService);
-    }
 
     public void runCheck(HttpFileDownloader downloader) throws Exception {
         super.runCheck(downloader);

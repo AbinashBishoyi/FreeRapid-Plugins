@@ -120,7 +120,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                         .toGetMethod();
                 break;
             } else if (getContentAsString().contains("File Download Link Generated")
-                    || getContentAsString().contains("This direct link will be available for your IP")) {
+                    || getContentAsString().contains("This direct link will be available for your IP")
+                    || getContentAsString().contains("This direct link will be active for your IP")) {
                 //page containing download link
                 final Matcher matcher = getMatcherAgainstContent("<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
                 if (!matcher.find()) {

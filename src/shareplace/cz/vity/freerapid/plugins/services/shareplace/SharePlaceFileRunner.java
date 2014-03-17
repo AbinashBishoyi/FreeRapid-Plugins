@@ -55,6 +55,9 @@ class SharePlaceFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(getFrameURL()).toGetMethod();
         if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
+
             final String action = URLDecoder.decode(
                     PlugUtils.getStringBetween(getContentAsString(), "var beer = '", "';")
                             .replace("vvvvvvvvv", "")

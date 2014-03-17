@@ -8,7 +8,7 @@ import java.awt.event.ActionListener;
 /**
  * @author tong2shot
  */
-public class VimeoSettingsPanel extends JPanel {
+class VimeoSettingsPanel extends JPanel {
     private VimeoSettingsConfig config;
 
     public VimeoSettingsPanel(VimeoServiceImpl service) throws Exception {
@@ -18,28 +18,21 @@ public class VimeoSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"High Definition", "Standard Definition", "Mobile"};
-        final int[] qualityIndexMap = {2, 1, 0};
-
-        final JLabel qualityLabel = new JLabel("Preferred quality level:");
-        final JComboBox qualityList = new JComboBox(qualityStrings);
+        final JLabel qualityLabel = new JLabel("Preferred video quality:");
+        final JComboBox qualityList = new JComboBox(VideoQuality.getItems());
+        qualityLabel.setLabelFor(qualityList);
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
-        int qs = config.getQualitySetting();
-        for (int i = 0; i < qualityIndexMap.length; i++) {
-            if (qualityIndexMap[i] == qs) {
-                qualityList.setSelectedIndex(i);
-                break;
-            }
-        }
+        qualityList.setSelectedItem(config.getVideoQuality());
 
         qualityList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                config.setQualitySetting(qualityIndexMap[qualityList.getSelectedIndex()]);
+                config.setVideoQuality((VideoQuality) qualityList.getSelectedItem());
             }
         });
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(qualityLabel);
         add(qualityList);
         add(Box.createRigidArea(new Dimension(0, 15)));

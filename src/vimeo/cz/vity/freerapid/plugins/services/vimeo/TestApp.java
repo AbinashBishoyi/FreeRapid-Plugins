@@ -23,7 +23,7 @@ public class TestApp extends PluginDevApplication {
             final VimeoServiceImpl service = new VimeoServiceImpl();
 
             VimeoSettingsConfig config = new VimeoSettingsConfig();
-            config.setQualitySetting(1);
+            config.setVideoQuality(VideoQuality.SD);
             service.setConfig(config);
 
             testRun(service, httpFile, connectionSettings);

@@ -10,7 +10,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  * @author ntoskrnl
  */
 public class VimeoServiceImpl extends AbstractFileShareService {
-    private static final String CONFIG_FILE = "plugin_VimeoSettings.xml";
+    private static final String CONFIG_FILE = "plugin_Vimeo.xml";
     private volatile VimeoSettingsConfig config;
 
     @Override
@@ -20,7 +20,7 @@ public class VimeoServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return true;
     }
 
     @Override
@@ -36,20 +36,22 @@ public class VimeoServiceImpl extends AbstractFileShareService {
         }
     }
 
-    public VimeoSettingsConfig getConfig() throws Exception {
-        final ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
-        if (config == null) {
-            if (!storage.configFileExists(CONFIG_FILE)) {
-                config = new VimeoSettingsConfig();
-                config.setQualitySetting(2);  //hd quality
-            } else {
-                config = storage.loadConfigFromFile(CONFIG_FILE, VimeoSettingsConfig.class);
+    VimeoSettingsConfig getConfig() throws Exception {
+        synchronized (VimeoServiceImpl.class) {
+            final ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
+            if (config == null) {
+                if (!storage.configFileExists(CONFIG_FILE)) {
+                    config = new VimeoSettingsConfig();
+                    config.setVideoQuality(VideoQuality.HD);
+                } else {
+                    config = storage.loadConfigFromFile(CONFIG_FILE, VimeoSettingsConfig.class);
+                }
             }
+            return config;
         }
-        return config;
     }
 
-    public void setConfig(final VimeoSettingsConfig config) {
+    void setConfig(final VimeoSettingsConfig config) {
         synchronized (VimeoServiceImpl.class) {
             this.config = config;
         }

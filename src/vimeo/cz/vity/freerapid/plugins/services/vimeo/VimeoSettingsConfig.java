@@ -4,13 +4,13 @@ package cz.vity.freerapid.plugins.services.vimeo;
  * @author tong2shot
  */
 public class VimeoSettingsConfig {
-    private int qualitySetting;
+    private VideoQuality videoQuality;
 
-    public int getQualitySetting() {
-        return qualitySetting;
+    public VideoQuality getVideoQuality() {
+        return videoQuality;
     }
 
-    public void setQualitySetting(int qualitySetting) {
-        this.qualitySetting = qualitySetting;
+    public void setVideoQuality(final VideoQuality videoQuality) {
+        this.videoQuality = videoQuality;
     }
 }

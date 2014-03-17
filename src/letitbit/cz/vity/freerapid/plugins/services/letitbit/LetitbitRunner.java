@@ -54,9 +54,7 @@ class LetitbitRunner extends AbstractRunner {
             checkNameAndSize();
             String pageUrl = fileURL;
 
-            //temporarily disabled
-            //String url = new LetitbitApi(client).getDownloadUrl(fileURL);
-            String url = null;
+            String url = new LetitbitApi(client).getDownloadUrl(fileURL);
 
             if (url == null) {
                 for (int i = 1; i <= 3; i++) {

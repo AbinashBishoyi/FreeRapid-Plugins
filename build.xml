@@ -220,6 +220,7 @@
         <ant dir="${src.dir}/protectlinks" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/protectmylinks" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/przeklej" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/qjwm" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/qshare" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/quickshare" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/quickshare_premium" antfile="build.xml" inheritall="false"/>
@@ -229,6 +230,7 @@
         <ant dir="${src.dir}/rapidsharede" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshareuser" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshare_premium" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/rayfile" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/recaptcha" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/relink" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/remixshare" antfile="build.xml" inheritall="false"/>

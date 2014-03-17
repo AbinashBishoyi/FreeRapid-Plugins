@@ -8,6 +8,9 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+
+import javax.swing.JOptionPane;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -23,10 +26,24 @@ class IndowebsterRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
-            checkNameandSize(getContentAsString());
-        } else
-            throw new PluginImplementationException();
+        makeRequest(getMethod);
+        
+        String contentAsString = getContentAsString();
+
+        if (contentAsString.contains("File ini merupakan file PRIVATE")) {
+            // checked
+           logger.info("file exists!");
+            
+
+        } else {
+
+
+            if (makeRequest(getMethod)) {
+                contentAsString = getContentAsString();
+                checkNameandSize(getContentAsString());
+            } else
+                throw new PluginImplementationException();
+        }
     }
     //<div id="buttonz" align="center"> <a href="http://www4.indowebster.com/f8a03b1118fc754d82a8fe7d3be43278.rar" onclick="return poppop('addd.php')" class="hintanchor" onmouseover="showhint('Download link for Indonesia only.', this, event, '200px')">Download from IDWS</a> </div><center>
 
@@ -38,7 +55,35 @@ class IndowebsterRunner extends AbstractRunner {
         //getMethoda.setFollowRedirects(true);
         //you can now use makeRedirectedRequest() for working with redirects
         if (makeRedirectedRequest(getMethoda)) {
-            final String contentAsString = getContentAsString();
+            String contentAsString = getContentAsString();
+            //check password
+            if (contentAsString.contains("File ini merupakan file PRIVATE")) {
+                client.setReferer(fileURL);
+                PostMethod pMethod = getPostMethod(fileURL + " ");
+                //String password = JOptionPane.showInputDialog("Input LINK password:");
+                pMethod.addParameter("password", "www.indowebster.web.id");
+                //pMethod.addParameter("input", "www.indowebster.web.id");
+                pMethod.addParameter("submit", "Login");
+                makeRequest(pMethod);
+                logger.info("Request success!");
+
+
+            }
+            contentAsString = getContentAsString();
+
+             if (contentAsString.contains("File ini merupakan file PRIVATE")) {
+                client.setReferer(fileURL);
+                PostMethod pMethod = getPostMethod(fileURL + " ");
+                String password = JOptionPane.showInputDialog("Input LINK password:");
+                pMethod.addParameter("password", password);
+                pMethod.addParameter("input", "www.indowebster.web.id");
+                pMethod.addParameter("submit", "Login");
+                makeRequest(pMethod);
+                logger.info("Request success!");
+
+
+            }
+            contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
 
             //            //<div class="download"><a href="/download/1918981?PHPSESSID=79692e667cdfa171fcf6c90e7d69315c"></a></div>

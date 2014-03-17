@@ -89,7 +89,7 @@ class FreeNapsterFileRunner extends AbstractRtmpRunner {
                 "<a type=\"track\" href=\"#" + trackId + "\"[^<>]*?>\\s*(.+?)\\s*</a>\\s*"
                         + "(?:<span class=\"explicit\">\\[EXPLICIT\\]</span>\\s*)?"
                         + "<span class=\"albumName\">\\s*On:\\s*<(?:span|a)[^<>]*?>\\s*(.+?)\\s*</(?:span|a)>\\s*</span>\\s*"
-                        + "<span class=\"artistName\">\\s*By:\\s*<a[^<>]*?>\\s*(.+?)\\s*</a>\\s*</span>");
+                        + "<span class=\"artistName\">\\s*By:\\s*<(?:span|a)[^<>]*?>\\s*(.+?)\\s*</(?:span|a)>\\s*</span>");
         if (!matcher.find()) {
             throw new PluginImplementationException("Track name not found");
         }

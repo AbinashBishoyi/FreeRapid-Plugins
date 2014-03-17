@@ -37,7 +37,7 @@ public class SolveMediaCaptcha {
     private final static Logger logger = Logger.getLogger(SolveMediaCaptcha.class.getName());
     private final static String SOLVEMEDIA_CAPTCHA_URL = "http://api.solvemedia.com/papi/";
     private final static String SOLVEMEDIA_CAPTCHA_SECURE_URL = "https://api-secure.solvemedia.com/papi/";
-    private final static String C_FORMAT = "js,swf11,swf11.7,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox21,os/nt,os/nt5.1,%s,jslib/jquery,jslib/jqueryui";
+    private final static String C_FORMAT = "js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox23,os/nt,os/nt6.1,%s,jslib/jquery,jslib/jqueryui";
 
     private final String publicKey;
     private final HttpDownloadClient client;
@@ -47,6 +47,9 @@ public class SolveMediaCaptcha {
     private String theme;
     private String challenge;
     private String response;
+
+    //TODO : implement noscript method
+    //for example : http://api.solvemedia.com/papi/challenge.noscript?k=oy3wKTaFP368dkJiGUqOVjBR2rOOR7GR
 
     /**
      * Constructor of SolveMediaCaptcha
@@ -330,7 +333,7 @@ public class SolveMediaCaptcha {
                 .setBaseURL(baseUrl)
                 .setAction(action)
                 .toGetMethod();
-        method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 5.1; WOW64; rv:21.0) Gecko/20100101 Firefox/21.0");
+        method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0");
         method.setRequestHeader("Accept", "*/*");
         method.setRequestHeader("Accept-Language", "en-US,en;q=0.5");
         method.setRequestHeader("Connection", "keep-alive");

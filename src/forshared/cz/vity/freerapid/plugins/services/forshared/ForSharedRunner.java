@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.forshared;
 
-import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -24,11 +21,15 @@ import java.util.regex.Matcher;
 class ForSharedRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ForSharedRunner.class.getName());
 
+    private void checkUrl() {
+        fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
+        addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
-        addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
+        checkUrl();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -42,9 +43,8 @@ class ForSharedRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        fileURL = fileURL.replace("/account/", "/").replace("/get/", "/file/");
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".4shared.com", "4langcookie", "en", "/", 86400, false));
+        checkUrl();
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -56,7 +56,7 @@ class ForSharedRunner extends AbstractRunner {
                 method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
                 if (makeRedirectedRequest(method)) {
                     method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("ownload").toGetMethod();
-                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "DelayTimeSec'>", "<") + 1);
+                    downloadTask.sleep(getWaitingTime() + 1);
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
@@ -70,7 +70,14 @@ class ForSharedRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException("Can't load download page");
         }
+    }
 
+    private int getWaitingTime() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("Please wait <span[^<>]*>(\\d+)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Waiting time not found");
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
     private void checkNameAndSize() throws Exception {
@@ -82,7 +89,6 @@ class ForSharedRunner extends AbstractRunner {
             if (!size.find()) throw new PluginImplementationException("File size not found");
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1).replace(",", "")));
         }
-
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -114,6 +120,7 @@ class ForSharedRunner extends AbstractRunner {
             }
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+        httpFile.getProperties().put("removeCompleted", true);
     }
 
 }

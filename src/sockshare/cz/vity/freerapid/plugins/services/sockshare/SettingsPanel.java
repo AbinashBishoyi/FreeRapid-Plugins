@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.putlocker;
+package cz.vity.freerapid.plugins.services.sockshare;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,10 +8,10 @@ import java.awt.event.ActionListener;
 /**
  * @author tong2shot
  */
-class PutLockerSettingsPanel extends JPanel {
-    private PutLockerSettingsConfig config;
+class SettingsPanel extends JPanel {
+    private SettingsConfig config;
 
-    public PutLockerSettingsPanel(PutLockerServiceImpl service) throws Exception {
+    public SettingsPanel(SockShareServiceImpl service) throws Exception {
         super();
         config = service.getConfig();
         initPanel();
@@ -19,7 +19,7 @@ class PutLockerSettingsPanel extends JPanel {
 
     private void initPanel() {
         final JLabel qualityLabel = new JLabel("Preferred video quality:");
-        final JComboBox qualityList = new JComboBox(VideoQuality.getItems());
+        final JComboBox<VideoQuality> qualityList = new JComboBox<VideoQuality>(VideoQuality.getItems());
         qualityLabel.setLabelFor(qualityList);
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);

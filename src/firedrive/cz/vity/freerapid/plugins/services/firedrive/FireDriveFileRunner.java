@@ -1,6 +1,9 @@
-package cz.vity.freerapid.plugins.services.putlocker;
+package cz.vity.freerapid.plugins.services.firedrive;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -13,28 +16,17 @@ import org.apache.commons.httpclient.util.URIUtil;
 
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
  * @author tong2shot
- * @author birchie
+ * @since 0.9u3
  */
-class PutLockerFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(PutLockerFileRunner.class.getName());
+class FireDriveFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(FireDriveFileRunner.class.getName());
     private final static int REDIRECT_MAX_DEPTH = 4;
-    private PutLockerSettingsConfig config;
-
-    private void setConfig() throws Exception {
-        PutLockerServiceImpl service = (PutLockerServiceImpl) getPluginService();
-        config = service.getConfig();
-    }
-
-    private void checkUrl() {
-        if (!fileURL.startsWith("http://www.")) {
-            fileURL = fileURL.replaceFirst("http://", "http://www.");
-        }
-    }
 
     @Override
     public void runCheck() throws Exception {
@@ -50,9 +42,23 @@ class PutLockerFileRunner extends AbstractRunner {
         }
     }
 
+    private void checkUrl() {
+        if (!fileURL.startsWith("http://www.")) {
+            fileURL = fileURL.replaceFirst("http://", "http://www.");
+        }
+        if (fileURL.contains("putlocker.com")) {
+            fileURL = fileURL.replaceFirst("putlocker\\.com", "firedrive.com");
+        }
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://www.firedrive.com";
+    }
+
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1>", "<strong>");
-        PlugUtils.checkFileSize(httpFile, content, "<strong>(", ")</strong></h1>");
+        PlugUtils.checkName(httpFile, content, "<b>Name:</b>", "<br>");
+        PlugUtils.checkFileSize(httpFile, content, "<b>Size:</b>", "<br>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -63,20 +69,12 @@ class PutLockerFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            final String baseURL = "http://" + method.getURI().getAuthority();
             checkProblems();
             checkNameAndSize(getContentAsString());
-            /* skip waiting time
-            if (getContentAsString().contains("countdownNum")) {
-                final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var countdownNum = ", ";", TimeUnit.SECONDS);
-                downloadTask.sleep(waitTime); skip countdown
-            }
-            */
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("confirm", true)
+                    .setActionFromFormWhereTagContains("confirm_form", true)
                     .setAction(fileURL)
-                    .setParameter("confirm", "Continue as Free User")
                     .toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
@@ -84,49 +82,13 @@ class PutLockerFileRunner extends AbstractRunner {
             }
             checkProblems();
 
-            //refresh the page, if quota exceeded
-            if (getContentAsString().contains("exceeded the daily download limit for your country")) {
-                downloadTask.sleep(3);
-                httpMethod = getGetMethod(fileURL);
-                if (!makeRedirectedRequest(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                if (getContentAsString().contains("exceeded the daily download limit for your country")) {
-                    throw new PluginImplementationException("The daily download limit for your country has been exceeded");
-                }
-            }
-
-            final String downloadURL;
-            boolean isVideoStream = false;
-            final String getFileAHRef = "<a href=\"/get_file.php";
-            setConfig();
-            final VideoQuality configQuality = config.getVideoQuality();
-            if (getContentAsString().contains("video_player")) { //video stream
-                if ((configQuality == VideoQuality.High) && (getContentAsString().contains(getFileAHRef))) {  //large file (same as downloading the file)
-                    downloadURL = PlugUtils.getStringBetween(getContentAsString(), getFileAHRef, "\"");
-                } else { // small file (download the stream)
-                    isVideoStream = true;
-                    downloadURL = PlugUtils.getStringBetween(getContentAsString(), "playlist: '/get_file.php", "',");
-                }
-            } else if (getContentAsString().contains(getFileAHRef)) { // file
-                downloadURL = PlugUtils.getStringBetween(getContentAsString(), getFileAHRef, "\"");
-            } else if (getContentAsString().contains("<img src=\"/get_file.php")) { //image
-                downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<img src=\"/get_file.php", "\" >");
-            } else {
+            Matcher matcher = getMatcherAgainstContent("[\"'](http://[^\"']+?\\?(?:stream|key)=[^\"']+?)[\"']");
+            if (!matcher.find()) {
                 throw new PluginImplementationException("Download link not found");
             }
-
-            String mobileDownloadURL = downloadURL.contains("original=1") ? downloadURL.replaceFirst("original=1", "mobile=1") : downloadURL + "&mobile=1";
-            if (configQuality == VideoQuality.Mobile) {
-                if (!doDownload(baseURL, mobileDownloadURL, isVideoStream)) {
-                    logger.info("Attempt to download mobile version failed .." + "\n" + "Trying to download the stream or original version ..");
-                    if (!doDownload(baseURL, downloadURL, isVideoStream)) { //mobile version is unstable, if fails then download the stream or original version
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
-                }
-            } else if (!doDownload(baseURL, downloadURL, isVideoStream)) {
+            String downloadLink = matcher.group(1);
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(downloadLink).toGetMethod();
+            if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
@@ -138,37 +100,13 @@ class PutLockerFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("This file doesn't exist") || contentAsString.contains("404 Not Found")) {
+        if (contentAsString.contains("File Does Not Exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (contentAsString.contains("Server is Overloaded")) {
-            throw new YouHaveToWaitException("Server is overloaded", 60 * 2);
         }
     }
 
-    private boolean doDownload(String baseURL, String downloadURL, boolean isVideoStream) throws Exception {
-        HttpMethod method = getMethodBuilder()
-                .setReferer(fileURL)
-                .setBaseURL(baseURL)
-                .setAction("/get_file.php" + downloadURL)
-                .toGetMethod();
-        if (isVideoStream) {
-            if (!makeRedirectedRequest(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            checkProblems();
-            final String downloadURL2 = PlugUtils.getStringBetween(getContentAsString(), "url=\"", "\"");
-            if (downloadURL2.contains("expired_link.gif")) {
-                return false;
-            }
-            method = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(downloadURL2)
-                    .toGetMethod();
-        }
-
-        //they sometimes wrap the name in quotes
+    @Override
+    protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
         setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
         try {
             if (setFileExtAndTryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString()).toGetMethod())) {  //"cloning" method, to prevent method being aborted
@@ -191,7 +129,6 @@ class PutLockerFileRunner extends AbstractRunner {
         return false;
     }
 
-    //to make sure we set the correct file extension
     private boolean setFileExtAndTryDownloadAndSaveFile(HttpMethod method) throws Exception {
         Header locationHeader;
         String action = method.getURI().toString();

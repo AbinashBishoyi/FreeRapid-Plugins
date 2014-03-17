@@ -1,9 +1,9 @@
-package cz.vity.freerapid.plugins.services.putlocker;
+package cz.vity.freerapid.plugins.services.sockshare;
 
 /**
  * @author tong2shot
  */
-public class PutLockerSettingsConfig {
+public class SettingsConfig {
     private VideoQuality videoQuality = VideoQuality.High;
 
     public VideoQuality getVideoQuality() {
@@ -12,5 +12,12 @@ public class PutLockerSettingsConfig {
 
     public void setVideoQuality(final VideoQuality videoQuality) {
         this.videoQuality = videoQuality;
+    }
+
+    @Override
+    public String toString() {
+        return "SettingsConfig{" +
+                "videoQuality=" + videoQuality +
+                '}';
     }
 }

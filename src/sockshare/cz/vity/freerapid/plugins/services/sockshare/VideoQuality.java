@@ -1,10 +1,10 @@
-package cz.vity.freerapid.plugins.services.putlocker;
+package cz.vity.freerapid.plugins.services.sockshare;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * @author ntoskrnl
+ * @author tong2shot
  */
 public enum VideoQuality {
     Low,

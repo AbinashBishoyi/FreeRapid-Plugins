@@ -189,15 +189,18 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 throw new YouHaveToWaitException("Hulu noticed that you are trying to access them through a proxy", 4);
             }
         }
+        if (content.contains("tp:exclusivity=\"plus\"")) {
+            throw new PluginImplementationException("This video is only available with Hulu Plus");
+        }
     }
 
     private RtmpSession getSession(final Stream stream) {
         return new RtmpSession(stream.server, 1935, stream.app, stream.play, true);
     }
 
-    private SortedMap<Integer, Stream> getStreamMap(String content) throws ErrorDuringDownloadingException {
+    private TreeMap<Integer, Stream> getStreamMap(String content) throws ErrorDuringDownloadingException {
         final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\".*? height=\"(\\d+?)\".*? file-type=\"\\d+_(.+?)\".*? cdn=\"(?:darwin\\-)?(.+?)\"", content);
-        final SortedMap<Integer, Stream> streamMap = new TreeMap<Integer, Stream>(); //k=video quality, v=stream, sorted by video quality ascending
+        final TreeMap<Integer, Stream> streamMap = new TreeMap<Integer, Stream>(); //k=video quality, v=stream, sorted by video quality ascending
         logger.info("Available streams : ");
         while (matcher.find()) {
             final String serverApp = matcher.group(1);
@@ -213,12 +216,13 @@ class HuluFileRunner extends AbstractRtmpRunner {
             final int videoQuality = Integer.parseInt(matcher.group(5)); //height as video quality
             final String videoFormat = matcher.group(6);
             final String cdn = matcher.group(7);
-            if (!cdn.equalsIgnoreCase("akamai") || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-h264
+            if (!(cdn.equalsIgnoreCase("akamai") || cdn.equalsIgnoreCase("limelight")) //downloadable CDN: akamai, limelight
+                    || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-limelight, non-h264
                 continue;
             }
             Stream stream = new Stream(server, app, play, bitrate, videoQuality, videoFormat, cdn);
             logger.info(stream.toString());
-            streamMap.put(videoQuality, stream); //once we strip non-akamai, non-h264, it's safe to assume video quality as key
+            streamMap.put(videoQuality, stream);
         }
         if (streamMap.isEmpty()) {
             throw new PluginImplementationException("No streams found");
@@ -226,8 +230,8 @@ class HuluFileRunner extends AbstractRtmpRunner {
         return streamMap;
     }
 
-    private Stream getStream(SortedMap<Integer, Stream> streamMap) {
-        final int LOWER_QUALITY_PENALTY = 10;
+    private Stream getStream(TreeMap<Integer, Stream> streamMap) throws PluginImplementationException {
+        //select video quality
         Stream selectedStream = null;
         int weight = Integer.MAX_VALUE;
         if (config.getVideoQuality() == VideoQuality.Highest) {
@@ -235,11 +239,32 @@ class HuluFileRunner extends AbstractRtmpRunner {
         } else if (config.getVideoQuality() == VideoQuality.Lowest) {
             selectedStream = streamMap.get(streamMap.firstKey());
         } else {
+            final int LOWER_QUALITY_PENALTY = 10;
             for (Map.Entry<Integer, Stream> streamEntry : streamMap.entrySet()) {
                 Stream stream = streamEntry.getValue();
                 int deltaQ = stream.videoQuality - config.getVideoQuality().getQuality();
                 int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
                 if (tempWeight < weight) {
+                    weight = tempWeight;
+                    selectedStream = stream;
+                }
+            }
+        }
+
+        //select CDN
+        weight = Integer.MIN_VALUE;
+        int selectedVideoQuality = selectedStream.videoQuality;
+        for (Map.Entry<Integer, Stream> streamEntry : streamMap.entrySet()) {
+            Stream stream = streamEntry.getValue();
+            if (stream.videoQuality == selectedVideoQuality) {
+                int tempWeight = 0;
+                String cdn = stream.cdn;
+                if (cdn.equalsIgnoreCase("akamai")) { //akamai > limelight
+                    tempWeight = 50;
+                } else if (cdn.equalsIgnoreCase("limelight")) {
+                    tempWeight = 49;
+                }
+                if (tempWeight > weight) {
                     weight = tempWeight;
                     selectedStream = stream;
                 }
@@ -258,7 +283,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         private final int bitrate;
         private final int videoQuality; //height as video quality
         private final String videoFormat; // Example : vp6, h264
-        private final String cdn; //Example : akamai, limelight, level3
+        private final String cdn; //Example : akamai, limelight, level3, edgecast
 
         public Stream(String server, String app, String play, int bitrate, int videoQuality, String videoFormat, String cdn) throws ErrorDuringDownloadingException {
             this.server = server;

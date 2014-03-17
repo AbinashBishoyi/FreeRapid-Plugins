@@ -2,25 +2,31 @@ package cz.vity.freerapid.plugins.services.gigaup;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClient;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
- * <p/>
- * WARNING: This plugin will not work until FRD has support for FTP links.
  *
  * @author ntoskrnl
  */
 class GigaUPFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(GigaUPFileRunner.class.getName());
-    private int captchaCounter = 1, captchaMax = 5;
+    private final int captchaMax = 5;
+    private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
@@ -56,23 +62,23 @@ class GigaUPFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            HttpMethod httpMethod;
             if (getContentAsString().contains("bot_sucker")) {
                 while (getContentAsString().contains("bot_sucker")) {
-                    httpMethod = stepCaptcha();
-                    if (!makeRedirectedRequest(httpMethod)) {
+                    if (!makeRedirectedRequest(stepCaptcha())) {
                         throw new ServiceConnectionProblemException("Error posting captcha");
                     }
                 }
             } else {
                 throw new PluginImplementationException("Captcha not found");
             }
-            logger.info("Captcha OK");
 
-            final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Commencer le téléchargement").toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod2)) {
+            final Matcher matcher = getMatcherAgainstContent("<a href=\"(ftp://.+?)\">");
+            if (!matcher.find()) throw new PluginImplementationException("Download link not found");
+
+            if (!tryDownloadAndSaveFileFTP(matcher.group(1))) {
                 checkProblems();
-                throw new PluginImplementationException();
+                logger.warning(getContentAsString());
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -82,7 +88,7 @@ class GigaUPFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Avec Gigaup, uploadez vos fichiers gratuitement") || content.contains("Not Found")) {
+        if (content.contains("Avec Gigaup, uploadez vos fichiers gratuitement") || content.contains("<h1>Not Found</h1>")) {
             throw new URLNotAvailableAnymoreException("Page not found, bad URL?");
         }
         if (content.contains("Le fichier que vous tentez de télécharger n'existe pas")) {
@@ -109,9 +115,48 @@ class GigaUPFileRunner extends AbstractRunner {
         } else {
             captcha = captchaSupport.getCaptcha(captchaSrc);
             if (captcha == null) throw new CaptchaEntryInputMismatchException();
+            logger.info("Manual captcha " + captcha);
         }
 
         return getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.gigaup.fr/").setActionFromFormWhereTagContains("Télécharger le fichier", true).setParameter("bot_sucker", captcha).toPostMethod();
+    }
+
+    private boolean tryDownloadAndSaveFileFTP(final String uri) throws Exception {
+        logger.info("Starting download from " + uri);
+        httpFile.setState(DownloadState.GETTING);
+
+        prepareForDownload();
+
+        final URL url = new URL(uri);
+        final URLConnection connection = url.openConnection();
+        final InputStream is = connection.getInputStream();
+
+        final long contentLength = connection.getContentLength();
+        if (contentLength < 0) {
+            logger.warning("Content-Length not found");
+            return false;
+        }
+        httpFile.setFileSize(contentLength);
+        httpFile.getProperties().put(DownloadClient.SUPPOSE_TO_DOWNLOAD, contentLength);
+
+        if (is != null) {
+            logger.info("Saving to file");
+            downloadTask.saveToFile(is);
+            return true;
+        } else {
+            logger.info("Saving file failed");
+            return false;
+        }
+    }
+
+    private void prepareForDownload() throws IOException {
+        httpFile.getProperties().remove(DownloadClient.START_POSITION);
+        httpFile.getProperties().remove(DownloadClient.SUPPOSE_TO_DOWNLOAD);
+
+        final String fn = httpFile.getFileName();
+        if (fn == null || fn.isEmpty())
+            throw new IOException("No defined file name");
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fn), "_"));
     }
 
 }

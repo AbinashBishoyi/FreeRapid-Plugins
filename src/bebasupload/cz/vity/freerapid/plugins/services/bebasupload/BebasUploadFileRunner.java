@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.bebasupload;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
@@ -97,6 +98,7 @@ class BebasUploadFileRunner extends AbstractRunner {
             logger.warning(getContentAsString());//log the info
             throw new PluginImplementationException();//some unknown problem
         }
+
         content = getContentAsString();
         checkProblems();
         MethodBuilder methodBuilder = getMethodBuilder(content)
@@ -111,6 +113,14 @@ class BebasUploadFileRunner extends AbstractRunner {
             downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)));
         }
 
+        if (isPassworded()) {
+            final String password = getDialogSupport().askForPassword("BebasUpload");
+            if (password == null) {
+                throw new NotRecoverableDownloadException("This file is secured with a password");
+            }
+            methodBuilder.setParameter("password", password);
+        }
+
         if (content.contains("recaptcha")) {
             httpMethod = stepCaptcha(methodBuilder);
         } else {
@@ -122,11 +132,14 @@ class BebasUploadFileRunner extends AbstractRunner {
             }
             content = getContentAsString();
             checkProblems();
+            
+            client.getHTTPClient().getParams().setParameter(DownloadClientConsts.CONSIDER_AS_STREAM, "text/plain");
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromAHrefWhereATagContains(httpFile.getFileName())
                     .toGetMethod();
             logger.info("Final URL : " + httpMethod.getURI().toString());
+
         }
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -134,6 +147,11 @@ class BebasUploadFileRunner extends AbstractRunner {
             logger.warning(getContentAsString());//log the info
             throw new PluginImplementationException();//some unknown problem
         }
+    }
+
+    private boolean isPassworded() {
+        boolean passworded = getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
+        return passworded;
     }
 
     private HttpMethod stepCaptcha(MethodBuilder methodBuilder) throws Exception {
@@ -162,20 +180,24 @@ class BebasUploadFileRunner extends AbstractRunner {
         int waittime;
 
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {//TODO
+        if (contentAsString.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         //Wrong captcha
-        if (contentAsString.contains("Wrong captcha")) {//TODO
+        if (contentAsString.contains("Wrong captcha")) {
             throw new YouHaveToWaitException("Wrong captcha", 1); //let to know user in FRD
         }
 
-        if (contentAsString.contains("You can download files up to")) {//TODO
+        if (contentAsString.contains("This file reached max downloads limit")) {
+            throw new ServiceConnectionProblemException("This file reached max downloads limit");
+        }
+
+        if (contentAsString.contains("You can download files up to")) {
             throw new NotRecoverableDownloadException("Need premium account for files bigger than 500 Mb"); //let to know user in FRD
         }
 
 
-        if (contentAsString.contains("You have to wait")) {//TODO
+        if (contentAsString.contains("You have to wait")) {
 
             if (contentAsString.contains("minute")) {
                 logger.info("Minutes WAIT!!!");

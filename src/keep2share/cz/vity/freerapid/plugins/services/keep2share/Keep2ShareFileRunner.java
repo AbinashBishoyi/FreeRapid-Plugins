@@ -125,7 +125,8 @@ class Keep2ShareFileRunner extends AbstractRunner {
         if (content.contains("File not found") || content.contains("<title>Error 404</title>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-        if (content.contains("File size to large")) {
+        if (content.contains("File size to large") ||
+                content.contains("only for premium members")) {
             throw new NotRecoverableDownloadException("This file is only for Premium members");
         }
         final Matcher waitMatch = PlugUtils.matcher("Please wait (\\d+?):(\\d+?):(\\d+?) to download this file", content);

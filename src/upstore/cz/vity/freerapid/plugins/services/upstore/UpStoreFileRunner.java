@@ -103,6 +103,9 @@ class UpStoreFileRunner extends AbstractRunner {
                 content.contains("File was deleted by owner")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if (content.contains("This file is available only for Premium users")) {
+            throw new NotRecoverableDownloadException("File is only for Premium users"); //let to know user in FRD
+        }
         if (content.contains("already downloaded another file recently from your IP")) {
             final Matcher match = PlugUtils.matcher("Please wait (.+?)\\s(.+?) before", content);
             int wait = 300;

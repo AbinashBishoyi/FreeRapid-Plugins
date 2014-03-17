@@ -4,7 +4,7 @@
         id="#fulllower#" vendor="#author#" version="1.0.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?#shortsmall#\.#afterDot#/.+"/>
-        <attribute id="minver" value="0.853"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="#fulllower#"/>
         <!-- TODO max count of parallel downloads -->

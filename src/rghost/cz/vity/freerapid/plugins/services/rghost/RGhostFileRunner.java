@@ -7,7 +7,6 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 
@@ -22,7 +21,7 @@ class RGhostFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
@@ -35,7 +34,8 @@ class RGhostFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         PlugUtils.checkName(httpFile, content, "<title>", "— RGhost");
-        PlugUtils.checkFileSize(httpFile, content, "<small>(", ")</small>");
+        final String size = PlugUtils.getStringBetween(content, "<small>\n(", ")\n</small>");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -43,12 +43,13 @@ class RGhostFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL);
+        HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            setFileStreamContentTypes("text/plain");
+            method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
@@ -60,7 +61,9 @@ class RGhostFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("File was deleted") || content.contains("\u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442")) {
+        if (content.contains("File is deleted")
+                || content.contains("this page is not found")
+                || content.contains("\u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

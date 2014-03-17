@@ -83,19 +83,37 @@ class FilePostFileRunner extends AbstractRunner {
             final String captchaKey = PlugUtils.getStringBetween(getContentAsString(), "key:\t\t\t'", "',");
             logger.info("Captcha key: " + captchaKey);
 
+            final boolean showCaptcha = getContentAsString().contains("show_captcha = true");
+            final boolean passworded = getContentAsString().contains("is_pass_exists = true");
+            logger.info("showCaptcha = " + showCaptcha);
+            logger.info("passworded = " + passworded);
+            String password = "";
+
             HttpMethod ajax = null;
 
             while (true) {
-                if (ajax == null) ajax = ajaxBuilder(sid, code, true).toPostMethod();
+                if (ajax == null) ajax = ajaxBuilder(sid, code, password, true).toPostMethod();
 
                 if (!makeRequestWithSleep(ajax)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                ajax = null;
 
                 String content = getContentAsString();
                 logger.info(content);
 
+                if (content.contains("{\"answer\":{\"link\":\"")) {
+                    final String fileUrl = unescape(PlugUtils.getStringBetween(content, "{\"link\":\"", "\"}}"));
+                    logger.info("FILE: " + fileUrl);
+                    method = getMethodBuilder().setReferer(fileURL).setAction(fileUrl).toGetMethod();
+                    setFileStreamContentTypes("\"application/octet-stream\"");
+                    if (!tryDownloadAndSaveFile(method)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException("Error starting download");
+                    }
+                    break;
+                }
                 if (content.contains("wait_time")) {
                     int wait = 60;
                     try {
@@ -109,30 +127,23 @@ class FilePostFileRunner extends AbstractRunner {
 
                     if (wait > 0) {
                         downloadTask.sleep(wait + 1);
-                        ajax = null;
-                    } else {
-                        // show captcha
-                        final ReCaptcha r = new ReCaptcha(captchaKey, client);
-                        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-                        if (captcha == null) {
-                            throw new CaptchaEntryInputMismatchException();
-                        }
-                        r.setRecognized(captcha);
-                        ajax = r.modifyResponseMethod(ajaxBuilder(sid, code, false)).toPostMethod();
                     }
-                } else if (content.contains("{\"answer\":{\"link\":\"")) {
-                    final String fileUrl = unescape(PlugUtils.getStringBetween(content, "{\"link\":\"", "\"}}"));
-                    logger.info("FILE: " + fileUrl);
-                    method = getMethodBuilder().setReferer(fileURL).setAction(fileUrl).toGetMethod();
-                    setFileStreamContentTypes("\"application/octet-stream\"");
-                    if (!tryDownloadAndSaveFile(method)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
+                }
+                if (passworded) {
+                    password = getDialogSupport().askForPassword("FilePost");
+                    if (password == null) {
+                        throw new NotRecoverableDownloadException("This file is secured with a password");
                     }
-                    break;
-                } else {
-                    checkProblems();
-                    throw new PluginImplementationException();
+                    ajax = ajaxBuilder(sid, code, password, false).toPostMethod();
+                }
+                if (showCaptcha) {
+                    final ReCaptcha r = new ReCaptcha(captchaKey, client);
+                    final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+                    if (captcha == null) {
+                        throw new CaptchaEntryInputMismatchException();
+                    }
+                    r.setRecognized(captcha);
+                    ajax = r.modifyResponseMethod(ajaxBuilder(sid, code, password, false)).toPostMethod();
                 }
             }
         } else {
@@ -145,7 +156,7 @@ class FilePostFileRunner extends AbstractRunner {
         return string.replaceAll("\\\\", "");
     }
 
-    private MethodBuilder ajaxBuilder(Cookie sid, String code, boolean start) throws URIException, PluginImplementationException {
+    private MethodBuilder ajaxBuilder(Cookie sid, String code, String password, boolean start) throws URIException, PluginImplementationException {
         final Cookie time = getCookieByName("time");
         if (time == null) {
             throw new PluginImplementationException("Time cookie not found");
@@ -154,11 +165,14 @@ class FilePostFileRunner extends AbstractRunner {
         final String startUrl = "http://filepost.com/files/get/?SID=" + sid.getValue() + "&JsHttpRequest=" + time.getValue() + "-xml";
         logger.info("Start URL: " + startUrl);
 
-        MethodBuilder mb = getMethodBuilder();
-        mb = mb.setReferer(fileURL)
+        MethodBuilder mb = getMethodBuilder()
+                .setReferer(fileURL)
                 .setAction(startUrl)
-                .setParameter("code", code);
-        if (start) mb = mb.setParameter("action", "set_download");
+                .setParameter("code", code)
+                .setParameter("file_pass", password);
+        if (start) {
+            mb.setParameter("action", "set_download");
+        }
         return mb;
     }
 
@@ -171,7 +185,8 @@ class FilePostFileRunner extends AbstractRunner {
         } else if (contentAsString.contains("{\"error\":\"")) {
             final String error = unescape(PlugUtils.getStringBetween(contentAsString, "{\"error\":\"", "\"},"));
             logger.warning(error);
-            if (error.contains("You entered a wrong CAPTCHA code")) {
+            if (error.contains("You entered a wrong CAPTCHA code")
+                    || error.contains("Wrong file password")) {
                 throw new YouHaveToWaitException(error, 4);
             } else {
                 throw new ServiceConnectionProblemException(error);

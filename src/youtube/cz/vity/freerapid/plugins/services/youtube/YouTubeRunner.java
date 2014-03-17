@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Kajda, JPEXS, ntoskrnl
+ * @author Kajda, JPEXS, ntoskrnl, tong2shot
  * @since 0.82
  */
 class YouTubeRunner extends AbstractRtmpRunner {
@@ -73,6 +73,11 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
             if (isUserPage()) {
                 parseUserPage();
+                return;
+            }
+
+            if (isPlaylistURL()) {
+                parsePlaylist();
                 return;
             }
 
@@ -133,7 +138,11 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
 
     private void checkProblems() throws Exception {
-        if (getContentAsString().contains("video you have requested is not available") || getContentAsString().contains("video is no longer available")) {
+        if (getContentAsString().contains("video you have requested is not available")
+                || getContentAsString().contains("video is no longer available")
+                || getContentAsString().contains("This channel is not available")
+                || getContentAsString().contains("video has been removed")
+                || getContentAsString().contains("page you requested cannot be found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         /* Causes false positives
@@ -310,6 +319,76 @@ class YouTubeRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("Error parsing file URL");
         }
         return matcher.group(1);
+    }
+
+    private boolean isPlaylistURL() {
+        return fileURL.contains("/playlist?");
+    }
+
+    private void parsePlaylist() throws Exception {
+        Matcher matcher = PlugUtils.matcher(".+?/playlist\\?list=(?:PL|UU|FL)?([^\\?&#]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing file URL");
+        }
+
+        if (matcher.group(0).contains("list=UU")) { //user uploaded video
+            final String user = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"profile-thumb\" href=\"/user/", "\"");
+            final List<URI> list = new LinkedList<URI>();
+            try {
+                list.add(new URI(String.format("http://www.youtube.com/user/%s", user)));
+            } catch (final URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+            httpFile.getProperties().put("removeCompleted", true);
+            return;
+        }
+
+        String action;
+        if (matcher.group(0).contains("list=FL")) { //favorite list
+            final String user = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"profile-thumb\" href=\"/user/", "\"");
+            action = String.format("http://gdata.youtube.com/feeds/api/users/%s/favorites", user);
+        } else { // playlist
+            final String playlistId = matcher.group(1);
+            action = String.format("http://gdata.youtube.com/feeds/api/playlists/%s?v=2", playlistId);
+        }
+
+        final List<URI> uriList = new LinkedList<URI>();
+        setFileStreamContentTypes(new String[0], new String[]{"application/atom+xml"});
+        do {
+            final HttpMethod method = getMethodBuilder()
+                    .setReferer(null)
+                    .setAction(action)
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            matcher = getMatcherAgainstContent("<media:player url='(.+?)(?:&.+?)?'");
+            while (matcher.find()) {
+                try {
+                    final String link = PlugUtils.replaceEntities(matcher.group(1)).replace("&feature=youtube_gdata_player", "");
+                    final URI uri = new URI(link);
+                    if (!uriList.contains(uri)) {
+                        uriList.add(uri);
+                    }
+                } catch (final URISyntaxException e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+            //using method like parseUserPage doesn't work
+            //search next link instead
+            matcher = getMatcherAgainstContent("<link rel='next'.*? href='(.+?)'");
+            if (!matcher.find()) {
+                break;
+            }
+            action = PlugUtils.replaceEntities(matcher.group(1));
+        } while (getContentAsString().contains("<link rel='next'"));
+        if (uriList.isEmpty()) {
+            throw new PluginImplementationException("No video links found");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+        httpFile.getProperties().put("removeCompleted", true);
+        logger.info(String.valueOf(uriList.size()));
     }
 
     private boolean checkSubtitles() throws Exception {

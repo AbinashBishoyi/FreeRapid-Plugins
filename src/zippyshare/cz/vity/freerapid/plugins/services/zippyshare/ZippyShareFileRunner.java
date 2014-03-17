@@ -40,7 +40,7 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             String url;
-            Matcher matcher = getMatcherAgainstContent("download?");
+            Matcher matcher = getMatcherAgainstContent("download\\?");
             if (matcher.find()) {
                 matcher = getMatcherAgainstContent("url: '(.+?)'");
 
@@ -86,9 +86,16 @@ class ZippyShareFileRunner extends AbstractRunner {
                             case 9:
                                 url = matcher.group(1) + "&time=" + (2 * time % 1265673);
                                 break;
-                            case 0:
+                            case 10:
                                 url = matcher.group(1) + "&time=" + (8 * time % 46784661);
                                 break;
+                            case 11:
+                                url = matcher.group(1) + "&time=" + (5 * time % 71678963);
+                                break;
+                            case 0:
+                                url = matcher.group(1) + "&time=" + (4 * time % 12376764);
+                                break;
+
 
                             default:
                                 checkProblems();

@@ -17,7 +17,9 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             // httpFile.setNewURL(new URL("http://www17.zippyshare.com/v/74546907/file.html"));
-            httpFile.setNewURL(new URL("http://www29.zippyshare.com/v/39603300/file.html"));
+            //httpFile.setNewURL(new URL("http://www29.zippyshare.com/v/39603300/file.html"));
+            httpFile.setNewURL(new URL("http://www37.zippyshare.com/v/31814054/file.html"));
+
 
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

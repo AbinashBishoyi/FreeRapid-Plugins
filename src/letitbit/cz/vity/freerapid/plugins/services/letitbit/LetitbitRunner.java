@@ -67,7 +67,7 @@ class LetitbitRunner {
             if (matcher.find()) {
                 String t = matcher.group(2);
                 logger.info("Download URL: " + t);
-                //downloader.sleep(10);
+                downloader.sleep(2);
                 if (downloader.isTerminated())
                     throw new InterruptedException();
                 httpFile.setState(DownloadState.GETTING);

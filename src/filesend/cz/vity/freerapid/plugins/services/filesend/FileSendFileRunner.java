@@ -67,10 +67,10 @@ class FileSendFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             client.setReferer(fileURL);//prevention - some services checks referers
             //here is the download link extraction
-            final Matcher matcher = getMatcherAgainstContent("method=\"POST\" action=\"(http.+?)\"");
+            final Matcher matcher = getMatcherAgainstContent("method=\"POST\" action=\"(http.+?)\".*><input type=\"hidden\" name=\"(.+?)\"");
             if (matcher.find()) {
                 final PostMethod postMethod = getPostMethod(matcher.group(1));//we make POST request for file
-                PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{"sid"});
+                PlugUtils.addParameters(postMethod, getContentAsString(), new String[]{matcher.group(2)});
                 if (!tryDownloadAndSaveFile(postMethod)) {
                     checkProblems();//if downloading failed
                     logger.warning(getContentAsString());//log the info

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="filesend.net" version="1.01" vendor="Vity"
+<plugin id="filesend.net" version="1.2" vendor="Vity"
         class="cz.vity.freerapid.plugins.services.filesend.FileSendServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filesend\.net/download.php.+"/>

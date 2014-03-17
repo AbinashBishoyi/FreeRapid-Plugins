@@ -38,9 +38,9 @@ class LeteckaPostaFileRunner extends AbstractRunner {
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
             //: <strong>204800</strong>KB<br>
-            matcher = PlugUtils.matcher("Velikost souboru: ([0-9]+) (.?B)<", content);
+            matcher = PlugUtils.matcher("Velikost souboru:(.+?)<", content);
             if (matcher.find()) {
-                final long size = PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2));
+                final long size = PlugUtils.getFileSizeFromString(matcher.group(1));
                 httpFile.setFileSize(size);
             } else {
                 checkProblems();

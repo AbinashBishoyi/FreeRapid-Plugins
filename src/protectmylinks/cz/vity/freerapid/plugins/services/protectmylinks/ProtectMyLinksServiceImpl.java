@@ -20,7 +20,7 @@ public class ProtectMyLinksServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return false;
     }
 
     @Override

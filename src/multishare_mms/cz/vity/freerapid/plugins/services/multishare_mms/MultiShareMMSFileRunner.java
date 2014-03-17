@@ -14,13 +14,12 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Random;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import javax.swing.JOptionPane;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 /**
@@ -36,7 +35,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     private static String PHPSESSID = "";
     private static String versionUrl="http://www.multishare.cz/html/mms_support.php?version";
 
-    private static String version="1.1.3";
+    private static String version="1.1.4";
 
     @Override
     public void runCheck() throws Exception { //this method validates file

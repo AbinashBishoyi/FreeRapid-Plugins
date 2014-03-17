@@ -55,7 +55,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
         String name = matcher.group(1).replace(": ", " - ");
         if (!isUserPage()) {
-            matcher = getMatcherAgainstContent("Season (\\d+) [^<>]*?Ep\\. (\\d+)");
+            matcher = getMatcherAgainstContent("Season (\\d+) &nbsp; Episode (\\d+)");
             if (matcher.find()) {
                 final String[] s = name.split(" \\- ", 2);
                 if (s.length >= 2) {

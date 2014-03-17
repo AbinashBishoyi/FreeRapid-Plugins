@@ -33,9 +33,13 @@ class DefaultPacketHandler implements PacketHandler {
                     session.send(pong);
                 } else if (type == 0x001A) {
                     logger.fine("server swf verification request: " + packet);
+                    byte swfvType = data.get(2);
+                    if (swfvType > 1) {
+                        logger.warning("swf verification type " + swfvType + " not supported, attempting to use type 1");
+                    }
                     byte[] swfv = session.getSwfVerification();
                     if (swfv == null) {
-                        logger.warning("not sending swf verification response! connect parameters not set, server likely to stop responding");
+                        logger.warning("swf verification parameters not set, not sending response");
                     } else {
                         Packet pong = Packet.swfVerification(swfv);
                         logger.fine("sending client swf verification response: " + pong);
@@ -128,8 +132,7 @@ class DefaultPacketHandler implements PacketHandler {
                     } else if (resultFor.equals("createStream")) {
                         int streamId = invoke.getLastArgAsInt();
                         logger.fine("value of streamId to play: " + streamId);
-                        Invoke play = new Invoke(streamId, "play", 8, null,
-                                session.getPlayName(), session.getPlayStart(), session.getPlayDuration());
+                        Invoke play = new Invoke(streamId, "play", 8, null, session.getPlayName());
                         session.send(play);
                         session.send(Packet.ping(3, streamId, BUFFER_TIME));
                     } else if (resultFor.equals("secureTokenResponse")) {

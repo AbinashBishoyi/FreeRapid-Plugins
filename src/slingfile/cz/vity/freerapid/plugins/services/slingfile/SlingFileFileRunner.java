@@ -32,8 +32,8 @@ class SlingFileFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<h3><span>", "</span></h3>");
-        PlugUtils.checkFileSize(httpFile, content, "<td>", "| Uploaded");
+        PlugUtils.checkName(httpFile, content, "<title>", " - SlingFile");
+        PlugUtils.checkFileSize(httpFile, content, "Size:</strong>", "</li>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -70,7 +70,7 @@ class SlingFileFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("The file you requested cannot be found") || content.contains("<h1>Not Found</h1>")||content.contains("The file you have requested was not found")) {
+        if (content.contains("The file you requested cannot be found") || content.contains("<h1>Not Found</h1>") || content.contains("The file you have requested was not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

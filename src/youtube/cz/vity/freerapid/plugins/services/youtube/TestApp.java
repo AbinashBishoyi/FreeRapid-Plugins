@@ -18,7 +18,7 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=IJdOcdk_J1E"));//normal
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=IJdOcdk_J1E"));//normal
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=DVFbA1AbEUw"));//rtmp
             //httpFile.setNewURL(new URL("http://www.youtube.com/user/HDstarcraft"));//user page
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=meCIER_s7Ng"));//transcript - subtitles
@@ -43,7 +43,7 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=RxDPvPqOmv0"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=ZiH6CDl5kII"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=ShVRP09NCO4"));
-            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=4ml6qwSALGY"));
+            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=4ml6qwSALGY")); //sig decipher
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

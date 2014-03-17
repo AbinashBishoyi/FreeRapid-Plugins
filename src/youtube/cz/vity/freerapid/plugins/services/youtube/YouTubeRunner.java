@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
  */
 class YouTubeRunner extends AbstractRtmpRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:22.0) Gecko/20100101 Firefox/22.0";
 
     private YouTubeSettingsConfig config;
     private int fmt = 0;
@@ -40,7 +41,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0");
+        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -56,7 +57,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0");
+        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         setConfig();
 
@@ -537,7 +538,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
                     throw new ServiceConnectionProblemException();
                 }
             }
-            setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0");
+            setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         } else if (getContentAsString().contains("I confirm that I am 18 years of age or older")) {
             if (!makeRedirectedRequest(getGetMethod(fileURL + "&has_verified=1"))) {
                 throw new ServiceConnectionProblemException();
@@ -566,10 +567,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
             List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
             lstSig.remove(0); //remove empty char at head
             Collections.reverse(lstSig);
-            lstSig = clone(lstSig, 3);
-            lstSig = swap(lstSig, 19);
-            Collections.reverse(lstSig);
             lstSig = clone(lstSig, 2);
+            Collections.reverse(lstSig);
             StringBuilder sb = new StringBuilder();
             for (String s : lstSig) {
                 sb.append(s);

@@ -84,7 +84,7 @@ class BitShareFileRunner extends AbstractRunner {
         String[] typeTimeCaptcha;
         if (makeRequest(postMethodWithID)) {
             typeTimeCaptcha = getContentAsString().split(":");  // data in format "fileType:timeInSecond:captchaRequired"
-            if (typeTimeCaptcha.length != 3) {
+            if (typeTimeCaptcha.length != 3 || !typeTimeCaptcha[1].matches("\\d+")) {
                 throw new PluginImplementationException("Error parsing server response");
             }
         } else {
@@ -92,9 +92,13 @@ class BitShareFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
 
-        downloadTask.sleep(Integer.parseInt(typeTimeCaptcha[1])); // waiting
+        final int waitTime = Integer.parseInt(typeTimeCaptcha[1]);
+        if (waitTime > 300) {
+            throw new YouHaveToWaitException("Wait time between downloads", waitTime + 5);
+        }
+        downloadTask.sleep(waitTime + 1);
 
-        if (Integer.parseInt(typeTimeCaptcha[2]) == 1) { // recognize captcha if is necessary
+        if ("1".equals(typeTimeCaptcha[2])) { // recognize captcha if is necessary
             while (!"SUCCESS".equals(getContentAsString())) {
                 checkProblems();
                 if (!makeRequest(stepCaptcha(content, action, ajaxdl))) {

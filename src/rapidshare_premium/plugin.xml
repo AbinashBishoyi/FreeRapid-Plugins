@@ -3,7 +3,7 @@
 <plugin id="RapidShare.com_premium" version="1.00" vendor="ATomSoft"
         class="cz.vity.freerapid.plugins.services.rapidshare_premium.RapidShareServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?rapidshare\.com/files/[0-9]+/.*"/>
+        <attribute id="urlRegex" value="http://((www\.)|(rs[0-9]+\.))?rapidshare\.com/files/[0-9]+/.*"/>
         <attribute id="minver" value="0.8"/>
         <attribute id="maxver" value="0.9"/>
         <attribute id="services" value="rapidshare.com"/>

@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="fileshare.in.ua" version="0.0.2" vendor="Saikek"
+        class="cz.vity.freerapid.plugins.services.fileshare.FileShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?fileshare\.in\.ua/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="fileshare.in.ua"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="fileshare.in.ua" path="/" type="code"/>
+    </runtime>
+</plugin>

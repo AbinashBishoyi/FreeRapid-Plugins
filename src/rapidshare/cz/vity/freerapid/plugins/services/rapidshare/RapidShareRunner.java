@@ -69,6 +69,7 @@ class RapidShareRunner extends AbstractRunner {
                     method.addParameter("mirror", "on");
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
+                        logger.warning(getContentAsString());
                         throw new IOException("File input stream is empty.");
                     }
                 } else {

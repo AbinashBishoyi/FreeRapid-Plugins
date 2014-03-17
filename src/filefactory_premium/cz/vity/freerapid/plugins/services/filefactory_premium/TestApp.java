@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.filefactory_premium;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -22,6 +23,10 @@ public class TestApp extends PluginDevApplication {
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final FileFactoryServiceImpl service = new FileFactoryServiceImpl(); //instance of service - of our plugin
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("***");
+            config.setPassword("***");
+            service.setConfig(config);
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

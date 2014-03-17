@@ -46,4 +46,7 @@ public class FileFactoryServiceImpl extends AbstractFileShareService {
         return config;
     }
 
+    public void setConfig(PremiumAccount config) {
+        this.config = config;
+    }
 }

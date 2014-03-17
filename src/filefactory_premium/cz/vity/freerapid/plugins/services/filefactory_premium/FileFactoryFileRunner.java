@@ -109,14 +109,16 @@ class FileFactoryFileRunner extends AbstractRunner {
 
             final HttpMethod httpMethod = getMethodBuilder()
                     .setBaseURL(SERVICE_WEB)
-                    .setAction("/member/login.php")
-                    .setParameter("email", pa.getUsername())
-                    .setParameter("password", pa.getPassword())
+                    .setAction("/member/signin.php")
+                    .setParameter("loginEmail", pa.getUsername())
+                    .setParameter("loginPassword", pa.getPassword())
+                    .setParameter("Submit", "Sign In")
                     .toPostMethod();
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
 
-            if (getContentAsString().contains("The email or password you have entered is incorrect"))
+            if (getContentAsString().contains("The Email Address submitted was invalid") ||
+                    getContentAsString().contains("Sign In Failed"))
                 throw new BadLoginException("Invalid FileFactory Premium account login information!");
         }
     }

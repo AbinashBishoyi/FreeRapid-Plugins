@@ -42,6 +42,20 @@ class SharelinksBizRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+        if (getContentAsString().contains("<meta HTTP-EQUIV=\"refresh\"")) {
+            final Matcher matcher = getMatcherAgainstContent("<meta HTTP-EQUIV=\"refresh\" CONTENT=\"1; URL=(.+?)\"");
+            if (!matcher.find()) {
+                throw new ServiceConnectionProblemException("Redirect location not found");
+            }
+            method = getMethodBuilder()
+                    .setReferer(method.getURI().toString())
+                    .setAction(matcher.group(1))
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+        }
         checkProblems();
         fileURL = method.getURI().toString();
 

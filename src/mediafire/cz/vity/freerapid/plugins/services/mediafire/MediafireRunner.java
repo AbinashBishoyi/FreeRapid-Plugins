@@ -7,8 +7,10 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -45,7 +47,7 @@ class MediafireRunner extends AbstractRunner {
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-
+          
             if (getContentAsString().contains("dh('');")) { //if passworded
                 while (getContentAsString().contains("dh('');")) {
                     HttpMethod postPwd = getMethodBuilder()
@@ -59,32 +61,38 @@ class MediafireRunner extends AbstractRunner {
                     }
                 }
             }
+            downloadTask.sleep(5);
+            if (getContentAsString().contains("unescape")) {
+                String cont = processUnescapeSection(getContentAsString());
 
-            if (getContentAsString().contains("cu('")) {
-                Matcher matcher = getMatcherAgainstContent("cu\\('([^']+)','([^']+)','([^']+)'\\)");
+                Matcher match = PlugUtils.matcher("\\('([^']*)','([^']*)','([^']*)'\\)", cont);
 
-                if (!matcher.find()) {
+                if (!match.find()) {
                     throw new PluginImplementationException();
                 }
-                String qk = matcher.group(1);
-                String pk = matcher.group(2);
-                String r = matcher.group(3);
+                String qk = match.group(1);
+                String pk = match.group(2);
+                String r = match.group(3);
                 String url = "http://www.mediafire.com/dynamic/download.php?qk=" + qk + "&pk=" + pk + "&r=" + r;
                 logger.info("Script target URL " + url);
+                client.setReferer("http://www.mediafire.com/?" +  qk);
                 GetMethod method = getGetMethod(url);
 
                 if (makeRequest(method)) {
+                    String rec = processUnescapeSection(getContentAsString());
 
-                    String u2 = PlugUtils.getStringBetween(getContentAsString(), "key to support (", ")\"");
-                    String m1 = PlugUtils.getStringBetween(getContentAsString(), "='download", "com';var");
-                    String mh = PlugUtils.getStringBetween(getContentAsString(), "var mH='", "';");
-                    String my = PlugUtils.getStringBetween(getContentAsString(), "var mY='", "';");
-
-                    String finalLink = "http://download" + m1 + "com/" + u2 + "g/" + mh + "/" + my;
+                    if (!rec.contains("'download")) {
+                      throw new ServiceConnectionProblemException();   
+                    }
+                    String rawlink =  PlugUtils.getStringBetween(rec, "href=\"h", "\"> Click");
+                    logger.info("raw URL " + rawlink);
+                    String finalLink = parseLink("h" + rawlink);
                     logger.info("Final URL " + finalLink);
 
+                    client.setReferer("http://www.mediafire.com/?" +  qk);
                     GetMethod method2 = getGetMethod(finalLink);
                     client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
+                    downloadTask.sleep(5);
                     if (!tryDownloadAndSaveFile(method2)) {
                         checkProblems();
                         logger.info(getContentAsString());
@@ -99,10 +107,56 @@ class MediafireRunner extends AbstractRunner {
                 checkProblems();
                 throw new PluginImplementationException();
             }
-        } else {
+        } else
+
+        {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+
+    }
+
+    private String processUnescapeSection(String cont) throws UnsupportedEncodingException, PluginImplementationException {
+        String regx = "var [a-zA-Z0-9]+=unescape\\('([^']*)'\\);for\\(.=.;.<([a-zA-Z0-9]+);.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
+        Boolean loop = true;
+        String globalCont = cont;
+        while (loop) {
+            cont = cont.replace("\\", "");
+            Matcher matcher = PlugUtils.matcher(regx, cont);
+            int findTime = 0;
+            while (matcher.find()) {
+                if (findTime++ == 0) cont = "";
+                String esc = matcher.group(1);
+                int toFor = 0;
+                try {
+                    toFor = Integer.parseInt(matcher.group(2));
+                } catch (NumberFormatException e) {
+                    toFor = Integer.parseInt(getVar(matcher.group(2), cont + globalCont));
+                }
+                String shift = matcher.group(3);
+                String shiftA[] = shift.split("\\^");
+                int nax = Integer.parseInt((shiftA[0]));
+                for (int i = 1; i < shiftA.length; i++) {
+                    nax = nax ^ Integer.parseInt(shiftA[i]);
+                }
+                String new_cont = "";
+                esc = URLDecoder.decode(esc, "UTF-8");
+                toFor = Math.min(toFor,esc.length());
+                
+                for (int i = 0; i < toFor; i++) {
+                    //  System.out.println(esc.codePointAt(i));
+                    new_cont = new_cont + ((char) (esc.codePointAt(i) ^ nax));
+                }
+                cont = cont + "\n" + new_cont;
+             //   logger.info(cont);
+            }
+
+            globalCont = globalCont + "\n" + cont;
+            if (findTime == 0) loop = false;
+
+        }
+        logger.info(cont);
+        return cont;
     }
 
     private void checkNameAndSize(String content) throws Exception {
@@ -134,47 +188,44 @@ class MediafireRunner extends AbstractRunner {
         } else throw new ServiceConnectionProblemException();
     }
 
-    /* this seems to be unused
 
-    String parseLink(String rawlink) throws Exception {
+     String parseLink(String rawlink) throws Exception {
 
         String link = "";
 
-        Matcher matcher = PlugUtils.matcher("([^']*)'([^']*)'", rawlink);
+        Matcher matcher = PlugUtils.matcher("([^'\"]*)(?:'|\")([^'\"]*)'", rawlink);
         while (matcher.find()) {
-
-            Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(1));
+             link = link + matcher.group(1);
+            Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(2));
             while (matcher1.find()) {
 
-                link = link + (getVar(matcher1.group(1)));
+                link = link + (getVar(matcher1.group(1), getContentAsString()));
             }
-            link = link + matcher.group(2);
+
 
         }
-        matcher = PlugUtils.matcher("([^']*)'$", rawlink);
+        matcher = PlugUtils.matcher("([^'\"]*)$", rawlink);
         if (matcher.find()) {
-
-            Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(1));
-            if (matcher1.find()) {
-
-                link = link + (getVar(matcher1.group(1)));
-            }
-
-
+           link = link + (matcher.group(1));
         }
 
         return link;
     }
 
-    private String getVar(String s) throws PluginImplementationException {
+    private String getVar(String s, String content) throws PluginImplementationException {
 
-        Matcher matcher = PlugUtils.matcher("var " + s + "\\s*=\\s*'([^']*)'", getContentAsString());
+        Matcher matcher = PlugUtils.matcher("var " + s + "\\s*=\\s*'([^']*)'", content);
         if (matcher.find()) {
             return matcher.group(1);
-        } else
-            throw new PluginImplementationException("Parameter " + s + " was not found");
+        }
+        matcher = PlugUtils.matcher("var " + s + "\\s*=\\s*([0-9]+)", content);
+        if (matcher.find()) {
+            return matcher.group(1);
+         }
+
+        throw new PluginImplementationException("Parameter " + s + " was not found");
     }
-    */
+
 
     private void parseList() {
         final Matcher matcher = getMatcherAgainstContent("oe\\[[0-9]+\\]=Array\\('([^']+?)'");

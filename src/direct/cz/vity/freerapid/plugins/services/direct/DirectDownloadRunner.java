@@ -10,6 +10,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 
 /**
  * @author ntoskrnl
@@ -69,7 +70,7 @@ class DirectDownloadRunner extends AbstractRunner implements FileStreamRecognize
             method2.abort();
             method2.releaseConnection();
         } while (locationHeader != null);
-        httpFile.setFileName(findName(action));
+        httpFile.setFileName(URLDecoder.decode(findName(action), "UTF-8"));
         setClientParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, this);
         method = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
         return super.tryDownloadAndSaveFile(method);

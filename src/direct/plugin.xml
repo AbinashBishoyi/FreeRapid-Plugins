@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.direct.DirectDownloadServiceImpl" id="direct" vendor="ntoskrnl" version="1.0.4">
+<plugin class="cz.vity.freerapid.plugins.services.direct.DirectDownloadServiceImpl" id="direct" vendor="ntoskrnl" version="1.0.5">
     <attributes>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>

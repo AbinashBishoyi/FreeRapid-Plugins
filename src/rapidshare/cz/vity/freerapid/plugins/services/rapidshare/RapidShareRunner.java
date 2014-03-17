@@ -30,7 +30,7 @@ class RapidShareRunner extends AbstractRunner {
         checkURL();
         final HttpMethod method = getMethodBuilder()
                 .setReferer(SERVICE_WEB)
-                .setAction("http://api.rapidshare.com/cgi-bin/rsapi.cgi")
+                .setAction("https://api.rapidshare.com/cgi-bin/rsapi.cgi")
                 .setParameter("sub", "download_v1")
                 .setParameter("fileid", fileID)
                 .setAndEncodeParameter("filename", fileName)

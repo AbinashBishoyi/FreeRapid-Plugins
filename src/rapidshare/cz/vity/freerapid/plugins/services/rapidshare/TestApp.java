@@ -19,8 +19,10 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://rapidshare.com/files/285367824/Two.and.a.half.men.1x01.Pilot.dvd-rip.xvid.multidub.sportboom.part1.rar"));
-            testRun(new RapidShareServiceImpl(), httpFile, new ConnectionSettings());
+            httpFile.setNewURL(new URL("http://rapidshare.com/files/160454577/I.Served.the.King.of.England.2006.1080p.Blu-ray.DTS.x264-HDmonSK_tehPARADOX.COM.part38.rar"));
+            final ConnectionSettings settings = new ConnectionSettings();
+            settings.setProxy("localhost", 8081);
+            testRun(new RapidShareServiceImpl(), httpFile, settings);
         } catch (Exception e) {
             LogUtils.processException(logger, e);
         }

@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://uploadbox.com/files/f5d1bba27a/"));
-            httpFile.setNewURL(new URL("http://uploadbox.com/files/b3f7dffc90"));
+            httpFile.setNewURL(new URL("http://uploadbox.com/files/33bebefa9e"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

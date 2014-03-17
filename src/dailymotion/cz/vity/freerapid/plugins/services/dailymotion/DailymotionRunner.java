@@ -39,7 +39,7 @@ class DailymotionRunner extends AbstractRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<span class=\"title\".*?>(.+?)</span>");
+        final Matcher matcher = getMatcherAgainstContent("<span class=\"title\"[^<>]*?>(.+?)</span>");
         if (!matcher.find()) throw new PluginImplementationException("File name not found");
         httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)) + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -48,14 +48,14 @@ class DailymotionRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
             final String sequence = PlugUtils.getStringBetween(getContentAsString(), ".addVariable(\"sequence\",  \"", "\"");
-            final String url = PlugUtils.getStringBetween(sequence, "%22hqURL%22%3A%22", "%22");//change "hqURL" to "sdURL" for low quality
+            final String url = PlugUtils.getStringBetween(sequence, "%22sdURL%22%3A%22", "%22");
             method = getGetMethod(urlDecode(url).replace("\\", ""));
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();

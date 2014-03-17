@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.nova.NovaServiceImpl" id="nova.cz" vendor="JPEXS" version="1.0.6">
+<plugin class="cz.vity.freerapid.plugins.services.nova.NovaServiceImpl" id="nova.cz" vendor="JPEXS" version="1.0.7">
     <attributes>
-        <attribute id="urlRegex" value="http://archiv\.nova\.cz//?multimedia/.+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="urlRegex" value="http://(archiv|voyo)\.nova\.cz//?multimedia/.+"/>
+        <attribute id="minver" value="0.851"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="nova.cz"/>
         <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
-        <attribute id="maxDownloads" value="9"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>

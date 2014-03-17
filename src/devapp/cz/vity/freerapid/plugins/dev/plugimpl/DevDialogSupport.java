@@ -24,6 +24,7 @@ public class DevDialogSupport implements DialogSupport {
         return account;
     }
 
+
     @Override
     public boolean showOKCancelDialog(final Component container, final String title) throws Exception {
         final boolean[] dialogResult = new boolean[]{false};
@@ -49,8 +50,12 @@ public class DevDialogSupport implements DialogSupport {
         } else showInputDialog(title, container, false);
     }
 
+    public String askForCaptcha(BufferedImage image) throws Exception {
+        return askForCaptcha(new ImageIcon(image));
+    }
+
     @Override
-    public String askForCaptcha(final BufferedImage image) throws Exception {
+    public String askForCaptcha(final Icon image) throws Exception {
         synchronized (captchaLock) {
             final String[] captchaResult = new String[]{""};
             if (!EventQueue.isDispatchThread()) {
@@ -60,13 +65,16 @@ public class DevDialogSupport implements DialogSupport {
                     }
                 });
             } else captchaResult[0] = getCaptcha(image);
-            image.flush();
+            if (image instanceof ImageIcon) {
+                ImageIcon icon = (ImageIcon) image;
+                icon.getImage().flush();
+            }
             return captchaResult[0];
         }
     }
 
-    private String getCaptcha(BufferedImage image) {
-        return (String) JOptionPane.showInputDialog(null, "Insert what you see", "Insert CAPTCHA", JOptionPane.PLAIN_MESSAGE, new ImageIcon(image), null, null);
+    private String getCaptcha(Icon image) {
+        return (String) JOptionPane.showInputDialog(null, "Insert what you see", "Insert CAPTCHA", JOptionPane.PLAIN_MESSAGE, image, null, null);
     }
 
     private static int showInputDialog(final String title, final Object inputObject, boolean cancelButton) {

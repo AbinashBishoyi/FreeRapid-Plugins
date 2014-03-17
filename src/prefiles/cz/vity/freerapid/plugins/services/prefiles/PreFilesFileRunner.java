@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.prefiles;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotSupportedDownloadByServiceException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
@@ -43,6 +44,7 @@ class PreFilesFileRunner extends XFileSharingRunner {
 
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
+        checkFileProblems();
         return getMethodBuilder()
                 .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("method_free", true)
@@ -55,6 +57,9 @@ class PreFilesFileRunner extends XFileSharingRunner {
         super.checkFileProblems();
         if (getContentAsString().contains("The file you were looking for could not be found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("File owner set free user can download max file size 5 MB only.")) {
+            throw new NotSupportedDownloadByServiceException("User can download max file size 5 MB only");
         }
     }
 }

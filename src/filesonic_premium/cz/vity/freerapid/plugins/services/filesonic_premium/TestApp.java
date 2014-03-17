@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
-            httpFile.setNewURL(new URL("http://www.filesonic.com/en/file/1485411/XPMODDEDUP2DATE.part1.rar"));
+            httpFile.setNewURL(new URL("http://www.filesonic.com/file/1557504161/Richard.Hammonds.Journey.To.The.S01E02.Bottom.Of.The.Ocean.480p.HDTV.x264-mSD.part1.rar"));
             final FileSonicServiceImpl service = new FileSonicServiceImpl();
 
             PremiumAccount config = new PremiumAccount();

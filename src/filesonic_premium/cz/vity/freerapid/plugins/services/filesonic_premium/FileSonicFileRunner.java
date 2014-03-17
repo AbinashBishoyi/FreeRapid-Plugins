@@ -44,7 +44,7 @@ class FileSonicFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<title>Download ", " for free on Filesonic.com</title>");
+        PlugUtils.checkName(httpFile, content, "<title>Download", "for free on Filesonic.com</title>");
         PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -78,12 +78,13 @@ class FileSonicFileRunner extends AbstractRunner {
                 .setAction("/user/login")
                 .setParameter("email", pa.getUsername())
                 .setParameter("password", pa.getPassword())
+                .setParameter("redirect", "/")
+                .setParameter("rememberMe", "1")
                 .toPostMethod();
         if (!makeRedirectedRequest(pm)) {
             throw new ServiceConnectionProblemException("Error posting login info");
         }
-        // "view" is purposely misspelled.
-        if (getContentAsString().contains("You must be logged in to veiw this page")) {
+        if (getContentAsString().contains("You must be logged in to view this page")) {
             throw new NotRecoverableDownloadException("Invalid FileSonic Premium account login information!");
         }
     }

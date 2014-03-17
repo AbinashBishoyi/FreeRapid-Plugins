@@ -15,6 +15,7 @@ import java.util.logging.Logger;
  *
  * @author Vity
  * @author ntoskrnl
+ * @author Abinash Bishoyi
  */
 class SoundcloudFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(SoundcloudFileRunner.class.getName());
@@ -34,7 +35,7 @@ class SoundcloudFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1 class=\"with-artwork\"><em>", "</em></h1>");
+        PlugUtils.checkName(httpFile, content, "\"name\":\"", "\",\"title\"");
         httpFile.setFileName(httpFile.getFileName() + ".mp3");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

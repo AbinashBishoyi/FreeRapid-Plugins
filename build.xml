@@ -124,6 +124,11 @@
         <ant dir="${src.dir}/wikiupload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/uploadjockey/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/ugotfile/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/plunder/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/netgull/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/sdilej/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/fileupload/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/o2musicstream/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

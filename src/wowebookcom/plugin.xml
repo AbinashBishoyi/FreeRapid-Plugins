@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.wowebookcom.WowEbookComServiceImpl"
-        id="wowebook.com" vendor="CrazyCoder+Abinash Bishoyi" version="1.0.6">
+        id="wowebook.com" vendor="CrazyCoder+Abinash Bishoyi" version="1.0.7">
 <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?wowebook\.(com|be|co\.uk)/(book|download)/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?wowebook\.(com|be|co\.uk|info)/(book|download)/.+"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="wowebook.com"/>

@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.wowebook.com/book/mathematical-optimization-in-computer-graphics-and-vision/"));
+            httpFile.setNewURL(new URL("http://www.wowebook.info/book/vagrant-up-and-running/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final WowEbookComServiceImpl service = new WowEbookComServiceImpl();

@@ -13,6 +13,7 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -70,6 +71,7 @@ class UlozToRunner extends AbstractRunner {
                         }
                         if (nextUrl.contains("full=y"))
                             throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
+                        downloadTask.sleep(new Random().nextInt(6) + 1);
                         if (saved = tryDownloadAndSaveFile(method)) break;
                     }
                     checkProblems();

@@ -22,11 +22,6 @@ public class ShareRapidServiceImpl extends AbstractFileShareService {
         return true;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        //don't forget to update this value, in plugin.xml don't forget to update this value too
-        return MAX_DOWNLOADS;
-    }
-
     @Override
     protected PluginRunner getPluginRunnerInstance() {
         return new ShareRapidRunner();

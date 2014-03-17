@@ -12,14 +12,14 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 
 /**
- * @author Alex
+ * @author Alex & Vity
  */
 class RapidshareUserRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidshareUserRunner.class.getName());
@@ -31,29 +31,43 @@ class RapidshareUserRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         logger.info(fileURL);
         if (makeRedirectedRequest(method)) {
+            if (getContentAsString().contains("Start download")) {
+                parseWebsite();
+                return;
+            }
             if (!getContentAsString().contains("View LinkList"))
                 throw new NotRecoverableDownloadException("No link list available");
             checkProblems();
+            //javascript:folderoeffnen('4');
+            final Matcher matcher = getMatcherAgainstContent("javascript:folderoeffnen\\('([0-9]+)'\\);");
+
+            if (!matcher.find())
+                throw new PluginImplementationException();
             final MethodBuilder builder = getMethodBuilder().setActionFromFormByName("fformular", true);
-            final HttpMethod httpMethod = builder.setReferer(fileURL).setParameter("browse", "ID=1").toHttpMethod();
+            final HttpMethod httpMethod = builder.setReferer(fileURL).setParameter("browse", "ID=" + matcher.group(1)).toHttpMethod();
+
             if (makeRedirectedRequest(httpMethod)) {
                 checkProblems();
-                final Matcher matcher = getMatcherAgainstContent("target=\"_blank\" href=\"(http://rapidshare.com/files/.+?)\">");
-                int start = 0;
-                final List<URI> uriList = new ArrayList<URI>();
-                while (matcher.find(start)) {
-                    final String link = matcher.group(1);
-                    try {
-                        uriList.add(new URI(link));
-                    } catch (URISyntaxException e) {
-                        LogUtils.processException(logger, e);
-                    }
-                    start = matcher.end();
-                }
-                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+                parseWebsite();
             } else throw new PluginImplementationException();
         } else throw new PluginImplementationException();
 
+    }
+
+    private void parseWebsite() {
+        final Matcher matcher = getMatcherAgainstContent("target=\"_blank\" href=\"(http://rapidshare.com/files/.+?)\">");
+        int start = 0;
+        final List<URI> uriList = new LinkedList<URI>();
+        while (matcher.find(start)) {
+            final String link = matcher.group(1);
+            try {
+                uriList.add(new URI(link));
+            } catch (URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+            start = matcher.end();
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

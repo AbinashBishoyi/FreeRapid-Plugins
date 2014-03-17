@@ -4,7 +4,9 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.MalformedURLException;
@@ -20,12 +22,15 @@ import java.util.regex.Pattern;
  */
 class FileCloudIoFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileCloudIoFileRunner.class.getName());
+    private final static String SERVICE_COOKIE_DOMAIN = ".filecloud.io";
 
     @Override
     public void run() throws Exception {
         super.run();
         checkFileURL();
+        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
+        login();
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(httpMethod)) {
             checkFileProblems();
@@ -45,12 +50,13 @@ class FileCloudIoFileRunner extends AbstractRunner {
             setFileStreamContentTypes(new String[0], new String[]{"application/json"});
             if (makeRedirectedRequest(httpMethod)) {
                 checkDownloadProblems();
+                logger.info(getContentAsString());
                 while (getContentAsString().contains("\"captcha\":1")) {
                     stepCaptcha(recaptchaKey, requestUrl, ukey, ab1);
                 }
                 httpMethod = getMethodBuilder()
                         .setReferer(downloadURL)
-                        .setAction(currentURL)
+                        .setAction(downloadURL)
                         .toGetMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkDownloadProblems();
@@ -93,7 +99,13 @@ class FileCloudIoFileRunner extends AbstractRunner {
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        //
+        final String contentAsString = getContentAsString();
+        if (contentAsString.contains("\"message\":\"signup\"")) {
+            throw new PluginImplementationException("Signup for a free account in order to download this file");
+        }
+        if (contentAsString.contains("\"message\":\"gopremium\"")) {
+            throw new PluginImplementationException("You need to have a premium account to download this file");
+        }
     }
 
     /*
@@ -153,8 +165,51 @@ class FileCloudIoFileRunner extends AbstractRunner {
 
     private void checkFileURL() throws MalformedURLException {
         if (fileURL.matches("http://(?:www\\.)?ifile\\.it/.+")) {
-            httpFile.setNewURL(new URL(fileURL.replaceFirst("ifile\\.it", "filecloud.io")));
             fileURL = fileURL.replaceFirst("ifile\\.it", "filecloud.io");
+            httpFile.setNewURL(new URL(fileURL.replaceFirst("ifile\\.it", "filecloud.io")));
+        }
+    }
+
+    private boolean login() throws Exception {
+        synchronized (FileCloudIoFileRunner.class) {
+            final FileCloudIoServiceImpl service = (FileCloudIoServiceImpl) getPluginService();
+            final PremiumAccount pa = service.getConfig();
+            if (pa == null || !pa.isSet()) {
+                logger.info("No account data set, skipping login");
+                return false;
+            }
+            HttpMethod httpMethod = getMethodBuilder()
+                    .setAction("https://secure.filecloud.io/user-login.html")
+                    .toPostMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+            //sometimes ReCaptcha is shown during login
+            do {
+                final MethodBuilder methodBuilder = getMethodBuilder()
+                        .setReferer("https://secure.filecloud.io/user-login.html")
+                        .setActionFromFormWhereActionContains("user-login_p", true)
+                        .setParameter("username", pa.getUsername())
+                        .setParameter("password", pa.getPassword());
+                if (getContentAsString().contains("recaptchaFld")) {
+                    final String reCaptchaKey = getVar("__recaptcha_public");
+                    final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+                    final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+                    if (captcha == null) {
+                        throw new CaptchaEntryInputMismatchException();
+                    }
+                    r.setRecognized(captcha);
+                    httpMethod = r.modifyResponseMethod(methodBuilder).toPostMethod();
+                } else {
+                    httpMethod = methodBuilder.toPostMethod();
+                }
+                makeRequest(httpMethod);
+            } while (getContentAsString().contains("recaptchaFld"));
+            if (getContentAsString().contains("password entered is too short") || getContentAsString().contains("check whether the username")) {
+                logger.warning(getContentAsString());
+                throw new BadLoginException("Invalid FileCloud account login information!");
+            }
+            return true;
         }
     }
 

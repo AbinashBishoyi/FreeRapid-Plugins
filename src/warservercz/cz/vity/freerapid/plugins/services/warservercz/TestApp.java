@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.jumbofiles;
+package cz.vity.freerapid.plugins.services.warservercz;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -15,15 +15,10 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://jumbofiles.com/kzjpaxlhq6ee"));
+            httpFile.setNewURL(new URL("http://www.warserver.cz/stahnout/1794/krajni-meze-cz-s5e01-avi"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final JumboFilesServiceImpl service = new JumboFilesServiceImpl();
-            //we set premium account details
-            //final PremiumAccount config = new PremiumAccount();
-            //config.setUsername("freerapid");
-            //config.setPassword("freerapid");
-            //service.setConfig(config);
+            final WarServerCzServiceImpl service = new WarServerCzServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

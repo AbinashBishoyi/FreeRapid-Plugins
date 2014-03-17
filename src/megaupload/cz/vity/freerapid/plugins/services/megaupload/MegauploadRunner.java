@@ -1,0 +1,172 @@
+package cz.vity.freerapid.plugins.services.megaupload;
+
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
+import cz.vity.freerapid.plugins.webclient.HttpFile;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author Ladislav Vitasek, Ludek Zika
+ */
+class MegauploadRunner {
+    private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
+    private HttpDownloadClient client;
+    private HttpFileDownloader downloader;
+    private String baseURL;
+    private static final String HTTP_MEGAUPLOAD = "http://www.megaupload.com";
+
+    public void run(HttpFileDownloader downloader) throws Exception {
+        this.downloader = downloader;
+        HttpFile httpFile = downloader.getDownloadFile();
+        client = downloader.getClient();
+        final String fileURL = httpFile.getFileUrl().toString();
+        logger.info("Starting download in TASK " + fileURL);
+        baseURL = fileURL;
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        getMethod.setFollowRedirects(true);
+        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+            Matcher matcher = Pattern.compile(" ([0-9.]+) MB</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (matcher.find()) {
+                logger.info("File size " + matcher.group(1));
+                Double a = new Double(matcher.group(1).replaceAll(" ", ""));
+                a = (a * 1024 * 1024);
+                httpFile.setFileSize(a.longValue());
+            }
+            matcher = Pattern.compile("Filename:</b> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (matcher.find()) {
+                final String fn = matcher.group(1);
+                logger.info("File name " + fn);
+                httpFile.setFileName(fn);
+            } else logger.warning("File name was not found" + client.getContentAsString());
+            while (client.getContentAsString().contains("Please enter")) {
+                stepCaptcha(client.getContentAsString());
+            }
+
+            if (client.getContentAsString().contains("Click here to download")) {
+                matcher = Pattern.compile("=([0-9]*);[^/w]*function countdown", Pattern.MULTILINE).matcher(client.getContentAsString());
+                if (!matcher.find()) {
+                    throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+                }
+                String s = matcher.group(1);
+                int seconds = new Integer(s);
+                s = new LinkInJSResolver(logger).FindUrl(client.getContentAsString());
+
+                if (s.equals("")) logger.warning("Link was not found" + client.getContentAsString());
+                logger.info("Found File URL - " + s);
+
+                downloader.sleep(seconds + 1);
+                if (downloader.isTerminated())
+                    throw new InterruptedException();
+
+                httpFile.setState(DownloadState.GETTING);
+                final GetMethod method = client.getGetMethod(s);
+
+                try {
+                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
+                    if (inputStream != null) {
+                        downloader.saveToFile(inputStream);
+                    } else {
+                        checkProblems();
+                        throw new IOException("File input stream is empty.");
+                    }
+
+                } finally {
+                    method.abort();
+                    method.releaseConnection();
+                }
+            } else {
+                checkProblems();
+                logger.info(client.getContentAsString());
+                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            }
+
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+
+    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
+        Matcher matcher;
+        matcher = Pattern.compile("Download limit exceeded", Pattern.MULTILINE).matcher(client.getContentAsString());
+        if (matcher.find()) {
+
+            throw new ServiceConnectionProblemException(String.format("Download limit exceeded."));
+        }
+        matcher = Pattern.compile("All download slots", Pattern.MULTILINE).matcher(client.getContentAsString());
+        if (matcher.find()) {
+
+            throw new ServiceConnectionProblemException(String.format("No free slot for your country."));
+        }
+        matcher = Pattern.compile("Unfortunately, the link you have clicked is not available", Pattern.MULTILINE).matcher(client.getContentAsString());
+        if (matcher.find()) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>The file is not available</b><br>"));
+
+        }
+
+    }
+
+    private boolean stepCaptcha(String contentAsString) throws Exception {
+        if (contentAsString.contains("Please enter")) {
+
+            Matcher matcher = Pattern.compile("src=\"(/capgen[^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
+            if (matcher.find()) {
+                String s = replaceEntities(matcher.group(1));
+                logger.info(HTTP_MEGAUPLOAD + s);
+                String captcha = downloader.getCaptcha(HTTP_MEGAUPLOAD + s);
+                // InputStreamReader inp = new InputStreamReader(System.in);
+                //  BufferedReader br = new BufferedReader(inp);
+                //  System.out.println("Enter text : ");
+                //  captcha = br.readLine();
+
+                if (captcha == null) {
+                    throw new CaptchaEntryInputMismatchException();
+                } else {
+                    //  client.setReferer(baseURL);
+                    String d = getParameter("d", contentAsString);
+                    String imagecode = getParameter("imagecode", contentAsString);
+                    String megavar = getParameter("megavar", contentAsString);
+
+
+                    final PostMethod postMethod = client.getPostMethod(HTTP_MEGAUPLOAD);
+
+
+                    postMethod.addParameter("d", d);
+                    postMethod.addParameter("imagecode", imagecode);
+                    postMethod.addParameter("megavar", megavar);
+                    postMethod.addParameter("imagestring", captcha);
+
+                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+
+                        return true;
+                    }
+                }
+            } else throw new PluginImplementationException("Captcha picture was not found");
+        }
+        return false;
+    }
+
+
+    private String replaceEntities(String s) {
+        s = s.replaceAll("\\&amp;", "&");
+        return s;
+    }
+
+
+    private String getParameter(String s, String contentAsString) throws PluginImplementationException {
+        Matcher matcher = Pattern.compile("name=\"" + s + "\" value=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else
+            throw new PluginImplementationException("Parameter " + s + " was not found");
+    }
+}

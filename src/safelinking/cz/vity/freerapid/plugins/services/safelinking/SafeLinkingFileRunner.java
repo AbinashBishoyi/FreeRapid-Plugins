@@ -46,10 +46,10 @@ class SafeLinkingFileRunner extends AbstractRunner {
             fileURL = fileURL.replaceFirst("http://", "https://");
     }
 
-    protected URI stepDirectLink(String directLinkURL) throws Exception {
+    private URI stepDirectLink(final String directLinkURL) throws Exception {
         final GetMethod method = getGetMethod(directLinkURL);
         if (makeRedirectedRequest(method)) {
-            return new URI(method.getURI().getURI());
+            return new URI(method.getURI().getURI().replace(" ", "%20"));
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -71,8 +71,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
         if (fileURL.contains("/d/")) {
             list.add(stepDirectLink(fileURL));
         } else if (fileURL.contains("/p/")) {
-            HttpMethod method = getGetMethod(fileURL); //create GET request
-            if (!makeRedirectedRequest(method)) { //we make the main request
+            if (!makeRedirectedRequest(getGetMethod(fileURL))) { //we make the main request
                 checkProblems();//check problems
                 throw new ServiceConnectionProblemException();
             }
@@ -83,7 +82,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
                 MethodBuilder builder = getMethodBuilder()
                         .setActionFromFormWhereTagContains("Protected link", true)
                         .setReferer(fileURL).setAction(fileURL);
-                String content = getContentAsString();
+                final String content = getContentAsString();
                 // check 4 & complete captcha
                 if (content.contains("Captcha loading, please wait") ||
                         content.contains("The CAPTCHA code you entered was wrong")) {
@@ -97,8 +96,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
                     }
                     builder.setParameter("link-password", password);
                 }
-                method = builder.toPostMethod();
-                if (!makeRedirectedRequest(method)) { //we make the main request
+                if (!makeRedirectedRequest(builder.toPostMethod())) { //we make the main request
                     checkProblems();//check problems
                     throw new ServiceConnectionProblemException("err 1");
                 }
@@ -113,9 +111,9 @@ class SafeLinkingFileRunner extends AbstractRunner {
                 throw new PluginImplementationException("Captcha Text Error : SafeLinking site changed : SafeLinking feature not supported yet");
             }
 
-            Matcher m = PlugUtils.matcher("<a href=\"([^\"]+)\" class=\"result-a\">", content);
+            final Matcher m = PlugUtils.matcher("<a href=\"([^\"]+)\" class=\"result-a\">", content);
             while (m.find()) {
-                list.add(new URI(m.group(1)));
+                list.add(new URI(m.group(1).trim().replace(" ", "%20")));
             }
             if (getContentAsString().contains(HEADER_LINK_TYPE_1)) {
                 for (int ii = 0; ii < list.size(); ii++)
@@ -150,7 +148,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
 
         String mediaType;
         do {
-            HttpMethod httpMethod = getMethodBuilder()
+            final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL).setAction("https://api-secure.solvemedia.com/papi/_challenge.js")
                     .setParameter("k", captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/h264,v/ogg,v/webm,h5a,a/mp3,a/ogg,ua/chrome,ua/chrome18,os/nt,os/nt6.0,fwv/htyg64,jslib/jquery,jslib/jqueryui;ts=1339103245;th=custom;r=" + Math.random())
                     .toGetMethod();

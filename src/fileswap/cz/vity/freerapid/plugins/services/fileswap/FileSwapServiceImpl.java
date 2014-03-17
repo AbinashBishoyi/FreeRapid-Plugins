@@ -1,17 +1,18 @@
-package cz.vity.freerapid.plugins.services.ulozto;
+package cz.vity.freerapid.plugins.services.fileswap;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * Class that provides basic info about plugin
+ *
+ * @author birchie
  */
-public class UlozToServiceImpl extends AbstractFileShareService {
+public class FileSwapServiceImpl extends AbstractFileShareService {
 
-    private static final String SERVICE_NAME = "uloz.to";
-
+    @Override
     public String getName() {
-        return SERVICE_NAME;
+        return "fileswap.com";
     }
 
     @Override
@@ -21,12 +22,7 @@ public class UlozToServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new UlozToRunner();
+        return new FileSwapFileRunner();
     }
-
-    public int getMaxDownloadsFromOneIP() {
-        return 9;
-    }
-
 
 }

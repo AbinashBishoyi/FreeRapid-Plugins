@@ -129,7 +129,11 @@ public class MediafireRunner extends AbstractRunner {
         final String rawScript = matcher.group(1);
         //logger.info(rawScript);
 
-        final int lastFunctionIndex = rawScript.lastIndexOf("function ");
+        matcher = PlugUtils.matcher("function\\s*?[a-z\\d]+?\\(", rawScript);
+        int lastFunctionIndex = -1;
+        while (matcher.find()) {
+            lastFunctionIndex = matcher.start();
+        }
         if (lastFunctionIndex < 0) {
             logger.warning(rawScript);
             throw new PluginImplementationException("Last function in first JavaScript not found");

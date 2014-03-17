@@ -81,6 +81,9 @@ class Mega1280FileRunner extends AbstractRunner {
         if (contentAsString.contains("File Not Found") || contentAsString.contains("Li\u00EAn k\u1EBFt b\u1EA1n v\u1EEBa ch\u1ECDn kh\u00F4ng t\u1ED3n t\u1EA1i tr\u00EAn h\u1EC7 th\u1ED1ng") || contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if (contentAsString.contains("Limit download xx !")) {
+            throw new ServiceConnectionProblemException("Limit download xx ! - unknown error message from server");
+        }
     }
 
     private HttpMethod stepCaptcha() throws Exception {

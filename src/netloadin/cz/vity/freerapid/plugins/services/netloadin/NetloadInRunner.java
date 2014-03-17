@@ -49,7 +49,7 @@ class NetloadInRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             do {
                 stepEnterPage(getContentAsString());
                 if (!getContentAsString().contains("Please enter the Securitycode")) {
@@ -99,7 +99,8 @@ class NetloadInRunner extends AbstractRunner {
     }
 
     private boolean stepEnterPage(String contentAsString) throws Exception {
-        Matcher matcher = PlugUtils.matcher("class=\"Free_dl\"><a href=\"([^\"]*)\"", contentAsString);
+        Matcher matcher = PlugUtils.matcher("class=\"Free_dl\">(.|\\W)*?<a href=\"([^\"]*)\"", contentAsString);
+        //logger.info(contentAsString);       
         if (!matcher.find()) {
             checkProblems();
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");

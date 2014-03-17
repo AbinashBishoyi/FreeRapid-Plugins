@@ -9,10 +9,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class SharingMatrixServiceImpl extends AbstractFileShareService {
     private final static String SERVICE_NAME = "sharingmatrix.com";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }

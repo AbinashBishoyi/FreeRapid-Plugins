@@ -9,7 +9,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class ZidduShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "ziddu.com";
-    private ServicePluginContext context = new ServicePluginContext();
+    //private ServicePluginContext context = new ServicePluginContext();
 
     public String getName() {
         return SERVICE_NAME;

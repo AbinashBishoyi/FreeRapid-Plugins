@@ -62,11 +62,7 @@ class ZidduRunner extends AbstractRunner {
             //final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
             //String ndpage = PlugUtils.getParameter("2ndpage", contentAsString);
             String fn = PlugUtils.getParameter("fname", contentAsString);
-            fn = fn.replace(".html","");
-            fn = fn.replace("\"","");
-            fn = fn.replace(";","");
-            
-            
+         
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
         } else logger.warning("File name was not found" + contentAsString);
@@ -155,7 +151,7 @@ class ZidduRunner extends AbstractRunner {
                             //if (getContentAsString().contains("Please enter") || getContentAsString().contains("w="))
                              //   return false;
                             logger.warning(getContentAsString());
-                            throw new IOException("File input stream is empty." + s);
+                            throw new IOException("File input stream is empty." + fname);
                         }
 
 

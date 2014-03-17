@@ -5,7 +5,9 @@ import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchaType;
 import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchasCaptchaType;
 import cz.vity.freerapid.plugins.services.xfilesharing.captcha.FourTokensCaptchaType;
 import cz.vity.freerapid.plugins.services.xfilesharing.captcha.ReCaptchaType;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -30,7 +32,22 @@ import java.util.regex.Pattern;
 public abstract class XFileSharingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XFileSharingRunner.class.getName());
 
+    private final List<FileNameHandler> fileNameHandlers = getFileNameHandlers();
+    private final List<FileSizeHandler> fileSizeHandlers = getFileSizeHandlers();
     private final List<CaptchaType> captchaTypes = getCaptchaTypes();
+
+    protected List<FileNameHandler> getFileNameHandlers() {
+        final List<FileNameHandler> fileNameHandlers = new LinkedList<FileNameHandler>();
+        fileNameHandlers.add(new FileNameHandlerA());
+        fileNameHandlers.add(new FileNameHandlerB());
+        return fileNameHandlers;
+    }
+
+    protected List<FileSizeHandler> getFileSizeHandlers() {
+        final List<FileSizeHandler> fileSizeHandlers = new LinkedList<FileSizeHandler>();
+        fileSizeHandlers.add(new FileSizeHandlerA());
+        return fileSizeHandlers;
+    }
 
     protected List<CaptchaType> getCaptchaTypes() {
         final List<CaptchaType> captchaTypes = new LinkedList<CaptchaType>();
@@ -39,8 +56,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         captchaTypes.add(new CaptchasCaptchaType());
         return captchaTypes;
     }
-
-    protected abstract void checkNameAndSize() throws ErrorDuringDownloadingException;
 
     @Override
     public void runCheck() throws Exception {
@@ -134,6 +149,38 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         addCookie(new Cookie(getCookieDomain(), "lang", "english", "/", 86400, false));
     }
 
+    protected void checkNameAndSize() throws ErrorDuringDownloadingException {
+        checkFileName();
+        checkFileSize();
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    protected void checkFileName() throws ErrorDuringDownloadingException {
+        for (final FileNameHandler fileNameHandler : fileNameHandlers) {
+            try {
+                fileNameHandler.checkFileName(httpFile, getContentAsString());
+                logger.info("Name handler: " + fileNameHandler.getClass().getSimpleName());
+                return;
+            } catch (final ErrorDuringDownloadingException e) {
+                //failed
+            }
+        }
+        throw new PluginImplementationException("File name not found");
+    }
+
+    protected void checkFileSize() throws ErrorDuringDownloadingException {
+        for (final FileSizeHandler fileSizeHandler : fileSizeHandlers) {
+            try {
+                fileSizeHandler.checkFileSize(httpFile, getContentAsString());
+                logger.info("Size handler: " + fileSizeHandler.getClass().getSimpleName());
+                return;
+            } catch (final ErrorDuringDownloadingException e) {
+                //failed
+            }
+        }
+        throw new PluginImplementationException("File size not found");
+    }
+
     protected int stepGetWaitTime() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
@@ -165,6 +212,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     protected void stepCaptcha(final MethodBuilder methodBuilder) throws Exception {
         for (final CaptchaType captchaType : captchaTypes) {
             if (captchaType.canHandle(getContentAsString())) {
+                logger.info("Captcha type: " + captchaType.getClass().getSimpleName());
                 captchaType.handleCaptcha(methodBuilder, client, getCaptchaSupport());
                 break;
             }
@@ -198,7 +246,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                 waitSeconds = Integer.parseInt(matcher.group(3));
             }
             final int waitTime = (waitHours * 60 * 60) + (waitMinutes * 60) + waitSeconds;
-            throw new YouHaveToWaitException("You have to wait " + waitTime + " seconds", waitTime);
+            throw new YouHaveToWaitException("You have to wait " + matcher.group(), waitTime);
         }
         if (content.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Plugin is broken - Undefined subroutine");

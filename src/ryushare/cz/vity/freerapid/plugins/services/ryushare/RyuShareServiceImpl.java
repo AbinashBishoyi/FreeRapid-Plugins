@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.ryushare;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.AccountServiceImpl;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,12 +8,11 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class RyuShareServiceImpl extends AccountServiceImpl {
-    private static final String PLUGIN_CONFIG_FILE = "plugin_RyuShare.xml";
-    private static final String SERVICE_TITLE = "RyuShare";
+public class RyuShareServiceImpl extends XFileSharingServiceImpl {
 
-    public RyuShareServiceImpl() {
-        super(PLUGIN_CONFIG_FILE, SERVICE_TITLE, RyuShareServiceImpl.class);
+    @Override
+    public String getServiceTitle() {
+        return "RyuShare";
     }
 
     @Override
@@ -22,12 +21,8 @@ public class RyuShareServiceImpl extends AccountServiceImpl {
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;
-    }
-
-    @Override
     public PluginRunner getPluginRunnerInstance() {
         return new RyuShareFileRunner();
     }
+
 }

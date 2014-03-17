@@ -6,20 +6,12 @@ import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
-import java.util.logging.Logger;
-
 /**
  * Class which contains main code
  *
  * @author tong2shot
  */
 class JalurCepatFileRunner extends XFileSharingRunner {
-    private final static Logger logger = Logger.getLogger(JalurCepatFileRunner.class.getName());
-    private static final String SERVICE_TITLE = "JalurCepat";
-
-    public JalurCepatFileRunner() {
-        super(SERVICE_TITLE);
-    }
 
     @Override
     public void checkNameAndSize() throws ErrorDuringDownloadingException {

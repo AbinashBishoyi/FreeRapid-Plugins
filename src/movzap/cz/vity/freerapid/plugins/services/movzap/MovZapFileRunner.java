@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.movzap;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.services.xfilesharing.RegisteredUserRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
@@ -21,15 +21,9 @@ import java.util.regex.Matcher;
  *
  * @author tong2shot
  */
-class MovZapFileRunner extends RegisteredUserRunner {
+class MovZapFileRunner extends XFileSharingRunner {
     private final static Logger logger = Logger.getLogger(MovZapFileRunner.class.getName());
-    private final static String SERVICE_TITLE = "MovZap";
-    private final static String SERVICE_LOGIN_ACTION = "http://www.movzap.com";
     private final static byte[] SECRET_KEY = "N%66=]H6".getBytes(Charset.forName("UTF-8"));
-
-    public MovZapFileRunner() {
-        super(SERVICE_TITLE, SERVICE_LOGIN_ACTION, MovZapFileRunner.class, MovZapServiceImpl.class);
-    }
 
     @Override
     public void run() throws Exception {

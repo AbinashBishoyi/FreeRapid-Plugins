@@ -2,11 +2,10 @@ package cz.vity.freerapid.plugins.services.asixfiles;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.services.xfilesharing.RegisteredUserRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
@@ -14,14 +13,7 @@ import java.util.regex.Matcher;
  *
  * @author tong2shot
  */
-class AsixFilesFileRunner extends RegisteredUserRunner {
-    private final static Logger logger = Logger.getLogger(AsixFilesFileRunner.class.getName());
-    private final static String SERVICE_TITLE = "AsixFiles";
-    private final static String SERVICE_LOGIN_ACTION = "http://www.asixfiles.com";
-
-    public AsixFilesFileRunner() {
-        super(SERVICE_TITLE, SERVICE_LOGIN_ACTION, AsixFilesFileRunner.class, AsixFilesServiceImpl.class);
-    }
+class AsixFilesFileRunner extends XFileSharingRunner {
 
     @Override
     protected void checkNameAndSize() throws ErrorDuringDownloadingException {

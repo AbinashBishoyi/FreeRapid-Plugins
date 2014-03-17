@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.cosmobox;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.AccountServiceImpl;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,22 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class CosmoBoxServiceImpl extends AccountServiceImpl {
-    private final static String PLUGIN_CONFIG_FILE = "plugin_CosmoBox.xml";
-    private final static String SERVICE_TITLE = "CosmoBox";
+public class CosmoBoxServiceImpl extends XFileSharingServiceImpl {
 
-    public CosmoBoxServiceImpl() {
-        super(PLUGIN_CONFIG_FILE, SERVICE_TITLE, CosmoBoxServiceImpl.class);
+    @Override
+    public String getServiceTitle() {
+        return "CosmoBox";
     }
 
     @Override
     public String getName() {
         return "cosmobox.org";
-    }
-
-    @Override
-    public boolean supportsRunCheck() {
-        return true;
     }
 
     @Override

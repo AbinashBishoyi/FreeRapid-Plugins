@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.services.xfilesharing.captcha.FourTokensCaptcha
 import cz.vity.freerapid.plugins.services.xfilesharing.captcha.ReCaptchaType;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
@@ -30,19 +31,6 @@ public abstract class XFileSharingRunner extends AbstractRunner {
 
     private final List<CaptchaType> captchaTypes = getCaptchaTypes();
 
-    protected String serviceTitle; //ex : "RyuShare"
-
-    protected RegisteredUser registeredUser;
-
-    public XFileSharingRunner() {
-        super();
-    }
-
-    public XFileSharingRunner(String serviceTitle) {
-        super();
-        this.serviceTitle = serviceTitle;
-    }
-
     protected List<CaptchaType> getCaptchaTypes() {
         final List<CaptchaType> captchaTypes = new LinkedList<CaptchaType>();
         captchaTypes.add(new ReCaptchaType());
@@ -51,22 +39,11 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         return captchaTypes;
     }
 
-    protected void checkPrerequisites() throws PluginImplementationException {
-        if (serviceTitle == null)
-            throw new PluginImplementationException("serviceTitle cannot be null.");
-    }
-
-    protected void setLanguageCookie() throws Exception {
-        final String cookieDomain = "." + new URL(getBaseURL()).getHost();
-        addCookie(new Cookie(cookieDomain, "lang", "english", "/", 86400, false));
-    }
-
     protected abstract void checkNameAndSize() throws ErrorDuringDownloadingException;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        checkPrerequisites();
         setLanguageCookie();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -81,10 +58,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        checkPrerequisites();
         setLanguageCookie();
-        if (registeredUser != null) registeredUser.login();
         logger.info("Starting download in TASK " + fileURL);
+        login();
         HttpMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
             checkFileProblems();
@@ -120,8 +96,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
                         .toGetMethod();
                 break;
             } else if (getContentAsString().contains("File Download Link Generated")
-                    || getContentAsString().contains("This direct link will be available for your IP")
-                    || getContentAsString().contains("This direct link will be active for your IP")) {
+                    || getContentAsString().contains("This direct link will be ")) {
                 //page containing download link
                 final Matcher matcher = getMatcherAgainstContent("<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
                 if (!matcher.find()) {
@@ -142,6 +117,18 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         }
     }
 
+    protected String getCookieDomain() throws Exception {
+        String host = new URL(getBaseURL()).getHost();
+        if (host.startsWith("www.")) {
+            host = host.substring(4);
+        }
+        return "." + host;
+    }
+
+    protected void setLanguageCookie() throws Exception {
+        addCookie(new Cookie(getCookieDomain(), "lang", "english", "/", 86400, false));
+    }
+
     protected void stepWaitTime() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
@@ -151,6 +138,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
 
     protected void stepPassword(final MethodBuilder methodBuilder) throws Exception {
         if (getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">")) {
+            final String serviceTitle = ((XFileSharingServiceImpl) getPluginService()).getServiceTitle();
             final String password = getDialogSupport().askForPassword(serviceTitle);
             if (password == null) {
                 throw new NotRecoverableDownloadException("This file is secured with a password");
@@ -219,6 +207,33 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         if (content.contains("Wrong password")) {
             throw new ServiceConnectionProblemException("Wrong password");
         }
+    }
+
+    protected boolean login() throws Exception {
+        final PremiumAccount pa = ((XFileSharingServiceImpl) getPluginService()).getConfig();
+        if (pa == null || !pa.isSet()) {
+            logger.info("No account data set, skipping login");
+            return false;
+        }
+        final HttpMethod method = getMethodBuilder()
+                .setReferer(getBaseURL() + "/login.html")
+                .setAction(getBaseURL())
+                .setParameter("op", "login")
+                .setParameter("redirect", "")
+                .setParameter("login", pa.getUsername())
+                .setParameter("password", pa.getPassword())
+                .setParameter("submit", "")
+                .toPostMethod();
+        final String cookieDomain = getCookieDomain();
+        addCookie(new Cookie(cookieDomain, "login", pa.getUsername(), "/", null, false));
+        addCookie(new Cookie(cookieDomain, "xfss", "", "/", null, false));
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException("Error posting login info");
+        }
+        if (getContentAsString().contains("Incorrect Login or Password")) {
+            throw new BadLoginException("Invalid account login information");
+        }
+        return true;
     }
 
 }

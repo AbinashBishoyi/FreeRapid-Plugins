@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.asixfiles;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.AccountServiceImpl;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,23 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class AsixFilesServiceImpl extends AccountServiceImpl {
-    private final static String PLUGIN_CONFIG_FILE = "plugin_AsixFiles.xml";
-    private final static String SERVICE_TITLE = "AsixFiles";
+public class AsixFilesServiceImpl extends XFileSharingServiceImpl {
 
-    public AsixFilesServiceImpl() {
-        super(PLUGIN_CONFIG_FILE, SERVICE_TITLE, AsixFilesServiceImpl.class);
+    @Override
+    public String getServiceTitle() {
+        return "AsixFiles";
     }
-
 
     @Override
     public String getName() {
         return "asixfiles.com";
-    }
-
-    @Override
-    public boolean supportsRunCheck() {
-        return true;
     }
 
     @Override

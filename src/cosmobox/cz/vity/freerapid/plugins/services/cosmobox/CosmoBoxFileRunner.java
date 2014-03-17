@@ -1,25 +1,16 @@
 package cz.vity.freerapid.plugins.services.cosmobox;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.services.xfilesharing.RegisteredUserRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-
-import java.util.logging.Logger;
 
 /**
  * Class which contains main code
  *
  * @author tong2shot
  */
-class CosmoBoxFileRunner extends RegisteredUserRunner {
-    private final static Logger logger = Logger.getLogger(CosmoBoxFileRunner.class.getName());
-    private final static String SERVICE_TITLE = "CosmoBox";
-    private final static String SERVICE_LOGIN_ACTION = "http://www.cosmobox.org/";
-
-    public CosmoBoxFileRunner() {
-        super(SERVICE_TITLE, SERVICE_LOGIN_ACTION, CosmoBoxFileRunner.class, CosmoBoxServiceImpl.class);
-    }
+class CosmoBoxFileRunner extends XFileSharingRunner {
 
     @Override
     protected void checkNameAndSize() throws ErrorDuringDownloadingException {

@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-//public class JalurCepatServiceImpl extends AbstractFileShareService { //for non-supported registered users, this can also be used
 public class JalurCepatServiceImpl extends XFileSharingServiceImpl {
+
     @Override
-    public String getName() {
-        return "jalurcepat.com";
+    public String getServiceTitle() {
+        return "JalurCepat";
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;
+    public String getName() {
+        return "jalurcepat.com";
     }
 
     @Override

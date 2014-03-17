@@ -142,6 +142,10 @@ class MegauploadRunner extends AbstractRunner {
         if (contentAsString.contains("the link you have clicked is not available")) {
             throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
         }
+        if (contentAsString.contains("We have detected an elevated number of requests")) {
+            final int wait = PlugUtils.getNumberBetween(contentAsString, "check back in", "minute");
+            throw new YouHaveToWaitException("We have detected an elevated number of requests", wait * 60);
+        }
 
     }
 
@@ -155,7 +159,6 @@ class MegauploadRunner extends AbstractRunner {
                 String captcha;
                 final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
 
-
 //                    EditImage ei = new EditImage(captchaImage);
 //                    captcha = PlugUtils.recognize(ei.separate(), "-C A-z");
 //                    if (captcha != null) {
@@ -167,18 +170,18 @@ class MegauploadRunner extends AbstractRunner {
 //                    }
 
                 if (captchaCount++ < 3) {
-                    captcha=CaptchaReader.read(captchaImage);
-                    if (captcha == null){
+                    captcha = CaptchaReader.read(captchaImage);
+                    if (captcha == null) {
                         logger.warning("Cant read captcha");
-                        captcha="aaaa";
-                    }else{
-                        logger.info("Read captcha:"+captcha);
+                        captcha = "aaaa";
+                    } else {
+                        logger.info("Read captcha:" + captcha);
                     }
-                }else{
+                } else {
                     captcha = getCaptchaSupport().askForCaptcha(captchaImage);
                 }
-                    if (captcha == null)
-                        throw new CaptchaEntryInputMismatchException();
+                if (captcha == null)
+                    throw new CaptchaEntryInputMismatchException();
 
                 final PostMethod postMethod = getPostMethod(fileURL);
 //                PlugUtils.addParameters(postMethod, contentAsString, new String[]{"megavar"});

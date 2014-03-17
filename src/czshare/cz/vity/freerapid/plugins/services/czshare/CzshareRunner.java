@@ -176,7 +176,7 @@ class CzshareRunner extends AbstractRunner {
         } else {
             checkProblems();
             logger.info(getContentAsString());
-            throw new PluginImplementationException(finalURL + " Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
         }
     }
 
@@ -206,7 +206,7 @@ class CzshareRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException("Bohužel je vyčerpána maximální kapacita FREE downloadů", 30);
         }
-        matcher = getMatcherAgainstContent("Nesouhlas. kontroln. kod, klikn.te na tla..tko ZP.T a k.d opi.te spr.vn..");
+        matcher = getMatcherAgainstContent("Nesouhlas. kontroln. kod");
         if (matcher.find()) {
             throw new YouHaveToWaitException("Špatný kód", 3);
         }

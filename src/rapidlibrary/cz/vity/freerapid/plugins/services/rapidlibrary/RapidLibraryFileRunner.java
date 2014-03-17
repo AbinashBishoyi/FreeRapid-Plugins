@@ -19,15 +19,16 @@ import java.util.logging.Logger;
  */
 class RapidLibraryFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidLibraryFileRunner.class.getName());
+    private int captchaCounter = 1, captchaMax = 10;
 
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException();
     }
@@ -44,32 +45,28 @@ class RapidLibraryFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting run task " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //make the main request
-            String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            if (contentAsString.contains("Download from rapidshare.com")) {
-                logger.info("Captcha not found, skipping");
-            } else {
-                while (true) { //dummy loop for captcha
-                    HttpMethod httpMethod = stepCaptcha(fileURL);
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            String contentAsString = getContentAsString();
+            checkProblems();
+            checkNameAndSize(contentAsString);
+
+            HttpMethod httpMethod;
+            if (getContentAsString().contains("Please ENTER CODE")) {
+                while (getContentAsString().contains("Please ENTER CODE")) {
+                    httpMethod = stepCaptcha();
                     if (!makeRedirectedRequest(httpMethod)) {
-                        checkProblems();//if failed
-                        logger.warning(getContentAsString());//log the info
-                        throw new PluginImplementationException();//some unknown problem
-                    }
-                    contentAsString = getContentAsString();
-                    if (!contentAsString.contains("Please ENTER CODE")) {
-                        logger.info("Captcha OK!");
-                        break;//continue
+                        throw new ServiceConnectionProblemException();
                     }
                 }
-                logger.info("Captcha failed, retrying");
+            } else {
+                throw new PluginImplementationException("Captcha not found");
             }
+            logger.info("Captcha correct");
 
             contentAsString = getContentAsString();
             checkProblems();
+
             String rsUrl = PlugUtils.getStringBetween(contentAsString, "<img src=\"download.png\" border=\"0\">&nbsp;<a href=\"", "\"><b><font");
             logger.info("RapidShare URL: " + rsUrl);
             //redirect to RapidShare plugin
@@ -84,24 +81,28 @@ class RapidLibraryFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("file not found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let user know in FRD
+        if (contentAsString.contains("file not found") || contentAsString.contains("Not Found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
-    private HttpMethod stepCaptcha(String fileURL) throws ErrorDuringDownloadingException {
+    private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaSrc = "http://rapidlibrary.com/code2.php";
+        //logger.info("Captcha URL " + captchaSrc);
 
-        logger.info("Captcha URL " + captchaSrc);
-        final String captcha = captchaSupport.getCaptcha(captchaSrc);
-
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
+        String captcha = null;
+        if (captchaCounter <= captchaMax) {
+            captcha = PlugUtils.recognize(captchaSupport.getCaptchaImage(captchaSrc), "-d -1 -C A-Z");
+            logger.info("OCR attempt " + captchaCounter + " of " + captchaMax + ", recognized " + captcha);
+            captchaCounter++;
         } else {
-            //the next line... just can't get it to work
-            return getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Please ENTER CODE", true).setAction(fileURL).toPostMethod();//setParameter("c_code", captcha)
-            //keeps saying "form has no defined action attribute" which is absolutely true. that's the problem.
+            logger.info("Giving up automatic recognition");
+            captcha = captchaSupport.getCaptcha(captchaSrc);
+            if (captcha == null) throw new CaptchaEntryInputMismatchException();
         }
+
+        return getMethodBuilder().setReferer(fileURL).setAction(fileURL).setParameter("c_code", captcha.toUpperCase()).setParameter("act", " Download ").toPostMethod();
     }
+
 }

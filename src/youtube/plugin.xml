@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.youtube.YouTubeServiceImpl"
-        id="youtube.com" vendor="Kajda+JPEXS+ntoskrnl+tong2shot" version="2.0.0">
+        id="youtube.com" vendor="Kajda+JPEXS+ntoskrnl+tong2shot" version="2.0.1">
     <attributes>
         <attribute id="urlRegex"
                    value="https?://(www\.)?(youtube\.com/(watch\?|user/|playlist\?|course\?)|youtu\.be/).+"/>
@@ -16,8 +16,7 @@
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.0.0"
                 reverse-lookup="false"/>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="video2audio"
-                plugin-version="1.0.0"
-                reverse-lookup="false"/>
+                plugin-version="1.0.0" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="youtube.com" path="/" type="code"/>

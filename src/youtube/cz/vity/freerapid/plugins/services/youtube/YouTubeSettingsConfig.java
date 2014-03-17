@@ -2,14 +2,16 @@ package cz.vity.freerapid.plugins.services.youtube;
 
 /**
  * @author Kajda
+ * @author ntoskrnl
+ * @author tong2shot
  */
 public class YouTubeSettingsConfig {
-    private int qualitySetting;
-    private boolean reversePlaylistOrder;
-    private boolean downloadSubtitles;
-    private int container;
-    private boolean convertToAudio;
-    private AudioQuality audioQuality;
+    private int qualitySetting = 3; //480p
+    private boolean reversePlaylistOrder = false;
+    private boolean downloadSubtitles = false;
+    private int container = 0; //any
+    private boolean convertToAudio = false;
+    private AudioQuality audioQuality = AudioQuality._192;
 
     public static final int MIN_WIDTH = -2;
     public static final int MAX_WIDTH = -1;

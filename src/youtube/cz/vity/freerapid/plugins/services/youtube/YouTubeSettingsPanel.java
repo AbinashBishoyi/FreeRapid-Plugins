@@ -6,7 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 /**
- * @author Kajda, JPEXS, ntoskrnl
+ * @author Kajda, JPEXS, ntoskrnl, tong2shot
  */
 public class YouTubeSettingsPanel extends JPanel {
     private YouTubeSettingsConfig config;

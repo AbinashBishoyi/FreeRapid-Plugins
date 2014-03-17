@@ -76,12 +76,6 @@ public class YouTubeServiceImpl extends AbstractFileShareService {
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new YouTubeSettingsConfig();
-                config.setQualitySetting(1);
-                config.setContainer(0); //any container
-                config.setReversePlaylistOrder(false);
-                config.setDownloadSubtitles(false);
-                config.setConvertToAudio(false);
-                config.setAudioQuality(AudioQuality._192);
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, YouTubeSettingsConfig.class);
             }

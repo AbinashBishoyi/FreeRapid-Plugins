@@ -143,6 +143,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
                                 throw new ServiceConnectionProblemException("Error downloading SWF");
                             }
                             final String signature = new YouTubeSigDecipher(is).decipher(matcher.group(1));
+                            logger.info(signature);
                             videoURL = videoURL + "&signature=" + signature;
                         }
                     }

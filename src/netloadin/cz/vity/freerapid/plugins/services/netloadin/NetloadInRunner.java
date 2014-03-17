@@ -23,8 +23,8 @@ class NetloadInRunner extends AbstractRunner {
 
     private String initURL;
     private String enterURL;
-    private int captchaCount=0;
-    private static final int CAPTCHARETRIES=3;
+    private int captchaCount = 0;
+    private static final int CAPTCHARETRIES = 5;
 
     @Override
     public void runCheck() throws Exception {
@@ -55,7 +55,7 @@ class NetloadInRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
-            captchaCount=0;
+            captchaCount = 0;
             do {
                 stepEnterPage(getContentAsString());
                 if (!getContentAsString().contains("Please enter the Securitycode")) {
@@ -139,35 +139,35 @@ class NetloadInRunner extends AbstractRunner {
             if (matcher.find()) {
                 String s = "/" + PlugUtils.replaceEntities(matcher.group(1));
                 String captcha = "";
-                if(captchaCount<CAPTCHARETRIES){
+                if (captchaCount < CAPTCHARETRIES) {
                     logger.info("Getting captcha image");
                     GetMethod methodC = getGetMethod(HTTP_NETLOAD + s);
                     client.getHTTPClient().executeMethod(methodC);
-                    
+
                     logger.info("Reading captcha...");
                     InputStream is = null;
-                    try{
-                      is=methodC.getResponseBodyAsStream();
-                      captcha = CaptchaReader.recognize(is);
-                    }catch(Exception ex){
+                    try {
+                        is = methodC.getResponseBodyAsStream();
+                        captcha = CaptchaReader.recognize(is);
+                    } catch (Exception ex) {
                         logger.severe(ex.toString());
-                    } finally{
-                        if(is!=null){
-                         try{
-                         is.close();
-                         }catch(Exception ex){
-                             //ignore
-                         }
+                    } finally {
+                        if (is != null) {
+                            try {
+                                is.close();
+                            } catch (Exception ex) {
+                                //ignore
+                            }
                         }
                     }
-                    logger.info("Captcha read:"+captcha);
-                   
+                    logger.info("Captcha read:" + captcha);
+
                     methodC.releaseConnection();
                     if (captcha == null) {
-                        logger.warning("Cannot read captcha (retry "+captchaCount+") - wrong number separation");
+                        logger.warning("Cannot read captcha (retry " + captchaCount + ") - wrong number separation");
                         return false;
                     }
-                }else{
+                } else {
                     captcha = getCaptchaSupport().getCaptcha(HTTP_NETLOAD + s);
                 }
                 if (captcha == null) {

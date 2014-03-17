@@ -6,6 +6,8 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URL;
@@ -46,6 +48,20 @@ class WowEbookComFileRunner extends AbstractRunner {
                 directURL = PlugUtils.getStringBetween(getContentAsString(), start, end, i);
                 if (directURL == null) throw new ErrorDuringDownloadingException("Can't find download link");
                 if (directURL.contains("adf.ly")) break;
+                if (directURL.contains("sh.st")) {
+                    final HttpMethod httpMethod = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setAction(directURL)
+                            .toGetMethod();
+                    // sh.st redirects automatically for non-browser user agents
+                    httpMethod.setRequestHeader("User-Agent", "curl/7.18.2 (i586-pc-mingw32msvc) libcurl/7.18.2 zlib/1.2.3");
+                    final int st = client.makeRequest(httpMethod, false);
+                    if (st / 100 == 3) {
+                        final Header locationHeader = httpMethod.getResponseHeader("Location");
+                        directURL = locationHeader.getValue();
+                        break;
+                    }
+                }
             }
             logger.info("Download Service URL: " + directURL);
             httpFile.setNewURL(new URL(directURL));

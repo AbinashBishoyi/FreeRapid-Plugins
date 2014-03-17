@@ -51,14 +51,15 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
 
     @Override
     protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
-        return new String(Base64.decodeBase64(new String(Base64.decodeBase64(super.getDownloadLinkFromRegexes()))));
+        final String url = super.getDownloadLinkFromRegexes();
+        if (url.contains("http:"))
+            return url;
+        return new String(Base64.decodeBase64(new String(Base64.decodeBase64(url))));
     }
 
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        final MethodBuilder builder = getXFSMethodBuilder(getContentAsString());
-        builder.setParameter("geekref", "yeahman");
-        return builder;
+        return super.getXFSMethodBuilder().setParameter("geekref", "yeahman");
     }
 
     @Override

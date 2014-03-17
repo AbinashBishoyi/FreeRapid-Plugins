@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.hulkload;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -30,5 +31,14 @@ class HulkLoadFileRunner extends XFileSharingRunner {
         final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
         downloadPageMarkers.add("hulkload.com/files");
         return downloadPageMarkers;
+    }
+
+    @Override
+    protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
+        String url = super.getDownloadLinkFromRegexes();
+        if (!url.contains("adf.ly"))
+            return url;
+        url = url.replaceFirst("http", "");
+        return url.substring(url.indexOf("http"));
     }
 }

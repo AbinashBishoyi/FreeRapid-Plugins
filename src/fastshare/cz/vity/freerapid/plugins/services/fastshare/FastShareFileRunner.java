@@ -49,9 +49,9 @@ class FastShareFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             final String contentAsString = getContentAsString();
-            checkProblems();
+            checkDownloadProblems();
             checkNameAndSize(contentAsString);
-            final Matcher match = PlugUtils.matcher("<form method=post action=(/free[^>]+?)>", getContentAsString());
+            final Matcher match = PlugUtils.matcher("<form.+?action=(/free[^>]+?)>", getContentAsString());
             if (!match.find())
                 throw new PluginImplementationException("Download form not found");
             HttpMethod httpMethod = getMethodBuilder()
@@ -64,11 +64,11 @@ class FastShareFileRunner extends AbstractRunner {
                 if (getContentAsString().contains("Opište kód")) {
                     throw new YouHaveToWaitException("Wrong captcha", 8);
                 }
-                checkProblems();
+                checkDownloadProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
-            checkProblems();
+            checkDownloadProblems();
             throw new ServiceConnectionProblemException();
         }
     }
@@ -95,6 +95,11 @@ class FastShareFileRunner extends AbstractRunner {
         if (contentAsString.contains("Tento soubor byl smazán")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        checkProblems();
+        final String contentAsString = getContentAsString();
         if (contentAsString.contains("muzete stahovat jen jeden soubor najednou")) {
             throw new ErrorDuringDownloadingException("You can download only one file at a time");
         }

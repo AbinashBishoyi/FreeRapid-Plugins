@@ -6,12 +6,10 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -21,30 +19,42 @@ import java.util.regex.Matcher;
 class WebShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(WebShareFileRunner.class.getName());
 
+    final String baseUrl = "https://webshare.cz/";
+    final String urlFileInfo = "https://webshare.cz/api/file_info/";
+    final String urlFileLink = "https://webshare.cz/api/file_link/";
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize(getMethod);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("https?://.+?/.+?-(.+)", fileURL);
-        if (match.find())
-            httpFile.setFileName(match.group(1));
-        else
-            PlugUtils.checkName(httpFile, content, "class=\"textbox\">", "</div>");
-        final int i = content.indexOf("Velikost souboru");
-        if (i > 0) {
-            final String s = content.substring(i).replaceAll("MiB", "MB").replaceAll("KiB", "KB").replaceAll("GiB", "GB");
-            PlugUtils.checkFileSize(httpFile, s, "class=\"textbox\">", "</div>");
+    private String getFileIdent(GetMethod method) throws Exception {
+        final String url = method.getURI().getURI();
+        return PlugUtils.getStringBetween(url, "/file/", "/");
+    }
+
+    private void checkNameAndSize(GetMethod method) throws Exception {
+        final HttpMethod httpMethod = getMethodBuilder()
+                .setReferer(baseUrl)
+                .setAction(urlFileInfo)
+                .setParameter("ident", getFileIdent(method))
+                .setParameter("wst", "")
+                .toPostMethod();
+        httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+        if (!makeRedirectedRequest(httpMethod)) {
+            throw new ServiceConnectionProblemException("Error retrieving file name/size");
         }
+        checkProblems();
+        httpFile.setFileName(PlugUtils.getStringBetween(getContentAsString(), "<name>", "</name>"));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(getContentAsString(), "<size>", "</size>")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -54,18 +64,23 @@ class WebShareFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            final String contentAsString = getContentAsString();
             checkProblems();
-            checkNameAndSize(contentAsString);
+            checkNameAndSize(method);
 
-            final String l = PlugUtils.getStringBetween(getContentAsString(), "var l =", ";").trim().replace("'", "").replace("\"", "");
-            final String downloadLink = new String(Base64.decodeBase64(l));
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(downloadLink)
-                    .toHttpMethod();
+                    .setReferer(baseUrl)
+                    .setAction(urlFileLink)
+                    .setParameter("ident", getFileIdent(method))
+                    .setParameter("wst", "")
+                    .toPostMethod();
+            httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException("Error retrieving download link");
+            }
+            checkProblems();
+            final String dlUrl = PlugUtils.getStringBetween(getContentAsString(), "<link>", "</link>");
 
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            if (!tryDownloadAndSaveFile(getGetMethod(dlUrl))) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }

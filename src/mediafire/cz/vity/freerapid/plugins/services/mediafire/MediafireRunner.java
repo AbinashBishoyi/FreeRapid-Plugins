@@ -3,8 +3,6 @@ package cz.vity.freerapid.plugins.services.mediafire;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.DefaultFileStreamRecognizer;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -25,7 +23,6 @@ public class MediafireRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2");
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -36,12 +33,13 @@ public class MediafireRunner extends AbstractRunner {
         }
     }
 
-    private void checkNameAndSize() throws Exception {
-        if (isList()) return;
-        final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
-        if (!getContentAsString().contains("dh('');")) { // if not passworded
-            PlugUtils.checkFileSize(httpFile, content, "Download <span>(", ")</span>");
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        if (!isList()) {
+            final String content = getContentAsString();
+            PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
+            if (!isPassworded()) {
+                PlugUtils.checkFileSize(httpFile, content, "Download <span>(", ")</span>");
+            }
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -49,18 +47,15 @@ public class MediafireRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         if (content.contains("The key you provided for file download")
-                || content.contains("How can MediaFire help you?")) {
+                || content.contains("How can MediaFire help you?")
+                || content.contains("File Removed for Violation")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (content.contains("File Removed for Violation")) {
-            throw new URLNotAvailableAnymoreException("File was removed for violation");
         }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2");
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -69,26 +64,16 @@ public class MediafireRunner extends AbstractRunner {
                 return;
             }
             checkNameAndSize();
-            boolean isPassworded = false;
-            final String passwordRule = "dh\\('.*?'\\);";
-            while (PlugUtils.matcher(passwordRule,getContentAsString()).find()) {
-                isPassworded = true;
-                HttpMethod postPwd = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setBaseURL("http://www.mediafire.com/")
-                        .setActionFromFormByName("form_password", true)
-                        .setAndEncodeParameter("downloadp", getPassword())
-                        .toPostMethod();
-                if (!makeRedirectedRequest(postPwd)) {
-                    throw new ServiceConnectionProblemException("Some issue while posting password");
-                }
+            if (isPassworded()) {
+                stepPassword();
+                checkNameAndSize();
             }
-            if (isPassworded) {
-                PlugUtils.checkFileSize(httpFile, getContentAsString(), "Download <span>(", ")</span>");
+            final Matcher matcher = getMatcherAgainstContent("(<div class=\"download_link\".+?</div>)");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download link not found");
             }
-            method = getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
-            String allowedCT[] = {"text/plain"}; //add allowed content-type
-            setFileStreamContentTypes(allowedCT);
+            method = getMethodBuilder(matcher.group(1)).setActionFromAHrefWhereATagContains("").toGetMethod();
+            setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -128,6 +113,23 @@ public class MediafireRunner extends AbstractRunner {
 
     private boolean isList() {
         return (fileURL.contains("?sharekey="));
+    }
+
+    private boolean isPassworded() {
+        return getContentAsString().contains("form_password");
+    }
+
+    private void stepPassword() throws Exception {
+        while (isPassworded()) {
+            final HttpMethod method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromFormByName("form_password", true)
+                    .setAndEncodeParameter("downloadp", getPassword())
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+        }
     }
 
     private String getPassword() throws Exception {

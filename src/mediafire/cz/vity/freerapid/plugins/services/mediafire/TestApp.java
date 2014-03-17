@@ -17,9 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             httpFile.setNewURL(new URL("http://www.mediafire.com/?4nby1h7o71eoweg"));
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/download.php?dmzno2z0zvn"));
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/?y2ntg3z5dzz"));//password protected, password is tech24.vn
-            //httpFile.setNewURL(new URL("http://www.mediafire.com/?sharekey=167682a915434ac991b20cc0d07ba4d2c2ab6437840d5285"));//folder
+            //httpFile.setNewURL(new URL("http://www.mediafire.com/download.php?5sf7tb68arckyag"));//password is 300mbsunny
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

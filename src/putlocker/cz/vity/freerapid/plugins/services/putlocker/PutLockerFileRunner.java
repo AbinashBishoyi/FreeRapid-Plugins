@@ -67,6 +67,16 @@ class PutLockerFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
+
+            //refresh the page, if quota exceeded
+            if (getContentAsString().contains("exceeded the daily download limit for your country")) {
+                downloadTask.sleep(10);
+                httpMethod = getGetMethod(fileURL);
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            }
             final String downloadURL;
             boolean isVideoStream = false;
             if (getContentAsString().contains("<a href=\"/get_file.php?")) { // file

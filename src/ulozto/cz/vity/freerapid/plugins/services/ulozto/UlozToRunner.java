@@ -42,11 +42,12 @@ class UlozToRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("id=\"captcha\"")) {
+
                 checkNameAndSize(getContentAsString());
                 boolean saved = false;
                 captchaCount = 0;
                 while (getContentAsString().contains("id=\"captcha\"")) {
-
+                    checkProblems();
                     setClientParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha(getContentAsString());
 
@@ -120,6 +121,7 @@ class UlozToRunner extends AbstractRunner {
         }
     }
 
+    //"Pøekroèen poèet FREE slotù, použijte VIP download
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
         if (content.contains("soubor nebyl nalezen")) {
@@ -129,6 +131,10 @@ class UlozToRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Muzete stahovat pouze jeden soubor naraz");
 
         }
+//        if (content.contains("et FREE slot") && content.contains("ijte VIP download")) {
+//            throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
+//
+//        }
 
 
     }

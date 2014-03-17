@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
 
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://uloz.to/1512314/24.S07E15.HDTV.XviD-LOL.avi"));
+            httpFile.setNewURL(new URL("http://uloz.to/3298932/A.P.P.T.B.o.L. 2009 480p BRRip XviD AC3.CZ.smn.part4.rar"));
             testRun(new UlozToServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

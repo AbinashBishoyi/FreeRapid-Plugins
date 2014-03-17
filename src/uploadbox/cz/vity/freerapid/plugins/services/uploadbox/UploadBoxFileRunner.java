@@ -55,7 +55,11 @@ class UploadBoxFileRunner extends AbstractRunner {
                     }
 
                     checkAllProblems();
-                    httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("click here").toHttpMethod();
+                    if (getContentAsString().contains("click here")) {
+                        httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("click here").toHttpMethod();
+                    } else {
+                        httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Download File", true).toGetMethod();
+                    }
 
                     if (!tryDownloadAndSaveFile(httpMethod)) {
                         checkContentType(httpMethod);

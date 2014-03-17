@@ -76,7 +76,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
             checkName();
 
             final String fmtStreamMap = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
-            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + fmt + "[^,]*)", fmtStreamMap);
+            logger.info(fmtStreamMap);
+            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + fmt + "[^,]*|[^,]*itag="+ fmt + "\\\\u0026[^,]*)", fmtStreamMap);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Cannot find specified video format (" + fmt + ")");
             }
@@ -106,7 +107,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Cannot find stream URL");
                 }
-                method = getGetMethod(URLDecoder.decode(matcher.group(1), "UTF-8"));
+                method = getGetMethod(URLDecoder.decode(URLDecoder.decode(matcher.group(1), "UTF-8"), "UTF-8"));
                 setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
@@ -124,6 +125,9 @@ class YouTubeRunner extends AbstractRtmpRunner {
             if (!makeRedirectedRequest(getGetMethod(fileURL + "&has_verified=1"))) {
                 throw new ServiceConnectionProblemException();
             }
+        }
+        if (getContentAsString().contains("Sign in to view this video")) {
+            throw new PluginImplementationException("YouTube account not supported : Sign in to view this video");
         }
         /* Causes false positives
         final Matcher matcher = getMatcherAgainstContent("<div\\s+?class=\"yt-alert-content\">\\s*([^<>]+?)\\s*</div>");

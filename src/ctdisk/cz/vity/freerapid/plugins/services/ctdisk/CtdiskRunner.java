@@ -20,6 +20,7 @@ class CtdiskRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CtdiskRunner.class.getName());
     private static final int CAPTCHA_MAX = 10;
     private int captchaCounter = 1;
+    private String pageContentWithCaptcha;
 
     @Override
     public void runCheck() throws Exception {
@@ -44,13 +45,14 @@ class CtdiskRunner extends AbstractRunner {
             checkSizeAndName();
             fileURL = method.getURI().toString();
             final String fileId = getFileId();
+            pageContentWithCaptcha = getContentAsString();
 
             while (true) {
                 if (!makeRedirectedRequest(stepCaptcha(fileId))) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                if (!getMatcherAgainstContent("验证码输入错误").find()) {
+                if (!getMatcherAgainstContent("function redirect()").find()) {
                     if (getContentAsString().contains("You have reached")) {
                         throw new ServiceConnectionProblemException("Free download limit reached");
                     }
@@ -64,8 +66,6 @@ class CtdiskRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
                     break;
-                } else {
-                    makeRedirectedRequest(method);
                 }
             }
         } else {
@@ -92,6 +92,8 @@ class CtdiskRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("对不起，这个文件已到期或被删除。") || getContentAsString().contains("404 Not Found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        } else if (getContentAsString().contains("<li>1.") && getContentAsString().contains("<li>3.") && getContentAsString().contains("<li>4.")) {
             throw new URLNotAvailableAnymoreException("File not found");
         } else if (getContentAsString().contains("<br />1.") && getContentAsString().contains("<br />2.")) {
             throw new ErrorDuringDownloadingException("Your IP is downloading.");
@@ -120,7 +122,11 @@ class CtdiskRunner extends AbstractRunner {
                 captcha_result = "000";
             } else {
                 captcha_result = captcha.replaceAll("\\D", "");
+                // There should be 3 digital chars, if not then they'll be the default value 000.
+                if (captcha_result.length() != 3)
+                    captcha_result = "000";
             }
+
             logger.info("Attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", OCR recognized " + captcha_result);
             captchaCounter++;
         } else {
@@ -128,7 +134,8 @@ class CtdiskRunner extends AbstractRunner {
             if (captcha_result == null) throw new CaptchaEntryInputMismatchException();
             logger.info("Manual captcha " + captcha_result);
         }
-        return getMethodBuilder(getContentAsString())
+
+        return getMethodBuilder(pageContentWithCaptcha)
                 .setReferer(fileURL)
                 .setActionFromFormByName("user_form", true)
                 .setParameter("randcode", captcha_result)

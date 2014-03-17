@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Abinash Bishoyi
+ * @author Ladislav Vitasek, Abinash Bishoyi, ntoskrnl
  */
 class CobraShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CobraShareFileRunner.class.getName());

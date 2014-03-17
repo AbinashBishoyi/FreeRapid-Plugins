@@ -4,11 +4,18 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Class which contains main code
@@ -48,11 +55,52 @@ class TitulkyFileRunner extends AbstractRunner {
                     checkProblems();//if downloading failed
                     logger.warning(getContentAsString());//log the info
                     throw new PluginImplementationException();//some unknown problem
+                } else {
+                    extractZipFile();
                 }
+
             } else throw new PluginImplementationException();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
+        }
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private void extractZipFile() throws IOException {
+        final HttpFile downloadFile = downloadTask.getDownloadFile();
+        final File file = new File(downloadFile.getSaveToDirectory(), downloadFile.getFileName());
+        if (!file.exists())
+            return;
+        ZipInputStream zinstream = new ZipInputStream(new FileInputStream(file));
+        ZipEntry zentry = zinstream.getNextEntry();
+        logger.info("Name of current Zip Entry : " + zentry + "\n");
+        byte[] buf = new byte[2048];
+        String firstName = null;
+        long firstSize = -1;
+        while (zentry != null) {
+            String entryName = zentry.getName();
+            if (firstName == null) {
+                firstName = zentry.getName();
+                firstSize = zentry.getSize();
+            }
+            logger.info("Name of  Zip Entry : " + entryName);
+            FileOutputStream outstream = new FileOutputStream(new File(downloadFile.getSaveToDirectory(), entryName));
+            int n;
+            while ((n = zinstream.read(buf, 0, 2048)) > -1) {
+                outstream.write(buf, 0, n);
+            }
+            logger.info("Successfully Extracted File Name : " + entryName);
+            outstream.close();
+            zinstream.closeEntry();
+            zentry = zinstream.getNextEntry();
+        }
+        zinstream.close();
+        if (firstName != null) {
+            file.delete();
+            downloadFile.setFileName(firstName);
+            downloadFile.setDownloaded(firstSize);
+            downloadFile.setFileSize(firstSize);
         }
     }
 

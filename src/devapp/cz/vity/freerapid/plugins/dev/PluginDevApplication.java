@@ -27,6 +27,7 @@ import java.util.logging.Logger;
  */
 public abstract class PluginDevApplication extends Application {
     private final static Logger logger = Logger.getLogger(PluginDevApplication.class.getName());
+    private boolean useTempFiles = false;
 
     /**
      * Returns new instance of HttpFileDownloadTask
@@ -36,7 +37,18 @@ public abstract class PluginDevApplication extends Application {
      * @return instance of HttpFileDownloadTask for processing file
      */
     protected HttpFileDownloadTask getHttpFileDownloader(HttpFile file, ConnectionSettings settings) {
-        return new PluginDevDownloadTask(file, settings);
+        final PluginDevDownloadTask devDownloadTask = new PluginDevDownloadTask(file, settings);
+        devDownloadTask.setUseTempFiles(useTempFiles);
+        return devDownloadTask;
+    }
+
+
+    public boolean isUseTempFiles() {
+        return useTempFiles;
+    }
+
+    public void setUseTempFiles(boolean useTempFiles) {
+        this.useTempFiles = useTempFiles;
     }
 
     @Override

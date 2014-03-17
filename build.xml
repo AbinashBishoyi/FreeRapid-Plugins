@@ -101,8 +101,8 @@
 
     <target name="all" depends="clean,init,build" description="build all">
         <zip zipfile="${dist.dir}/plugins.zip" level="9" compress="true">
-            <fileset dir=".">
-                <include name="${dist.dir}/"/>
+            <fileset dir="${dist.dir}">
+                <include name="**.*"/>
             </fileset>
         </zip>
     </target>

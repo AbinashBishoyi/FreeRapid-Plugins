@@ -129,7 +129,11 @@ class MegauploadRunner {
             if (matcher.find()) {
                 String s = replaceEntities(matcher.group(1));
                 logger.info(HTTP_SITE + s);
-                String captcha = downloader.getCaptcha(HTTP_SITE + s);
+                EditImage ei = new EditImage(downloader.getCaptchaImage(HTTP_SITE + s));
+                String captcha = PlugUtils.recognize(ei.separate(),"");
+                logger.info("Recognized "+ captcha);
+               if (captcha == null)
+                captcha = downloader.getCaptcha(HTTP_SITE + s);
                 // InputStreamReader inp = new InputStreamReader(System.in);
                 //  BufferedReader br = new BufferedReader(inp);
                 //  System.out.println("Enter text : ");

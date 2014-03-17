@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.sharephile;
 
+import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
 import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
@@ -27,6 +28,7 @@ class SharephileFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        checkLanguage();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -38,17 +40,27 @@ class SharephileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span class='file-icon1 image'>", "</span>");
+        String namePart=PlugUtils.getStringBetween(content, "<span class='file-icon1", "</span>")+"</span>";
+        PlugUtils.checkName(httpFile, namePart, "'>", "</span>");
         PlugUtils.checkFileSize(httpFile, content, "</span>\t\t(", ")");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+    
+    private void checkLanguage() throws Exception{
+       HttpMethod method=getMethodBuilder().setReferer(fileURL).setAction("http://sharephile.com/lang/en").toGetMethod();
+       if(!makeRedirectedRequest(method))
+       {
+          throw new PluginImplementationException("Cannot set Language to english");
+       }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        checkLanguage();
         final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
+        if (makeRedirectedRequest(method)) { //we make the main request            
             String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page

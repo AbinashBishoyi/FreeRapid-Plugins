@@ -1,7 +1,9 @@
 package cz.vity.freerapid.plugins.services.mediafire;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -11,14 +13,28 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
  */
-public class MediafireRunner extends AbstractRunner {
+class MediafireRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MediafireRunner.class.getName());
+
+    /**
+     * MediaFire asks for a captcha if it detects a lot of downloads from an IP.
+     * The captcha has to be solved only once; after that, several downloads can
+     * proceed normally without entering further captchas. These locks are used
+     * to ensure that a captcha only has to be solved once per IP, and that
+     * downloads without a captcha can still be processed in parallel.
+     */
+    private final static ConcurrentMap<ConnectionSettings, CaptchaState> STATES = new ConcurrentHashMap<ConnectionSettings, CaptchaState>(1);
 
     @Override
     public void runCheck() throws Exception {
@@ -58,27 +74,101 @@ public class MediafireRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        while (true) {
+            /**
+             * Grab the current captcha state for use after the initial request.
+             *
+             * Getting the state and loading initial page should actually be an
+             * atomic operation for strict thread safety, but getting the wrong
+             * state only results in one redundant page load in the worst case.
+             */
+            final CaptchaState captchaState = getCaptchaState();
+
+            final HttpMethod method = getGetMethod(fileURL);
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
             checkProblems();
             if (isFolder()) {
                 parseFolder();
                 return;
             }
             checkNameAndSize();
-            if (isPassworded()) {
-                stepPassword();
-                checkNameAndSize();
+
+            //TODO password handling
+
+            if (!isCaptcha()) {
+                break;
             }
-            method = getMethodBuilder().setActionFromTextBetween("kNO = \"", "\";").toGetMethod();
-            setFileStreamContentTypes("text/plain");
-            if (!tryDownloadAndSaveFile(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+            final Lock lock = captchaState.getLock();
+            if (lock.tryLock()) {
+                try {
+                    final boolean alreadySolved = captchaState.setSolved();
+                    /**
+                     * Was the captcha solved while we were in the initial
+                     * request? If so, reload the page.
+                     */
+                    if (!alreadySolved) {
+                        /**
+                         * We were the first to notice the captcha. Solve it.
+                         */
+                        stepCaptcha();
+                        removeCaptchaState();
+                        break;
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            } else {
+                /**
+                 * Somebody else is already solving the captcha.
+                 * Wait for that and reload the page.
+                 */
+                lock.lockInterruptibly();
+                lock.unlock();
             }
-        } else {
+        }
+
+        final HttpMethod method = getMethodBuilder().setActionFromTextBetween("kNO = \"", "\";").toGetMethod();
+        setFileStreamContentTypes("text/plain");
+        if (!tryDownloadAndSaveFile(method)) {
             checkProblems();
-            throw new ServiceConnectionProblemException();
+            throw new ServiceConnectionProblemException("Error starting download");
+        }
+    }
+
+    private CaptchaState getCaptchaState() {
+        final CaptchaState newState = new CaptchaState();
+        final CaptchaState oldState = STATES.putIfAbsent(client.getSettings(), newState);
+        if (oldState == null) {
+            return newState;
+        } else {
+            return oldState;
+        }
+    }
+
+    private void removeCaptchaState() {
+        STATES.remove(client.getSettings());
+    }
+
+    private static class CaptchaState {
+        private final Lock lock = new ReentrantLock();
+        private final AtomicBoolean solved = new AtomicBoolean();
+
+        public Lock getLock() {
+            return lock;
+        }
+
+        /**
+         * Sets the state of this captcha to solved.
+         * Further invocations of this method will return false.
+         *
+         * @return true if this invocation changed the state to solved,
+         *         false if the state was already solved
+         */
+        public boolean setSolved() {
+            return !solved.getAndSet(true);
         }
     }
 
@@ -146,6 +236,33 @@ public class MediafireRunner extends AbstractRunner {
         }
     }
 
+    private boolean isCaptcha() {
+        return getContentAsString().contains("\"form_captcha\"");
+    }
+
+    private void stepCaptcha() throws Exception {
+        while (isCaptcha()) {
+            final Matcher matcher = getMatcherAgainstContent("challenge\\?k=([^\"]+)");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("ReCaptcha key not found");
+            }
+            final String content = getContentAsString();
+            final ReCaptcha r = new ReCaptcha(matcher.group(1), client);
+            final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            r.setRecognized(captcha);
+            final HttpMethod method = r.modifyResponseMethod(getMethodBuilder(content)
+                    .setReferer(fileURL)
+                    .setActionFromFormByName("form_captcha", true))
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+        }
+    }
+
     private boolean isPassworded() {
         return getContentAsString().contains("\"form_password\"");
     }
@@ -155,7 +272,7 @@ public class MediafireRunner extends AbstractRunner {
             final HttpMethod method = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormByName("form_password", true)
-                    .setAndEncodeParameter("downloadp", getPassword())
+                    .setParameter("downloadp", getPassword())
                     .toPostMethod();
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();

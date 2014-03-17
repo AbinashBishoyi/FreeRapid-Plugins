@@ -65,7 +65,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 return;
             }
 
-            if (getContentAsString().contains("&amp;fmt_map=&")) {
+            if (getContentAsString().contains("&amp;fmt_stream_map=")) {
                 RtmpSession rtmpSession = handleStreamMap();
                 tryDownloadAndSaveFile(rtmpSession);
 
@@ -73,12 +73,12 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 checkFmtParameter();
                 checkName();
 
-                String fmt_url_map = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\""), "UTF-8");
-                Matcher matcher = PlugUtils.matcher("url=([^,]+?)\\\\u0026[^,]+?itag=" + fmt, fmt_url_map);
+                String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
+                Matcher matcher = PlugUtils.matcher("url=([^,]+?)\\\\u0026[^,]*itag=" + fmt+",", fmt_url_map+",");
 
                 if (matcher.find()) {
                     setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-                    getMethod = getGetMethod(matcher.group(1));
+                    getMethod = getGetMethod(URLDecoder.decode(matcher.group(1), "UTF-8"));
                     if (!tryDownloadAndSaveFile(getMethod)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");

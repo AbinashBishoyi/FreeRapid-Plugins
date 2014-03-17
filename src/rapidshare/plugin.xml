@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.rapidshare.RapidShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://((www\.)|(rs[0-9]+\.))?rapidshare\.com/files/[0-9]+/.*"/>
-        <attribute id="minver" value="0.7"/>
-        <attribute id="maxver" value="0.799"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.809"/>
         <attribute id="services" value="rapidshare.com"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

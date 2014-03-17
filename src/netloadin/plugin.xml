@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.netloadin.NetloadInShareServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?netload\.in/.+"/>
-        <attribute id="minver" value="0.7"/>
-        <attribute id="maxver" value="0.799"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.809"/>
         <attribute id="services" value="netload.in"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

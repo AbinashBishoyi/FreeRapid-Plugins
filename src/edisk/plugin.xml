@@ -4,8 +4,8 @@
         class="cz.vity.freerapid.plugins.services.edisk.EdiskServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://((www\.)|([a-z-0-9]+\.))?edisk\.(cz|sk)/.+"/>
-        <attribute id="minver" value="0.7"/>
-        <attribute id="maxver" value="0.799"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.809"/>
         <attribute id="services" value="edisk.cz"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

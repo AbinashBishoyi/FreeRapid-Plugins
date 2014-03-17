@@ -2,10 +2,10 @@
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin id="4shared.com" version="0.1" vendor="Alex"
         class="cz.vity.freerapid.plugins.services.forshared.ForSharedServiceImpl">
-    <attributes>                    
+    <attributes>
         <attribute id="urlRegex" value="http://(www\.)?4shared\.com/file/.+"/>
-        <attribute id="minver" value="0.7"/>
-        <attribute id="maxver" value="0.799"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.809"/>
         <attribute id="services" value="4shared.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

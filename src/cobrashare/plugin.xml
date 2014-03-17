@@ -5,7 +5,7 @@
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?cobrashare\.sk:[0-9]+?/.+"/>
         <attribute id="minver" value="0.8"/>
-        <attribute id="maxver" value="0.899"/>
+        <attribute id="maxver" value="0.809"/>
         <attribute id="services" value="cobrashare.sk"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

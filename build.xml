@@ -105,6 +105,7 @@
         <ant dir="${src.dir}/fastload" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/fdnlinks" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/file2box" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/filearning" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filebaseto" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filebeam" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filebitnet" antfile="build.xml" inheritall="false"/>

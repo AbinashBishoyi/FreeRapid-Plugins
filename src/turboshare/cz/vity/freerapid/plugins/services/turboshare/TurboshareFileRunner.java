@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -59,12 +60,16 @@ class TurboshareFileRunner extends AbstractRunner {
             }
             logger.info("Phase 1 OK!");//log the info
 
-            final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "<span id=\"countdown\">", "</span>", TimeUnit.SECONDS);
+            int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "<span id=\"cdn\">", "</span>", TimeUnit.SECONDS);
             downloadTask.sleep(waitTime);
             httpMethod = getMethodBuilder().setActionFromFormByName("F1", true).setReferer(fileURL).setAction(fileURL).setParameter("method_free", "Free Download").removeParameter("method_premium").toPostMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
+                if( getContentAsString().contains("You have downloaded over") ) {
+                    waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "<font id='cdn2'>", "</font>", TimeUnit.SECONDS);
+                    throw new YouHaveToWaitException("You have downloaded over 100Mb last hour", waitTime);
+                }
                 logger.warning(getContentAsString());//log the info
                 throw new PluginImplementationException();//some unknown problem
             }

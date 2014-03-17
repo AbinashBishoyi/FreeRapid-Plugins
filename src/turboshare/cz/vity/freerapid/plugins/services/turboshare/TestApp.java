@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://turboshare.com/files/1284/nLite_-_1.4.9.1.installer.exe"));//TODO
+            httpFile.setNewURL(new URL("http://turboshare.com/files/79480/The_Pussycat_Dolls_-_Stickwitu__MHD_720p_x264_MoL__88.part1.rar.html"));//TODO
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

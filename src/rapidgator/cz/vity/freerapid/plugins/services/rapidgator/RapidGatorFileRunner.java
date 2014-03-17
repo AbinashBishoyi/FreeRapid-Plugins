@@ -116,8 +116,11 @@ class RapidGatorFileRunner extends AbstractRunner {
                 }
             }
             checkProblems();
+            final Matcher match = PlugUtils.matcher("else \\{\\s+?location.href = '(.+?)';", getContentAsString());
+            if (!match.find())
+                throw new NotRecoverableDownloadException("Download link not found");
             httpMethod = getMethodBuilder()
-                    .setAction(PlugUtils.getStringBetween(getContentAsString(), "location.href = '", "';"))
+                    .setAction(match.group(1))
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();

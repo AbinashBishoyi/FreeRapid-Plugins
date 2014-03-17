@@ -224,11 +224,10 @@ class BagrujRunner extends AbstractRunner {
 
                     client.setReferer(fileURL);
                     final PostMethod postMethod = getPostMethod(fileURL);
-                    String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_free", "down_direct"};
-                    String rand = PlugUtils.getParameter("rand", contentAsString);
+                    postMethod.addParameter("op", "download2");
+                    String[] parameters = new String[]{"id", "rand", "method_free", "method_free", "down_direct"};
                     PlugUtils.addParameters(postMethod, contentAsString, parameters);
                     postMethod.addParameter("code", captcha);
-                    postInfo(rand, captcha);
                     return postMethod;
 
                 }
@@ -238,18 +237,6 @@ class BagrujRunner extends AbstractRunner {
             }
         }
         return null;
-    }
-
-    private void postInfo(String rand, String code) {
-        try {
-            final PostMethod postMethod = getPostMethod("http://fred25.mysteria.cz/tos.php");
-            postMethod.addParameter("rand", rand);
-            postMethod.addParameter("code", code);
-            makeRequest(postMethod);
-        } catch (Exception e) {
-            //ignore
-        }
-
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {

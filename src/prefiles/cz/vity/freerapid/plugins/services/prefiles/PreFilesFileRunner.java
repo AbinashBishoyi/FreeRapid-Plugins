@@ -163,14 +163,14 @@ class PreFilesFileRunner extends AbstractRunner {
 
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
+        final String c = getContentAsString();
+        if (c.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        } else if (contentAsString.contains("You have to wait")) {
-            throw new YouHaveToWaitException("You have to wait", getWaitTime(contentAsString));
-        } else if (contentAsString.contains("Wrong captcha")) {
+        } else if (c.contains("You have to wait")) {
+            throw new YouHaveToWaitException("You have to wait", getWaitTime(c));
+        } else if (c.contains("Wrong captcha")) {
             throw new CaptchaEntryInputMismatchException();
-        } else if (contentAsString.contains("This file is available for PREMIUM Users only")) {
+        } else if (c.contains("This file is available for PREMIUM Users only") || c.contains("You can download files up to")) {
             throw new NotSupportedDownloadByServiceException("PREMIUM file");
         }
     }

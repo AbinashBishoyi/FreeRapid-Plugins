@@ -17,11 +17,11 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://extabit.com/file/28dhkgg6qwcpq"));
-            httpFile.setNewURL(new URL("http://u32.extabit.com/go/28cjr1tl1c2a1/?upld=1"));
+            httpFile.setNewURL(new URL("http://extabit.com/file/28de1e1prnzxh"));
             //httpFile.setNewURL(new URL("http://extabit.com/file/2dvq5ibmdftqa"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("180.250.129.184", 8080); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final ExtabitServiceImpl service = new ExtabitServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

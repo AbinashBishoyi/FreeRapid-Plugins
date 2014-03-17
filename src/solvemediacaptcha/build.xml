@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="SafeLinking.net" default="all" basedir=".">
-    <property name="application" value="safelinking"/>
+<project name="SolveMediaCaptcha.com" default="all" basedir=".">
+    <property name="application" value="solvemediacaptcha"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="safelinking.jar"/>
+    <property name="mainjar.file" value="solvemediacaptcha.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 

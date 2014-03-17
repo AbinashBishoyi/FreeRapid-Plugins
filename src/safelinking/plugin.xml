@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.safelinking.SafeLinkingServiceImpl"
-        id="safelinking.net" vendor="birchie" version="1.1.4">
+        id="safelinking.net" vendor="birchie" version="1.1.5">
     <attributes>
         <attribute id="urlRegex" value="https?://(www\.)?safelinking\.net/(p|d)/.+"/>
         <attribute id="minver" value="0.853"/>
@@ -10,7 +10,10 @@
         <attribute id="maxDownloads" value="100"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="solvemediacaptcha"
+                plugin-version="1.0.0" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="safelinking.net" path="/" type="code"/>
     </runtime>

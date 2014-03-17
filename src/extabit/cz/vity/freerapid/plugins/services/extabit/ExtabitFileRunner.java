@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.extabit;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -67,12 +68,20 @@ class ExtabitFileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
             } while (!(matcher = getMatcherAgainstContent("\"href\"\\s*:\\s*\"(.+?)\"")).find());
-
-            //logger.info(getContentAsString());
-
+            logger.info(getContentAsString());
+            final String downloadPage = fileURL + matcher.group(1);
             method = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction(matcher.group(1).replace("\\/", "/"))
+                    .setAction(downloadPage)
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                checkDownloadProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkDownloadProblems();
+            method = getMethodBuilder()
+                    .setReferer(downloadPage)
+                    .setActionFromAHrefWhereATagContains("Download file")
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(method)) {
                 checkDownloadProblems();
@@ -105,18 +114,40 @@ class ExtabitFileRunner extends AbstractRunner {
         }
     }
 
-    private HttpMethod stepCaptcha(String content) throws ErrorDuringDownloadingException {
-        final String captchaUrl = getMethodBuilder(content).setAction("/capture.gif?" + new Random().nextInt()).getEscapedURI();
-        final String captcha = getCaptchaSupport().getCaptcha(captchaUrl);
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
+    private HttpMethod stepCaptcha(String content) throws Exception {
+        if (content.contains("/recaptcha/api/challenge")) {
+            final Matcher reCaptchaKeyMatcher = PlugUtils.matcher("recaptcha/api/challenge\\?k=(.+?)\"", getContentAsString());
+            if (!reCaptchaKeyMatcher.find()) {
+                throw new PluginImplementationException("ReCaptcha key not found");
+            }
+            final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
+            final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+            final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            return getMethodBuilder(content)
+                    .setReferer(fileURL)
+                    .setActionFromFormWhereTagContains("cmn_form", false)
+                    .setParameter("type", "recaptcha")
+                    .setAndEncodeParameter("capture", captcha)
+                    .setParameter("challenge", r.getChallenge())
+                    .toGetMethod();
+
+        } else {
+            final String captchaUrl = getMethodBuilder(content).setAction("/capture.gif?" + new Random().nextInt()).getEscapedURI();
+            final String captcha = getCaptchaSupport().getCaptcha(captchaUrl);
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            return getMethodBuilder(content)
+                    .setReferer(fileURL)
+                    .setActionFromFormWhereTagContains("cmn_form", false)
+                    .setParameter("link", "1")
+                    .setParameter("capture", captcha)
+                    .toGetMethod();
         }
-        return getMethodBuilder(content)
-                .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("cmn_form", false)
-                .setParameter("link", "1")
-                .setParameter("capture", captcha)
-                .toGetMethod();
+
     }
 
     @Override

@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.novaup;
+package cz.vity.freerapid.plugins.services.imzupload;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -8,14 +8,15 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author Vity
  */
-public class NovaupServiceImpl extends AbstractFileShareService {
+public class ImzUploadServiceImpl extends AbstractFileShareService {
 
     public String getName() {
-        return "novaup.com";
+        return "imzupload.com";
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 6;
+        //don't forget to update this value, in plugin.xml don't forget to update this value too
+        return 3;
     }
 
     @Override
@@ -25,7 +26,7 @@ public class NovaupServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new NovaupFileRunner();
+        return new ImzUploadFileRunner();
     }
 
 }

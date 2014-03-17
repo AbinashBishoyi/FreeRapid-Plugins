@@ -112,6 +112,9 @@ class UploadingRunner extends AbstractRunner {
         if (getContentAsString().contains("Requested file not found")) {
             throw new URLNotAvailableAnymoreException("Requested file not found");
         }
+        if (getContentAsString().contains("Service Not Available")) {
+            throw new ServiceConnectionProblemException("Service Not Available");
+        }
 
     }
 

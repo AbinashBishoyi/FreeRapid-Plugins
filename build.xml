@@ -167,6 +167,10 @@
         <ant dir="${src.dir}/up-file/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/biggerupload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/divshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/extabit/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/novaup/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/superfastfile/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/imzupload/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

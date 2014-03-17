@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.novaup;
+package cz.vity.freerapid.plugins.services.superfastfile;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
@@ -8,14 +8,15 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author Vity
  */
-public class NovaupServiceImpl extends AbstractFileShareService {
+public class SuperFastFileServiceImpl extends AbstractFileShareService {
 
     public String getName() {
-        return "novaup.com";
+        return "superfastfile.com";
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 6;
+        //don't forget to update this value,don't forget to update this value  in plugin.xml too
+        return 3;
     }
 
     @Override
@@ -25,7 +26,7 @@ public class NovaupServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new NovaupFileRunner();
+        return new SuperFastFileFileRunner();
     }
 
 }

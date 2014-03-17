@@ -2,14 +2,11 @@ package cz.vity.freerapid.plugins.services.megaupload;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
 import java.net.URL;
-
-/**
- * @author Ladislav Vitasek
- */
 
 /**
  * @author Ladislav Vitasek
@@ -23,7 +20,12 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.megaupload.com/?f=054OTS7Y"));//folder
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081);
-            testRun(new MegauploadShareServiceImpl(), httpFile, connectionSettings);
+            final MegauploadShareServiceImpl serviceImpl = new MegauploadShareServiceImpl();
+            final PremiumAccount config = new PremiumAccount();
+            //config.setUsername("***");
+            //config.setPassword("***");
+            serviceImpl.setConfig(config);
+            testRun(serviceImpl, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();
         }

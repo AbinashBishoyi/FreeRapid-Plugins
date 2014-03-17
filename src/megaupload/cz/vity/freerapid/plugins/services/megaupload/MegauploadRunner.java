@@ -4,183 +4,148 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.megaupload.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, JPEXS, ntoskrnl
  */
-
 class MegauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegauploadRunner.class.getName());
-    private String HTTP_SITE = "http://www.megaupload.com";
-    private String LINK_TYPE = "single";
-    private final int captchaMax = 5;
-    private int captchaCount;
+    private final static int CAPTCHA_MAX = 5;
+    private int captchaCount = 0;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final String host = httpFile.getFileUrl().getHost();
-        if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
-            HTTP_SITE = "http://www.megaporn.com";
+        if (host.contains("megarotic") || host.contains("sexuploader")) {
             fileURL = fileURL.replace("megarotic", "megaporn").replace("sexuploader", "megaporn");
         }
 
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
         addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
 
-        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+        final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
-            if (getContentAsString().contains("folderid\",\"")) {
-                LINK_TYPE = "folder";
-            } else {
-                checkNameAndSize(getContentAsString());
+            if (!getContentAsString().contains("folderid\",\"")) {
+                checkNameAndSize();
             }
-        } else
+        } else {
+            checkProblems();
             throw new ServiceConnectionProblemException();
+        }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
-        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
+        setClientParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         final String host = httpFile.getFileUrl().getHost();
-        if (host.contains("megarotic") || host.contains("sexuploader") || host.contains("megaporn")) {
-            HTTP_SITE = "http://www.megaporn.com";
+        if (host.contains("megarotic") || host.contains("sexuploader")) {
             fileURL = fileURL.replace("megarotic", "megaporn").replace("sexuploader", "megaporn");
         }
-        fileURL = checkURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
 
         addCookie(new Cookie(".megaupload.com", "l", "en", "/", 86400, false));
         addCookie(new Cookie(".megaporn.com", "l", "en", "/", 86400, false));
 
-        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-        getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
+        final boolean loggedIn = login();
+
+        final HttpMethod getMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(getMethod)) {
             checkProblems();
 
             if (getContentAsString().contains("folderid\",\"")) {
-                LINK_TYPE = "folder";
-                final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid\",\"", "\");");
-                final String xmlURL = HTTP_SITE + "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
-                final HttpMethod folderHttpMethod = getMethodBuilder().setReferer(fileURL).setAction(xmlURL).toGetMethod();
-
-                if (makeRequest(folderHttpMethod)) {
-                    if (getContentAsString().contains("<FILES></FILES>"))
-                        throw new URLNotAvailableAnymoreException("No files in folder. Invalid link?");
-
-                    final Matcher matcher = getMatcherAgainstContent("url=\"(.+?)\"");
-                    int start = 0;
-                    final List<URI> uriList = new LinkedList<URI>();
-                    while (matcher.find(start)) {
-                        String link = matcher.group(1);
-                        try {
-                            uriList.add(new URI(link));
-                        } catch (URISyntaxException e) {
-                            LogUtils.processException(logger, e);
-                        }
-                        start = matcher.end();
-                    }
-                    getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-                } else
-                    throw new ServiceConnectionProblemException();
-
+                stepFolder();
                 return;
             }
 
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize();
 
-            if (tryManagerDownload(fileURL)) return;
-            Matcher matcher;
-            captchaCount = 0;
+            if (loggedIn) {
+                if (tryManagerDownload(fileURL)) {
+                    return;
+                }
+            }
+
             if (getContentAsString().contains("download is password protected")) {
                 stepPasswordPage();
             }
             while (getContentAsString().contains("Enter this")) {
-                stepCaptcha(getContentAsString());
-            }
-
-            if (getContentAsString().contains("downloadlink")) {
-                matcher = getMatcherAgainstContent("id=\"downloadlink\"><a href=\"(http.+?)\"");
-                if (!matcher.find()) {
-                    throw new PluginImplementationException();
-                }
-
-                String downloadURL = matcher.group(1);
-                final int i = downloadURL.lastIndexOf('/');
-                if (i > 0) {
-                    final String toEncode = downloadURL.substring(i + 1);
-                    httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
-                }
-                downloadURL = encodeURL(downloadURL);
-                final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer(httpFile.getFileUrl().toString()).toHttpMethod();
-                // final GetMethod method = getGetMethod(downloadURL);
-                downloadTask.sleep(45);
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty.");
-                }
-            } else {
+                stepCaptcha();
                 checkProblems();
-                throw new PluginImplementationException();
             }
 
-        } else
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            final Matcher matcher = getMatcherAgainstContent("id=\"downloadlink\"><a href=\"(http.+?)\"");
+            if (!matcher.find()) {
+                if (loggedIn && makeRedirectedRequest(getGetMethod("/?c=account"))) {
+                    if (getContentAsString().contains("<b>Premium</b>")) {
+                        throw new NotRecoverableDownloadException("Premium account detected, please use premium plugin instead");
+                    }
+                }
+                throw new PluginImplementationException("Download link not found");
+            }
+            String downloadURL = matcher.group(1);
+            final int i = downloadURL.lastIndexOf('/');
+            if (i > 0) {
+                final String toEncode = downloadURL.substring(i + 1);
+                httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
+            }
+            downloadURL = encodeURL(downloadURL);
+
+            final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer(fileURL).toGetMethod();
+            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "count=", ";") + 1);
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
+            }
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
-    private void checkNameAndSize(String content) throws Exception {
-
-        if (content.contains("link you have clicked is not available")) {
-            throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
-
+    private void checkNameAndSize() throws Exception {
+        if (getContentAsString().contains("link you have clicked is not available")) {
+            throw new URLNotAvailableAnymoreException("The file is not available");
         }
-        Matcher matcher = PlugUtils.matcher("font-size:13px;\">([0-9.]+ .B).?</font>", content);
+        Matcher matcher = getMatcherAgainstContent("font-size:13px;\">([0-9.]+ .B).?</font>");
         if (matcher.find()) {
-            logger.info("File size " + matcher.group(1));
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
         }
-        //Filename:</font> <font style="font-family: arial; color: rgb(255, 103, 0); font-size: 15px; font-weight: bold;">
-        matcher = PlugUtils.matcher("Filename:</font> <font .+?>(.+?)</font><br>", content);
+        matcher = getMatcherAgainstContent("Filename:</font> <font .+?>(.+?)</font><br>");
         if (matcher.find()) {
-            final String fn = PlugUtils.unescapeHtml(matcher.group(1));
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else logger.warning("File name was not found" + getContentAsString());
-
+            httpFile.setFileName(PlugUtils.unescapeHtml(matcher.group(1)));
+        } else {
+            logger.warning("File name was not found" + getContentAsString());
+        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
 
-    private void checkProblems() throws ServiceConnectionProblemException, NotRecoverableDownloadException, IOException, YouHaveToWaitException {
-
-        final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("trying to access is temporarily unavailable")) {
+    private void checkProblems() throws Exception {
+        final String content = getContentAsString();
+        if (content.contains("trying to access is temporarily unavailable")) {
             throw new ServiceConnectionProblemException("The file you are trying to access is temporarily unavailable");
         }
-
-        if (contentAsString.contains("Download limit exceeded")) {
-            final GetMethod getMethod = getGetMethod(HTTP_SITE + "/premium/???????????????");
+        if (content.contains("Download limit exceeded")) {
+            final HttpMethod getMethod = getGetMethod("/premium/???????????????");
             if (makeRequest(getMethod)) {
                 Matcher matcher = getMatcherAgainstContent("Please wait ([0-9]+)");
                 if (matcher.find()) {
@@ -189,73 +154,50 @@ class MegauploadRunner extends AbstractRunner {
             }
             throw new ServiceConnectionProblemException("Download limit exceeded.");
         }
-
-        if (contentAsString.contains("All download slots")) {
+        if (content.contains("All download slots")) {
             throw new ServiceConnectionProblemException("No free slot for your country.");
         }
-
-        if (contentAsString.contains("to download is larger than")) {
+        if (content.contains("to download is larger than")) {
             throw new NotRecoverableDownloadException("Only premium users are entitled to download files larger than 1 GB from Megaupload.");
         }
-
-        if (contentAsString.contains("the link you have clicked is not available")) {
-            throw new URLNotAvailableAnymoreException("<b>The file is not available</b><br>");
+        if (content.contains("the link you have clicked is not available")) {
+            throw new URLNotAvailableAnymoreException("The file is not available");
         }
-
-        if (contentAsString.contains("We have detected an elevated number of requests")) {
-            final int wait = PlugUtils.getNumberBetween(contentAsString, "check back in", "minute");
-            throw new YouHaveToWaitException("We have detected an elevated number of requests", wait * 60);
+        if (content.contains("We have detected an elevated number of requests")) {
+            final int wait = PlugUtils.getWaitTimeBetween(content, "check back in", "minute", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("We have detected an elevated number of requests", wait);
         }
-
     }
 
-    private boolean stepCaptcha(String contentAsString) throws Exception {
-        if (contentAsString.contains("Enter this")) {
+    private void stepCaptcha() throws Exception {
+        final String captchaUrl = getMethodBuilder().setActionFromImgSrcWhereTagContains("gencap.php").getEscapedURI();
+        logger.info("Captcha URL: " + captchaUrl);
+        final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaUrl);
 
-            Matcher matcher = PlugUtils.matcher("src=\"(.*?/gencap.php[^\"]*)\"", contentAsString);
-            if (matcher.find()) {
-                String s = PlugUtils.replaceEntities(matcher.group(1));
-                logger.info("Captcha - image " + HTTP_SITE + s);
-                String captcha;
-                final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(s);
-
-//                    EditImage ei = new EditImage(captchaImage);
-//                    captcha = PlugUtils.recognize(ei.separate(), "-C A-z");
-//                    if (captcha != null) {
-//                        logger.info("Captcha - OCR recognized " + captcha + " attempts " + captchaCount);
-//                        matcher = PlugUtils.matcher("[A-Z-a-z-0-9]{3}", captcha);
-//                        if (!matcher.find()) {
-//                            captcha = null;
-//                        }
-//                    }
-
-                if (captchaCount++ < captchaMax) {
-                    captcha = CaptchaReader.read(captchaImage);
-                    if (captcha == null) {
-                        logger.warning("Cant read captcha");
-                        captcha = "aaaa";
-                    } else {
-                        logger.info("Read captcha:" + captcha);
-                    }
-                } else {
-                    captcha = getCaptchaSupport().askForCaptcha(captchaImage);
-                }
-                if (captcha == null)
-                    throw new CaptchaEntryInputMismatchException();
-
-                final PostMethod postMethod = getPostMethod(fileURL);
-//                PlugUtils.addParameters(postMethod, contentAsString, new String[]{"megavar"});
-
-                PlugUtils.addParameters(postMethod, contentAsString, new String[]{"captchacode", "megavar"});
-
-                postMethod.addParameter("captcha", captcha);
-
-                if (makeRedirectedRequest(postMethod)) {
-                    return true;
-                }
-            } else throw new PluginImplementationException("Captcha picture was not found");
+        String captcha;
+        if (captchaCount++ < CAPTCHA_MAX) {
+            captcha = CaptchaReader.read(captchaImage);
+            if (captcha == null) {
+                logger.warning("Cant read captcha");
+                captcha = "aaaa";
+            } else {
+                logger.info("Read captcha: " + captcha);
+            }
+        } else {
+            captcha = getCaptchaSupport().askForCaptcha(captchaImage);
         }
-        return false;
+        if (captcha == null)
+            throw new CaptchaEntryInputMismatchException();
+
+        final HttpMethod postMethod = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromFormByName("captchaform", true)
+                .setParameter("captcha", captcha)
+                .setAction(fileURL)
+                .toPostMethod();
+        if (!makeRedirectedRequest(postMethod)) {
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private String encodeURL(String s) throws UnsupportedEncodingException {
@@ -267,48 +209,95 @@ class MegauploadRunner extends AbstractRunner {
     }
 
     private void stepPasswordPage() throws Exception {
-        while (getContentAsString().contains("Please enter the password below to proceed.")) {
-            PostMethod post1 = getPostMethod(fileURL);
-            post1.addParameter("filepassword", getPassword());
-            logger.info("Posting password to url - " + fileURL);
-            if (!makeRedirectedRequest(post1)) {
-                throw new PluginImplementationException();
+        while (getContentAsString().contains("Please enter the password")) {
+            final String password = getDialogSupport().askForPassword("MegaUpload");
+            if (password == null) {
+                throw new NotRecoverableDownloadException("This file is secured with a password");
+            }
+            final HttpMethod method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(fileURL)
+                    .setParameter("filepassword", password)
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
             }
         }
-
     }
 
-    private String getPassword() throws Exception {
-        MegauploadPasswordUI ps = new MegauploadPasswordUI();
-        if (getDialogSupport().showOKCancelDialog(ps, "Secured file on Megaupload")) {
-            return (ps.getPassword());
-        } else throw new NotRecoverableDownloadException("This file is secured with a password!");
+    private void stepFolder() throws Exception {
+        final String folderid = PlugUtils.getStringBetween(getContentAsString(), "folderid\",\"", "\");");
+        final String xmlURL = "/xml/folderfiles.php?folderid=" + folderid + "&uniq=1";
+        final HttpMethod folderHttpMethod = getMethodBuilder().setReferer(fileURL).setAction(xmlURL).toGetMethod();
+        if (makeRedirectedRequest(folderHttpMethod)) {
+            if (getContentAsString().contains("<FILES></FILES>"))
+                throw new URLNotAvailableAnymoreException("No files in folder. Invalid link?");
 
+            final Matcher matcher = getMatcherAgainstContent("url=\"(.+?)\"");
+            final List<URI> uriList = new LinkedList<URI>();
+            while (matcher.find()) {
+                try {
+                    uriList.add(new URI(matcher.group(1)));
+                } catch (URISyntaxException e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+            httpFile.getProperties().put("removeCompleted", true);
+        } else {
+            throw new ServiceConnectionProblemException();
+        }
     }
 
-    private String checkURL(String URL) {
-        return URL.replaceFirst("com/[^?]+\\?", "com/?");    // http://www.megaupload.com/it/?d=VUPXY6B4 -> http://www.megaupload.com/?d=VUPXY6B4
+    private boolean login() throws Exception {
+        synchronized (MegauploadRunner.class) {
+            final MegauploadShareServiceImpl service = (MegauploadShareServiceImpl) getPluginService();
+            final PremiumAccount pa = service.getConfig();
+            if (!pa.isSet()) {
+                logger.info("No account data set, skipping login");
+                return false;
+            }
+
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setAction("/?c=login")
+                    .setParameter("login", "1")
+                    .setParameter("username", pa.getUsername())
+                    .setParameter("password", pa.getPassword())
+                    .toPostMethod();
+            if (!makeRedirectedRequest(httpMethod))
+                throw new ServiceConnectionProblemException("Error posting login info");
+
+            if (getContentAsString().contains("Username and password do not match"))
+                throw new NotRecoverableDownloadException("Invalid MegaUpload account login information!");
+
+            return true;
+        }
     }
 
-    private String getManagerURL(String url) {
-        // http://www.megaupload.com/?d=YPDRRQOP -> http://www.megaupload.com/mgr_dl.php?d=YPDRRQOP
-        String ur;
-        if (url.contains("mgr_dl.php")) ur = url;
-        else ur = url.replaceFirst("/\\?d=", "/mgr_dl.php?d=");
-        ur = ur + "&u=5e9111454eae5fdd521543116ee441534";
-
-        return ur;
+    private String getManagerURL(final String url) {
+        final Cookie user = getCookieByName("user");
+        if (user != null) {
+            final Matcher matcher = PlugUtils.matcher("[\\?&][df]=([^&=]+)", url);
+            if (matcher.find()) {
+                return "/mgr_dl.php?d=" + matcher.group(1) + "&u=" + user.getValue();
+            }
+        }
+        return url;
     }
 
-    private boolean tryManagerDownload(String url) throws Exception {
-        url = getManagerURL(url);
-        logger.info("Trying manager download " + url);
+    private void setManagerRequestHeaders(final HttpMethod method) {
+        method.setRequestHeader("Accept", "text/plain,text/html,*/*;q=0.3");
+        method.setRequestHeader("Accept-Encoding", "identity");
+        method.setRequestHeader("TE", "trailers");
+        method.setRequestHeader("Connection", "TE");
+        method.setRequestHeader("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0)");
+    }
 
-        final HttpMethod methodCheck = getMethodBuilder().setAction(url).setReferer("").toHttpMethod();
-        methodCheck.setFollowRedirects(false);
-        addCookie(new Cookie(".megaupload.com", "user", "5e9111454eae5fdd521543116ee441534", "/", null, false));
-        if (client.makeRequest(methodCheck, false) == 302) {
-            String downloadURL = methodCheck.getResponseHeader("location").getValue();
+    private boolean tryManagerDownload(final String url) throws Exception {
+        HttpMethod method = getMethodBuilder().setAction(getManagerURL(url)).setReferer(null).toGetMethod();
+        setManagerRequestHeaders(method);
+        if (client.makeRequest(method, false) == 302) {
+            final String downloadURL = method.getResponseHeader("Location").getValue();
             logger.info("Found redirect location " + downloadURL);
             if (downloadURL.contains("files")) {
                 final int i = downloadURL.lastIndexOf('/');
@@ -316,28 +305,20 @@ class MegauploadRunner extends AbstractRunner {
                     final String toEncode = downloadURL.substring(i + 1);
                     httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
                 }
-                final HttpMethod method = getMethodBuilder().setAction(downloadURL).setReferer("").toHttpMethod();
+                method = getMethodBuilder().setAction(downloadURL).setReferer(null).toGetMethod();
                 return tryDownloadAndSaveFile(method);
-
             } else {
-                final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-                getMethod.setFollowRedirects(true);
-                if (!makeRequest(getMethod)) {
-                    throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+                if (!makeRedirectedRequest(getGetMethod(fileURL))) {
+                    throw new ServiceConnectionProblemException();
                 }
                 return false;
             }
-
         } else {
-            final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-            getMethod.setFollowRedirects(true);
-            if (!makeRequest(getMethod)) {
-                throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            if (!makeRedirectedRequest(getGetMethod(fileURL))) {
+                throw new ServiceConnectionProblemException();
             }
             return false;
         }
-
     }
-
 
 }

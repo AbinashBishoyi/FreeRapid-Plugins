@@ -209,6 +209,9 @@ class YouTubeRunner extends AbstractRtmpRunner {
             case 38:
                 fileExtension = ".mp4";
                 break;
+            case 43:
+                fileExtension = ".webm";
+                break;
         }
     }
 

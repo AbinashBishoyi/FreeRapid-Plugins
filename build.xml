@@ -95,6 +95,7 @@
         <ant dir="${src.dir}/yourfiles/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/uploadbox/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/czshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/subory/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

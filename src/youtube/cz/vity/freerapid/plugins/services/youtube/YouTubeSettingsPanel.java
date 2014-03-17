@@ -6,7 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 /**
- * @author Kajda
+ * @author Kajda, JPEXS
  */
 public class YouTubeSettingsPanel extends JPanel implements ActionListener {
     private YouTubeSettingsConfig config;
@@ -18,8 +18,8 @@ public class YouTubeSettingsPanel extends JPanel implements ActionListener {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"Standard (FLV)", "Mobile (3GP)", "High or HD (MP4)"};
-        final JLabel qualityLabel = new JLabel("Quality setting");
+        final String[] qualityStrings = {"Low (FLV)","Standard (FLV)", "High or HD (MP4)"};
+        final JLabel qualityLabel = new JLabel("Preferred quality:");
         final JComboBox qualityList = new JComboBox(qualityStrings);
         qualityList.setSelectedIndex(config.getQualitySetting());
         qualityList.addActionListener(this);

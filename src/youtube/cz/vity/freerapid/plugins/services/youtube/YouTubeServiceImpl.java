@@ -45,7 +45,7 @@ public class YouTubeServiceImpl extends AbstractFileShareService {
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new YouTubeSettingsConfig();
-                config.setQualitySetting(0);
+                config.setQualitySetting(1);
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, YouTubeSettingsConfig.class);
             }

@@ -13,16 +13,17 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.net.URLDecoder;
 
 /**
- * @author Kajda
+ * @author Kajda, JPEXS
  * @since 0.82
  */
 class YouTubeFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.youtube.com";
     private YouTubeSettingsConfig config;
-    private String fmtParameter = "";
+    private int fmt = 0;
     private String fileExtension = ".flv";
 
     @Override
@@ -49,29 +50,22 @@ class YouTubeFileRunner extends AbstractRunner {
             setConfig();
             checkFmtParameter();
             checkName();
-
-            Matcher matcher = getMatcherAgainstContent("var fullscreenUrl = '(.+?)'");
+            
+            
+            String fmt_url_map=PlugUtils.getStringBetween(getContentAsString(), "\"fmt_url_map\": \"", "\"");
+            fmt_url_map=URLDecoder.decode(fmt_url_map,"UTF-8");            
+            Matcher matcher = PlugUtils.matcher(""+fmt+"\\|(http[^\\|]+)(,[0-9]+\\||$)",fmt_url_map);
 
             if (matcher.find()) {
-                final String matcherAsString = matcher.group(1);
-
-                matcher = PlugUtils.matcher("video_id=(.+?)&.+&t=(.+?)&", matcherAsString);
-
-                if (matcher.find()) {
-                    client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
-                    final String finalURL = SERVICE_WEB + "/get_video.php?video_id=" + matcher.group(1) + "&t=" + matcher.group(2) + fmtParameter;
-                    getMethod = getGetMethod(finalURL);
-
-                    if (!tryDownloadAndSaveFile(getMethod)) {
+                client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
+                getMethod = getGetMethod(matcher.group(1));
+                if (!tryDownloadAndSaveFile(getMethod)) {
                         checkAllProblems();
                         logger.warning(getContentAsString());
                         throw new IOException("File input stream is empty");
-                    }
-                } else {
-                    throw new PluginImplementationException("Download parameters were not found");
                 }
             } else {
-                throw new PluginImplementationException();
+                throw new PluginImplementationException("Cannot find specified video format("+fmt+")");
             }
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
@@ -117,8 +111,8 @@ class YouTubeFileRunner extends AbstractRunner {
             final String fmtCode = matcher.group(1);
 
             if (fmtCode.length() <= 2) {
-                setFmtParameter(fmtCode);
-                setFileExtension(Integer.parseInt(fmtCode));
+                fmt=Integer.parseInt(fmtCode);
+                setFileExtension(fmt);
             }
         } else {
             processConfig();
@@ -126,30 +120,17 @@ class YouTubeFileRunner extends AbstractRunner {
     }
 
     private void processConfig() throws ErrorDuringDownloadingException {
-        switch (config.getQualitySetting()) {
-            case 1:
-                setFmtParameter(String.valueOf(17));
-                setFileExtension(17);
-                break;
-            case 2:
-                if (PlugUtils.getStringBetween(getContentAsString(), "\"fmt_map\": \"", "\"").contains("22/2000000/9/0/115")) {
-                    setFmtParameter(String.valueOf(22));
-                    setFileExtension(22);
-                } else {
-                    setFmtParameter(String.valueOf(18));
-                    setFileExtension(18);
-                }
-
-                break;
-        }
-    }
-
-    private void setFmtParameter(String fmtParameter) {
-        this.fmtParameter = "&fmt=" + fmtParameter;
+        String fmt_map=PlugUtils.getStringBetween(getContentAsString(), "\"fmt_map\": \"", "\"");
+        String formats[]=fmt_map.split(",");
+        int quality=config.getQualitySetting();
+        if(quality>=formats.length) quality=formats.length-1;
+        String selectedFormat=formats[formats.length-1-quality];
+        fmt=Integer.parseInt(selectedFormat.substring(0,selectedFormat.indexOf("/")));
+        setFileExtension(fmt);          
     }
 
     private void setFileExtension(int fmtCode) {
-        switch (fmtCode) {
+        switch (fmtCode) {            
             case 13:
             case 17:
                 fileExtension = ".3gp";

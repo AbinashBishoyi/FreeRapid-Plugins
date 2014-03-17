@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareServiceImpl.java 979 2008-12-07 10:53:46Z ATom $
+ * $Id: RapidShareServiceImpl.java 981 2008-12-07 12:00:52Z Vity $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -21,18 +21,13 @@ package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
-import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
-import cz.vity.freerapid.utilities.LogUtils;
-
-import java.util.logging.Logger;
 
 /**
  * @author Ladislav Vitásek &amp; Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
  */
 public class RapidShareServiceImpl extends AbstractFileShareService {
 
-    private final static Logger logger = Logger.getLogger(RapidShareServiceImpl.class.getName());
     private static final String SERVICE_NAME = "RapidShare.com (premium)";
     private static final String PLUGIN_CONFIG_FILE = "plugin_RapidSharePremium.xml";
 
@@ -58,36 +53,19 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
 
     @Override
     public void showOptions() throws Exception {
-        PremiumAccount pa = getConfig();
-        pa = getPluginContext().getDialogSupport().showAccountDialog(pa, "RapidShare");//vysledek bude Premium ucet - Rapidshare
-        if (pa != null) {
-            try {
-                getPluginContext().getConfigurationStorageSupport().storeConfigToFile(pa, PLUGIN_CONFIG_FILE);
-            } catch (Exception e) {
-                LogUtils.processException(logger, e);
-            }
-        }
+        this.config = showAccountDialog(getConfig(), "RapidShare", PLUGIN_CONFIG_FILE);
     }
 
-    public PremiumAccount getConfig() throws Exception {
+
+    PremiumAccount getConfig() throws Exception {
         if (config == null) {
             synchronized (RapidShareServiceImpl.class) {
-                if (config == null) {
-                    if (getPluginContext().getConfigurationStorageSupport().configFileExists(PLUGIN_CONFIG_FILE)) {
-                        try {
-                            config = getPluginContext().getConfigurationStorageSupport().loadConfigFromFile(PLUGIN_CONFIG_FILE, PremiumAccount.class);
-                        } catch (Exception e) {
-                            LogUtils.processException(logger, e);
-                            config = new PremiumAccount();
-                        }
-                    } else {
-                        config = new PremiumAccount();
-                    }
-                }
+                config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
             }
         }
 
         return config;
     }
+
     private volatile PremiumAccount config;
 }

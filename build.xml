@@ -14,6 +14,8 @@
     <property name="lib-src.dir" value="lib-src"/>
     <property name="plugins-src.dir" value="plugins-src"/>
 
+    <property name="classes.dir" value="_classes"/>
+
     <fileset id="jars" dir="${lib.dir}" includes="**/*"/>
 
     <patternset id="compiler.resources">
@@ -315,8 +317,19 @@
     <target name="manualBuild" description="building">
         <input message="Insert plugin folder name to build" addproperty="input.plugin" defaultvalue="rapidshare"/>
         <!--<property name="input.plugin" value="rapidshare"  /> --><!-- fake -->
+        <!--suppress AntResolveInspection -->
         <ant dir="${src.dir}/${input.plugin}/" antfile="build.xml" inheritall="false"/>
         <echo message="Plugin ${input.plugin} was succesfully built"/>
+    </target>
+
+    <target name="run" description="Runs TestApp of the given plugin">
+        <input message="Insert plugin folder name to build" addproperty="input.plugin" defaultvalue="rapidshare"/>
+        <!--suppress AntResolveInspection -->
+        <ant dir="${src.dir}/${input.plugin}/" antfile="build.xml" inheritall="false" target="clean"/>
+        <!--suppress AntResolveInspection -->
+        <ant dir="${src.dir}/${input.plugin}/" antfile="build.xml" inheritall="false" target="compile"/>
+        <java dir="${classes.dir}" classname="cz.vity.freerapid.plugins.services.${input.plugin}.TestApp"
+              classpath="${classes.dir}" classpathref="cp" spawn="true" fork="true"/>
     </target>
 
 

@@ -7,13 +7,9 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -86,14 +82,14 @@ public class TurboBitFileRunner extends AbstractRunner {
                 checkProblems();
             }
 
-            matcher = getMatcherAgainstContent("\"fileId\"\\s*?:\\s*?\"(.+?)\"");
+            matcher = getMatcherAgainstContent("Timeout/(.+?)\"");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File ID not found");
             }
 
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
-                    .setAction(getRequestUrl(matcher.group(1)))
+                    .setAction("/download/getLinkTimeout/" + matcher.group(1))
                     .toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
 
@@ -105,7 +101,7 @@ public class TurboBitFileRunner extends AbstractRunner {
             }
             checkProblems();
             if (getContentAsString().contains("Error: 2965")) {
-                throw new PluginImplementationException("Plugin is broken, xor value has changed");
+                throw new PluginImplementationException("Plugin is broken");
             }
 
             method = getMethodBuilder()
@@ -196,76 +192,6 @@ public class TurboBitFileRunner extends AbstractRunner {
                     .setParameter("captcha_response", captcha)
                     .toPostMethod();
         }
-    }
-
-    private String getRequestUrl(final String fileId) throws Exception {
-        final String random = String.valueOf(1 + new Random().nextInt(100000));
-        final byte[] bytes = (fileId + random).getBytes("ISO-8859-1");
-        final int xorNum = getXORnumber();
-        logger.warning("XOR value = " + xorNum);
-        for (int i = 0; i < bytes.length; i++) {
-            bytes[i] ^= xorNum;
-        }
-        final String base64 = Base64.encodeBase64String(bytes).replace('/', '_');
-        return "/download/getlinktimeout/" + fileId + "/" + random + "/" + base64;
-    }
-
-    private int getXORnumber() throws Exception {
-        String contents = getContentAsString();
-        final Matcher matcher = PlugUtils.matcher("src='(.+timeout\\.js.+)'\\s>", contents);       // get timeout.js location + variables
-        if (!matcher.find()) throw new PluginImplementationException("XOR value finder err");
-
-        final HttpMethod method = getGetMethod(matcher.group(1));                                  // load contents of timeout.js
-        setFileStreamContentTypes(new String[0], new String[]{"application/x-javascript"});
-        if (!makeRedirectedRequest(method)) {
-            throw new ServiceConnectionProblemException("XOR js load error");
-        }
-        try {
-            contents = evalScript(getContentAsString());
-        } catch (Exception e) {
-            throw new PluginImplementationException("Site Scripts have changed - Plugin update needed");
-        }
-        // first variable declared is the number used for the XOR - get it and return it
-        final String sTarget = contents.substring(contents.indexOf("var "), contents.indexOf("function"));
-        return PlugUtils.getNumberBetween(sTarget, " ", ";");
-    }
-
-    private String evalScript(String scriptFunctions) {
-        final Matcher match = PlugUtils.matcher("eval\\(function\\(w,i,s,e\\)\\{var . = .\\}\\);", scriptFunctions);
-        scriptFunctions = match.replaceAll(" ");                   // remove all useless eval functions
-        final String[] scriptFuncts = scriptFunctions.split("eval");
-        for (String contentTest : scriptFuncts) {
-            try {
-                logger.info("Contents = " + contentTest);
-                final String clVars = PlugUtils.getStringBetween(contentTest, "function(", "){");
-                final String sFuncts = contentTest.substring(contentTest.indexOf("{") + 1, contentTest.lastIndexOf("}")).replace("return", "OUTPUT=");
-                final String clVals = contentTest.substring(contentTest.lastIndexOf("(") + 1, contentTest.lastIndexOf(") );"));
-
-                final String aVars[] = clVars.split(",");
-                final String aVals[] = clVals.split(",");
-                String setVarVals = "";
-                for (int iPos = 0; iPos < aVars.length; iPos++) {
-                    setVarVals += aVars[iPos] + "=" + aVals[iPos] + ";";
-                }
-                ScriptEngineManager factory = new ScriptEngineManager();
-                ScriptEngine engine = factory.getEngineByName("JavaScript");
-                engine.eval(setVarVals + sFuncts).toString();
-
-                String output = (String) engine.get("OUTPUT");
-                output = output.replaceAll("\n", " ").replaceAll("\r", " ");
-
-                if (output.contains("Waiting")) {
-                    return output;
-                } else if (output.contains("eval")) {
-                    String out = evalScript(output);
-                    if (out != null)
-                        return out;
-                }
-            } catch (Exception e) {
-                //error wrong script function
-            }
-        }
-        return null;
     }
 
 }

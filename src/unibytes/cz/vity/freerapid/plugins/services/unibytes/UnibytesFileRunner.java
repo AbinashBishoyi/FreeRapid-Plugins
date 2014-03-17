@@ -58,9 +58,9 @@ class UnibytesFileRunner extends AbstractRunner {
         }
         checkProblems();
         checkNameAndSize();
-        MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("startForm", true);
+        MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Free");
         methodBuilder.setAction(URIUtil.encodeQuery(methodBuilder.getAction()));
-        method = methodBuilder.toPostMethod();
+        method = methodBuilder.toHttpMethod();
         if (!makeRedirectedRequest(method)) {
             checkProblems();
             throw new ServiceConnectionProblemException();

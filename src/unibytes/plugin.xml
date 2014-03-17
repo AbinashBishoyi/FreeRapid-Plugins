@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="unibytes.com" version="1.0.6" vendor="RickCL"
+<plugin id="unibytes.com" version="1.0.7" vendor="RickCL"
         class="cz.vity.freerapid.plugins.services.unibytes.UnibytesServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://.*?unibytes\.com/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="unibytes.com"/>
         <attribute id="maxDownloads" value="1"/>

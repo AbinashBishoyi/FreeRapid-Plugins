@@ -11,7 +11,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.Locale;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -24,10 +23,6 @@ class BitShareFileRunner extends AbstractRunner {
 
     private static final String PARAM_REQUEST = "request";
     private static final String PARAM_AJAXID = "ajaxid";
-    private static final String AJAX_HEADER_FIELD = "X-Requested-With";
-    private static final String AJAX_HEADER_VALUE = "XMLHttpRequest";
-    private static final String[] CONTENT_TYPE_TO = {"text/plain"};
-    private static final String[] CONTENT_TYPE_FROM = {"application/json"};
 
     private void setLanguageEN() {
         addCookie(new Cookie(".bitshare.com", "language_selection", "EN", "/", 86400, false));
@@ -83,14 +78,15 @@ class BitShareFileRunner extends AbstractRunner {
                 + "request.html";
 
         final HttpMethod postMethodWithID = getMethodBuilder() // click to "Regular Download" button
-                .setAction(action).setParameter(PARAM_REQUEST, "generateID")
+                .setAjax().setAction(action).setParameter(PARAM_REQUEST, "generateID")
                 .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL).toPostMethod();
-        postMethodWithID.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
-        setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
 
         String[] typeTimeCaptcha;
         if (makeRequest(postMethodWithID)) {
             typeTimeCaptcha = getContentAsString().split(":");  // data in format "fileType:timeInSecond:captchaRequired"
+            if (typeTimeCaptcha.length != 3) {
+                throw new PluginImplementationException("Error parsing server response");
+            }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -109,10 +105,8 @@ class BitShareFileRunner extends AbstractRunner {
         }
 
         final HttpMethod postMethodForUrl = getMethodBuilder() // click to "Download" button
-                .setAction(action).setParameter(PARAM_REQUEST, "getDownloadURL")
+                .setAjax().setAction(action).setParameter(PARAM_REQUEST, "getDownloadURL")
                 .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL).toPostMethod();
-        postMethodWithID.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
-        setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
 
         if (makeRequest(postMethodForUrl)) {
             final HttpMethod getMethodForDownload = getMethodBuilder()
@@ -140,28 +134,20 @@ class BitShareFileRunner extends AbstractRunner {
         } else {
             throw new CaptchaEntryInputMismatchException();
         }
-        final HttpMethod postMethod = reCaptcha.modifyResponseMethod(getMethodBuilder(content)
+        return reCaptcha.modifyResponseMethod(getMethodBuilder(content)
                 .setAction(action).setParameter(PARAM_REQUEST, "validateCaptcha")
                 .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL)).toPostMethod();
-        setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
-
-        return postMethod;
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("(?s)</h1>\\s*<div[^>]+class=\"quotbox2\"[^>]*>\\s*(.*?)\\s*</div>", getContentAsString());
-        if (matcher.find()) {
-            final String errorString = matcher.group(1).replaceFirst("(?s)\\s*<.*$", "");
-            if (!errorString.isEmpty()) {
-                if (errorString.contains("requested file was not found in our database"))
-                    throw new URLNotAvailableAnymoreException(errorString); // permanent
-                else if (errorString.contains("cant download more then 1 files at time"))
-                    throw new YouHaveToWaitException(errorString, 900); // 15 minutes
-                else if (errorString.contains("Traffic is used up for today"))
-                    throw new YouHaveToWaitException(errorString, 21600); // 6 hours
-                else // unknown reason
-                    throw new ServiceConnectionProblemException(errorString); // default: 2 minutes
-            }
+        if (getContentAsString().contains("requested file was not found in our database")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("cant download more then 1 files at time")) {
+            throw new YouHaveToWaitException("You cannot download more than one file at a time", 900); // 15 minutes
+        }
+        if (getContentAsString().contains("Traffic is used up for today")) {
+            throw new YouHaveToWaitException("Your free traffic is used up for today", 7200); // 2 hours
         }
     }
 }

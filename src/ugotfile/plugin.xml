@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="ugotfile.com" version="0.5" vendor="Kajda"
+<plugin id="ugotfile.com" version="0.6" vendor="Kajda+JPEXS"
         class="cz.vity.freerapid.plugins.services.ugotfile.UGotFileServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?ugotfile\.com/file/.+"/>

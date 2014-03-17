@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Kajda
+ * @author Kajda+JPEXS
  * @since 0.82
  */
 class UGotFileFileRunner extends AbstractRunner {
@@ -88,17 +88,17 @@ class UGotFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("Filename:</td>\\s*<td>(.+)<");
+        Matcher matcher = getMatcherAgainstContent("<h2[^>]*>\\s*(.+)\\s*</h2>");
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
-            matcher = getMatcherAgainstContent("Filesize:</td>\\s*<td>(.+)<");
+            matcher = getMatcherAgainstContent("<span[^>]*>\\s*(.+B)</span>");
 
             if (matcher.find()) {
-                final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
+                final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1).replace("&nbsp;", " "));
                 logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {

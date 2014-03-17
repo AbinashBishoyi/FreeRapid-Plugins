@@ -92,6 +92,9 @@ class UploadingRunner extends AbstractRunner {
         if (getContentAsString().contains("Your IP address is currently downloading")) {
             throw new ServiceConnectionProblemException("Your IP address is currently downloading a file.\nPlease wait until the downloading process has been completed.");
         }
+        if (getContentAsString().contains("Sorry, but file you are trying to download is larger then allowed for free download.")) {
+            throw new ServiceConnectionProblemException("Sorry, but file you are trying to download is larger then allowed for free download.");
+        }
         if (getContentAsString().contains("You still need to wait for the start of your download")) {
             throw new YouHaveToWaitException("You still need to wait for the start of your download", 65);
         }

@@ -18,7 +18,7 @@ public class Data_PremiumServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 2;
+        return 6;
     }
 
     @Override

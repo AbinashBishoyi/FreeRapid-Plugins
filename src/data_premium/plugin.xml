@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="data_premium.hu" version="1.0.1" vendor="Javi"
+<plugin id="data_premium.hu" version="1.0.2" vendor="Javi"
         class="cz.vity.freerapid.plugins.services.data_premium.Data_PremiumServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?data\.hu/get/.+"/>
@@ -8,7 +8,7 @@
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="data.hu"/>
         <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
-        <attribute id="maxDownloads" value="2"/>
+        <attribute id="maxDownloads" value="6"/>
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

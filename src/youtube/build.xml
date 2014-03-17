@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="YouTube.com" default="all" basedir=".">
     <property name="application" value="youtube"/>
-    <property name="version" value="0.6.2"/>
+    <property name="version" value="0.6.3"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="youtube.jar"/>

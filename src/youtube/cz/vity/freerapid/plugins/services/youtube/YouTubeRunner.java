@@ -91,7 +91,7 @@ class YouTubeFileRunner extends AbstractRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<h1\\s?>(.+?)</h1>");
+        final Matcher matcher = getMatcherAgainstContent("<h1 (?:dir='rtl')?>(.+?)</h1>");
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim() + fileExtension;

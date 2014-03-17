@@ -159,16 +159,53 @@ class UlozToRunner extends AbstractRunner {
             logger.info("Using HTML redirect");
             return getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Please click here to continue").toGetMethod();
         }
-        final CaptchaSupport captchaSupport = getCaptchaSupport();
         final MethodBuilder sendForm = getMethodBuilder()
                 .setReferer(fileURL)
                 .setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
-        final Matcher captchaUrlMatcher = getMatcherAgainstContent("src=\"(http://xapca[^\"<>]+?/image\\.gif)\"");
-        if (!captchaUrlMatcher.find()) {
-            throw new PluginImplementationException("Captcha URL not found");
+
+        HttpMethod method = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAjax()
+                .setAction("/reloadXapca.php?rnd=" + System.currentTimeMillis())
+                .toGetMethod();
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new PluginImplementationException("Error requesting captcha");
         }
-        final String captchaImg = captchaUrlMatcher.group(1);
+        checkProblems();
+
+        Matcher matcher;
+        String captchaImg;
+        String timestamp;
+        String salt;
+        String hash;
+        try {
+            captchaImg = PlugUtils.getStringBetween(getContentAsString(), "\"image\":\"", "\"").replace("\\/", "/");
+        } catch (PluginImplementationException e) {
+            throw new PluginImplementationException("Captcha image not found");
+        }
+        matcher = getMatcherAgainstContent("\"timestamp\":(\\d+)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Timestamp not found");
+        }
+        timestamp = matcher.group(1);
+        try {
+            hash = PlugUtils.getStringBetween(getContentAsString(), "\"hash\":\"", "\"");
+        } catch (PluginImplementationException e) {
+            throw new PluginImplementationException("Hash not found");
+        }
+        matcher = getMatcherAgainstContent("\"salt\":(\\d+)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Salt not found");
+        }
+        salt = matcher.group(1);
+
+        sendForm.setParameter("timestamp", timestamp)
+                .setParameter("hash", hash)
+                .setParameter("salt", salt);
+
         final String captchaSnd = captchaImg.replace("image.gif", "sound.wav");
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
         String captchaTxt;
         //captchaCount = 9; //for test purpose
         if (captchaCount++ < 8) {

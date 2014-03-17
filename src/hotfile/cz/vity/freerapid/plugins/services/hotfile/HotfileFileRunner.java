@@ -107,7 +107,7 @@ class HotfileFileRunner extends AbstractRunner {
 
     private void processDownloadWithForm() throws Exception {
         final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("f", true).setBaseURL(SERVICE_WEB).toHttpMethod();
-        final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "", "document.getElementById('dwltxt", TimeUnit.MILLISECONDS);
+        final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "timerend=d.getTime()+", ";", TimeUnit.MILLISECONDS);
         downloadTask.sleep(waitTime);
 
         if (makeRedirectedRequest(httpMethod)) {

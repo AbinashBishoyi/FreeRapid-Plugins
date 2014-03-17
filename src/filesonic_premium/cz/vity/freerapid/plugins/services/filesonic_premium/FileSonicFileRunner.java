@@ -79,25 +79,28 @@ class FileSonicFileRunner extends AbstractRunner {
     public void login() throws Exception {
         FileSonicServiceImpl service = (FileSonicServiceImpl) getPluginService();
         PremiumAccount pa = service.getConfig();
-        if (!pa.isSet()) {
-            synchronized (FileSonicFileRunner.class) {
+        synchronized (FileSonicFileRunner.class) {
+            if (!pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
                     throw new NotRecoverableDownloadException("No FileSonic Premium account login information!");
                 }
             }
         }
-        final HttpMethod pm = getMethodBuilder()
+        final HttpMethod method = getMethodBuilder()
                 .setAction("/user/login")
                 .setParameter("email", pa.getUsername())
-                .setParameter("password", pa.getPassword())
                 .setParameter("redirect", "/")
+                .setParameter("password", pa.getPassword())
                 .setParameter("rememberMe", "1")
                 .toPostMethod();
-        if (!makeRedirectedRequest(pm)) {
+        method.setRequestHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+        method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+        setFileStreamContentTypes(new String[0], new String[]{"application/json"});
+        if (!makeRequest(method)) {
             throw new ServiceConnectionProblemException("Error posting login info");
         }
-        if (getContentAsString().contains("You must be logged in to view this page")) {
+        if (!getContentAsString().contains("\"status\":\"success\"")) {
             throw new NotRecoverableDownloadException("Invalid FileSonic Premium account login information!");
         }
     }

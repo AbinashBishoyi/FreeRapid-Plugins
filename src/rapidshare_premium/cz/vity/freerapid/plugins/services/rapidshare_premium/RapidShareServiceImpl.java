@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareServiceImpl.java 972 2008-12-05 23:20:43Z Vity $
+ * $Id: RapidShareServiceImpl.java 979 2008-12-07 10:53:46Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
@@ -29,12 +28,12 @@ import cz.vity.freerapid.utilities.LogUtils;
 import java.util.logging.Logger;
 
 /**
- * @author Ladislav Vitásek & Tomáš Procházka <tom.p@atomsoft.cz>
+ * @author Ladislav Vitásek &amp; Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
  */
 public class RapidShareServiceImpl extends AbstractFileShareService {
-    private final static Logger logger = Logger.getLogger(RapidShareServiceImpl.class.getName());
 
-    private static final String SERVICE_NAME = "RapidShare.com";
+    private final static Logger logger = Logger.getLogger(RapidShareServiceImpl.class.getName());
+    private static final String SERVICE_NAME = "RapidShare.com (premium)";
     private static final String PLUGIN_CONFIG_FILE = "plugin_RapidSharePremium.xml";
 
     @Override
@@ -59,23 +58,36 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
 
     @Override
     public void showOptions() throws Exception {
-        final ConfigurationStorageSupport storageSupport = getPluginContext().getConfigurationStorageSupport();
-        PremiumAccount pa;
-        if (storageSupport.configFileExists(PLUGIN_CONFIG_FILE)) {
-            try {
-                pa = storageSupport.loadConfigFromFile(PLUGIN_CONFIG_FILE, PremiumAccount.class);
-            } catch (Exception e) {
-                LogUtils.processException(logger, e);
-                pa = new PremiumAccount();
-            }
-        } else pa = new PremiumAccount();
+        PremiumAccount pa = getConfig();
         pa = getPluginContext().getDialogSupport().showAccountDialog(pa, "RapidShare");//vysledek bude Premium ucet - Rapidshare
         if (pa != null) {
             try {
-                storageSupport.storeConfigToFile(pa, PLUGIN_CONFIG_FILE);
+                getPluginContext().getConfigurationStorageSupport().storeConfigToFile(pa, PLUGIN_CONFIG_FILE);
             } catch (Exception e) {
                 LogUtils.processException(logger, e);
             }
         }
     }
+
+    public PremiumAccount getConfig() throws Exception {
+        if (config == null) {
+            synchronized (RapidShareServiceImpl.class) {
+                if (config == null) {
+                    if (getPluginContext().getConfigurationStorageSupport().configFileExists(PLUGIN_CONFIG_FILE)) {
+                        try {
+                            config = getPluginContext().getConfigurationStorageSupport().loadConfigFromFile(PLUGIN_CONFIG_FILE, PremiumAccount.class);
+                        } catch (Exception e) {
+                            LogUtils.processException(logger, e);
+                            config = new PremiumAccount();
+                        }
+                    } else {
+                        config = new PremiumAccount();
+                    }
+                }
+            }
+        }
+
+        return config;
+    }
+    private volatile PremiumAccount config;
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 966 2008-12-05 20:25:59Z ATom $
+ * $Id: RapidShareRunner.java 979 2008-12-07 10:53:46Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -30,6 +30,7 @@ import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import org.apache.commons.httpclient.Cookie;
@@ -37,8 +38,6 @@ import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.jdesktop.application.Application;
-import org.jdesktop.application.SingleFrameApplication;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,17 +47,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Ladislav Vitásek & Tomáš Procházka <tom.p@atomsoft.cz>
+ * @author Ladislav Vitásek &amp; Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
  */
 class RapidShareRunner extends AbstractRunner {
 
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
-    private RapidShareConfigProvider configProvider;
 
     @Override
     public void run() throws Exception {
-		super.run();
-        configProvider = RapidShareConfigProvider.getInstance();
+        super.run();
 
         int i = 0;
         do {
@@ -67,31 +64,32 @@ class RapidShareRunner extends AbstractRunner {
                 tryDownloadAndSaveFile(downloadTask);
                 break;
             } catch (BadLoginException ex) {
-                configProvider.clear();
+                setBadConfig();
                 logger.log(Level.WARNING, "Bad password or login!");
                 if (i > 4) {
-                    throw new ErrorDuringDownloadingException("No RS Premium account login information!");
+                    throw new BadLoginException("No RS Premium account login information!");
                 }
             }
         } while (true);
     }
 
-	@Override
+    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             chechFile();
-        } else
+        } else {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        }
     }
 
     private void tryDownloadAndSaveFile(HttpFileDownloadTask downloadTask) throws Exception {
         final GetMethod getMethod = getGetMethod(fileURL);
         checkLogin();
 
-		client.makeRequest(getMethod, false);
-		
+        client.makeRequest(getMethod, false);
+
         // Redirect directly to download file.
         if (getMethod.getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
             logger.info("Direct download mode");
@@ -141,7 +139,9 @@ class RapidShareRunner extends AbstractRunner {
                 }
             }
 
-            if (!ok) failed();
+            if (!ok) {
+                failed();
+            }
 
         } else {
             failed();
@@ -161,7 +161,7 @@ class RapidShareRunner extends AbstractRunner {
                 throw new URLNotAvailableAnymoreException("<b>RapidShare known error:</b><br> " + error);
             }
             if (error.contains("your premium account has not been found")) {
-                configProvider.clear();
+                setBadConfig();
                 logger.log(Level.WARNING, "Account expired. Maybe.");
                 throw new BadLoginException("<b>RapidShare known error:</b><br> " + error);
             }
@@ -181,7 +181,7 @@ class RapidShareRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> Due to a violation of our terms of use, the file has been removed from the server.");
         }
         if (code.contains("your premium account has not been found")) {
-            configProvider.clear();
+            setBadConfig();
             logger.log(Level.WARNING, "Account expired. Maybe.");
             throw new BadLoginException("<b>RapidShare known error:</b><br> Your premium account has not been found.");
         }
@@ -191,7 +191,7 @@ class RapidShareRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Unknown RapidShare error");
         }
 
-		//| 5277 KB</font>
+        //| 5277 KB</font>
         matcher = getMatcherAgainstContent("\\| (.*? .B)</font>");
         if (matcher.find()) {
             Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
@@ -241,26 +241,25 @@ class RapidShareRunner extends AbstractRunner {
         }
     }
 
-    private void checkLogin() throws ErrorDuringDownloadingException {
+    private void checkLogin() throws Exception {
         synchronized (RapidShareRunner.class) {
-            String cookie = configProvider.getConfig().getCookie();
-            if (cookie == null) {
-                RapidShareLoginUI loginDialog = new RapidShareLoginUI();
-
-                final SingleFrameApplication app = (SingleFrameApplication) Application.getInstance();
-                app.show(loginDialog);
-
-                do {
-                    Thread.yield();
-                } while (loginDialog.isVisible());
-
-                RapidShareConfig config = new RapidShareConfig(loginDialog.getLogin(), loginDialog.getPassword());
-                configProvider.save(config);
-                cookie = config.getCookie();
+            RapidShareServiceImpl service = (RapidShareServiceImpl) getPluginService();
+            PremiumAccount pa = service.getConfig();
+            if (pa.getUsername().isEmpty() || pa.getPassword().isEmpty() || badConfig) {
+                service.showOptions();
+                pa = service.getConfig();
+                badConfig = false;
             }
 
+            String cookie = RapidShareSupport.buildCookie(pa.getUsername(), pa.getPassword());
+            logger.info("Builded RS cookie: " + cookie);
             client.getHTTPClient().getState().addCookie(new Cookie("rapidshare.com", "user", cookie, "/", 86400, false));
         }
     }
+
+    private void setBadConfig() {
+        badConfig = true;
+    }
+    private boolean badConfig;
 }
 

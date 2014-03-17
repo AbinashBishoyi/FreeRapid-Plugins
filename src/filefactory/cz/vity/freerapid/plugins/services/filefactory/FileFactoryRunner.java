@@ -129,11 +129,11 @@ class FileFactoryFileRunner extends AbstractRunner {
     }
 
     private String getLink() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("\"(\\?[a-z]+?=[0-9a-f]+?&.+?)\"");
+        Matcher matcher = getMatcherAgainstContent("\"\\?key=\".+?\"(.+?)\"");
         if (!matcher.find()) {
             throw new PluginImplementationException("JavaScript URL not found");
         }
-        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction("/file/getLink.js" + matcher.group(1)).toGetMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction("/file/getLink.js?key=" + matcher.group(1)).toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             throw new ServiceConnectionProblemException();
         }

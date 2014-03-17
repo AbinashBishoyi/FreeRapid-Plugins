@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="container" version="1.0.0" vendor="ntoskrnl"
+        class="cz.vity.freerapid.plugins.container.ContainerPluginImpl">
+    <attributes>
+        <attribute id="libraryPlugin" value="true"/>
+        <attribute id="minver" value="0.849"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="container"/>
+    </attributes>
+
+    <runtime>
+        <library id="container" path="/" type="code"/>
+    </runtime>
+</plugin>

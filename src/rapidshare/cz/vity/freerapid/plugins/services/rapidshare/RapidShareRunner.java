@@ -3,6 +3,8 @@ package cz.vity.freerapid.plugins.services.rapidshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -15,8 +17,10 @@ import java.util.regex.Matcher;
  * @author Ladislav Vitasek
  */
 class RapidShareRunner extends AbstractRunner {
+    
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
-
+    ConfigurationStorageSupport storage;
+    PluginContext context ;
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -28,6 +32,9 @@ class RapidShareRunner extends AbstractRunner {
 
     public void run() throws Exception {
         super.run();
+ //       storage = getPluginService().getPluginContext().getConfigurationStorageSupport();
+       context =  getPluginService().getPluginContext();
+
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             enterCheck();
@@ -48,11 +55,14 @@ class RapidShareRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
                 }
                 s = matcher.group(1);
+
                 int seconds = new Integer(s);
                 matcher = getMatcherAgainstContent("form name=\"dlf\" action=\"([^\"]*)\"");
                 if (matcher.find()) {
                     s = matcher.group(1);
                     logger.info("Download URL: " + s);
+                  String myUrl =  getPrefferedMirror();
+               if(!"".equals(myUrl)) s=myUrl; 
                     downloadTask.sleep(seconds + 1);
                     final PostMethod method = getPostMethod(s);
                     method.addParameter("mirror", "on");
@@ -70,6 +80,19 @@ class RapidShareRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
+    private String getPrefferedMirror() throws Exception{
+       MirrorChooser chooser = new MirrorChooser(context,getContentAsString());
+        return chooser.getPreferredURL();
+    }
+ /*
+    private String chooseFromMirrorList(String defaultURL) throws Exception {
+    
+         logger.info( "je? "+  storage.configFileExists(CONFIGFILE));
+     /* if (!storage.configFileExists(CONFIGFILE)) */ //makeMirrorList(defaultURL);
+  /*
+     return defaultURL;
+    }
+       */
     private void enterCheck() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException {
         Matcher matcher;
         if (!getContentAsString().contains("form id=\"ff\" action=")) {
@@ -107,7 +130,39 @@ class RapidShareRunner extends AbstractRunner {
         }
 
     }
+ /*
+  private String makeMirrorList(String defaultURL) throws Exception {
+     MirrorChooser mirrorChooser = new MirrorChooser();
+       mirrorChooser.add("default", "default");
+     Matcher matcher = getMatcherAgainstContent("<input (checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'http://rs...([^.]+)[^']*.';\" /> ([^<]*)<br");
+           while (matcher.find()) {
 
+               String mirrorName = matcher.group(3);
+               String ident = matcher.group(2);
+
+            logger.info("Mirror " + mirrorName + " ident " + ident);
+               mirrorChooser.add(mirrorName, ident);
+
+            }
+     MirrorChooserUI ms = new MirrorChooserUI(mirrorChooser);
+     if (getDialogSupport().showOKCancelDialog(ms, "Vyber"))  {
+         mirrorChooser.setPreffered(ms.getChoosen());
+          storage.storeConfigToFile(mirrorChooser.getMirrorConfig(),CONFIGFILE);
+     }
+    return defaultURL;
+   // <input checked type="radio" name="mirror" onclick="document.dlf.action=\'http://rs332gc.rapidshare.com/files/168531395/2434660/rkdr.part3.rar\';" /> GlobalCrossing<br />
+  }
+
+  private String getMirrorURL(String ident)  {
+      if (ident.equals("default")) return "";
+       Matcher matcher = getMatcherAgainstContent("<input (checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'(http://rs..."+ident+"[^']*).';\" />");
+           if (matcher.find()) {
+              return  matcher.group(2);
+            }
+      else return "";
+  }
+
+   */
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         if (getContentAsString().contains("You have reached the")) {

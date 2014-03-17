@@ -18,7 +18,7 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }
-
+     
     @Override
     public boolean supportsRunCheck() {
         return true;
@@ -28,4 +28,14 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new RapidShareRunner();
     }
+
+      @Override
+    public void showOptions() throws Exception {
+          MirrorChooser chooser = new MirrorChooser(getPluginContext(),null);
+          chooser.chooseFromList();     
+    }
+
+
+
+
 }

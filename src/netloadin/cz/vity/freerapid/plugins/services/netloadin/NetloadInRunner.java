@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
  */
 class NetloadInRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NetloadInRunner.class.getName());
-    private static final String HTTP_NETLOAD = "http://netload.in";
+    private String HTTP_NETLOAD = "http://netload.in";
 
     private String initURL;
     private String enterURL;
@@ -25,6 +25,7 @@ class NetloadInRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkURL(fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -43,9 +44,9 @@ class NetloadInRunner extends AbstractRunner {
         }
     }
 
-
     public void run() throws Exception {
         super.run();
+        checkURL(fileURL);
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -158,6 +159,10 @@ class NetloadInRunner extends AbstractRunner {
 
         }
         return false;
+    }
+
+    private void checkURL(String fileURL) {
+        if (fileURL.contains("www.netload.in")) HTTP_NETLOAD = "http://www.netload.in";
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

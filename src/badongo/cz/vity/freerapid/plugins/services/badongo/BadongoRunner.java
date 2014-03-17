@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.badongo;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.badongo.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -11,7 +12,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
+import java.awt.image.BufferedImage;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.LinkedList;
@@ -20,12 +21,14 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Kajda
+ * @author Kajda, ntoskrnl
  * @since 0.82
  */
 class BadongoFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(BadongoFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.badongo.com";
+    private final int captchaMax = 10;
+    private int captchaCounter = 1;
 
     @Override
     public void runCheck() throws Exception {
@@ -37,7 +40,8 @@ class BadongoFileRunner extends AbstractRunner {
             checkSeriousProblems();
             checkNameAndSize();
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkSeriousProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -86,7 +90,8 @@ class BadongoFileRunner extends AbstractRunner {
                 }
             }
         } else {
-            throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+            checkSeriousProblems();
+            throw new ServiceConnectionProblemException();
         }
     }
 
@@ -124,6 +129,10 @@ class BadongoFileRunner extends AbstractRunner {
 
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+
+        if (contentAsString.contains("Page Not Found")) {
+            throw new URLNotAvailableAnymoreException("Page not found");
         }
     }
 
@@ -214,7 +223,7 @@ class BadongoFileRunner extends AbstractRunner {
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkAllProblems();
             logger.warning(getContentAsString());
-            throw new IOException("File input stream is empty");
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
@@ -238,23 +247,29 @@ class BadongoFileRunner extends AbstractRunner {
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
 
-    private String stepCaptcha(String contenAsString) throws ErrorDuringDownloadingException {
+    private String stepCaptcha(final String contentAsString) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
 
-        final Matcher matcher = PlugUtils.matcher("img src=\"(.+?)\"", contenAsString);
+        final Matcher matcher = PlugUtils.matcher("img src=\"(.+?)\"", contentAsString);
+        if (!matcher.find()) throw new PluginImplementationException("Captcha image not found");
+        final String captchaURL = SERVICE_WEB + matcher.group(1);
+        logger.info("Captcha URL " + captchaURL);
 
-        if (matcher.find()) {
-            final String captchaSrc = SERVICE_WEB + matcher.group(1);
-            logger.info("Captcha URL " + captchaSrc);
-            final String captcha = captchaSupport.getCaptcha(captchaSrc);
-
+        final String captcha;
+        if (captchaCounter <= captchaMax) {
+            final BufferedImage captchaImage = captchaSupport.getCaptchaImage(captchaURL);
+            captcha = CaptchaReader.recognize(captchaImage);
             if (captcha == null) {
-                throw new CaptchaEntryInputMismatchException();
-            } else {
-                return captcha;
+                logger.info("Could not separate captcha letters (attempt " + captchaCounter + " of " + captchaMax + ")");
             }
+            logger.info("Attempt " + captchaCounter + " of " + captchaMax + ", OCR recognized " + captcha);
+            captchaCounter++;
         } else {
-            throw new PluginImplementationException("Captcha picture was not found");
+            captcha = captchaSupport.getCaptcha(captchaURL);
+            if (captcha == null) throw new CaptchaEntryInputMismatchException();
+            logger.info("Manual captcha " + captcha);
         }
+        return captcha;
     }
+
 }

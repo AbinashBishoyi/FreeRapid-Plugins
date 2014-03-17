@@ -129,23 +129,30 @@ class GigaUPFileRunner extends AbstractRunner {
 
         final URL url = new URL(uri);
         final URLConnection connection = url.openConnection();
-        final InputStream is = connection.getInputStream();
+        InputStream is = null;
+        try {
+            is = connection.getInputStream();
 
-        final long contentLength = connection.getContentLength();
-        if (contentLength < 0) {
-            logger.warning("Content-Length not found");
-            return false;
-        }
-        httpFile.setFileSize(contentLength);
-        httpFile.getProperties().put(DownloadClient.SUPPOSE_TO_DOWNLOAD, contentLength);
+            final long contentLength = connection.getContentLength();
+            if (contentLength < 0) {
+                logger.warning("Content-Length not found");
+                return false;
+            }
+            httpFile.setFileSize(contentLength);
+            httpFile.getProperties().put(DownloadClient.SUPPOSE_TO_DOWNLOAD, contentLength);
 
-        if (is != null) {
-            logger.info("Saving to file");
-            downloadTask.saveToFile(is);
-            return true;
-        } else {
-            logger.info("Saving file failed");
-            return false;
+            if (is != null) {
+                logger.info("Saving to file");
+                downloadTask.saveToFile(is);
+                return true;
+            } else {
+                logger.info("Saving file failed");
+                return false;
+            }
+        } finally {
+            if (is != null) {
+                is.close();
+            }
         }
     }
 

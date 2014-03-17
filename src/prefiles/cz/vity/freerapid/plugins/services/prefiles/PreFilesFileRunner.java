@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.prefiles;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
@@ -47,5 +48,13 @@ class PreFilesFileRunner extends XFileSharingRunner {
                 .setActionFromFormWhereTagContains("method_free", true)
                 .setParameter("method_free", "method_free")
                 .setAction(fileURL);
+    }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        super.checkFileProblems();
+        if (getContentAsString().contains("The file you were looking for could not be found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
     }
 }

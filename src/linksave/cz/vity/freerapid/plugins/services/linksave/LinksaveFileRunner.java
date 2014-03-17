@@ -1,14 +1,17 @@
 package cz.vity.freerapid.plugins.services.linksave;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.linksave.captcha.CaptchaPreparer;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.awt.image.BufferedImage;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -29,6 +32,7 @@ class LinksaveFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".linksave.in", "Linksave_Language", "english", "/", 86400, false));
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -153,7 +157,7 @@ class LinksaveFileRunner extends AbstractRunner {
         String c = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
         String b = "";
         int i = 0;
-        m = m.replaceAll("[^A-Za-z0-9\\+\\=]", "");
+        m = m.replaceAll("[^A-Za-z0-9\\+=]", "");
 
         do {
             int i1 = i;
@@ -188,7 +192,17 @@ class LinksaveFileRunner extends AbstractRunner {
         final String captchaURL = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
         logger.info("Captcha URL " + captchaURL);
 
-        final String captcha = captchaSupport.getCaptcha(captchaURL);
+        final BufferedImage captchaImage;
+        try {
+            final HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(captchaURL).toGetMethod();
+            client.getHTTPClient().executeMethod(method);
+            captchaImage = CaptchaPreparer.getPreparedImage(method.getResponseBodyAsStream());
+        } catch (Exception e) {
+            LogUtils.processException(logger, e);
+            return getGetMethod(fileURL);
+        }
+
+        final String captcha = captchaSupport.askForCaptcha(captchaImage);
         if (captcha == null) throw new CaptchaEntryInputMismatchException();
         logger.info("Manual captcha " + captcha);
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="linksave.in" version="2.0.0" vendor="Arthur+ntoskrnl"
+<plugin id="linksave.in" version="2.0.1" vendor="Arthur+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.linksave.LinksaveServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?linksave\.in/.+"/>

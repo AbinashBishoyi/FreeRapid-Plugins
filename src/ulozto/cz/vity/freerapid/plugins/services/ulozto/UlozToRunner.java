@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.ulozto;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.ulozto.captcha.SoundReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
@@ -24,7 +25,6 @@ import java.util.regex.Matcher;
  */
 class UlozToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UlozToRunner.class.getName());
-    private final static String SERVICE_BASE_URL = "http://uloz.to";
     private int captchaCount = 0;
     private final Random random = new Random();
 
@@ -32,9 +32,10 @@ class UlozToRunner extends AbstractRunner {
         if (content.contains("confirmContent")) { //eroticky obsah vyzaduje potvruemo
             final PostMethod confirmMethod = (PostMethod) getMethodBuilder()
                     .setActionFromFormWhereActionContains("askAgeForm", true)
-                    .setBaseURL("http://uloz.to")
                     .removeParameter("disagree")
-                    .setReferer(fileURL).toPostMethod();
+                    .setReferer(fileURL)
+                    .setEncodeParameters(true)
+                    .toPostMethod();
             makeRedirectedRequest(confirmMethod);
             if (getContentAsString().contains("confirmContent")) {
                 throw new PluginImplementationException("Cannot confirm age");
@@ -68,6 +69,7 @@ class UlozToRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         checkURL();
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0");
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -85,7 +87,7 @@ class UlozToRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         checkURL();
-
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0");
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -111,14 +113,7 @@ class UlozToRunner extends AbstractRunner {
             setFileStreamContentTypes("text/plain", "text/texmacs");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
-                if (method != null) {
-                    logger.warning("Final download link URI: " + method.getURI().toString());
-                }
-                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
-            }
-            if (method != null) {
-                logger.warning("Final download link URI: " + method.getURI().toString());
             }
         } else {
             checkProblems();
@@ -166,7 +161,7 @@ class UlozToRunner extends AbstractRunner {
         }
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final MethodBuilder sendForm = getMethodBuilder()
-                .setBaseURL(SERVICE_BASE_URL).setReferer(fileURL)
+                .setReferer(fileURL)
                 .setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
         final Matcher captchaUrlMatcher = getMatcherAgainstContent("src=\"(http://xapca[^\"<>]+?/image\\.gif)\"");
         if (!captchaUrlMatcher.find()) {

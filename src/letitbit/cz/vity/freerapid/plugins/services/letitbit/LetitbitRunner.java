@@ -53,12 +53,15 @@ class LetitbitRunner extends AbstractRunner {
         setPageEncoding("Windows-1251");
         client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
 
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
+        final HttpMethod httpMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
 
-            final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("ifree_form", true).toPostMethod();
+            final HttpMethod httpMethod2 = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromFormByName("ifree_form", true)
+                    .toPostMethod();
             if (!makeRedirectedRequest(httpMethod2)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -67,7 +70,10 @@ class LetitbitRunner extends AbstractRunner {
 
             if (!getContentAsString().contains("\"dvifree\"")) {
                 //Russian IPs may see a different page here, let's handle it
-                final HttpMethod httpMethodR = getMethodBuilder().setReferer(secondPageUrl).setActionFromFormWhereActionContains("letitbit.net", true).toPostMethod();
+                final HttpMethod httpMethodR = getMethodBuilder()
+                        .setReferer(secondPageUrl)
+                        .setActionFromFormWhereActionContains("letitbit.net", true)
+                        .toPostMethod();
                 if (!makeRedirectedRequest(httpMethodR)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
@@ -75,13 +81,20 @@ class LetitbitRunner extends AbstractRunner {
                 secondPageUrl = httpMethodR.getURI().toString();
             }
 
-            final MethodBuilder captchaBuilder = getMethodBuilder().setReferer(secondPageUrl).setActionFromFormByName("dvifree", true);
+            final MethodBuilder captchaBuilder = getMethodBuilder()
+                    .setReferer(secondPageUrl)
+                    .setActionFromFormByName("dvifree", true);
             final String captchaurl = getCaptchaImageURL();
             do {
-                final HttpMethod captchaMethod = captchaBuilder.setParameter("cap", readCaptchaImage(captchaurl)).toPostMethod();
+                final HttpMethod captchaMethod = captchaBuilder
+                        .setParameter("cap", readCaptchaImage(captchaurl))
+                        .toPostMethod();
                 if (!makeRedirectedRequest(captchaMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
+                }
+                if (getContentAsString().contains("id=\"callback_form\"")) {
+                    throw new ServiceConnectionProblemException("The file is temporarily unavailable for downloading. Please try again later.");
                 }
                 captchatry++;
             } while (getContentAsString().contains("history.go(-1)"));
@@ -103,7 +116,7 @@ class LetitbitRunner extends AbstractRunner {
             }
 
             final HttpMethod httpMethod4 = getMethodBuilder()
-                    .setActionFromAHrefWhereATagContains("Your link to file download")
+                    .setActionFromAHrefWhereATagContains("Link to file download")
                     .setReferer(thirdPageUrl)
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod4)) {

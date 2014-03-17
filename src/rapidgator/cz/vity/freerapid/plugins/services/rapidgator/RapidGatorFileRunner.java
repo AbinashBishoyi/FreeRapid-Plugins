@@ -1,8 +1,8 @@
 package cz.vity.freerapid.plugins.services.rapidgator;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -25,6 +25,7 @@ class RapidGatorFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Opera/9.80 (Windows NT 6.1; WOW64; U; pt) Presto/2.10.229 Version/11.62");
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -59,6 +60,7 @@ class RapidGatorFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        setClientParameter(DownloadClientConsts.USER_AGENT, "Opera/9.80 (Windows NT 6.1; WOW64; U; pt) Presto/2.10.229 Version/11.62");
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
@@ -106,7 +108,11 @@ class RapidGatorFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
 
-            while (getContentAsString().contains("api.recaptcha.net/challenge")) {
+            int captchaCounter = 0;
+            while (getContentAsString().contains("/papi/challenge.script")) {
+                if (captchaCounter++ > 8) {
+                    throw new PluginImplementationException("Unable to solve captcha");  //highly unlikely :p
+                }
                 httpMethod = stepCaptcha();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
@@ -129,23 +135,75 @@ class RapidGatorFileRunner extends AbstractRunner {
     }
 
     private HttpMethod stepCaptcha() throws Exception {
-        final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("api\\.recaptcha\\.net/challenge\\?k=(.*?)\">");
-        reCaptchaKeyMatcher.find();
-        final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
-        final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
-        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
+        final Matcher captchaKeyMatcher = getMatcherAgainstContent("papi/challenge.noscript\\?k=(.*?)\"");
+        if (!captchaKeyMatcher.find()) {
+            throw new PluginImplementationException("Captcha not found");
         }
-        r.setRecognized(captcha);
+        final String captchaKey = captchaKeyMatcher.group(1);
+
+        HttpMethod httpMethod = getMethodBuilder()
+                .setReferer("http://rapidgator.net/download/captcha")
+                .setAction("http://api.solvemedia.com/papi/challenge.script")
+                .setParameter("k", captchaKey)
+                .toGetMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            throw new ServiceConnectionProblemException();
+        }
+
+        String mediaType = "";
+        int mediaTypeCounter = 0;
+        do {
+            if (mediaTypeCounter++ > 10) {
+                throw new PluginImplementationException("Captcha mediatype : HTML not found");
+            }
+            final String captchaAction = "http://api.solvemedia.com/papi/_challenge.js" +
+                    "?k=" + captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/opera,ua/opera11,os/nt,os/nt5.1,jslib/jquery;ts=1336764790;th=white;r=" + Math.random();
+            httpMethod = getMethodBuilder()
+                    .setReferer("http://rapidgator.net/download/captcha")
+                    .setAction(captchaAction)
+                    .toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+            final Matcher mediaTypeMatcher = getMatcherAgainstContent("\"mediatype\"\\s*:\\s*\"(.+?)\",");
+            if (!mediaTypeMatcher.find()) {
+                throw new PluginImplementationException("Captcha media type not found");
+            }
+            mediaType = mediaTypeMatcher.group(1);
+        } while (!mediaType.equals("html"));
+
+        final Matcher chidMatcher = getMatcherAgainstContent("\"chid\"\\s*:\\s*\"(.+?)\",");
+        if (!chidMatcher.find()) {
+            throw new PluginImplementationException("Captcha challenge ID not found");
+        }
+        final String chid = chidMatcher.group(1);
+
+        httpMethod = getMethodBuilder()
+                .setReferer("http://rapidgator.net/download/captcha")
+                .setAction("http://api.solvemedia.com/papi/media?c=" + chid + ";w=300;h=150;fg=000000;bg=f8f8f8")
+                .toGetMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            throw new ServiceConnectionProblemException();
+        }
+        final String slog = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "var slog = '", "';"));
+        final String secr = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "var secr = '", "';"));
+        int cn = 0;
+        char[] captchaResponse = new char[slog.length()];
+        for (int i = 0; i < slog.length(); i++) {
+            char x = (char) ((secr.charAt(i) ^ (cn | 1) ^ (((cn++ & 1) != 0) ? i : 0) ^ 0x55) ^ (slog.charAt(i) ^ (cn | 1) ^ (((cn++ & 1) != 0) ? i : 0) ^ 0x55));
+            captchaResponse[i] = x;
+        }
 
         MethodBuilder methodBuilder = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction("http://rapidgator.net/download/captcha")
+                .setParameter("adcopy_challenge", chid)
+                .setParameter("adcopy_response", new String(captchaResponse))
                 .setParameter("DownloadCaptchaForm[captcha]", "");
 
-        return r.modifyResponseMethod(methodBuilder).toPostMethod();
+        return methodBuilder.toPostMethod();
     }
+
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();

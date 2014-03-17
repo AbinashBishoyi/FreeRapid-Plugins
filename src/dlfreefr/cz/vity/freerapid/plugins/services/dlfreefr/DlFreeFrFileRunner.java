@@ -11,13 +11,14 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.Locale;
+import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
- * @author ntoskrnl
+ * @author ntoskrnl,tong2shot
  */
 class DlFreeFrFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DlFreeFrFileRunner.class.getName());
@@ -50,7 +51,51 @@ class DlFreeFrFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("charger").toGetMethod();
+            final String formSubmitContent = getContentAsString();
+            final String key = PlugUtils.getStringBetween(getContentAsString(), "\"key\":\"", "\"");
+            final String env = "prod";
+            final String callback = "Adyoulike.g._jsonp_" + new Random().nextInt(100000000);
+            final String lang = "fr";
+
+            HttpMethod httpMethod;
+            int reqCounter =0;
+            do {
+                reqCounter++;
+                if (reqCounter>8) {
+                    throw new PluginImplementationException("Text validation not found");
+                }
+                httpMethod = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction("http://api-ayl.appspot.com/challenge")
+                        .setParameter("key", key)
+                        .setParameter("env", env)
+                        .setParameter("callback", callback)
+                        .setParameter("lang", lang)
+                        .toGetMethod();
+                setFileStreamContentTypes(new String[0], new String[]{"application/javascript"});
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            } while (!getContentAsString().contains(" » ci-dessous"));
+            checkProblems();
+
+            final String validationResponse = PlugUtils.getStringBetween(getContentAsString(), "\"Recopiez « ", " » ci-dessous");
+            final String tokenChallenge = PlugUtils.getStringBetween(getContentAsString(), "\"token\":\"", "\"");
+            final String tid = PlugUtils.getStringBetween(getContentAsString(), "\"tid\":\"", "\"");
+
+            httpMethod = getMethodBuilder(formSubmitContent)
+                    .setReferer(fileURL)
+                    .setActionFromFormWhereActionContains("getfile.pl",true)
+                    .setParameter("_ayl_captcha_engine", "adyoulike")
+                    .setParameter("_ayl.focus", "")
+                    .setParameter("_ayl_response", validationResponse)
+                    .setParameter("_ayl_utf8_ie_fix", "?")
+                    .setParameter("_ayl_env", env)
+                    .setParameter("_ayl_token_challenge", tokenChallenge)
+                    .setParameter("_ayl_tid", tid)
+                    .toPostMethod();
+
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -78,6 +123,9 @@ class DlFreeFrFileRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("Fichier inexistant") || content.contains("Erreur 404") || content.contains("Appel incorrect")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("\"disabled\":true")) {
+            throw new PluginImplementationException("Server rejected your request");
         }
     }
 

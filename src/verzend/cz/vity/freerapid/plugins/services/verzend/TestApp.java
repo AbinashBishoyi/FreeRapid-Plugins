@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.cramit;
+package cz.vity.freerapid.plugins.services.verzend;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author RickCL
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,11 +16,19 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://cramit.in/0f847gxslz2e"));
+            httpFile.setNewURL(new URL("http://verzend.be/h0rbu2id3pnu"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //then we tries to download
-            final CramitServiceImpl service = new CramitServiceImpl(); //instance of service - of our plugin
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            final VerzendServiceImpl service = new VerzendServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set premium account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            */
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

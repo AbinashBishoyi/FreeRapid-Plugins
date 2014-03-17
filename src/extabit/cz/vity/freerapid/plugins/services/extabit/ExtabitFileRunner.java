@@ -22,6 +22,8 @@ class ExtabitFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception {
+        final Matcher urlMatch = PlugUtils.matcher("(https?://(\\w+?\\.)?extabit\\.com/(file|go)/[^/]+)/?", fileURL);
+        if (urlMatch.find()) fileURL = urlMatch.group(1);
         super.runCheck();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -45,6 +47,8 @@ class ExtabitFileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
+        final Matcher urlMatch = PlugUtils.matcher("(https?://(\\w+?\\.)?extabit\\.com/(file|go)/[^/]+)/?", fileURL);
+        if (urlMatch.find()) fileURL = urlMatch.group(1);
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
@@ -57,13 +61,17 @@ class ExtabitFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString(); //get page content that contains captcha
             final long startTime = System.currentTimeMillis();
             do {
-                method = stepCaptcha(contentAsString);
-                method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                if (!makeRedirectedRequest(method)) {
+                    checkDownloadProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                HttpMethod httpMethod = stepCaptcha(contentAsString);
+                httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
                 final long toWait = startTime + 31000 - System.currentTimeMillis();
                 if (toWait > 0) {
                     downloadTask.sleep((int) Math.ceil(toWait / 1000d));
                 }
-                if (!makeRedirectedRequest(method)) {
+                if (!makeRedirectedRequest(httpMethod)) {
                     checkDownloadProblems();
                     throw new ServiceConnectionProblemException();
                 }
@@ -137,8 +145,8 @@ class ExtabitFileRunner extends AbstractRunner {
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("cmn_form", false)
                     .setParameter("type", "recaptcha")
-                    .setAndEncodeParameter("capture", captcha)
                     .setParameter("challenge", r.getChallenge())
+                    .setAndEncodeParameter("capture", captcha)
                     .toGetMethod();
 
         } else {

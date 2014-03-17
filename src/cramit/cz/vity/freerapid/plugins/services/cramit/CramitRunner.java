@@ -1,8 +1,10 @@
 package cz.vity.freerapid.plugins.services.cramit;
 
+import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.captcha.CaptchaType;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
 import java.util.List;
 
@@ -33,6 +35,18 @@ public class CramitRunner extends XFileSharingRunner {
         downloadLinkRegexes.add(0, "<span class=green><b><a(?:.*?)href\\s?=\\s?(?:\"|')(.+?)(?:\"|')(?:.*?)>click here</a>");
         downloadLinkRegexes.add(0, "<a href=['\"]([^<>]+?)['\"][^<>]*?>\\s*CLICK TO START DOWNLOAD\\s*</a>");
         return downloadLinkRegexes;
+    }
+
+    @Override
+    protected MethodBuilder getXFSMethodBuilder() throws Exception {
+        try {
+            return super.getXFSMethodBuilder();
+        } catch (BuildMethodException e) {
+            return getMethodBuilder(getContentAsString())
+                    .setReferer(fileURL)
+                    .setActionFromFormWhereTagContains("freemethod", true)
+                    .setAction(fileURL);
+        }
     }
 
     @Override

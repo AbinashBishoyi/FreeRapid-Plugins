@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandl
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -31,6 +32,13 @@ class HulkLoadFileRunner extends XFileSharingRunner {
         final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
         downloadPageMarkers.add("hulkload.com/files");
         return downloadPageMarkers;
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "<a.+?href\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");   // only change  <a.+?href
+        return downloadLinkRegexes;
     }
 
     @Override

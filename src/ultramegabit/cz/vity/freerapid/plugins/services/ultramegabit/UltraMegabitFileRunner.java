@@ -71,6 +71,7 @@ class UltraMegabitFileRunner extends AbstractRunner {
         if (content.contains("File Not Found")
                 || content.contains("file was removed")
                 || content.contains("File not available")
+                || content.contains("file has been deleted")
                 || content.contains("file has been removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }

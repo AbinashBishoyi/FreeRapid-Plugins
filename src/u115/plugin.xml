@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.u115.u115ServiceImpl" id="115.com" vendor="Meow+tonyk+Heend"
+<plugin class="cz.vity.freerapid.plugins.services.u115.u115ServiceImpl" id="u.115.com" vendor="Meow+tonyk"
         version="1.0.5">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?115\.com/file/.+"/>
-        <attribute id="minver" value="0.86"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="115.com"/>
+        <attribute id="services" value="u.115.com"/>
         <attribute id="maxDownloads" value="5"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="115.com" path="/" type="code"/>
+        <library id="u.115.com" path="/" type="code"/>
     </runtime>
 </plugin>

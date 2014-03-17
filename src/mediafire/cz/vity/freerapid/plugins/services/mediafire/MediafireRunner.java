@@ -4,13 +4,11 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -73,7 +71,7 @@ public class MediafireRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("Some issue while posting password");
                 }
             }
-            method = findDownloadUrl();
+            method = getMethodBuilder().setActionFromAHrefWhereATagContains("Download").toGetMethod();
             setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
@@ -82,66 +80,6 @@ public class MediafireRunner extends AbstractRunner {
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
-        }
-    }
-
-    private HttpMethod findDownloadUrl() throws Exception {
-        final List<DownloadElement> elements = DownloadElement.findDownloadElements(getContentAsString(), findZDivisor());
-        final String url = Collections.max(elements).getUrl();
-        return getGetMethod(url);
-    }
-
-    private int findZDivisor() throws ErrorDuringDownloadingException {
-        // gysl8luzk='';oq1w66x=unescape(....;eval(gysl8luzk);
-        //(...................................................) <-- this part is what we want
-        Matcher matcher = getMatcherAgainstContent("(([a-z\\d]+?)\\s*?=\\s*?\\\\?'\\\\?';\\s*?[a-z\\d]+?\\s*?=\\s*?unescape\\(.+?)eval\\(\\2\\);");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing page JavaScript (1)");
-        }
-        final String script = matcher.group(1) + matcher.group(2) + ";";
-        final String result;
-        try {
-            result = ScriptUtils.evaluateJavaScriptToString(script);
-        } catch (final Exception e) {
-            logger.warning(script);
-            throw new PluginImplementationException("Error executing page JavaScript", e);
-        }
-        matcher = PlugUtils.matcher("%\\s*(\\d+)", result);
-        if (!matcher.find()) {
-            logger.warning(result);
-            throw new PluginImplementationException("Error parsing page JavaScript (2)");
-        }
-        return Integer.parseInt(matcher.group(1));
-    }
-
-    private static class DownloadElement implements Comparable<DownloadElement> {
-        private final String url;
-        private final int zIndex;
-
-        public static List<DownloadElement> findDownloadElements(final String content, final int zDivisor) throws ErrorDuringDownloadingException {
-            final List<DownloadElement> list = new LinkedList<DownloadElement>();
-            final Matcher matcher = PlugUtils.matcher("<div class=\"download_link\"[^<>]*?z\\-index:(\\d+)[^<>]*?>\\s*<a href=\"(.+?)\"", content);
-            while (matcher.find()) {
-                list.add(new DownloadElement(matcher.group(2), Integer.parseInt(matcher.group(1)) % zDivisor));
-            }
-            if (list.isEmpty()) {
-                throw new PluginImplementationException("Download link not found");
-            }
-            return list;
-        }
-
-        private DownloadElement(final String url, final int zIndex) {
-            this.url = url;
-            this.zIndex = zIndex;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        @Override
-        public int compareTo(final DownloadElement that) {
-            return Integer.valueOf(this.zIndex).compareTo(that.zIndex);
         }
     }
 

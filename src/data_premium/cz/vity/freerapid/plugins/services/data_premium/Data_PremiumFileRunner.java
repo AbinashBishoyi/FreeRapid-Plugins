@@ -56,13 +56,13 @@ class Data_PremiumFileRunner extends AbstractRunner {
                 Login();
             }
 
-
+            makeRedirectedRequest(getMethod);
             matcher = getMatcherAgainstContent("Nincs érvényes prémium elõfizetésed!");
             if (matcher.find()) {
                 logger.info("No premium");
                 throw new NotRecoverableDownloadException("Not premium account!");
             }
-            matcher = getMatcherAgainstContent("<a href=\"(.*?)\" onmousedown=\"reload_median");
+            matcher = getMatcherAgainstContent("window.location.href='(.*?)';");
             if (matcher.find()) {
                 String downURL = matcher.group(1);
                 logger.info("downURL: " + downURL);

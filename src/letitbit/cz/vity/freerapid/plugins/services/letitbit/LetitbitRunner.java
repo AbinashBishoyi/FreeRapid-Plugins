@@ -133,18 +133,19 @@ public class LetitbitRunner extends AbstractRunner {
         final Matcher matcher = getMatcherAgainstContent("(?is)(<form\\b.+?</form>)");
         while (matcher.find()) {
             final String content = matcher.group(1);
-            if (content.contains("id=\"ifree_form\"")) {
-                final HttpMethod method = handleJavascriptMess(content);
-                if (!makeRedirectedRequest(method)) {
-                    throw new ServiceConnectionProblemException();
+            if (!content.contains("/sms/check") && !content.contains("check_pinkod")) {
+                HttpMethod method = null;
+                if (content.contains("<script id=\"jsprotect_")) {
+                    method = handleJavascriptMess(content);
+                } else if (content.contains("md5crypt")) {
+                    method = getMethodBuilder(content).setActionFromFormByIndex(1, true).toPostMethod();
                 }
-                return true;
-            } else if (content.contains("md5crypt") && !content.contains("/sms/check") && !content.contains("check_pinkod")) {
-                final HttpMethod method = getMethodBuilder(content).setActionFromFormByIndex(1, true).toPostMethod();
-                if (!makeRedirectedRequest(method)) {
-                    throw new ServiceConnectionProblemException();
+                if (method != null) {
+                    if (!makeRedirectedRequest(method)) {
+                        throw new ServiceConnectionProblemException();
+                    }
+                    return true;
                 }
-                return true;
             }
         }
         return false;
@@ -231,7 +232,6 @@ public class LetitbitRunner extends AbstractRunner {
         final Map<String, String> formParams = (Map<String, String>) engine.get("__outParams");
         final MethodBuilder mb = getMethodBuilder(formContent).setReferer(fileURL).setActionFromFormByIndex(1, false);
         for (final Map.Entry<String, String> entry : formParams.entrySet()) {
-            logger.info(entry.getKey() + " = " + entry.getValue());
             mb.setParameter(entry.getKey(), entry.getValue());
         }
         return mb.toPostMethod();

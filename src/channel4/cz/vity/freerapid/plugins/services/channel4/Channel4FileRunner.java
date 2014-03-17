@@ -28,6 +28,7 @@ class Channel4FileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkFileUrl();
         final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -39,32 +40,54 @@ class Channel4FileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("<span>\\s*(.+?)( \\| Series (\\d+) \\| Episode (\\d+))? \\- (.+?)\\s*</span>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
-        }
-        final String program = matcher.group(1).replace(": ", " - ");
-        final String episode = matcher.group(5).replace(": ", " - ");
         final String name;
-        if (matcher.group(2) == null) {
-            if (program.equals(episode)) {
-                name = program;
+        final Matcher matcher = getMatcherAgainstContent("id=\"brandLink\">\\s*<span>\\s*(.+?)(?: \\| Series (\\d+))?(?: \\| Episode (\\d+))? \\- (.+?)\\s*</span>");
+        if (matcher.find()) {
+            final String program = matcher.group(1).replace(": ", " - ");
+            final String seasonNum = matcher.group(2);
+            final String episodeNum = matcher.group(3);
+            final String episode = matcher.group(4).replace(": ", " - ");
+            if (seasonNum == null && episodeNum == null) {
+                if (program.equals(episode)) {
+                    name = program;
+                } else {
+                    name = String.format("%s - %s", program, episode);
+                }
+            } else if (seasonNum == null) {
+                final int episodeNumI = Integer.parseInt(episodeNum);
+                name = String.format("%s - E%02d - %s", program, episodeNumI, episode);
+            } else if (episodeNum == null) {
+                final int seasonNumI = Integer.parseInt(seasonNum);
+                name = String.format("%s - S%02d - %s", program, seasonNumI, episode);
             } else {
-                name = String.format("%s - %s", program, episode);
+                final int seasonNumI = Integer.parseInt(seasonNum);
+                final int episodeNumI = Integer.parseInt(episodeNum);
+                name = String.format("%s - S%02dE%02d - %s", program, seasonNumI, episodeNumI, episode);
             }
         } else {
-            final int seasonNum = Integer.parseInt(matcher.group(3));
-            final int episodeNum = Integer.parseInt(matcher.group(4));
-            name = String.format("%s - S%02dE%02d - %s", program, seasonNum, episodeNum, episode);
+            try {
+                name = PlugUtils.getStringBetween(getContentAsString(), "<title>", "- 4oD - Channel 4</title>");
+            } catch (PluginImplementationException e) {
+                throw new PluginImplementationException("File name not found");
+            }
         }
         httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private void checkFileUrl() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("^(.+?/programmes/.+?/4od).+?(\\d+)$", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing file URL");
+        }
+        fileURL = matcher.group(1) + "/player/" + matcher.group(2);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        checkFileUrl();
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();

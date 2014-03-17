@@ -30,9 +30,6 @@ class MediafireRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        if (1 != -1) {
-            throw new NotRecoverableDownloadException("Plugin is currently broken, please be patient");
-        }
         final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -46,10 +43,6 @@ class MediafireRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-
-        if (1 != -1) {
-            throw new NotRecoverableDownloadException("Plugin is currently broken, please be patient");
-        }
 
         final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {

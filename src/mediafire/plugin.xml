@@ -3,7 +3,8 @@
 <plugin id="mediafire.com" version="1.1.11" vendor="Lukiz"
         class="cz.vity.freerapid.plugins.services.mediafire.MediafireServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?mediafire\.com/.+"/>
+        <!-- currently broken plugin, added X so it won't be catched -->
+        <attribute id="urlRegex" value="http://(www\.)?Xmediafire\.com/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="mediafire.com"/>

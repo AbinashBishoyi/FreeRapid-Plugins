@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.ultramegabit.UltraMegabitServiceImpl"
-        id="ultramegabit.com" vendor="birchie" version="1.0.6">
+<plugin class="cz.vity.freerapid.plugins.services.filetrip.FileTripServiceImpl"
+        id="filetrip.net" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?ultramegabit\.com/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?filetrip\.net/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="ultramegabit.com"/>
+        <attribute id="services" value="filetrip.net"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="ultramegabit.com" path="/" type="code"/>
+        <library id="filetrip.net" path="/" type="code"/>
     </runtime>
 </plugin>

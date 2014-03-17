@@ -121,6 +121,7 @@ class UltraMegabitFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Reached free download limit, wait or try premium");
         }
         if (content.contains("file is available to premium users only")
+                || content.contains("Premium only download, Upgrade now")
                 || content.contains("this file requires premium to download")) {
             throw new NotRecoverableDownloadException("This file is only available to premium users");
         }

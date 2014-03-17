@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="180Upload.com" default="all" basedir=".">
-    <property name="application" value="180upload"/>
+<project name="FileTrip.net" default="all" basedir=".">
+    <property name="application" value="filetrip"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="180upload.jar"/>
+    <property name="mainjar.file" value="filetrip.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -63,8 +63,7 @@
     <target name="build" depends="compile" description="building ERModeller">
 
         <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**, **/one80upload/**, resources/**"
-                     excludes="**/TestApp*"/>
+            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**" excludes="**/TestApp*"/>
         </copy>
 
         <copy todir="${build.dir}">
@@ -76,9 +75,7 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-            <sourcepath location="../recaptcha"/>
-            <sourcepath location="../xfilesharing/"/>
-            <sourcepath location="../solvemediacaptcha/"/>
+
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

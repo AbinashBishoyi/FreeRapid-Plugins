@@ -84,7 +84,9 @@ class YleAreenaFileRunner extends AbstractRtmpRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("Valitettavasti etsimääsi sivua ei löytynyt")
-                || getContentAsString().contains("Tyvärr kunde sidan du sökte inte hittas")) {
+                || getContentAsString().contains("Tyvärr kunde sidan du sökte inte hittas")
+                || getContentAsString().contains("Ohjelman nettikatseluaika on päättynyt")
+                || getContentAsString().contains("Programmets visningstid på nätet har utgått")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

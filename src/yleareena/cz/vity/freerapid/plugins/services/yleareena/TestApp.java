@@ -18,7 +18,7 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://areena.yle.fi/tv/1553575"));
+            httpFile.setNewURL(new URL("http://areena.yle.fi/tv/1622285"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

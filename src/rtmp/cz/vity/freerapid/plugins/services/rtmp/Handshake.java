@@ -207,7 +207,7 @@ class Handshake {
         session.setServerResponse(serverResponse);
 
         int typeNum = serverResponse[0];
-        logger.fine("Server sent RTMP type " + typeNum);
+        logger.info("Server sent RTMP type " + typeNum);
         HandshakeType type = HandshakeType.valueOf(typeNum);
         session.setHandshakeType(type);
         if (!session.isEncrypted() && type.isEncrypted()) {

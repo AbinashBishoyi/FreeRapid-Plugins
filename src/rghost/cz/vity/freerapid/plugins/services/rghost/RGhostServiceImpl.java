@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class RGhostServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "rghost.net";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 4;
     }

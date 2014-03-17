@@ -48,10 +48,8 @@ class RGhostFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
-
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
-                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
@@ -62,7 +60,7 @@ class RGhostFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("\u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442")) {
+        if (content.contains("File was deleted") || content.contains("\u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

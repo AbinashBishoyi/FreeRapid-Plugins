@@ -47,7 +47,9 @@ class HulkshareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download.png").toHttpMethod();
+            final String x = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\" onclick=\"");
+//            System.out.println("x = " + x);
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(x).toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {

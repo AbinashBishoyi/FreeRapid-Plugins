@@ -19,7 +19,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://netload.in/dateiMTgzMjUwMj/The.IT.Crowd.S03E05.WS.PDTV.XviD-RiVER.rar.htm"));
+            httpFile.setNewURL(new URL(" http://netload.in/dateihQrwIMZOii/nnkrkonose2.part01.rar.htm"));
+            //   httpFile.setNewURL(new URL("http://netload.in/dateiMTgzMjUwMj/The.IT.Crowd.S03E05.WS.PDTV.XviD-RiVER.rar.htm"));
             testRun(new NetloadInShareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

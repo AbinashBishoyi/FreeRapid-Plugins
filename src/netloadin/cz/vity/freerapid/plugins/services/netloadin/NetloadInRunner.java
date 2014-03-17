@@ -70,10 +70,15 @@ class NetloadInRunner extends AbstractRunner {
                 httpFile.setFileName(matcher.group(1));
             } else logger.warning("File name was not found" + getContentAsString());
 
-            matcher = getMatcherAgainstContent("please wait.*countdown\\(([0-9]+)");
+            matcher = getMatcherAgainstContent(">countdown\\(([0-9]+)");
             if (matcher.find()) {
                 int time = Integer.parseInt(matcher.group(1)) / 100;
-                downloadTask.sleep(time + 1);
+                matcher = getMatcherAgainstContent("download:");
+                if (matcher.find()) {
+                    downloadTask.sleep(time + 1);
+                } else {
+                    throw new YouHaveToWaitException(String.format("You could download your next file in %s minutes", (time / 60)), time + 1);
+                }
             }
             matcher = PlugUtils.matcher("href=\"([^\"]*)\" >Click here for the download", getContentAsString());
             if (matcher.find()) {

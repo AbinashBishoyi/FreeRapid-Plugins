@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
 
-           httpFile.setNewURL(new URL("http://bagruj.cz/ls4vc9inx1p8/dovolena.503.part3.rar.html"));
+            httpFile.setNewURL(new URL("http://bagruj.cz/km5vxgy38hll/02x09_-_Utis_se__me_srdce_Nerez.part2.rar.html)"));
             testRun(new BagrujServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

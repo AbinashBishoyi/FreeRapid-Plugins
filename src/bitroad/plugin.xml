@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="bitroad.net" version="0.5" vendor="Kajda"
+        class="cz.vity.freerapid.plugins.services.bitroad.BitRoadServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?bitroad\.net/download/.+"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="bitroad.net"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="bitroad.net" path="/" type="code"/>
+    </runtime>
+</plugin>

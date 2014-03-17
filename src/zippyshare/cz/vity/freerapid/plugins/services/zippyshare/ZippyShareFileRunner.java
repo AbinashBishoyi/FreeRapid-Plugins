@@ -48,10 +48,10 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             final String url;
-            Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?)document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*([^<>]+?)</script>");
+            Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*[^<>]+?)</script>");
             if (matcher.find()) {
-                final String script = (matcher.group(1) + matcher.group(2)).replaceAll("document\\.getElementById\\('dlbutton'\\)\\.", "");
-                logger.info(script);
+                final String script = matcher.group(1) + ";\ndocument.getElementById('dlbutton').href";
+                logger.info("Evaluating script:\n" + script);
                 final Context context = Context.enter();
                 try {
                     final Scriptable scope = context.initStandardObjects();

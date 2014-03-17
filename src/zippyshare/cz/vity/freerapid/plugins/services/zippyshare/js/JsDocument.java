@@ -2,12 +2,16 @@ package cz.vity.freerapid.plugins.services.zippyshare.js;
 
 import sun.org.mozilla.javascript.internal.ScriptableObject;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author ntoskrnl
  */
 @SuppressWarnings("unused")
 public class JsDocument extends ScriptableObject {
 
+    private final Map<String, Object> elements = new HashMap<String, Object>();
     private String pageContent;
 
     public JsDocument() {
@@ -32,7 +36,12 @@ public class JsDocument extends ScriptableObject {
     }
 
     public Object getElementById(final String id) {
-        return new JsElement(id, pageContent);
+        Object element = elements.get(id);
+        if (element == null) {
+            element = new JsElement(id, pageContent);
+            elements.put(id, element);
+        }
+        return element;
     }
 
 }

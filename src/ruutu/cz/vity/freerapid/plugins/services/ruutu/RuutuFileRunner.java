@@ -58,6 +58,7 @@ class RuutuFileRunner extends AbstractRtmpRunner {
             checkProblems();
 
             if (getContentAsString().contains("<AudioSourceFile>")) {
+                httpFile.setFileName(httpFile.getFileName().replaceFirst("\\.flv$", ".mp3"));
                 final String sourceFile = PlugUtils.getStringBetween(getContentAsString(), "<AudioSourceFile>", "</AudioSourceFile>");
                 method = getGetMethod(sourceFile);
                 if (!tryDownloadAndSaveFile(method)) {

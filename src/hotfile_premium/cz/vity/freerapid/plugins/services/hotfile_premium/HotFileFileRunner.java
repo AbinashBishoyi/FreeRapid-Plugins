@@ -47,26 +47,39 @@ class HotFileFileRunner extends AbstractRunner {
 
         login();
 
-        final GetMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
+        if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();
-            checkNameAndSize();
-
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
-                logger.warning(getContentAsString());
-                throw new ServiceConnectionProblemException("Error starting download");
-            }
-        } else {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
+            logger.warning(getContentAsString());
+            throw new ServiceConnectionProblemException("Error starting download");
         }
+
+//        final GetMethod method = getGetMethod(fileURL);
+//        if (makeRedirectedRequest(method)) {
+//            checkProblems();
+//            checkNameAndSize();
+//
+//            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toGetMethod();
+//            if (!tryDownloadAndSaveFile(httpMethod)) {
+//                checkProblems();
+//                logger.warning(getContentAsString());
+//                throw new ServiceConnectionProblemException("Error starting download");
+//            }
+//        } else {
+//            checkProblems();
+//            throw new ServiceConnectionProblemException();
+//        }
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "Downloading:</strong>", "<span>");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "|</span> <strong>", "</strong>");
+        final String content = getContentAsString();
+        if (content.contains("<strong>Downloading:</strong>")) {
+            PlugUtils.checkName(httpFile, content, "Downloading:</strong> ", " <span>");
+            PlugUtils.checkFileSize(httpFile, content, "|</span> <strong>", "</strong>");
+        } else {
+            PlugUtils.checkName(httpFile, content, "Downloading <b>", "</b>");
+            PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\">| ", "</span>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

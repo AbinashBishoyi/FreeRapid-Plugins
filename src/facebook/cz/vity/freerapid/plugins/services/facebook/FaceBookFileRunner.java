@@ -69,17 +69,19 @@ class FaceBookFileRunner extends AbstractRunner {
                 videoUrl = URLDecoder.decode(PlugUtils.unescapeUnicode(videoUrl), "UTF-8");
                 method = getGetMethod(videoUrl);
             } else { //pic
-                MethodBuilder methodBuilder;
-                try {
+                final MethodBuilder methodBuilder;
+                //language cookie doesn't seem to work, search link from regex, instead of grabbing link that contains "Download" token.
+                Matcher matcher = getMatcherAgainstContent("<a class=\"fbPhotosPhotoActionsItem\" href=\"(https?://[^>]+?(?:akamaihd\\.net|fbcdn\\.net)/.+?)\"");
+                if (matcher.find()) {
                     methodBuilder = getMethodBuilder()
                             .setReferer(fileURL)
-                            .setActionFromAHrefWhereATagContains("Download");
-                } catch (Exception e) {
+                            .setAction(matcher.group(1));
+                } else {
                     methodBuilder = getMethodBuilder()
                             .setReferer(fileURL)
                             .setActionFromImgSrcWhereTagContains("fbPhotoImage");
                 }
-                final Matcher matcher = PlugUtils.matcher("https?://.+?/([^/]+?)(?:\\?.+?)?$", methodBuilder.getAction());
+                matcher = PlugUtils.matcher("https?://.+?/([^/]+?)(?:\\?.+?)?$", methodBuilder.getAction());
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Error parsing picture url");
                 }

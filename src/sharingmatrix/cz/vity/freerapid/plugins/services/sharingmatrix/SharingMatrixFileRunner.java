@@ -1,16 +1,16 @@
 package cz.vity.freerapid.plugins.services.sharingmatrix;
 
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
-import cz.vity.freerapid.plugins.exceptions.*;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
-import java.awt.image.BufferedImage;
 
 /**
  * @author Kajda, JPEXS
@@ -44,36 +44,36 @@ class SharingMatrixFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();
             final String rootURL = PlugUtils.getStringBetween(contentAsString, "URL_ROOT = '", "'");
             final String linkId = PlugUtils.getStringBetween(contentAsString, "link_id = '", "'");
-            final String linkName = PlugUtils.getStringBetween(contentAsString, "link_name = '", "'");                                    
-            
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL+"/include/crypt/cryptographp.php?cfg=0&").toHttpMethod();                    
+            final String linkName = PlugUtils.getStringBetween(contentAsString, "link_name = '", "'");
+
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/include/crypt/cryptographp.php?cfg=0&").toHttpMethod();
             httpMethod.setFollowRedirects(true);
-            InputStream is=client.makeRequestForFile(httpMethod);
-            
+            InputStream is = client.makeRequestForFile(httpMethod);
+
             CaptchaSupport captchaSupport = getCaptchaSupport();
-            BufferedImage captchaImage=captchaSupport.loadCaptcha(is);
-            do{
-              String captchaR = captchaSupport.askForCaptcha(captchaImage);
-              if (captchaR == null) {
-                throw new CaptchaEntryInputMismatchException();
-              }
-              
-              httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/verifier.php").setParameter("code",captchaR).toPostMethod();                    
-              if(!makeRedirectedRequest(httpMethod)){
-                throw new ServiceConnectionProblemException();
-              }
-            }while(!getContentAsString().trim().equals("1"));
-            
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/dl.php").toHttpMethod();          
+            BufferedImage captchaImage = captchaSupport.loadCaptcha(is);
+            do {
+                String captchaR = captchaSupport.askForCaptcha(captchaImage);
+                if (captchaR == null) {
+                    throw new CaptchaEntryInputMismatchException();
+                }
+
+                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/verifier.php").setParameter("code", captchaR).toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    throw new ServiceConnectionProblemException();
+                }
+            } while (!getContentAsString().trim().equals("1"));
+
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/dl.php").toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {
-                final String dlID = getContentAsString();            
-                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/_get.php?link_id=" + linkId + "&link_name=" + linkName + "&dl_id="+dlID+"&password=").toHttpMethod();
-                
-                HttpMethod httpUpdateMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL+"/ajax_scripts/update_dl.php?id="+dlID).toHttpMethod();                
+                final String dlID = getContentAsString();
+                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/_get.php?link_id=" + linkId + "&link_name=" + linkName + "&dl_id=" + dlID + "&password=").toHttpMethod();
+
+                HttpMethod httpUpdateMethod = getMethodBuilder().setReferer(fileURL).setAction(rootURL + "/ajax_scripts/update_dl.php?id=" + dlID).toHttpMethod();
                 makeRedirectedRequest(httpUpdateMethod);
-                
+
                 if (makeRedirectedRequest(httpMethod)) {
-                    contentAsString = getContentAsString();                   
+                    contentAsString = getContentAsString();
                     httpMethod = getMethodBuilder().setReferer(fileURL).setAction("/download/" + PlugUtils.getStringBetween(contentAsString, "hash:\"", "\"") + "/" + dlID + "/").setBaseURL(PlugUtils.getStringBetween(contentAsString, "{serv:\"", "\"")).toHttpMethod();
 
                     if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -97,6 +97,9 @@ class SharingMatrixFileRunner extends AbstractRunner {
 
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("no available free download slots left for your country")) {
+            throw new URLNotAvailableAnymoreException("We are very sorry, but for this file no available free download slots left for your country today");
         }
     }
 

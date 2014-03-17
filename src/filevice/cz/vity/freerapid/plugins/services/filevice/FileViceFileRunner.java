@@ -23,6 +23,7 @@ class FileViceFileRunner extends XFileSharingRunner {
     protected List<String> getDownloadPageMarkers() {
         final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
         downloadPageMarkers.add("This download will be available ");
+        downloadPageMarkers.add("http://filevice.com/images/download_button.png");
         return downloadPageMarkers;
     }
 

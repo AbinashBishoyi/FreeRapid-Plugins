@@ -57,7 +57,7 @@ class FileFactoryRunner extends AbstractRunner {
                 makeRedirectedRequest(getMethod);
             }
             HttpMethod httpMethod;
-            if (!getContentAsString().contains("Recaptcha\\.create\\(\\s*?\"(.+?)\"")) {   // Get rid of the captcha during off-peak
+            if (!getContentAsString().contains("Recaptcha.create")) {   // Get rid of the captcha during off-peak
                 String redirectUrl = PlugUtils.getStringBetween(getContentAsString(), "window.location = '", "';");
                 redirectUrl = redirectUrl.replaceFirst(Pattern.quote("' + document.location.host + '"), "filefactory.com");
                 httpMethod = getGetMethod(redirectUrl);
@@ -77,7 +77,7 @@ class FileFactoryRunner extends AbstractRunner {
                         .setReferer(fileURL)
                         .setAction(action)
                         .toGetMethod();
-                if (makeRedirectedRequest(httpMethod)) {
+                if (!makeRedirectedRequest(httpMethod)) {
                     checkAllProblems();
                     throw new ServiceConnectionProblemException();
                 }

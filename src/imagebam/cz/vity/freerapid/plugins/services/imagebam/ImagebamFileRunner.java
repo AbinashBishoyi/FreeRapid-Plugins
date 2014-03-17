@@ -29,6 +29,7 @@ class ImagebamFileRunner extends AbstractRunner {
             String filename = URLDecoder.decode(httpMethod.getPath().substring(httpMethod.getPath().lastIndexOf("/") + 1), "UTF-8");
             if (!filename.contains(".")) filename += ".jpg";
             httpFile.setFileName(filename);
+            setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

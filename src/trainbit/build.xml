@@ -32,6 +32,7 @@
         <include name="**/?*.txt"/>
         <include name="**/?*.gif"/>
         <include name="**/?*.png"/>
+        <include name="**/?*.ico"/>
         <include name="**/?*.jpeg"/>
         <include name="**/?*.jpg"/>
         <include name="**/?*.html"/>

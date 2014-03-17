@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.depositfiles.DepositFilesShareServiceImpl" id="depositfiles.com"
-        vendor="Whole team" version="1.3.7">
+        vendor="Whole team" version="1.4.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?depositfiles\.com/.+"/>
         <attribute id="minver" value="0.852"/>

@@ -117,9 +117,36 @@ class DepositFilesRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
             }
 
-            matcher = getMatcherAgainstContent("<form[^>]+action=\"([^\"]+)\"");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Cannot find download URL");
+            matcher = getMatcherAgainstContent("\\('fastdownload'\\s*,\\s*'(.+?)'\\)");
+            if (matcher.find()) {
+                logger.info("Fast download");
+                method = getMethodBuilder()
+                        .setAction("/get_file.php")
+                        .setReferer(fileURL)
+                        .setParameter("fd", matcher.group(1))
+                        .toGetMethod();
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                matcher = getMatcherAgainstContent("\\.load\\('(.+?)'\\)");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Cannot find download URL (2)");
+                }
+                method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
+                downloadTask.sleep(31);
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+                matcher = getMatcherAgainstContent("\\.href\\s*=\\s*'(.+?)';");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Cannot find download URL (3)");
+                }
+            } else {
+                matcher = getMatcherAgainstContent("<form[^>]+action=\"([^\"]+)\"");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Cannot find download URL (1)");
+                }
             }
             String finalDownloadUrl = matcher.group(1);
             logger.info("Download URL: " + finalDownloadUrl);

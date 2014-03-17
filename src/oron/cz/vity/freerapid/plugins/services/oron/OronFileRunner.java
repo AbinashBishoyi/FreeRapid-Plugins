@@ -93,7 +93,7 @@ class OronFileRunner extends AbstractRunner {
                 || getContentAsString().contains("This file can only be downloaded by Premium Users")) {
             throw new URLNotAvailableAnymoreException("This file can only be downloaded by Premium Users");
         }
-        Matcher err_m = PlugUtils.matcher("<font class=\"err\">([^<>]+)<", getContentAsString());
+        Matcher err_m = getMatcherAgainstContent("<p class=\"err\">([^<>]+)<");
         if (err_m.find()) {
             if (err_m.group(1).contains("No such file"))
                 throw new URLNotAvailableAnymoreException("File not found");
@@ -108,7 +108,7 @@ class OronFileRunner extends AbstractRunner {
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        Matcher err_m = getMatcherAgainstContent("<font class=\"err\">([^<>]+)<");
+        Matcher err_m = getMatcherAgainstContent("<p class=\"err\">([^<>]+)<");
         if (err_m.find()) {
             Matcher matcher = getMatcherAgainstContent("You have to wait (\\d+? hours?)?(?:, )?(\\d+? minutes?)?(?:, )?(\\d+? seconds?)? until the next download becomes available");
             if (matcher.find()) {

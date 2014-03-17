@@ -55,7 +55,11 @@ class FileHippoFileRunner extends AbstractRunner {
             }
             final HttpMethod dlMethod = getMethodBuilder()
                     .setActionFromAHrefWhereATagContains("download.png").toHttpMethod();
-
+            final int status = client.makeRequest(dlMethod, false);
+            if (status / 100 == 3) {
+                final String dlUrl = dlMethod.getResponseHeader("Location").getValue();
+                httpFile.setFileName(dlUrl.substring(dlUrl.lastIndexOf("/") + 1));
+            }
             if (!tryDownloadAndSaveFile(dlMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

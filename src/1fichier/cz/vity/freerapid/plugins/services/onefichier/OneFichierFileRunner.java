@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.onefichier;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -72,8 +73,12 @@ class OneFichierFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("file could not be found")) {
+        if (contentAsString.contains("file could not be found") ||
+                contentAsString.contains("The requested file has been deleted")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("you can download only one file at a time")) {
+            throw new YouHaveToWaitException("You can download only one file at a time and you must wait up to 5 minutes between each downloads", 300);
         }
     }
 

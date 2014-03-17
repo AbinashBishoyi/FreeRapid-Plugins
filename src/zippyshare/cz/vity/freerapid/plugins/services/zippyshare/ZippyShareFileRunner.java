@@ -4,12 +4,14 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.services.zippyshare.js.JsDocument;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import cz.vity.freerapid.plugins.webclient.utils.ScriptUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import sun.org.mozilla.javascript.internal.Context;
+import sun.org.mozilla.javascript.internal.Scriptable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +20,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.InflaterInputStream;
-
 
 /**
  * @author Vity+ntoskrnl+tonyk+CapCap
@@ -52,7 +53,19 @@ class ZippyShareFileRunner extends AbstractRunner {
             if (matcher.find()) {
                 final String script = (matcher.group(1) + matcher.group(2)).replaceAll("document\\.getElementById\\('dlbutton'\\)\\.", "");
                 logger.info(script);
-                url = ScriptUtils.evaluateJavaScriptToString(script);
+                final Context context = Context.enter();
+                try {
+                    final Scriptable scope = context.initStandardObjects();
+                    final JsDocument d = new JsDocument(getContentAsString());
+                    scope.put("document", scope, d);
+                    try {
+                        url = (String) context.evaluateString(scope, script, "<script>", 1, null);
+                    } catch (Exception e) {
+                        throw new PluginImplementationException("Script execution failed", e);
+                    }
+                } finally {
+                    Context.exit();
+                }
             } else {
                 matcher = getMatcherAgainstContent("url\\s*:\\s*'(.+?)'");
                 if (!matcher.find()) {
@@ -79,7 +92,7 @@ class ZippyShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("The requsted file does not exist on this server")
+        if (contentAsString.contains("does not exist on this server")
                 || contentAsString.contains("File has expired")
                 || contentAsString.contains("<h1>HTTP Status")) {
             throw new URLNotAvailableAnymoreException("File not found");

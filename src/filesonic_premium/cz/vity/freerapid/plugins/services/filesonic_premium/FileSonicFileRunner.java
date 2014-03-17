@@ -97,13 +97,16 @@ class FileSonicFileRunner extends AbstractRunner {
         method.setRequestHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         method.setRequestHeader("X-Requested-With", "XMLHttpRequest");
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
-        if (!makeRequest(method)) {
+        if (!makeRedirectedRequest(method)) {
             logger.warning("Request URL: " + method.getURI());
             logger.warning("Response status line: " + method.getStatusLine());
             logger.warning("Response content: " + getContentAsString());
             throw new ServiceConnectionProblemException("Error posting login info");
         }
         if (!getContentAsString().contains("\"status\":\"success\"")) {
+            logger.warning("Request URL: " + method.getURI());
+            logger.warning("Response status line: " + method.getStatusLine());
+            logger.warning("Response content: " + getContentAsString());
             throw new NotRecoverableDownloadException("Invalid FileSonic Premium account login information!");
         }
     }

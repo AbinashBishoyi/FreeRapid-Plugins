@@ -39,20 +39,38 @@ class BcVcFileRunner extends AbstractRunner {
             final String oid = matcher.group(3);
             final String ref = matcher.group(4);
 
-            final MethodBuilder methodBuilder = getMethodBuilder()
+            MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAjax()
                     .setAction("http://bc.vc/fly/ajax.fly.php")
-                    .setParameter("opt", "check_log")
-                    .setParameter("args[aid]", aid)
-                    .setParameter("args[lid]", lid)
-                    .setParameter("args[oid]", oid)
-                    .setParameter("args[ref]", ref);
+                    .setParameter("opt", "checks_log")
+                    .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
             HttpMethod httpMethod = methodBuilder.toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+
+            methodBuilder.setParameter("opt", "check_log")
+                    .setParameter("args[aid]", aid)
+                    .setParameter("args[lid]", lid)
+                    .setParameter("args[oid]", oid)
+                    .setParameter("args[ref]", ref);
+            httpMethod = methodBuilder.toPostMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+
+            if (getContentAsString().contains("\"message\":false")) {
+                downloadTask.sleep(1);
+                httpMethod = methodBuilder.toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            }
+
             downloadTask.sleep(8);
             methodBuilder.setParameter("opt", "make_log");
             httpMethod = methodBuilder.toPostMethod();
@@ -60,6 +78,7 @@ class BcVcFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+
             final String url = PlugUtils.getStringBetween(getContentAsString(), "url\":\"", "\"").replace("\\/", "/");
             httpFile.setNewURL(new URL(url));
             httpFile.setPluginID("");

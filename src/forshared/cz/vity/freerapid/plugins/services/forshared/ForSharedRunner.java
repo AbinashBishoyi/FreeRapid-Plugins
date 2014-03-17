@@ -151,13 +151,13 @@ class ForSharedRunner extends AbstractRunner {
     protected boolean login() throws Exception {
         synchronized (getClass()) {
             final ForSharedServiceImpl service = (ForSharedServiceImpl) getPluginService();
-            final PremiumAccount pa = service.getConfig();
-            if (pa == null || !pa.isSet()) {
-                LOGIN_CACHE.remove(getClass());
-                addCookie(new Cookie(".4shared.com", "Login", "385087947", "/", 86400, false));
-                addCookie(new Cookie(".4shared.com", "Password", "c27a64bbc7de9649e94dcae8d45ca709", "/", 86400, false));
-                logger.info("No account data set, skipping login");
-                return false;
+            PremiumAccount pa = service.getConfig();
+            if (!pa.isSet()) {
+                pa = service.showConfigDialog();
+                if (pa == null || !pa.isSet()) {
+                    LOGIN_CACHE.remove(getClass());
+                    throw new BadLoginException("No 4Shared account login information!");
+                }
             }
             final LoginData loginData = LOGIN_CACHE.get(getClass());
             if (loginData == null || !pa.equals(loginData.getPa()) || loginData.isStale()) {
@@ -165,16 +165,12 @@ class ForSharedRunner extends AbstractRunner {
                 doLogin(pa);
                 final Cookie[] cookies = new Cookie[2];
                 final Cookie loginCookie = getCookieByName("Login");
-                if (loginCookie != null) {
-                    cookies[0] = loginCookie;
-                }
                 final Cookie passwdCookie = getCookieByName("Password");
-                if (passwdCookie != null) {
-                    cookies[1] = passwdCookie;
-                }
-                if ((cookies[0] == null) || (cookies[1] == null)) {
+                if ((loginCookie == null) || (passwdCookie == null)) {
                     throw new PluginImplementationException("Login cookies not found");
                 }
+                cookies[0] = loginCookie;
+                cookies[1] = passwdCookie;
                 LOGIN_CACHE.put(getClass(), new LoginData(pa, cookies));
             } else {
                 logger.info("Login data cache hit");

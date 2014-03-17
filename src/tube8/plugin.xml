@@ -3,11 +3,10 @@
 <plugin id="tube8.com" version="1.0.0" vendor="TommyTom"
         class="cz.vity.freerapid.plugins.services.tube8.Tube8ServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?tube8\.com/.+?/.+?/[0-9]*"/>
+        <attribute id="urlRegex" value="http://(www\.)?tube8\.com/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="tube8.com"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="9"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

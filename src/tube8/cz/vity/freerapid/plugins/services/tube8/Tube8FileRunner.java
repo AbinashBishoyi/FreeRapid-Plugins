@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.tube8;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-//import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -59,7 +58,6 @@ class Tube8FileRunner extends AbstractRunner {
             // final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("flashvars.video_url = '", "'").toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else {
@@ -69,10 +67,8 @@ class Tube8FileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        //TODO detect redirect to index as there is no error
-        if (contentAsString.contains("File Not Found")) {//TODO
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (getContentAsString().contains(">Newest Videos<")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 

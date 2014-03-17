@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="RapidSharePremium Plugin" default="all" basedir=".">
+    <dirname property="imported.basedir" file="${ant.file.RapidSharePremium Plugin}"/>
     <property name="application" value="rapidshare_premium"/>
-    <property name="version" value="1.1.7"/>
+    <property name="version" value="1.2.0"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="rapidshare_premium.jar"/>
@@ -9,16 +10,13 @@
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
     <!-- output data directories -->
-    <property name="build.dir" value="../../plugins/${version.name}"/>
-    <property name="classes.dir" value="../../_classes"/>
-    <property name="dist.dir" value="../../dist"/>
+    <property name="build.dir" value="${imported.basedir}/../../plugins/${version.name}"/>
+    <property name="classes.dir" value="${imported.basedir}/../../_classes"/>
+    <property name="dist.dir" value="${imported.basedir}/../../dist"/>
 
     <!-- input data directories -->
-    <property name="src.dir" value="."/>
-    <!--<property name="etc.dir" value="etc"/>-->
-    <!--<property name="doc.dir" value="doc"/>-->
-    <property name="lib.dir" value="../../lib"/>
-    <!--<property name="dev.dir" value="dev"/>-->
+    <property name="src.dir" value="${imported.basedir}"/>
+    <property name="lib.dir" value="${imported.basedir}/../../lib"/>
     <property name="plugins.dir" value="plugins"/>
 
     <fileset id="jars" dir="${lib.dir}" includes="**/*"/>
@@ -72,7 +70,7 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" debug="on" target="1.6">
-            <sourcepath location="../devapp"/>
+            <sourcepath location="${imported.basedir}/../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->
 

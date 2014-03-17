@@ -18,6 +18,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -35,11 +36,15 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     private boolean badConfig = false;
     private static String versionUrl="http://www.multishare.cz/html/mms_support.php?version";
 
-    private static String version="1.2.0";
+    private static String version="1.2.1";
+    
+    private static final String HTTP_USER_AGENT = "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.10) Gecko/2009042523 Ubuntu/9.04 (jaunty) Firefox/3.0.10";
 
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        setClientParameter(DownloadClientConsts.USER_AGENT, HTTP_USER_AGENT);
+        
         checkNameAndSize();
     }
 
@@ -52,7 +57,15 @@ class MultiShareMMSFileRunner extends AbstractRunner {
                 throw new URLNotAvailableAnymoreException(content.substring(4));
             }
             PlugUtils.checkName(httpFile, content, "\"file_name\":\"", "\"");
-            PlugUtils.checkFileSize(httpFile, content, "\"file_size\":", ",");
+            
+            String fileSize=PlugUtils.getStringBetween(content, "\"file_size\":", ",");
+            if(fileSize.startsWith("\"")){
+                fileSize = fileSize.substring(1);
+            }
+            if(fileSize.endsWith("\"")){
+                fileSize = fileSize.substring(0,fileSize.length()-1);
+            }
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         }
     }
@@ -90,6 +103,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        setClientParameter(DownloadClientConsts.USER_AGENT, HTTP_USER_AGENT);
         checkNameAndSize();
         versionCheck();    
         String jmeno = "";
@@ -118,6 +132,7 @@ class MultiShareMMSFileRunner extends AbstractRunner {
             }
             String link = PlugUtils.getStringBetween(content, "\"link\":\"", "\"");
             link = link.replace("\\/", "/");
+            link = URLDecoder.decode(link, "UTF-8");
             if (!tryDownloadAndSaveFile(getGetMethod(link))) {
                 logger.info(getContentAsString());
                 throw new ServiceConnectionProblemException();

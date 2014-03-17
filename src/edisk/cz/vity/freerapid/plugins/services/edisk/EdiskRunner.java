@@ -145,7 +145,7 @@ class EdiskRunner extends AbstractRunner {
     private PostMethod hackCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("te text z obr")) {
             downloadTask.sleep(5);
-            Matcher matcher = PlugUtils.matcher("form method=\"post\" action=\"([^\"]*)\"", contentAsString);
+            Matcher matcher = PlugUtils.matcher("form method=\"post\"\\s*action=\"([^\"]*)\"", contentAsString);
             if (!matcher.find()) {
                 logger.info(getContentAsString());
                 throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");

@@ -35,11 +35,11 @@ class ImageShackFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher name = getMatcherAgainstContent("Filename:.+?<td[^<>]*?>(.+?)</td>");
+        final Matcher name = getMatcherAgainstContent("Filename:.*?<.+?>\\s*(?:<.+?>)?(.+?)</");
         if (!name.find()) throw new PluginImplementationException("File name not found");
         httpFile.setFileName(name.group(1));
 
-        final Matcher size = getMatcherAgainstContent("Size:.+?<td[^<>]*?>(.+?)</td>");
+        final Matcher size = getMatcherAgainstContent("Size:.*?<.+?>\\s*(?:<.+?>)?(.+?)</");
         if (!size.find()) throw new PluginImplementationException("File size not found");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
 
@@ -61,7 +61,7 @@ class ImageShackFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("blue/external.png").toGetMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("external.png").toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

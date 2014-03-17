@@ -54,7 +54,7 @@ class NetloadInRunner extends AbstractRunner {
             captchaCount = 0;
             do {
                 stepEnterPage(getContentAsString());
-                if (!getContentAsString().contains("Please enter the Securitycode")) {
+                if (!getContentAsString().contains("Please enter the security code")) {
                     throw new PluginImplementationException("Captcha not found");
                 }
                 stepCaptcha(getContentAsString());
@@ -65,7 +65,7 @@ class NetloadInRunner extends AbstractRunner {
             if (matcher.find()) {
                 httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
             }
-            matcher = getMatcherAgainstContent("download:\\s*([^<]*)");
+            matcher = getMatcherAgainstContent("Download:\\s*([^<]*)");
             if (matcher.find()) {
                 httpFile.setFileName(matcher.group(1));
             } else logger.warning("File name was not found" + getContentAsString());
@@ -73,14 +73,14 @@ class NetloadInRunner extends AbstractRunner {
             matcher = getMatcherAgainstContent(">countdown\\(([0-9]+)");
             if (matcher.find()) {
                 int time = Integer.parseInt(matcher.group(1)) / 100;
-                matcher = getMatcherAgainstContent("download:");
+                matcher = getMatcherAgainstContent("Download:");
                 if (matcher.find()) {
                     downloadTask.sleep(time + 1);
                 } else {
                     throw new YouHaveToWaitException(String.format("You could download your next file in %s minutes", (time / 60)), time + 1);
                 }
             }
-            matcher = PlugUtils.matcher("href=\"([^\"]*)\">Click here for the download", getContentAsString());
+            matcher = PlugUtils.matcher("href=\"([^\"]*)\">Or click here.</a></b><br/>", getContentAsString());
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info("Found File URL - " + s);

@@ -106,13 +106,6 @@ class CtdiskRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private HttpMethod stepCaptcha_old(final String fileId) throws Exception {
-        String captcha = getCaptchaSupport().getCaptcha(String.format("http://www.ctdisk.com/randcodeV2.php?fid=%s&rand=%f", fileId, 1.0));
-
-        return getMethodBuilder().setReferer(fileURL).setAction("http://www.ctdisk.com/guest_loginV2.php")
-                .setParameter("file_id", fileId).setParameter("randcode", captcha).toPostMethod();
-    }
-
     private HttpMethod stepCaptcha(final String fileId) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaURL = String.format("http://www.ctdisk.com/randcodeV2.php?fid=%s&rand=%f", fileId, 1.0);
@@ -124,8 +117,10 @@ class CtdiskRunner extends AbstractRunner {
             captcha = PlugUtils.recognize(captchaImage, "-C 0-9");
             if (captcha == null) {
                 logger.info("Could not separate captcha letters (attempt " + captchaCounter + " of " + CAPTCHA_MAX + ")");
+                captcha_result = "000";
+            } else {
+                captcha_result = captcha.replaceAll("\\D", "");
             }
-            captcha_result = captcha.replaceAll("\\D", "");
             logger.info("Attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", OCR recognized " + captcha_result);
             captchaCounter++;
         } else {

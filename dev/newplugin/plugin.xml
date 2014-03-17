@@ -1,11 +1,10 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="#fulllower#" version="1.0.0" vendor="#author#"
-        class="cz.vity.freerapid.plugins.services.#shortsmall#.#fullWithoutDot#ServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.#shortsmall#.#fullWithoutDot#ServiceImpl" id="#fulllower#" vendor="#author#" version="1.0.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?#shortsmall#\.#afterDot#/.+"/>
-        <attribute id="minver" value="0.83"/>
-        <attribute id="maxver" value="0.849"/>
+        <attribute id="minver" value="0.85"/>
+        <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="#fulllower#"/>
         <!-- TODO max count of parallel downloads -->
         <attribute id="maxDownloads" value="1"/>

@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
  * Class which contains main code
  *
  * @author Tommy
- * @author ntoskrnl
+ * @author ntoskrnl, birchie
  */
 class MinusFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MinusFileRunner.class.getName());
@@ -35,8 +35,10 @@ class MinusFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<meta name=\"title\" content=\"", "- Minus\"");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "Download (", ")");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<meta name=\"title\" content=\"", " - Minus\"");
+        Matcher mSize = getMatcherAgainstContent("<a title=\"(.+[KMG]?B)\" class=\"btn-action");
+        if (mSize.find())
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(mSize.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -48,11 +50,11 @@ class MinusFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final Matcher matcher = getMatcherAgainstContent("\"(http://i\\.minus\\.com/.+?)\"");
+            final Matcher matcher = getMatcherAgainstContent("href=\"(http://i\\.minus\\.com/.+?)\"");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Download link not found");
             }
-            method = getMethodBuilder().setAction(matcher.group(1)).toGetMethod();
+            method = getGetMethod(matcher.group(1));
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

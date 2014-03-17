@@ -76,7 +76,7 @@ class UlozToRunner extends AbstractRunner {
         if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Požadovaný soubor nebyl nalezen");
         }
-        PlugUtils.checkName(httpFile, content, "|", "| </title>");
+        PlugUtils.checkName(httpFile, content, "|", "|");
         PlugUtils.checkFileSize(httpFile, content, "Velikost souboru je <b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

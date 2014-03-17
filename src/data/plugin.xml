@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="data.hu" version="1.0.1" vendor="Javi"
+<plugin id="data.hu" version="1.0.2" vendor="Javi"
         class="cz.vity.freerapid.plugins.services.data.DataServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?data\.hu/get/.+"/>

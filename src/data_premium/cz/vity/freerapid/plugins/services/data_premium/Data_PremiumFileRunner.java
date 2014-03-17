@@ -27,7 +27,7 @@ class Data_PremiumFileRunner extends AbstractRunner {
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else
@@ -46,9 +46,9 @@ class Data_PremiumFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
 
         final HttpMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
-            checkNameAndSize(getContentAsString());
+        if (makeRedirectedRequest(getMethod)) {
             checkProblems();
+            checkNameAndSize(getContentAsString());
             Matcher matcher = getMatcherAgainstContent("<input type=\"submit\" onclick=\"document.loginform.submit");
             if (matcher.find()) {
                 logger.info("Starting login");

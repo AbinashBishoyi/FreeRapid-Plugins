@@ -581,9 +581,11 @@ class YouTubeRunner extends AbstractRtmpRunner {
         public String decipher(String sig) {
             List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
             lstSig.remove(0); //remove empty char at head
-            Collections.reverse(lstSig);
+            lstSig = swap(lstSig, 24);
+            lstSig = swap(lstSig, 53);
             lstSig = clone(lstSig, 2);
-            Collections.reverse(lstSig);
+            lstSig = swap(lstSig, 31);
+            lstSig = swap(lstSig, 4);
             StringBuilder sb = new StringBuilder();
             for (String s : lstSig) {
                 sb.append(s);

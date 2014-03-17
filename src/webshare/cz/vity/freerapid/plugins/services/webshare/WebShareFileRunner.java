@@ -26,6 +26,7 @@ class WebShareFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        if (fileURL.contains("/#/")) fileURL = fileURL.replace("/#/", "/");
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -61,6 +62,7 @@ class WebShareFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        if (fileURL.contains("/#/")) fileURL = fileURL.replace("/#/", "/");
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {

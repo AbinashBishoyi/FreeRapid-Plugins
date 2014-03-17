@@ -17,7 +17,8 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://webshare.cz/7HHGTw2Yd5-Lidsk_ter_-01x12-Christoper_Chance.avi"));
-            httpFile.setNewURL(new URL("http://webshare.cz/ZTzgkbpeWt-Penove_pamlsky.part02.rar"));
+            //httpFile.setNewURL(new URL("http://webshare.cz/ZTzgkbpeWt-Penove_pamlsky.part02.rar"));
+            httpFile.setNewURL(new URL("https://webshare.cz/#/file/5yh10i5ke3/test-txt"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

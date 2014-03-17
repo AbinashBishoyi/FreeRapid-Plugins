@@ -55,9 +55,7 @@ class TurboBitFileRunner extends AbstractRunner {
      * @return next text after parameter
      */
     private String findNextTextAfter(String text) {
-        System.out.println( getContentAsString() );
         String contentWithOutHTML[] = getContentAsString().replaceAll("&[^;]{4,4};", "").split("<[^>]*>");
-        System.out.println(Arrays.toString(contentWithOutHTML));
         boolean found = false;
         for(String x : contentWithOutHTML) {
             if( !found && x.toLowerCase().contains(text.toLowerCase()) ) {
@@ -82,57 +80,62 @@ class TurboBitFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        final HttpMethod httpMethodLang = getMethodBuilder().setAction(fileURL).toGetMethod();
+        if (makeRedirectedRequest(httpMethodLang)) {
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(LANG_REF).toGetMethod();
+            if (makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                checkNameAndSize();
 
-        HttpMethod httpMethod = getMethodBuilder().setReferer(LANG_REF).setAction(fileURL).toGetMethod();
-        if (makeRedirectedRequest(httpMethod)) {
-            checkProblems();
-            checkNameAndSize();
+                Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/([a-z0-9]+)\\.html", fileURL);
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Error parsing download link");
+                }
+                final String urlCode = matcher.group(1);
+                final String freeAction = "http://www.turbobit.net/download/free/" + urlCode + "/";
+                httpMethod = getMethodBuilder().setReferer(fileURL).setAction(freeAction).toGetMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
 
-            Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/([a-z0-9]+)\\.html", fileURL);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing download link");
-            }
-            final String urlCode = matcher.group(1);
-            final String freeAction = "http://www.turbobit.net/download/free/" + urlCode + "/";
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(freeAction).toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
+                matcher = getMatcherAgainstContent("limit: (\\d+),");
+                if (matcher.find()) {
+                    throw new YouHaveToWaitException("Waiting time between downloads", new Integer(matcher.group(1)));
+                }
+
+                while (getContentAsString().contains("captcha")) {
+                    if (!makeRedirectedRequest(stepCaptcha(freeAction))) throw new ServiceConnectionProblemException();
+                }
+
+                matcher = getMatcherAgainstContent("limit: (\\d+),");
+                if (!matcher.find()) {
+                    checkProblems();
+                    throw new PluginImplementationException("Waiting time not found");
+                }
+                final String t = matcher.group(1);
+                logger.info("Waiting time: " + t);
+                downloadTask.sleep(new Integer(t) + 1);
+
+                final String timeoutAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
+                httpMethod = getMethodBuilder().setReferer(freeAction).setAction(timeoutAction).toGetMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+
+                final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(getContentAsString(), "/download/redirect/", "'");
+                logger.info("Final URL: " + finalURL);
+                httpMethod = getMethodBuilder().setReferer(timeoutAction).setAction(finalURL).toGetMethod();
+
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();
+                    logger.warning(getContentAsString());
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+            } else {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
-            }
-
-            matcher = getMatcherAgainstContent("limit: (\\d+),");
-            if (matcher.find()) {
-                throw new YouHaveToWaitException("Waiting time between downloads", new Integer(matcher.group(1)));
-            }
-
-            while (getContentAsString().contains("captcha")) {
-                if (!makeRedirectedRequest(stepCaptcha(freeAction))) throw new ServiceConnectionProblemException();
-            }
-
-            matcher = getMatcherAgainstContent("limit: (\\d+),");
-            if (!matcher.find()) {
-                checkProblems();
-                throw new PluginImplementationException("Waiting time not found");
-            }
-            final String t = matcher.group(1);
-            logger.info("Waiting time: " + t);
-            downloadTask.sleep(new Integer(t) + 1);
-
-            final String timeoutAction = "http://www.turbobit.net/download/timeout/" + urlCode + "/";
-            httpMethod = getMethodBuilder().setReferer(freeAction).setAction(timeoutAction).toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-
-            final String finalURL = "http://turbobit.net/download/redirect/" + PlugUtils.getStringBetween(getContentAsString(), "/download/redirect/", "'");
-            logger.info("Final URL: " + finalURL);
-            httpMethod = getMethodBuilder().setReferer(timeoutAction).setAction(finalURL).toGetMethod();
-
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
-                logger.warning(getContentAsString());
-                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();

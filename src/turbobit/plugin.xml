@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="turbobit.net" version="1.3.5" vendor="Thumb+Arthur+RickCL+ntoskrnl"
+<plugin id="turbobit.net" version="1.3.6" vendor="Thumb+Arthur+RickCL+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.turbobit.TurboBitServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?turbobit\.net/.+"/>

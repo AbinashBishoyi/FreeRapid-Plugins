@@ -31,6 +31,7 @@ class FaceBookFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".facebook.com", "locale", "en_US", "/", 86400, false));
+        addCookie(new Cookie(".facebook.com", "datr", "ABCDEFG", "/", 86400, false)); //so we can get full items in album, instead of 28 items
         eatCookies();
         client.setReferer(fileURL);
         HttpMethod method = getGetMethod(fileURL);
@@ -78,7 +79,7 @@ class FaceBookFileRunner extends AbstractRunner {
                             .setReferer(fileURL)
                             .setActionFromImgSrcWhereTagContains("fbPhotoImage");
                 }
-                final Matcher matcher = PlugUtils.matcher("https?://.+?/([^/]+)(?:\\?.+?)?$", methodBuilder.getAction());
+                final Matcher matcher = PlugUtils.matcher("https?://.+?/([^/]+?)(?:\\?.+?)?$", methodBuilder.getAction());
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Error parsing picture url");
                 }
@@ -95,6 +96,7 @@ class FaceBookFileRunner extends AbstractRunner {
         }
     }
 
+    //If already logged-in, add the cookies. This way we only have to login once for entire FRD session (until we close FRD)
     private void eatCookies() {
         synchronized (FaceBookFileRunner.class) {
             if (isLoggedIn && (cookies.length > 0)) {
@@ -105,9 +107,11 @@ class FaceBookFileRunner extends AbstractRunner {
         }
     }
 
+    //Login is optional, if the content is public then we don't have to login. If content is detected as private then we have to login.
+    //Once login, will stay logged-in for entire FRD session, until FRD is closed that is.
     private void login() throws Exception {
         synchronized (FaceBookFileRunner.class) {
-            if (isLoggedIn) return;
+            if (isLoggedIn) return; //receiving isLoggedIn signal from other thread
             logger.info("Entering login subroutine...");
             FaceBookServiceImpl service = (FaceBookServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
@@ -117,7 +121,7 @@ class FaceBookFileRunner extends AbstractRunner {
                     throw new BadLoginException("No FaceBook account login information!");
                 }
             }
-            HttpMethod method = getGetMethod("http://www.facebook.com/login.php");
+            HttpMethod method = getGetMethod("https://www.facebook.com/login.php");
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
@@ -159,6 +163,7 @@ class FaceBookFileRunner extends AbstractRunner {
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
         httpFile.getProperties().put("removeCompleted", true);
+        logger.info(String.valueOf(uriList.size()));
     }
 
 }

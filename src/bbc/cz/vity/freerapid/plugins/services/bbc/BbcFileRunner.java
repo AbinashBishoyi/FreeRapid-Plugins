@@ -30,7 +30,7 @@ import java.util.regex.Matcher;
 class BbcFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(BbcFileRunner.class.getName());
 
-    private final static String SWF_URL = "http://www.bbc.co.uk/emp/10player.swf";
+    private final static String SWF_URL = "http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     @Override

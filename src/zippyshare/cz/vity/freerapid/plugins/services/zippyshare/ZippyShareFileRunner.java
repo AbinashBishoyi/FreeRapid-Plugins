@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Vity+ntoskrnl
+ * @author Vity+ntoskrnl+tonyk
  */
 class ZippyShareFileRunner extends AbstractRunner {
     private static final Logger logger = Logger.getLogger(ZippyShareFileRunner.class.getName());
@@ -37,16 +37,32 @@ class ZippyShareFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
+
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
-            final Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>\\s*?(var [^\r\n]+)\\s*?var [a-zA-Z\\d]+? ?= ?([^\r\n]+)");
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Download link not found");
+            String url;
+            Matcher matcher = getMatcherAgainstContent("download?");
+            if (matcher.find()) {
+                matcher = getMatcherAgainstContent("url: '(.+?)'");
+
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Download link not found");
+                }
+                Integer time = PlugUtils.getNumberBetween(getContentAsString(), "seed: ", "}");
+                url = matcher.group(1) + "&time=" + ((time * 13 % 2139) + 6);
+
+            } else {
+                matcher = getMatcherAgainstContent("<script[^<>]*?>\\s*?(var [^\r\n]+)\\s*?var [a-zA-Z\\d]+? ?= ?([^\r\n]+)");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Download link not found");
+                }
+                final String script = matcher.group(1) + "\n" + matcher.group(2);
+                logger.info(script);
+                url = ScriptUtils.evaluateJavaScriptToString(script);
+                System.out.print(getContentAsString());
             }
-            final String script = matcher.group(1) + "\n" + matcher.group(2);
-            logger.info(script);
-            final String url = ScriptUtils.evaluateJavaScriptToString(script);
+
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();

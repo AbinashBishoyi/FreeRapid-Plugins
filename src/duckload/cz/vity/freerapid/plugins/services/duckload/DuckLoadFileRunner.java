@@ -55,16 +55,14 @@ class DuckLoadFileRunner extends AbstractRunner {
         addGACookies();
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
+            fileURL = method.getURI().toString();
             checkProblems();
             checkNameAndSize();
 
             String btnName = PlugUtils.getStringBetween(getContentAsString(), "<button name=\"", "\"");
             method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dl_button_shape slowbutton", true).setParameter(btnName, "").setAction(fileURL).toPostMethod();
             downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var tick\t=", ";") + 1);
-
             if (makeRedirectedRequest(method)) {
-
-                logger.warning(getContentAsString());
                 btnName = PlugUtils.getStringBetween(getContentAsString(), "<button name=\"", "\"");
                 method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dl_button_shape slowbutton", true).setParameter(btnName, "").setAction(fileURL).toPostMethod();
                 downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "<span id=\"w\">", "</span>") + 1);
@@ -72,6 +70,9 @@ class DuckLoadFileRunner extends AbstractRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
                 }
+            } else {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
             /*       captcha
             fileURL = method.getURI().toString();
@@ -116,6 +117,7 @@ class DuckLoadFileRunner extends AbstractRunner {
     }
 
     private void addGACookies() {
+        addCookie(new Cookie(".duckload.com", "dl_set_lang", "en", "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "PHPSESSID", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "__utmz", String.valueOf(random.nextLong()), "/", 86400, false));
         addCookie(new Cookie(".duckload.com", "__utma", String.valueOf(random.nextLong()), "/", 86400, false));

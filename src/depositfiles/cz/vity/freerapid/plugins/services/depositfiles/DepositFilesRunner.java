@@ -55,11 +55,11 @@ class DepositFilesRunner extends AbstractRunner {
 
                 checkNameAndSize(getContentAsString());
                 Matcher matcher;
-
+                checkProblems();
                 if (!getContentAsString().contains("Free downloading mode")) {
-                    matcher = getMatcherAgainstContent("gateway_result");
+                    matcher = getMatcherAgainstContent("FREE downloading");
                     if (matcher.find()) {
-                        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("gateway_result", true).toHttpMethod();
+                        HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("FREE downloading", true).toHttpMethod();
                         if (!makeRequest(httpMethod)) {
                             logger.info(getContentAsString());
                             throw new PluginImplementationException();
@@ -93,7 +93,6 @@ class DepositFilesRunner extends AbstractRunner {
                         throw new PluginImplementationException();
                     }
                 }
-
                 //        <span id="download_waiter_remain">60</span>
                 matcher = getMatcherAgainstContent("download_waiter_remain\">([0-9]+)");
                 if (!matcher.find()) {
@@ -105,14 +104,18 @@ class DepositFilesRunner extends AbstractRunner {
                 String t = matcher.group(1);
                 int seconds = new Integer(t);
                 logger.info("wait - " + t);
-
-                matcher = getMatcherAgainstContent("<td class=\"repeat\"><a href=\"(.+?)\">");
+                matcher = getMatcherAgainstContent("load\\('(.*?)'\\);");
                 if (matcher.find()) {
-                    t = matcher.group(1);
+                    t = HTTP_DEPOSITFILES + matcher.group(1);
                     logger.info("Download URL: " + t);
-                    //   downloadTask.sleep(seconds + 1);
+                    downloadTask.sleep(seconds + 1);
                     //  httpFile.setState(DownloadState.GETTING);
-                    final GetMethod method = getGetMethod(t);
+                    HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(t).toHttpMethod();
+                    if (!makeRedirectedRequest(method)) {
+                        logger.info(getContentAsString());
+                        throw new PluginImplementationException();
+                    }
+                    method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("download", true).toHttpMethod();
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new IOException("File input stream is empty.");
@@ -163,6 +166,14 @@ class DepositFilesRunner extends AbstractRunner {
         String content = getContentAsString();
         if (content.contains("already downloading")) {
             throw new ServiceConnectionProblemException(String.format("<b>Your IP is already downloading a file from our system.</b><br>You cannot download more than one file in parallel."));
+        }
+        matcher = Pattern.compile("Try in\\s*([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
+        if (matcher.find()) {
+            throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 + 20);
+        }
+        matcher = Pattern.compile("Try in\\s*([0-9]+) hour", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
+        if (matcher.find()) {
+            throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 * 60 + 20);
         }
         matcher = Pattern.compile("Please try in\\s*([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
         if (matcher.find()) {

@@ -16,9 +16,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
+            httpFile.setNewURL(new URL("http://www.duckload.com/download/3nwU2"));
 
-            httpFile.setNewURL(new URL("http://www.duckload.com/download/2229956/xTangled10r.part1.rar"));
-
+            //httpFile.setNewURL(new URL("http://www.duckload.com/dl/lm4A2"));
+            //
             // httpFile.setNewURL(new URL("http://www.duckload.com/download/2166947/NLMG2010145gb.part02.rar"));
             // httpFile.setNewURL(new URL("http://www.duckload.com/dl/1394389/porn104_009_16p.rar"));//file
             //httpFile.setNewURL(new URL("http://www.duckload.com/play/82F043FD0A69AE41"));//video
@@ -29,6 +30,7 @@ public class TestApp extends PluginDevApplication {
             final DuckLoadServiceImpl service = new DuckLoadServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
+
             //all output goes to the console
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console

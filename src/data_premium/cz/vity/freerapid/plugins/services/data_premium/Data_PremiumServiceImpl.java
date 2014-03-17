@@ -14,7 +14,7 @@ public class Data_PremiumServiceImpl extends AbstractFileShareService {
     private volatile PremiumAccount config;
 
     public String getName() {
-        return "data_premium.hu";
+        return "data.hu_premium";
     }
 
     public int getMaxDownloadsFromOneIP() {

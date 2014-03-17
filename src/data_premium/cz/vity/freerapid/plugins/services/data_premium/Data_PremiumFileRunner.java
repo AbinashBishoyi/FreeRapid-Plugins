@@ -27,7 +27,7 @@ class Data_PremiumFileRunner extends AbstractRunner {
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
-        if (makeRedirectedRequest(getMethod)) {
+        if (makeRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else
@@ -45,11 +45,10 @@ class Data_PremiumFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
 
-        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
-        if (makeRedirectedRequest(getMethod)) {
-
+        final HttpMethod getMethod = getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-
+            checkProblems();
             Matcher matcher = getMatcherAgainstContent("<input type=\"submit\" onclick=\"document.loginform.submit");
             if (matcher.find()) {
                 logger.info("Starting login");
@@ -130,9 +129,6 @@ class Data_PremiumFileRunner extends AbstractRunner {
                     logger.info("bad info");
                     throw new NotRecoverableDownloadException("Bad data.hu login information!");
                 }
-                GetMethod getMethod = getGetMethod(fileURL);
-                if (!makeRedirectedRequest(getMethod))
-                    throw new PluginImplementationException();
             } else {
                 throw new PluginImplementationException("Bad login URL");
             }

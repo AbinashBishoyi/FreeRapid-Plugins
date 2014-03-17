@@ -24,7 +24,6 @@ class LetitbitRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
-        setPageEncoding("Windows-1251");
         final HttpMethod httpMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
@@ -46,7 +45,6 @@ class LetitbitRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".letitbit.net", "lang", "en", "/", 86400, false));
-        setPageEncoding("Windows-1251");
         setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
 
         HttpMethod httpMethod = getGetMethod(fileURL);
@@ -73,6 +71,19 @@ class LetitbitRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             pageUrl = httpMethod.getURI().toString();
+
+            // Russian IPs may see this different page here, handle it
+            if (PlugUtils.find("action=\"http://s\\d+\\.letitbit\\.net/download3\\.php\"", getContentAsString())) {
+                httpMethod = getMethodBuilder()
+                        .setReferer(pageUrl)
+                        .setActionFromFormWhereActionContains(".letitbit.net/download3.php", true)
+                        .toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                pageUrl = httpMethod.getURI().toString();
+            }
 
             downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
 

@@ -1,0 +1,47 @@
+package cz.vity.freerapid.plugins.services.tunlr;
+
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.URI;
+
+import javax.naming.Context;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
+import java.util.Hashtable;
+import java.util.logging.Logger;
+
+/**
+ * @author ntoskrnl
+ */
+public final class Tunlr {
+
+    private final static Logger logger = Logger.getLogger(Tunlr.class.getName());
+
+    public static void setupMethod(final HttpMethod method) throws PluginImplementationException {
+        try {
+            final URI uri = method.getURI();
+            final String host = uri.getHost();
+            final String ip = lookup(host);
+            method.setURI(new URI(uri.getScheme(), uri.getUserinfo(), ip,
+                    uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment()));
+            method.getParams().setVirtualHost(host);
+            logger.info(host + " --> " + ip);
+        } catch (final Exception e) {
+            throw new PluginImplementationException(e);
+        }
+    }
+
+    private static String lookup(final String host) throws Exception {
+        final Hashtable<String, String> env = new Hashtable<String, String>();
+        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory");
+        env.put(Context.PROVIDER_URL, "dns://149.154.158.186 dns://199.167.30.144");
+        final DirContext context = new InitialDirContext(env);
+        final Attributes attributes = context.getAttributes(host, new String[]{"A"});
+        return (String) attributes.getAll().next().get();
+    }
+
+    private Tunlr() {
+    }
+
+}

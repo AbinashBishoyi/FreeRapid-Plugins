@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.hulu;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -92,7 +93,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         logger.info("contentSelectUrl = " + contentSelectUrl);
 
         method = getGetMethod(contentSelectUrl);
-        method.getParams().setVirtualHost("s.hulu.com");
+        Tunlr.setupMethod(method);
         if (makeRedirectedRequest(method)) {
             final String content = decryptContentSelect(getContentAsString());
             logger.info("Content select:\n" + content);
@@ -204,7 +205,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 .add("dp_id", "hulu")
                 .add("region", "US")
                 .add("language", "en");
-        final StringBuilder sb = new StringBuilder("http://64.191.64.132/select?");
+        final StringBuilder sb = new StringBuilder("http://s.hulu.com/select?");
         for (final Map.Entry<String, String> e : parameters) {
             sb.append(e.getKey()).append('=').append(e.getValue()).append('&');
         }

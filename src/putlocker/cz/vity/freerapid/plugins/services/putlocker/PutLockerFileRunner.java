@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.putlocker;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -22,6 +19,11 @@ import java.util.logging.Logger;
  */
 class PutLockerFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(PutLockerFileRunner.class.getName());
+
+    private PutLockerSettingsConfig getConfig() throws Exception {
+        PutLockerServiceImpl service = (PutLockerServiceImpl) getPluginService();
+        return service.getConfig();
+    }
 
     @Override
     public void runCheck() throws Exception {
@@ -80,13 +82,19 @@ class PutLockerFileRunner extends AbstractRunner {
             }
             final String downloadURL;
             boolean isVideoStream = false;
-            if (getContentAsString().contains("<a href=\"/get_file.php?")) { // file
+            if (getContentAsString().contains("video_player")) { //video stream
+                PutLockerSettingsConfig config = getConfig();
+                final VideoQuality configQuality = config.getVideoQuality();
+                if ((configQuality == VideoQuality.High) && (getContentAsString().contains("<a href=\"/get_file.php?"))) {  //large file (same as downloading the file)
+                    downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"/get_file.php", "\"");
+                } else { // small file (download the stream)
+                    isVideoStream = true;
+                    downloadURL = PlugUtils.getStringBetween(getContentAsString(), "playlist: '/get_file.php", "',");
+                }
+            } else if (getContentAsString().contains("<a href=\"/get_file.php?")) { // file
                 downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"/get_file.php", "\"");
             } else if (getContentAsString().contains("<img src=\"/get_file.php")) { //image
                 downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<img src=\"/get_file.php", "\" >");
-            } else if (getContentAsString().contains("video_player")) { //video stream
-                isVideoStream = true;
-                downloadURL = PlugUtils.getStringBetween(getContentAsString(), "playlist: '/get_file.php", "',");
             } else {
                 throw new PluginImplementationException("Download link not found");
             }
@@ -124,6 +132,9 @@ class PutLockerFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("This file doesn't exist") || contentAsString.contains("404 Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("Server is Overloaded")) {
+            throw new YouHaveToWaitException("Server is overloaded", 60 * 2);
         }
     }
 

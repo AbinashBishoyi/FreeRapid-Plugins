@@ -72,10 +72,10 @@ public class SolveMediaCaptcha {
         matcher = PlugUtils.matcher("\"chid\"\\s*:\\s*\"(.+?)\",", client.getContentAsString());
         if (!matcher.find()) throw new PluginImplementationException("Captcha challenge ID not found");
         challenge = matcher.group(1);
-        response = askForCaptcha();
+        askForCaptcha();
     }
 
-    private String askForCaptcha() throws Exception {
+    private void askForCaptcha() throws Exception {
         final String imgUrl = SOLVEMEDIA_CAPTCHA_URL + "/media?c=" + challenge + ";w=300;h=150;fg=000000;bg=f8f8f8";
         if (mediaType.equals("img")) {
             response = captchaSupport.getCaptcha(imgUrl);
@@ -104,7 +104,6 @@ public class SolveMediaCaptcha {
         } else {
             throw new ServiceConnectionProblemException("Captcha media type 'img' or 'html' not found");
         }
-        return response;
     }
 
     public MethodBuilder modifyResponseMethod(MethodBuilder methodBuilder) {

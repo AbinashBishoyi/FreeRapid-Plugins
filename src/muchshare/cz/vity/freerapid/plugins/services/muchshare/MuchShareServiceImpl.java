@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.muchshare;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -9,9 +8,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author tong2shot
  */
-public class MuchShareServiceImpl extends AbstractFileShareService {
-    private static final String PLUGIN_CONFIG_FILE = "plugin_MuchShare.xml";
-    private volatile PremiumAccount config;
+public class MuchShareServiceImpl extends XFileSharingServiceImpl {
+
+    @Override
+    public String getServiceTitle() {
+        return "MuchShare";
+    }
 
     @Override
     public String getName() {
@@ -19,32 +21,7 @@ public class MuchShareServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;
-    }
-
-    @Override
     protected PluginRunner getPluginRunnerInstance() {
         return new MuchShareFileRunner();
     }
-
-    @Override
-    public void showOptions() throws Exception {
-        PremiumAccount pa = showConfigDialog();
-        if (pa != null) config = pa;
-    }
-
-    public PremiumAccount showConfigDialog() throws Exception {
-        return showAccountDialog(getConfig(), "MuchShare", PLUGIN_CONFIG_FILE);
-    }
-
-    PremiumAccount getConfig() throws Exception {
-        if (config == null) {
-            synchronized (MuchShareServiceImpl.class) {
-                config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);
-            }
-        }
-        return config;
-    }
-
 }

@@ -2,10 +2,9 @@ package cz.vity.freerapid.plugins.services.hellshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.HashMap;
@@ -18,13 +17,14 @@ import java.util.regex.Matcher;
  */
 class HellshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HellshareRunner.class.getName());
-    private final static Map<String, PostMethod> methodsMap = new HashMap<String, PostMethod>();
+    private final static Map<String, HttpMethod> methodsMap = new HashMap<String, HttpMethod>();
     private final static int WAIT_TIME = 20;
+    
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
             checkCaptcha();
@@ -36,146 +36,83 @@ class HellshareRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+       if (checkInQueue()) return;
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        if (makeRedirectedRequest(getMethod)) {
 
-        final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            Matcher matcher = getMatcherAgainstContent("([0-9.]+)%");
-            if (matcher.find()) {
-                if (matcher.group(1).equals("100"))
-                    throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
-            }
-            client.setReferer(fileURL);
 
-            if (checkInQueue())
-                return;
-
-            matcher = getMatcherAgainstContent("<input type=\"button\" value=\"FREE DOWNLOAD\" onclick=\"document[.]getElementById[(]\'FreeDownProgress\'[)][.]style.display=\'block\'; document[.]getElementById[(]\'FreeDownProgress\'[)][.]src=\'([^\']+)\'\" />");
-            if (matcher.find()) {
-                String downURL = matcher.group(1);
-                final GetMethod getmethod = getGetMethod(downURL);
-                if (makeRequest(getmethod)) {
-                    PostMethod method = stepCaptcha();
-                    httpFile.setState(DownloadState.GETTING);
-                    if (!tryDownloadAndSaveFile(method)) {
-                        matcher = getMatcherAgainstContent("Omlouv.me se, ale tento soubor nen. pro danou zemi v tuto chv.li dostupn.. Pracujeme na odstran.n. probl.mu.|We are sorry, but this file is not accessible at this time for this country. We are currenlty working on fixing this problem");
-                        if (matcher.find())
-                            throw new PluginImplementationException("This file is not available for this country for this moment");
-                        boolean finish = false;
-                        while (!finish) {
-                            method = stepCaptcha();
-                            finish = tryDownloadAndSaveFile(method);
-                        }
-                    }
-                } else {
+            if (getContentAsString().contains("100%,"))
+                throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
+            final HttpMethod captchaPageMethod = getCaptchaPage();
+            if (makeRedirectedRequest(captchaPageMethod)) {
+                client.setReferer("http://www.hellshare.com" + captchaPageMethod.getPath());
+                HttpMethod method = stepCaptcha();
+                if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
+                    if (getContentAsString().contains("We are sorry, but this file is not accessible at this time for this country"))
+                        throw new NotRecoverableDownloadException("This file is not available for this country for this moment");
+                    boolean finish = false;
+                    while (!finish) {
+                        client.setReferer("http://www.hellshare.com" + method.getPath());
+                        method = stepCaptcha();
+                        finish = tryDownloadAndSaveFile(method);
+                    }
                 }
             } else {
                 checkProblems();
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException();
             }
 
+
         } else
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        if (getContentAsString().contains("FreeDownProgress")) {
-            Matcher matcher = PlugUtils.matcher("<table class=\"download-properties\">[^<]+<tr><th scope=\"row\" class=\"download-properties-label\">[^<]+</th><td><h2>([^<]+)</h2></td></tr>[^<]+<tr><th scope=\"row\" class=\"download-properties-label\">[^<]+</th><td>([^<]+ .B)</td></tr>", content);
-            if (matcher.find()) {
-                String fn = matcher.group(1);
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(2));
-                logger.info("File size " + a);
-                httpFile.setFileSize(a);
-            }
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else {
-            checkProblems();
-            logger.info(getContentAsString());
-            throw new PluginImplementationException();
-        }
+        PlugUtils.checkName(httpFile, content, "Obsah ", "o velikosti");
+        PlugUtils.checkFileSize(httpFile, content, "o velikosti", "byl nahr");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkCaptcha() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("([0-9.]+)%");
-        if (matcher.find()) {
-            if (matcher.group(1).equals("100"))
-                return;
-        }
-        client.setReferer(fileURL);
+        if (getContentAsString().contains("100%,"))
+            return;
 
-        matcher = getMatcherAgainstContent("<input type=\"button\" value=\"FREE DOWNLOAD\" onclick=\"document[.]getElementById[(]\'FreeDownProgress\'[)][.]style.display=\'block\'; document[.]getElementById[(]\'FreeDownProgress\'[)][.]src=\'([^\']+)\'\" />");
-        if (matcher.find()) {
-            String downURL = matcher.group(1);
-            final GetMethod getmethod = getGetMethod(downURL);
-            if (makeRequest(getmethod)) {
-                if ("".equals(getContentAsString()))
-                    return;
-                matcher = getMatcherAgainstContent("<img src=\"([^\"]*)\" border=\"0\" align=\"antispam\" align=\"middle\" id=\"captcha-img\" ");
-                if (!matcher.find())
-                    return;
-                String img = PlugUtils.replaceEntities(matcher.group(1));
-                boolean emptyCaptcha;
-                String captcha;
-                do {
-                    logger.info("Captcha image " + img);
-                    captcha = getCaptchaSupport().getCaptcha(img);
-                    if (captcha == null)
-                        return;
-                    if (captcha.equals("")) {
-                        emptyCaptcha = true;
-                        img = img + "1";
-                    } else emptyCaptcha = false;
-                } while (emptyCaptcha);
-                matcher = getMatcherAgainstContent("<form method=\"post\" action=\"([^\"]*)\"");
-                if (!matcher.find())
-                    return;
+        final HttpMethod captchaPageMethod = getCaptchaPage();
+        if (makeRedirectedRequest(captchaPageMethod)) {
+            client.setReferer("http://www.hellshare.com" + captchaPageMethod.getPath());
+            stepCaptcha();
 
-                String finalURL = matcher.group(1);
-
-                final PostMethod method = getPostMethod(finalURL);
-
-                PlugUtils.addParameters(method, getContentAsString(), new String[]{"submit"});
-                method.addParameter("captcha", captcha);
-
-                methodsMap.put(fileURL, method);
-            } else {
-                checkProblems();
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
-            }
         } else {
             checkProblems();
-            logger.info(getContentAsString());
-            throw new PluginImplementationException();
+            throw new ServiceConnectionProblemException();
         }
+
+
     }
 
     private boolean checkInQueue() throws Exception {
         if (!methodsMap.containsKey(fileURL))
             return false;
 
-        final PostMethod met = methodsMap.get(fileURL);
+        logger.info("File is in queue");
+        final HttpMethod met = methodsMap.get(fileURL);
         final PostMethod method = getPostMethod(met.getURI().toString());
-        method.addParameters(met.getParameters());
-
-        httpFile.setState(DownloadState.GETTING);
+ 
+        if (met instanceof PostMethod)
+            method.addParameters(((PostMethod) met).getParameters());
+         
+        logger.info("File is in queue, trying to download");
         if (tryDownloadAndSaveFile(method))
             methodsMap.remove(fileURL);
         else {
+            logger.info("Download from queue failed");
             checkProblems();
-            Matcher matcher = getMatcherAgainstContent("Omlouv.me se, ale tento soubor nen. pro danou zemi v tuto chv.li dostupn.. Pracujeme na odstran.n. probl.mu.|We are sorry, but this file is not accessible at this time for this country. We are currenlty working on fixing this problem");
-            if (matcher.find())
-                throw new PluginImplementationException("This file is not available for this country for this moment");
+            if (getContentAsString().contains("We are sorry, but this file is not accessible at this time for this country"))
+                throw new NotRecoverableDownloadException("This file is not available for this country for this moment");
 
-            matcher = getMatcherAgainstContent("<img src=\"([^\"]*)\" border=\"0\" align=\"antispam\" align=\"middle\" id=\"captcha-img\" ");
-            if (matcher.find())
+            if (getContentAsString().contains("img id=\"captcha-img\""))
                 stepCaptcha();
 
             throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
@@ -184,17 +121,11 @@ class HellshareRunner extends AbstractRunner {
         return true;
     }
 
-    private PostMethod stepCaptcha() throws Exception {
-        if ("".equals(getContentAsString())) {
+    private HttpMethod stepCaptcha() throws Exception {
+        if (!getContentAsString().contains("captcha")) {
             throw new YouHaveToWaitException("Neurèité omezení", 4 * WAIT_TIME);
         }
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("<img src=\"([^\"]*)\" border=\"0\" align=\"antispam\" align=\"middle\" id=\"captcha-img\" ");
-        if (!matcher.find()) {
-            checkProblems();
-            throw new PluginImplementationException();
-        }
-        String img = PlugUtils.replaceEntities(matcher.group(1));
+        String img = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
         boolean emptyCaptcha;
         String captcha;
         do {
@@ -208,33 +139,34 @@ class HellshareRunner extends AbstractRunner {
                 img = img + "1";
             } else emptyCaptcha = false;
         } while (emptyCaptcha);
-        matcher = getMatcherAgainstContent("<form method=\"post\" action=\"([^\"]*)\"");
-        if (!matcher.find()) {
-            throw new PluginImplementationException();
-        }
 
-        String finalURL = matcher.group(1);
+        final HttpMethod method = getMethodBuilder().setActionFromFormByIndex(1, true).setParameter("captcha", captcha).toPostMethod();
 
-        final PostMethod method = getPostMethod(finalURL);
-
-        PlugUtils.addParameters(method, getContentAsString(), new String[]{"submit"});
-        method.addParameter("captcha", captcha);
-
+        logger.info("Adding file to map, final URL: " + method.getURI().toString());
         methodsMap.put(fileURL, method);
         return method;
     }
 
+    private HttpMethod getCaptchaPage() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException, PluginImplementationException {
+        Matcher matcher = getMatcherAgainstContent("'src','([^\']+)'");
+        if (!matcher.find()) {
+            checkProblems();
+            logger.info(getContentAsString());
+            throw new PluginImplementationException();
+        }
+        String downURL = matcher.group(1);
+        return getMethodBuilder().setAction(downURL).toHttpMethod();
+    }
+
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("Soubor nenalezen|S.bor nen.jden.|A f.jl nem volt megtal.lhat.");
-        if (matcher.find()) {
+        String content = getContentAsString();
+        if (content.contains("Soubor nenalezen")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }
-        matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
-        if (matcher.find()) {
+        if (content.contains(" free download|Na serveri")) {
             throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
         }
-        if (getContentAsString().contains("Stahujete soub")) {
+        if (content.contains("Stahujete soub")) {
             throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
         }
     }

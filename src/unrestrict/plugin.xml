@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.unrestrict.UnRestrictServiceImpl"
+        id="unrestrict.li" vendor="birchie" version="0.9.0">
+    <attributes>
+        <!-- 0.9.0 -->
+        <attribute id="urlRegex" value="http://(www\.)?unr(estrict)?\.li/dl/.+"/>
+        <!-- 1.0.0<attribute id="urlRegex"
+                   value="((http://(www\.)?unr(estrict)?\.li/dl/.+)|(https?://(www\.)?(1st-files\.com|2shared\.com|4shared(\-china)?\.com|bayfiles\.(com|net)/file|bitshare\.com|crocko\.com|cwtv\.com|dailymotion\.com|dai\.ly|dizzcloud\.com|easybytez\.com|extmatrix\.com|filecloud\.io|filefactory\.com/file|fileparadox\.in|filesmonster\.com|filepost\.com/files|filer\.net|filerio\.(com|in)|freakshare\.(com|net)|hugefiles\.net|hulkshare\.com|hulu\.com|jumbofiles\.(com|org)|lumfile\.com|mediafire\.com|mega\.co\.nz|netload\.in|(putlocker|sockshare)\.com/file|(rapidgator\.net|rg\.to)/file|scribd\.com|secureupload\.eu|sendspace\.com/file|slingfile\.com/(dl|file)|soundcloud\.com|streamcloud\.eu|turbobit\.net|tusfiles\.net|uploaded\.net|uploaded\.to|ul\.to|uploading\.com|uppit\.com|uptobox\.com|vevo\.com|vimeo\.com|vip-file\.com|youtube\.com|youtu\.be)/.+|https?://dl\.free\.fr/.+|https?://(.*?\.)?(1fichier\.com|letitbit\.net/download|megashares\.com|rapidshare\.com|shareflare\.net/download)/.+))"/>
+        -->
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="see wordrider.net/forum/10/13769"/>
+        <attribute id="www" value="http://wordrider.net/forum/10/13769"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="solvemediacaptcha"
+                plugin-version="1.0.7" reverse-lookup="false"/>
+    </requires>
+    <runtime>
+        <library id="unrestrict.li" path="/" type="code"/>
+    </runtime>
+</plugin>

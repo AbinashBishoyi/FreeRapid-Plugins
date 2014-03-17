@@ -48,10 +48,10 @@ class GoEarFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         runCheck();
-        HttpMethod method = getGetMethod("http://goear.com/tracker758.php?f="
-                + PlugUtils.getStringBetween(getContentAsString(), "localplayer.swf?file=", "\""));
+        final String soundId = PlugUtils.getStringBetween(getContentAsString(), "var soundid = '", "';");
+        HttpMethod method = getGetMethod("http://goear.com/playersong/" + soundId);
         if (makeRedirectedRequest(method)) {
-            method = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "path=\"", "\""));
+            method = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "<track href=\"", "\""));
             if (!tryDownloadAndSaveFile(method)) {
                 throw new ServiceConnectionProblemException("Error starting download");
             }

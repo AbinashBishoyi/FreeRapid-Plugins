@@ -8,10 +8,11 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -23,12 +24,12 @@ class PutLockerFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(PutLockerFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -37,7 +38,7 @@ class PutLockerFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<h1>", "<strong>");
-        PlugUtils.checkFileSize(httpFile, content, "<strong>( ", " )</strong></h1>");
+        PlugUtils.checkFileSize(httpFile, content, "<strong>(", ")</strong></h1>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -45,70 +46,61 @@ class PutLockerFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-
-            if (contentAsString.contains("countdownNum")) {
-                final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "var countdownNum = ", ";", TimeUnit.SECONDS);
-                downloadTask.sleep(waitTime);
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize(getContentAsString());
+            /* skip waiting time
+            if (getContentAsString().contains("countdownNum")) {
+                final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var countdownNum = ", ";", TimeUnit.SECONDS);
+                downloadTask.sleep(waitTime); skip countdown
             }
-
+            */
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromFormWhereTagContains("confirm", true)
                     .setAction(fileURL)
+                    .setParameter("confirm", "Continue as Free User")
                     .toPostMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
-                throw new PluginImplementationException();
+                throw new ServiceConnectionProblemException();
             }
-            contentAsString = getContentAsString();
             checkProblems();
-
             final String downloadURL;
             boolean isVideoStream = false;
-            if (contentAsString.contains("<a href=\"/get_file.php?")) { // file
-                downloadURL = PlugUtils.getStringBetween(contentAsString, "<a href=\"/get_file.php", "\"");
-            } else if (contentAsString.contains("<img src=\"/get_file.php")) { //image
-                downloadURL = PlugUtils.getStringBetween(contentAsString, "<img src=\"/get_file.php", "\" >");
-            } else if (contentAsString.contains("video_player")) { //video stream
+            if (getContentAsString().contains("<a href=\"/get_file.php?")) { // file
+                downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"/get_file.php", "\"");
+            } else if (getContentAsString().contains("<img src=\"/get_file.php")) { //image
+                downloadURL = PlugUtils.getStringBetween(getContentAsString(), "<img src=\"/get_file.php", "\" >");
+            } else if (getContentAsString().contains("video_player")) { //video stream
                 isVideoStream = true;
-                downloadURL = PlugUtils.getStringBetween(contentAsString, "playlist: '/get_file.php", "',");
+                downloadURL = PlugUtils.getStringBetween(getContentAsString(), "playlist: '/get_file.php", "',");
             } else {
-                checkProblems();
                 throw new PluginImplementationException("Download link not found");
             }
-
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://www.putlocker.com/get_file.php" + downloadURL)
                     .toGetMethod();
-
             if (isVideoStream) {
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
-                    throw new PluginImplementationException();
+                    throw new ServiceConnectionProblemException();
                 }
-                contentAsString = getContentAsString();
-                final String downloadURL2 = PlugUtils.getStringBetween(contentAsString, "url=\"", "\"");
+                checkProblems();
+                final String downloadURL2 = PlugUtils.getStringBetween(getContentAsString(), "url=\"", "\"");
                 httpMethod = getMethodBuilder()
                         .setReferer(fileURL)
                         .setAction(downloadURL2)
                         .toGetMethod();
             }
 
-            //logger.info(httpMethod.getURI().toString());
-
             //they sometimes wrap the name in quotes
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-
-            //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -118,9 +110,30 @@ class PutLockerFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("This file doesn't exist")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (contentAsString.contains("This file doesn't exist") || contentAsString.contains("404 Not Found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
+    @Override
+    protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
+        try {
+            if (super.tryDownloadAndSaveFile(getMethodBuilder().setReferer(fileURL).setAction(method.getURI().toString()).toGetMethod()))  //"cloning" method, to prevent method being aborted
+                return true;
+        } catch (org.apache.commons.httpclient.InvalidRedirectLocationException e) {
+            //they use "'" char in redirect url, we have to replace it.
+            client.makeRequest(method, false);
+            final Header locationHeader = method.getResponseHeader("Location");
+            if (locationHeader == null) {
+                throw new PluginImplementationException("Invalid redirect");
+            }
+            method = getMethodBuilder()
+                    .setReferer(fileURL)
+                            //.setAction(locationHeader.getValue().replace("'", "%27"))
+                    .setAction(new org.apache.commons.httpclient.URI(URIUtil.encodePathQuery(locationHeader.getValue(), "UTF-8"), true, client.getHTTPClient().getParams().getUriCharset()).toString().replace("'", "%27"))
+                    .toGetMethod();
+            return (super.tryDownloadAndSaveFile(method));
+        }
+        return false;
+    }
 }

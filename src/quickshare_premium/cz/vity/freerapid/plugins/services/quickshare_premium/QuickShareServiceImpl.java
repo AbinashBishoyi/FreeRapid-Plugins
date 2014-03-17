@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author JPEXS
  */
 public class QuickShareServiceImpl extends AbstractFileShareService {
@@ -15,10 +16,6 @@ public class QuickShareServiceImpl extends AbstractFileShareService {
 
     public String getName() {
         return SERVICE_NAME;
-    }
-
-    public int getMaxDownloadsFromOneIP() {
-        return Integer.MAX_VALUE;
     }
 
     @Override

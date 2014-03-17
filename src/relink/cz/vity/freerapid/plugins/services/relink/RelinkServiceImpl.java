@@ -14,10 +14,6 @@ public class RelinkServiceImpl extends AbstractFileShareService {
         return "relink.us";
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 10; //TODO: check
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return false;//Check not supported

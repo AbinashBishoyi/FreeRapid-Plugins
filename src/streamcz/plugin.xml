@@ -7,6 +7,7 @@
         <attribute id="minver" value="0.85"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="stream.cz"/>
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

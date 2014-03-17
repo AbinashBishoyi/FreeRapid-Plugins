@@ -14,10 +14,6 @@ public class YourFilesServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 1;//i checked that before
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

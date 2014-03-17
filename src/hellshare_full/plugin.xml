@@ -8,6 +8,7 @@
         <attribute id="minver" value="0.85"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="hellshare.com"/>
+        <attribute id="maxDownloads" value="100"/>
         <!-- ID pluginu, pro ktere je to premium -->
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>

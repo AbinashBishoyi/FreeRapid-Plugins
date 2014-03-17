@@ -16,10 +16,6 @@ public class HellshareServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return Integer.MAX_VALUE;
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;

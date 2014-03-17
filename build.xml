@@ -55,7 +55,7 @@
         <ant dir="${src.dir}/4upload" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/addat" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/anonym" antfile="build.xml" inheritall="false"/>
-        <ant dir="${src.dir}/applemovies" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/appletrailers" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/ardmediathek" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/badongo" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/bagruj" antfile="build.xml" inheritall="false"/>

@@ -14,10 +14,6 @@ public class NahrajCzServiceImpl extends AbstractFileShareService {
         return SERVICE_NAME;
     }
 
-    public int getMaxDownloadsFromOneIP() {
-        return 9;//TO DO
-    }
-
     @Override
     public boolean supportsRunCheck() {
         return true;//ok

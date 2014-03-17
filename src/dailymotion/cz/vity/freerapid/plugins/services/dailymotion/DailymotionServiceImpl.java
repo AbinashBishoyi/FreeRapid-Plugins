@@ -15,11 +15,6 @@ public class DailymotionServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        return 8;//i checked that before
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

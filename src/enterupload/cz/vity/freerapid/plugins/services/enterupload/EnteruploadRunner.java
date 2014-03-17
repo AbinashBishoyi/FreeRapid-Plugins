@@ -20,7 +20,6 @@ import java.util.regex.Matcher;
 
 class EnteruploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(EnteruploadRunner.class.getName());
-    private String httpSite;
     private String baseURL;
 
     @Override
@@ -118,7 +117,7 @@ class EnteruploadRunner extends AbstractRunner {
                 }
 
 
-            }
+            } else throw new PluginImplementationException("captchas not found");
 
 
         } else
@@ -130,7 +129,6 @@ class EnteruploadRunner extends AbstractRunner {
         Matcher matcher = PlugUtils.matcher("(http://www.enterupload.com/captchas/[^\"]+)", contentAsString);
         if (matcher.find()) {
             String s = matcher.group(1);
-            logger.info(httpSite + s);
             client.setReferer(baseURL);
             String code = getCaptchaSupport().getCaptcha(s); //returns "" when user pressed OK with no input
 
@@ -141,7 +139,7 @@ class EnteruploadRunner extends AbstractRunner {
 
             } else {
                 downloadTask.sleep(15);//extract sleep time from the website :-)
-                String spost = "http://www.enterupload.com/";
+                //String spost = "http://www.enterupload.com/";
                 client.setReferer(fileURL);//referer
                 final PostMethod method = getPostMethod(fileURL);//file url
 

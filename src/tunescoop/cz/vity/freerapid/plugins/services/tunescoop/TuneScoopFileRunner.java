@@ -34,7 +34,10 @@ class TuneScoopFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         final String content = getContentAsString();
-        httpFile.setFileName(getFileName(content));
+        // httpFile.setFileName(getFileName(content));
+
+        PlugUtils.checkName(httpFile, content, "<b>Song Name:</b>", "</font>");
+
         PlugUtils.checkFileSize(httpFile, content, "<b>Size:</b>", "</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -66,9 +69,13 @@ class TuneScoopFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setBaseURL(fileURL).setActionFromFormByName("dform", true).toPostMethod();
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setBaseURL(fileURL).setActionFromFormByName("dform", true).toHttpMethod();
             if (makeRedirectedRequest(httpMethod)) {
-                httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download.png").toGetMethod();
+                fileURL = PlugUtils.getStringBetween(getContentAsString(), "report?url=", "\">");
+
+                httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dform", true).toHttpMethod();
+
+
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
@@ -86,7 +93,7 @@ class TuneScoopFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("images/404.png")) {
+        if (contentAsString.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

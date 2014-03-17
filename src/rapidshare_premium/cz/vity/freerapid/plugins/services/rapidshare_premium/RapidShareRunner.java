@@ -45,11 +45,11 @@ class RapidShareRunner {
 			} catch (BadLoginException ex) {
 				configProvider.clear();
 				logger.log(Level.WARNING, "Bad password or login!");
+				if (i > 4) {
+					throw new ErrorDuringDownloadingException("No RS Premium account login information!");
+				}
 			}
-		} while (i < 4);
-
-		throw new ErrorDuringDownloadingException("No RS Premium account login information!");
-
+		} while (true);
 	}
 
 	private void tryDownload(HttpFileDownloader downloader) throws Exception {

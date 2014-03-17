@@ -1,10 +1,7 @@
 package cz.vity.freerapid.plugins.services.depositfiles;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -38,7 +35,19 @@ class DepositFilesRunner {
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
 
-            Matcher matcher = Pattern.compile("Free downloading mode", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = Pattern.compile("<b>([0-9.]+&nbsp;.B)</b>", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (matcher.find()) {
+                logger.info("File size " + matcher.group(1));
+                httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
+            }
+            matcher = Pattern.compile("class\\=\"info[^=]*\\=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            if (matcher.find()) {
+                final String fn = matcher.group(1);
+                logger.info("File name " + fn);
+                httpFile.setFileName(fn);
+            } else logger.warning("File name was not found" + client.getContentAsString());
+
+            matcher = Pattern.compile("Free downloading mode", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (!matcher.find()) {
 
                 matcher = Pattern.compile("form action=\\\"([^l\\\"]*[^o\\\"]*[^g\\\"]*)\\\"", Pattern.MULTILINE).matcher(client.getContentAsString());
@@ -48,19 +57,6 @@ class DepositFilesRunner {
                     throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
                 }
                 String s = matcher.group(1);
-                matcher = Pattern.compile("<b>(.*?)&nbsp;MB</b>", Pattern.MULTILINE).matcher(client.getContentAsString());
-                if (matcher.find()) {
-                    logger.info("File size " + matcher.group(1));
-                    Double a = new Double(matcher.group(1).replaceAll(" ", ""));
-                    a = (a * 1024 * 1024);
-                    httpFile.setFileSize(a.longValue());
-                }
-                matcher = Pattern.compile("class\\=\"info[^=]*\\=\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
-                if (matcher.find()) {
-                    final String fn = matcher.group(1);
-                    logger.info("File name " + fn);
-                    httpFile.setFileName(fn);
-                } else logger.warning("File name was not found" + client.getContentAsString());
 
                 logger.info("Submit form to - " + s);
                 client.setReferer(fileURL);

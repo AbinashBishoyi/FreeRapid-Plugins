@@ -46,13 +46,20 @@ class BbcFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final String name;
         final Matcher matcher = getMatcherAgainstContent("<div class=\"module\" id=\"programme-info\">\\s*?<h2>(.+?)<span class=\"blq-hide\"> - </span><span>(.*?)</span></h2>");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
+        if (matcher.find()) {
+            final String series = matcher.group(1).replace(": ", " - ");
+            final String episode = matcher.group(2).replace(": ", " - ");
+            name = series + (episode.isEmpty() ? "" : " - " + episode);
+        } else {
+            try {
+                name = PlugUtils.getStringBetween(getContentAsString(), "emp.setEpisodeTitle(\"", "\"").replace("\\/", ".").replace(": ", " - ");
+            } catch (PluginImplementationException e) {
+                throw new PluginImplementationException("File name not found");
+            }
         }
-        final String series = matcher.group(1).replace(": ", " - ");
-        final String episode = matcher.group(2).replace(": ", " - ");
-        httpFile.setFileName(series + (episode.isEmpty() ? "" : " - " + episode) + ".flv");
+        httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -106,8 +113,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 throw new PluginImplementationException("Error parsing playlist XML", e);
             }
             if (list.isEmpty()) throw new PluginImplementationException("No suitable streams found");
-            Collections.sort(list);
-            final RtmpSession rtmpSession = list.get(0).getRtmpSession();
+            final RtmpSession rtmpSession = Collections.min(list).getRtmpSession();
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
             helper.setSwfVerification(rtmpSession, client);

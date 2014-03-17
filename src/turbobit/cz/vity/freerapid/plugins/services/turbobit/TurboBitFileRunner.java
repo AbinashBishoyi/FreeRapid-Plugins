@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
  *
  * @author Arthur Gunawan, RickCL, ntoskrnl, tong2shot
  */
-class TurboBitFileRunner extends AbstractRunner {
+public class TurboBitFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(TurboBitFileRunner.class.getName());
 
     private final static int CAPTCHA_MAX = 0;
@@ -30,7 +30,6 @@ class TurboBitFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        addCookie(new Cookie(".turbobit.net", "user_lang", "en", "/", 86400, false));
         fileURL = checkFileURL(fileURL);
         final HttpMethod method = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(method)) {
@@ -43,26 +42,21 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private String checkFileURL(final String fileURL) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("http://(?:www\\.)?turbobit\\.net/(?:download/free/)?([a-z0-9]+)(?:\\.html?)?", fileURL);
+        final Matcher matcher = PlugUtils.matcher("^http://(?:www\\.)?((?:turbobit|hitfile)\\.net)/(?:download/free/)?(\\w+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing download link");
         }
-        return "http://turbobit.net/" + matcher.group(1) + ".html";
+        addCookie(new Cookie("." + matcher.group(1), "user_lang", "en", "/", 86400, false));
+        return "http://" + matcher.group(1) + "/download/free/" + matcher.group(2);
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher filenameMatcher = getMatcherAgainstContent("<title>\\s+Download (.+?)\\. Free download");
-        if (filenameMatcher.find()) {
-            httpFile.setFileName(filenameMatcher.group(1));
-        } else {
-            throw new PluginImplementationException("File name not found");
+    protected void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("Download file:\\s*<br>.*?>(.+?)</span>\\s*\\((.+?)\\)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name/size not found");
         }
-        final Matcher filesizeMatcher = getMatcherAgainstContent("<span.+?</span>\\s+\\((.+?)\\)");
-        if (filesizeMatcher.find()) {
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
-        } else {
-            throw new PluginImplementationException("File size not found");
-        }
+        httpFile.setFileName(matcher.group(1));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -70,23 +64,12 @@ class TurboBitFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".turbobit.net", "user_lang", "en", "/", 86400, false));
         fileURL = checkFileURL(fileURL);
 
         HttpMethod method = getMethodBuilder().setAction(fileURL).toGetMethod();
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-
-            method = getMethodBuilder()
-                    .setReferer(method.getURI().toString())
-                    .setActionFromAHrefWhereATagContains("Regular Download")
-                    .toGetMethod();
-            if (!makeRedirectedRequest(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            checkProblems();
 
             Matcher matcher = getMatcherAgainstContent("limit\\s*:\\s*(\\d+)");
             if (matcher.find()) {
@@ -210,7 +193,7 @@ class TurboBitFileRunner extends AbstractRunner {
         final String random = String.valueOf(1 + new Random().nextInt(100000));
         final byte[] bytes = (fileId + random).getBytes("ISO-8859-1");
         for (int i = 0; i < bytes.length; i++) {
-            bytes[i] ^= 101;
+            bytes[i] ^= 1;
         }
         final String base64 = Base64.encodeBase64String(bytes).replace('/', '_');
         return "/download/getlinktimeout/" + fileId + "/" + random + "/" + base64;

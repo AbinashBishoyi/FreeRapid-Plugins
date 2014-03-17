@@ -22,11 +22,12 @@ class UlozToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UlozToRunner.class.getName());
     private final static String SERVICE_BASE_URL = "http://uloz.to";
     private int captchaCount = 0;
+    private final Random random = new Random();
 
     private void ageCheck(String content) throws Exception {
         if (content.contains("confirmContent")) { //eroticky obsah vyzaduje potvruemo
-            String confirmUrl = fileURL + "?do=askAgeForm-submit";
-            PostMethod confirmMethod = (PostMethod) getMethodBuilder()
+            final String confirmUrl = fileURL + "?do=askAgeForm-submit";
+            final PostMethod confirmMethod = (PostMethod) getMethodBuilder()
                     .setAction(confirmUrl)
                     .setEncodePathAndQuery(true)
                     .setAndEncodeParameter("agree", "Souhlasím")
@@ -64,7 +65,6 @@ class UlozToRunner extends AbstractRunner {
             checkProblems();
             ageCheck(getContentAsString());
             checkNameAndSize(getContentAsString());
-
             captchaCount = 0;
             HttpMethod method = null;
             while (getContentAsString().contains("captchaContainer") || getContentAsString().contains("?captcha=no")) {
@@ -130,16 +130,15 @@ class UlozToRunner extends AbstractRunner {
             logger.info("Using HTML redirect");
             return getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Please click here to continue").toGetMethod();
         }
-        CaptchaSupport captchaSupport = getCaptchaSupport();
-        MethodBuilder sendForm = getMethodBuilder()
+        final CaptchaSupport captchaSupport = getCaptchaSupport();
+        final MethodBuilder sendForm = getMethodBuilder()
                 .setBaseURL(SERVICE_BASE_URL).setReferer(fileURL)
                 .setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
-
         final HttpMethod getNewCaptcha = getGetMethod("http://uloz.to/reloadCaptcha.php");
         if (!makeRedirectedRequest(getNewCaptcha)) {
             throw new PluginImplementationException("Error loading captcha");
         }
-        Matcher captchaIdKeyMatcher = PlugUtils.matcher("id\":(\\d+),\"key\":\"(\\w+)\"}", getContentAsString());
+        final Matcher captchaIdKeyMatcher = PlugUtils.matcher("id\":(\\d+),\"key\":\"(\\w+)\"}", getContentAsString());
         if (!captchaIdKeyMatcher.find()) {
             throw new PluginImplementationException("Captcha id-key not found");
         }
@@ -147,23 +146,30 @@ class UlozToRunner extends AbstractRunner {
         final String captchaKey = captchaIdKeyMatcher.group(2);
         final String captchaImg = "http://img.uloz.to/captcha/" + captchaId + ".png";
         final String captchaSnd = "http://img.uloz.to/captcha/sound/" + captchaId + ".mp3";
-
         String captchaTxt;
         //precteni
         //captchaCount = 9; //for test purpose
         if (captchaCount++ < 6) {
-            logger.warning("captcha url:" + captchaImg);
-            SoundReader captchaReader = new SoundReader();    // This will NOT work running TestApp !!
-            HttpMethod methodSound = getMethodBuilder()       // It Works as a plugin in FreeRapid   -- birchie
+            logger.warning("captcha url:" + captchaSnd);
+            final SoundReader captchaReader = new SoundReader();    // This will NOT work running TestApp !!
+            final HttpMethod methodSound = getMethodBuilder()       // It Works as a plugin in FreeRapid   -- birchie
                     .setReferer(fileURL)
                     .setAction(captchaSnd)
                     .toGetMethod();
-            captchaTxt = captchaReader.parse(client.makeRequestForFile(methodSound));
-            methodSound.releaseConnection();
+            try {
+                captchaTxt = captchaReader.parse(client.makeRequestForFile(methodSound));
+            } catch (Exception e) {
+                final StringBuilder captchaTxtBuilder = new StringBuilder(4);
+                for (int i = 0; i < 4; i++) {
+                    captchaTxtBuilder.append(Character.toChars(random.nextInt(26) + 97)); //throw random chars
+                }
+                captchaTxt = captchaTxtBuilder.toString();
+            } finally {
+                methodSound.releaseConnection();
+            }
         } else {
             captchaTxt = captchaSupport.getCaptcha(captchaImg);
         }
-
         if (captchaTxt == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
@@ -176,7 +182,7 @@ class UlozToRunner extends AbstractRunner {
 
     //"Prekro�en pocet FREE slotu, pouzijte VIP download
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        String content = getContentAsString();
+        final String content = getContentAsString();
         if (content.contains("Soubor byl sma") || content.contains("Soubor byl zak")) {
             throw new URLNotAvailableAnymoreException("Soubor byl smazan");
         }

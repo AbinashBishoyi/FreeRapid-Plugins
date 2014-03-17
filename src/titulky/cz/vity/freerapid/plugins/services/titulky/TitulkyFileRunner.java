@@ -31,8 +31,8 @@ class TitulkyFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-
-        final HttpMethod loginMethod = getMethodBuilder().setAction("http://www.titulky.com/index.php").setParameter("Login", "Bob01").setParameter("Detail2", "").setParameter("Password", "0123456789").toPostMethod();
+        //admin%2Bbob03@
+        final HttpMethod loginMethod = getMethodBuilder().setAction("http://www.titulky.com/index.php").setParameter("Login", "Bob03").setParameter("Detail2", "").setParameter("Password", "0123456789").toPostMethod();
         if (!makeRedirectedRequest(loginMethod))  //we make the main request
             throw new PluginImplementationException();
         //index.php?welcome=

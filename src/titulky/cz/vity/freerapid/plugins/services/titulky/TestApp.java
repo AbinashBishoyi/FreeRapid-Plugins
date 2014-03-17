@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.titulky.com/Futurama-S06E05-158081.htm"));
+            httpFile.setNewURL(new URL("http://www.titulky.com/Almost-Human-S01E06-228977.htm"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             setUseTempFiles(true);

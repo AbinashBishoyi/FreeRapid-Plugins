@@ -47,7 +47,7 @@ class File4GoFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "window.location.href='", "'\">Download</button>"));
+            final HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "window.location.href='", "'\">Download"));
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -60,7 +60,9 @@ class File4GoFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Not Found") || contentAsString.contains("Arquivo Temporariamente Indisponivel")) {
+        if (contentAsString.contains("Not Found") ||
+                contentAsString.contains("Arquivo Temporariamente Indisponivel") ||
+                contentAsString.contains("Arquivos Removidor POR DMCA Infregimento dos termos de uso")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

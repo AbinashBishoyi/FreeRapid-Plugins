@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="linkbucks.com" version="0.1" vendor="Alex"
+<plugin id="linkbucks.com" version="0.1.1" vendor="Alex"
         class="cz.vity.freerapid.plugins.services.linkbucks.LinkBucksServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://[0-9a-z]+?\.linkbucks\.com/?"/>

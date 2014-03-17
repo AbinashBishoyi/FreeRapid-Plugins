@@ -2,7 +2,7 @@
 <project name="Dailymotion.com" default="all" basedir=".">
     <property name="application" value="dailymotion"/>
 
-    <property name="version" value="0.1"/>
+    <property name="version" value="0.2"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="dailymotion.jar"/>

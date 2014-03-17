@@ -18,20 +18,21 @@ import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
- * @author Ramsestom
+ * @author Ramsestom,JPEXS
  */
 class DailymotionRunner extends AbstractRunner 
 {
     private final static Logger logger = Logger.getLogger(DailymotionRunner.class.getName());
     private static final String SERVICE_WEB = "http://www.dailymotion.com";
     static Pattern PAT_DM = Pattern.compile(".*addVariable\\(\"video\", \"(.*)\".*");
-    private String fileExtension = ".vp6";
+    private String videoName="";
 
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
             checkName(getContentAsString());//ok let's extract file name and size from the page
         } else
             throw new PluginImplementationException();
@@ -39,18 +40,21 @@ class DailymotionRunner extends AbstractRunner
 
     private void checkName(String content) throws ErrorDuringDownloadingException 
     {
-    	 final Matcher matcher = getMatcherAgainstContent("<h1 class=\"nav\">(.+?)</h1>");
+    	 final Matcher matcher = getMatcherAgainstContent("<h1[^>]*>(.+?)</h1>");
 
          if (matcher.find()) {
-             final String fileName = matcher.group(1).trim() + fileExtension;
-             logger.info("File name " + fileName);
-             httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fileName), "_"));
+             videoName=matcher.group(1).trim();
+             setFileExtension(".flv");
          } else {
              logger.warning("File name was not found");
              throw new PluginImplementationException();
          }
 
          httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private void setFileExtension(String ext){
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(videoName+ext), "_"));
     }
 
     @Override
@@ -81,9 +85,10 @@ class DailymotionRunner extends AbstractRunner
     						quality = tq;
     					}
     				}
+                                setFileExtension(getExtensionByQuality(quality));
     				video = video.substring(0, video.indexOf("@@"));
     					
-    				final String finalURL = SERVICE_WEB + video;
+    				final String finalURL = video;
     				
     				GetMethod getMethod = getGetMethod(finalURL);
     				
@@ -110,12 +115,20 @@ class DailymotionRunner extends AbstractRunner
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
+        if (contentAsString.contains("The page you tried to reach was not found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }
 
-    
+
+    private static String getExtensionByQuality(int quality){
+        if(quality==2){
+            return ".mp4";
+        }else{
+            return ".flv";
+        }
+    }
+
     private static int getDaylimotionQuality(String url) 
     {
 		if (url.endsWith("vp6-hd")) {

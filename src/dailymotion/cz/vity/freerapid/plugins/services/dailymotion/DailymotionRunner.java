@@ -35,7 +35,7 @@ class DailymotionRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DailymotionRunner.class.getName());
     private final static String SUBTITLE_SEPARATOR = "?";
     private final static String DEFAULT_FILE_EXT = ".mp4";
-    private final static String[] qualityUrlKeyMap = {"ldURL", "sdURL", "hqURL", "hd720URL"};
+    private final static String[] qualityUrlKeyMap = {"ldURL", "sdURL", "hqURL", "hd720URL", "hd1080URL"};
     private DailymotionSettingsConfig config;
 
     private static enum UriListType {VIDEOS, SUBTITLES}
@@ -126,7 +126,7 @@ class DailymotionRunner extends AbstractRunner {
                 logger.info("Sequence in SWF");
             } else if (swfStr.contains("autoURL")) {
                 //find sequence in manifest
-                Matcher matcher = PlugUtils.matcher(String.format("%s%s%s:%s(\\p{Graph}+?)(?:%s|%s)", Pattern.quote("\\\""), "autoURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote("\\\",\\\"cdn"), Pattern.quote(",\\\"allowStageVideo")), swfStr);
+                Matcher matcher = PlugUtils.matcher(String.format("%s%s%s:%s(\\p{Graph}+?)(?:%s|%s)", Pattern.quote("\\\""), "autoURL", Pattern.quote("\\\""), Pattern.quote("\\\""), Pattern.quote("\\\",\\\"cdn"), Pattern.quote("\\\",\\\"allowStageVideo")), swfStr);
                 if (!matcher.find()) {
                     throw new PluginImplementationException("Manifest not found in SWF");
                 }
@@ -195,7 +195,7 @@ class DailymotionRunner extends AbstractRunner {
         final Matcher matcher = PlugUtils.matcher("\"name\":\"(\\d+)\".+?\"template\":\"(.+?)\"", manifest);
         final StringBuilder sequenceSb = new StringBuilder();
         while (matcher.find()) {
-            sequenceSb.append(matcher.group(1).replace("240", "\"ldURL\"").replace("380", "\"sdURL\"").replace("480", "\"hqURL\"").replace("720", "\"hd720URL\""));
+            sequenceSb.append(matcher.group(1).replace("240", "\"ldURL\"").replace("380", "\"sdURL\"").replace("480", "\"hqURL\"").replace("720", "\"hd720URL\"").replace("1080", "\"hd1080URL\""));
             sequenceSb.append(":\"");
             sequenceSb.append(matcher.group(2));
             sequenceSb.append("\",");

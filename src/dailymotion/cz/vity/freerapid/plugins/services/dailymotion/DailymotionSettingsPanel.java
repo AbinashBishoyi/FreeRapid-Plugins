@@ -18,8 +18,8 @@ public class DailymotionSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"720p (HD)", "480p (HQ)", "384p (SD)", "240p (LD)"};
-        final int[] qualityIndexMap = {3, 2, 1, 0};
+        final String[] qualityStrings = {"1080p (HD)", "720p (HD)", "480p (HQ)", "384p (SD)", "240p (LD)"};
+        final int[] qualityIndexMap = {4, 3, 2, 1, 0};
 
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);

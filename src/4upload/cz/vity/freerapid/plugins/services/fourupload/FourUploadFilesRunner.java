@@ -1,0 +1,170 @@
+package cz.vity.freerapid.plugins.services.fourupload;
+
+import java.awt.image.BufferedImage;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+
+import cz.vity.freerapid.plugins.exceptions.BuildMethodException;
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+
+/**
+ * @author RickCL
+ */
+class FourUploadFilesRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(FourUploadFilesRunner.class.getName());
+    private static final String URI_BASE = "http://4upload.ru";
+
+
+    @Override
+    public void runCheck() throws Exception {
+        super.runCheck();
+        final GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(getMethod)) {
+            checkNameAndSize(getContentAsString());
+        } else
+            throw new PluginImplementationException();
+    }
+
+    @Override
+    public void run() throws Exception {
+        super.run();
+
+        GetMethod getMethod = getGetMethod(fileURL);
+        if (makeRedirectedRequest(getMethod)) {
+            checkNameAndSize(getContentAsString());
+
+            Matcher matcher = getMatcherAgainstContent("<a\\shref=\"([\\w/\\.]*)\"\\sclass=\"button-download\">");
+            if( !matcher.find() ) {
+                checkProblems();
+            }
+
+            getMethod = getGetMethod(URI_BASE + matcher.group(1));
+            if( !makeRequest(getMethod)) {
+                checkProblems();
+            }
+
+            matcher = getMatcherAgainstContent("<p\\sid=\"counter\">(\\d*)</p>");
+            if( !matcher.find() ) {
+                checkProblems();
+            }
+            String t = matcher.group(1);
+            int seconds = new Integer(t);
+
+            matcher = getMatcherAgainstContent("Ajax.Request\\('([/\\w]*)'\\);");
+            if( !matcher.find() ) {
+                checkProblems();
+            }
+
+            String postAction = getMethodBuilder().setActionFromFormByName("downloadForm", false).getAction();
+            logger.info( "Getting POST action: " +  postAction );
+
+            String recaptcha = getActionFromScriptSrcWhereTagContains("recaptcha");
+            logger.info( "Captcha URL: " + recaptcha );
+            getMethod = getGetMethod(recaptcha);
+            if( !makeRequest(getMethod)) {
+                checkProblems();
+            }
+            //System.out.println( getContentAsString() );
+            matcher = getMatcherAgainstContent("challenge\\s:\\s'([\\w-]*)'");
+            if( !matcher.find() ) {
+                checkProblems();
+            }
+            String recaptcha_challenge_field = matcher.group(1);
+            String captcha="http://api.recaptcha.net/image?c=" + recaptcha_challenge_field;
+
+            //URL=http://api.recaptcha.net/image?c=028OfOy4DmZzZh2LJZkai0FBz5N2yJNlRPqy1iYHirxt3uXUS0DQN0f1t2ht4CNWaRAmqi3ny9TJSK2onuwQRVnn_kKTzM4maMfH_y_WTTiAck-qETaRKiS78T9tN_PI76646BS577i8UQxHkqqOJeKRLwAe7-uo7LiOJsl8EK4TPKAQdvUDUP-QKBOovkZVPUTriKPJZ50VAChI9vzw4EbDiDjbhkJlIr1auap5gfnp4qfoMLAwMD
+            final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captcha);
+            //logger.info("Read captcha:" + CaptchaReader.read(captchaImage));
+            captcha = getCaptchaSupport().askForCaptcha(captchaImage);
+            if( captcha == null || captcha.isEmpty() ) {
+                throw new CaptchaEntryInputMismatchException("Can't be null");
+            }
+
+            logger.info("wait - " + seconds);
+            // It's not necessary wait this
+            //downloadTask.sleep(seconds + 1);
+
+            //final HttpMethod httpMethod = getMethodBuilder().setAction(URI_BASE + matcher.group(1)).setReferer(fileURL).toPostMethod();
+            PostMethod postMethod = getPostMethod( URI_BASE + postAction );
+            postMethod.setParameter("recaptcha_challenge_field", recaptcha_challenge_field );
+            postMethod.setParameter("recaptcha_response_field", captcha);
+            postMethod.setParameter("download_start", "true");
+            //postMethod.setFollowRedirects(true);
+
+            if (!tryDownloadAndSaveFile(postMethod)) {
+                checkProblems();//if downloading failed
+                //logger.warning(getContentAsString());//log the info
+                throw new CaptchaEntryInputMismatchException();
+            }
+
+        } else
+            throw new PluginImplementationException();
+    }
+
+    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        logger.fine(content);
+        if (!(content == null)) {
+            if ( content.contains("<div class=\"fileName\">") && content.contains("<div class=\"fileSize\">") ) {
+                content = content.replaceAll("\n", "").replaceAll("\r", "");
+                String name = PlugUtils.getStringBetween(content, "<div class=\"fileName\">", "</div>");
+                name = name.replaceAll("</?\\w+\\s*[^>]*>", "").trim();
+                final String size = PlugUtils.getStringBetween(content, "<div class=\"fileSize\">", "</div>");
+                final long lsize = PlugUtils.getFileSizeFromString( size.replaceAll("</?\\w+\\s*[^>]*>", "").trim() );
+
+                httpFile.setFileName( name );
+                httpFile.setFileSize(lsize);
+
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+                return;
+            } else {
+                checkProblems();
+            }
+        }
+    }
+
+    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+        String content = getContentAsString();
+        if (content.contains("\u0421 \u0432\u0430\u0448\u0435\u0433\u043e IP \u0430\u0434\u0440\u0435\u0441\u0430")) {
+            throw new ServiceConnectionProblemException(String.format("<b>Your IP is already downloading a file from our system.</b><br>You cannot download more than one file in parallel."));
+        }
+        if (content.contains("\u041e\u0448\u0438\u0431\u043a\u0430 404")) {
+            throw new URLNotAvailableAnymoreException(String.format("The address is incorrectly collected or this file no longer exists"));
+        }
+        /** For debug
+        try {
+            FileOutputStream f = new FileOutputStream("error-content.html");
+            f.write( content.getBytes() );
+            f.close();
+        } catch(Exception e) {}
+        /**/
+    }
+
+    public String getActionFromScriptSrcWhereTagContains(final String text) throws BuildMethodException {
+        Pattern iframePattern = Pattern.compile("(<script(?:.*?)src\\s?=\\s?(?:\"|')(.+?)(?:\"|')(?:.*?)>)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+        final Matcher matcher = iframePattern.matcher( getContentAsString() );
+        int start = 0;
+        final String lower = text.toLowerCase();
+        while (matcher.find(start)) {
+            final String content = matcher.group(1);
+            if (content.toLowerCase().contains(lower)) {
+                return matcher.group(2);
+            }
+            start = matcher.end();
+        }
+        throw new BuildMethodException("Tag <script> with containing '" + text + "' was not found!");
+    }
+
+
+}

@@ -129,6 +129,7 @@ class YouTubeFileRunner extends AbstractRunner {
         }
         String formats[]=fmt_map.split(",");
         int quality=config.getQualitySetting();
+        if(quality==4) quality=formats.length-1; //maximum available
         if(quality>=formats.length) quality=formats.length-1;
         String selectedFormat=formats[formats.length-1-quality];
         fmt=Integer.parseInt(selectedFormat.substring(0,selectedFormat.indexOf("/")));

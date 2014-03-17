@@ -18,8 +18,8 @@ public class YouTubeSettingsPanel extends JPanel implements ActionListener {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"Low (FLV)","Standard (FLV)", "High or HD (MP4)"};
-        final JLabel qualityLabel = new JLabel("Preferred quality:");
+        final String[] qualityStrings = {"0 (lowest)","1","2","3","maximum available"};
+        final JLabel qualityLabel = new JLabel("Preffered quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);
         qualityList.setSelectedIndex(config.getQualitySetting());
         qualityList.addActionListener(this);

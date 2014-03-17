@@ -35,6 +35,8 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     private final List<FileSizeHandler> fileSizeHandlers = getFileSizeHandlers();
     private final List<CaptchaType> captchaTypes = getCaptchaTypes();
 
+    private boolean skipWaitTime = false;
+
     protected List<FileNameHandler> getFileNameHandlers() {
         final List<FileNameHandler> fileNameHandlers = new LinkedList<FileNameHandler>();
         fileNameHandlers.add(new FileNameHandlerA());
@@ -100,7 +102,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             final long startTime = System.currentTimeMillis();
             stepPassword(methodBuilder);
             stepCaptcha(methodBuilder);
-            sleepWaitTime(waitTime, startTime);
+            if (!getSkipWaitTime()) {
+                sleepWaitTime(waitTime, startTime);
+            }
             method = methodBuilder.toPostMethod();
             final int httpStatus = client.makeRequest(method, false);
             if (httpStatus / 100 == 3) {
@@ -180,6 +184,10 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         throw new PluginImplementationException("File size not found");
     }
 
+    protected boolean getSkipWaitTime() {
+        return skipWaitTime;
+    }
+
     protected int getWaitTime() throws Exception {
         final Matcher matcher = getMatcherAgainstContent("id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
@@ -214,6 +222,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
             if (captchaType.canHandle(getContentAsString())) {
                 logger.info("Captcha type: " + captchaType.getClass().getSimpleName());
                 captchaType.handleCaptcha(methodBuilder, client, getCaptchaSupport());
+                if (captchaType instanceof ReCaptchaType) {
+                    skipWaitTime = true;
+                }
                 break;
             }
         }

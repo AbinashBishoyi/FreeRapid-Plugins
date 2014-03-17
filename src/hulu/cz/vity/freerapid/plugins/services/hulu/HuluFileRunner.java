@@ -194,7 +194,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private RtmpSession getSession(final Stream stream) {
-        return new RtmpSession(stream.server, 1935, stream.app, stream.play, true);
+        return new RtmpSession(stream.server, stream.cdn.equalsIgnoreCase("edgecast") ? 80 : 1935, stream.app, stream.play, true); //edgecast uses port 80
     }
 
     private List<Stream> getStreamList(String content) throws ErrorDuringDownloadingException, UnsupportedEncodingException {
@@ -210,13 +210,13 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 throw new PluginImplementationException("Error parsing stream server");
             }
             final String server = serverAppMatcher.group(1);
-            final String app = serverAppMatcher.group(2) + "?sessionid=" + sessionId + "&" + URLDecoder.decode(PlugUtils.replaceEntities(token), "UTF-8");
+            final String cdn = matcher.group(7);
+            final String app = serverAppMatcher.group(2) + "?" + (!cdn.equalsIgnoreCase("edgecast") ? "sessionid=" + sessionId + "&" : "") + PlugUtils.replaceEntities(token); //edgecast doesn't use sessionId param
             final int bitrate = Integer.parseInt(matcher.group(4));
             final int videoQuality = Integer.parseInt(matcher.group(5)); //height as video quality
             final String videoFormat = matcher.group(6);
-            final String cdn = matcher.group(7);
-            if (!(cdn.equalsIgnoreCase("akamai") || cdn.equalsIgnoreCase("limelight") || cdn.equalsIgnoreCase("level3")) //downloadable CDN: akamai, limelight, level3
-                    || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-limelight, non-level3, non-h264
+            if (!(cdn.equalsIgnoreCase("akamai") || cdn.equalsIgnoreCase("limelight") || cdn.equalsIgnoreCase("level3") || cdn.equalsIgnoreCase("edgecast")) //downloadable CDN: akamai, limelight, level3, edgecast
+                    || !videoFormat.equalsIgnoreCase("h264")) { //ignore non-akamai, non-limelight, non-level3, non-edgecast, non-h264
                 continue;
             }
             Stream stream = new Stream(server, app, play, bitrate, videoQuality, videoFormat, cdn);
@@ -249,20 +249,25 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 }
             }
         }
+        if (selectedStream == null) {
+            throw new PluginImplementationException("Error selecting stream");
+        }
+        int selectedVideoQuality = selectedStream.videoQuality;
 
         //select CDN
         weight = Integer.MIN_VALUE;
-        int selectedVideoQuality = selectedStream.videoQuality;
         for (Stream stream : streamList) {
             if (stream.videoQuality == selectedVideoQuality) {
                 int tempWeight = 0;
                 String cdn = stream.cdn;
-                if (cdn.equalsIgnoreCase("akamai")) { //akamai > limelight > level3
+                if (cdn.equalsIgnoreCase("akamai")) { //akamai > limelight > level3 > edgecast
                     tempWeight = 50;
                 } else if (cdn.equalsIgnoreCase("limelight")) {
                     tempWeight = 49;
                 } else if (cdn.equalsIgnoreCase("level3")) {
                     tempWeight = 48;
+                } else if (cdn.equalsIgnoreCase("edgecast")) {
+                    tempWeight = 47;
                 }
                 if (tempWeight > weight) {
                     weight = tempWeight;
@@ -285,7 +290,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         private final String videoFormat; // Example : vp6, h264
         private final String cdn; //Example : akamai, limelight, level3, edgecast
 
-        public Stream(String server, String app, String play, int bitrate, int videoQuality, String videoFormat, String cdn) throws ErrorDuringDownloadingException {
+        public Stream(String server, String app, String play, int bitrate, int videoQuality, String videoFormat, String cdn) {
             this.server = server;
             this.app = app;
             this.play = play;

@@ -15,12 +15,6 @@ public class #fullWithoutDot#ServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public int getMaxDownloadsFromOneIP() {
-        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 1;
-    }
-
-    @Override
     public boolean supportsRunCheck() {
         return true;//ok
     }

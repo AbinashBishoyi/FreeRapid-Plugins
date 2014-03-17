@@ -4,8 +4,6 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.services.youtube.srt.Transcription2SrtUtil;
 import cz.vity.freerapid.plugins.video2audio.AbstractVideo2AudioRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
@@ -13,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import jlibs.core.net.URLUtil;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
@@ -35,7 +34,7 @@ import java.util.regex.Matcher;
  */
 class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:25.0) Gecko/20100101 Firefox/25.0";
 
     private YouTubeSettingsConfig config;
     private YouTubeMedia youTubeMedia = null;
@@ -94,80 +93,47 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 return;
             }
 
-            youTubeMedia = getSelectedYouTubeMedia();
+            String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
+            logger.info("Swf URL : " + swfUrl);
+            String fmtStreamMapContent = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
+            logger.info("fmtStreamMap : " + fmtStreamMapContent);
+            Map<Integer, YouTubeMedia> youTubeMediaMap = getFmtStreamMap(fmtStreamMapContent);
+            youTubeMedia = getSelectedYouTubeMedia(youTubeMediaMap);
             checkName();
 
-            final String fmtStreamMap = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
-            logger.info("fmtStreamMap : " + fmtStreamMap);
-            int itagCode = youTubeMedia.getItagCode();
-            Matcher matcher = PlugUtils.matcher("([^,]*\\\\u0026itag=" + itagCode + "[^,]*|[^,]*itag=" + itagCode + "\\\\u0026[^,]*)", fmtStreamMap);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Cannot find specified video format (" + itagCode + ")");
+            logger.info("Config setting : " + config);
+            logger.info("Downloading video : " + youTubeMedia);
+            String videoURL = youTubeMedia.getUrl();
+            if (URLUtil.getQueryParams(videoURL, "UTF-8").get("signature") == null) { //if there is no "signature" param in url
+                String signature;
+                if (youTubeMedia.isCipherSignature()) { //signature is encrypted
+                    logger.info("Cipher signature : " + youTubeMedia.getSignature());
+                    InputStream is = client.makeRequestForFile(getGetMethod(swfUrl));
+                    if (is == null) {
+                        throw new ServiceConnectionProblemException("Error downloading SWF");
+                    }
+                    signature = new YouTubeSigDecipher(is).decipher(youTubeMedia.getSignature());
+                    logger.info("Deciphered signature : " + signature);
+                } else {
+                    signature = youTubeMedia.getSignature();
+                }
+                videoURL += "&signature=" + signature;
             }
-            final String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
-            final String formatContent = matcher.group(1);
-            logger.info("Swf URL : " + swfUrl);
-            if (formatContent.contains("rtmp")) {
-                matcher = PlugUtils.matcher("conn=(.+?)(?:\\\\u0026.+)?$", formatContent);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Cannot find stream address");
-                }
-                final String conn = URLDecoder.decode(matcher.group(1), "UTF-8");
-                matcher = PlugUtils.matcher("stream=(.+?)(?:\\\\u0026.+)?$", formatContent);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Cannot find stream params");
-                }
-                final String sparams = URLDecoder.decode(matcher.group(1), "UTF-8");
-                final RtmpSession rtmpSession = new RtmpSession(conn, sparams);
-                rtmpSession.getConnectParams().put("swfUrl", swfUrl);
-                rtmpSession.getConnectParams().put("pageUrl", fileURL);
-                new SwfVerificationHelper(swfUrl).setSwfVerification(rtmpSession, client);
-                if (!tryDownloadAndSaveFile(rtmpSession)) {
+
+            method = getGetMethod(videoURL);
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
+            if (config.isConvertToAudio()) {
+                httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
+                final int bitrate = youTubeMedia.getAudioBitrate();
+                final boolean mp4 = ".mp4".equalsIgnoreCase(youTubeMedia.getContainer().getFileExt());
+                if (!tryDownloadAndSaveFile(method, bitrate, mp4)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
                 }
             } else {
-                matcher = PlugUtils.matcher("url=(.+?)(?:\\\\u0026.+)?$", formatContent);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Cannot find stream URL");
-                }
-                String videoURL = matcher.group(1);
-                if (!videoURL.contains("signature")) {
-                    if (formatContent.contains("sig=")) {
-                        matcher = PlugUtils.matcher("sig=(.+?)(?:\\\\u0026.+)?$", formatContent);
-                        if (matcher.find()) {
-                            videoURL += "&signature=" + matcher.group(1);
-                        }
-                    } else {
-                        matcher = PlugUtils.matcher("(?:\\\\u0026)?s=([A-Z0-9\\.]+?)(?:\\\\u0026|$)", formatContent);
-                        if (matcher.find()) {
-                            logger.info("Cipher signature : " + matcher.group(1));
-                            InputStream is = client.makeRequestForFile(getGetMethod(swfUrl));
-                            if (is == null) {
-                                throw new ServiceConnectionProblemException("Error downloading SWF");
-                            }
-                            final String signature = new YouTubeSigDecipher(is).decipher(matcher.group(1));
-                            logger.info("Deciphered signature : " + signature);
-                            videoURL += "&signature=" + signature;
-                        }
-                    }
-                }
-
-                method = getGetMethod(URLDecoder.decode(videoURL, "UTF-8"));
-                setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-                if (config.isConvertToAudio()) {
-                    httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
-                    final int bitrate = youTubeMedia.getAudioBitrate();
-                    final boolean mp4 = ".mp4".equalsIgnoreCase(youTubeMedia.getContainer().getFileExt());
-                    if (!tryDownloadAndSaveFile(method, bitrate, mp4)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
-                } else {
-                    if (!tryDownloadAndSaveFile(method)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
+                if (!tryDownloadAndSaveFile(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
             }
         } else {
@@ -181,8 +147,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         HttpMethod method = getGetMethod(String.format("https://gdata.youtube.com/feeds/api/videos/%s?v=2", getIdFromUrl()));
         int httpCode = client.makeRequest(method, true);
         if ((httpCode == HttpStatus.SC_NOT_FOUND)
+                || (httpCode == HttpStatus.SC_FORBIDDEN)
                 || getContentAsString().contains("ResourceNotFoundException")
-                || getContentAsString().contains("Video not found")) {
+                || getContentAsString().contains("ServiceForbiddenException")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
@@ -210,22 +177,49 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         config = service.getConfig();
     }
 
-    private YouTubeMedia getSelectedYouTubeMedia() throws ErrorDuringDownloadingException {
-        final String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "\"fmt_list\": \"", "\"").replace("\\/", "/");
-        logger.info("fmt_map : " + fmt_map);
-        //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
-        final String[] formats = fmt_map.split(",");
-        final Map<Integer, YouTubeMedia> ytMediaMap = new LinkedHashMap<Integer, YouTubeMedia>(); // k=itagcode, v=YTMedia, preserve ordering
-        logger.info("Available YouTube media : ");
-        for (String format : formats) {
-            //Example: 37/1920x1080/9/0/115
-            String[] formatParts = format.split("/");
-            int itagCode = Integer.parseInt(formatParts[0]);
-            int videoResolution = Integer.parseInt(formatParts[1].split("x")[1]);
-            YouTubeMedia ytMedia = new YouTubeMedia(itagCode, videoResolution);
-            ytMediaMap.put(itagCode, ytMedia);
-            logger.info(ytMedia.toString());
+    private Map<Integer, YouTubeMedia> getFmtStreamMap(String content) throws Exception {
+        Map<Integer, YouTubeMedia> fmtStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
+        String aFmtStream[] = content.split(",");
+        for (String fmtStream : aFmtStream) {
+            //fmtStream example :
+            //url=http%3A%2F%2Fr5---sn-2uuxa3vh-jb3l.googlevideo.com%2Fvideoplayback%3Fmv%3Dm%26upn%3DZC7X-TgcnkI%26source%3Dyoutube%26sparams%3Did%252Cip%252Cipbits%252Citag%252Cratebypass%252Csource%252Cupn%252Cexpire%26ms%3Dau%26expire%3D1385234607%26fexp%3D910100%252C910207%252C900222%252C916624%252C919510%252C936912%252C936910%252C923308%252C936913%252C907231%252C907240%26mt%3D1385210269%26id%3Do-AJpZVaZ_pyzg65PoyK8IHQwiD_4EXmalD6shPyZuX1Zw%26sver%3D3%26ratebypass%3Dyes%26ip%3D192.168.1.113%26key%3Dyt5%26itag%3D22%26ipbits%3D0\u0026type=video%2Fmp4%3B+codecs%3D%22avc1.64001F%2C+mp4a.40.2%22\u0026sig=8A9764AECD80DBA23E94F4E149B42699FC3C0402.042C3EE60DB22A9E3E21E7D65D662D39E90A6C39\u0026fallback_host=tc.v19.cache7.googlevideo.com\u0026quality=hd720\u0026itag=22
+            String fmtStreamComponents[] = PlugUtils.unescapeUnicode(fmtStream).split("&"); // \u0026 as separator
+            int itag = -1;
+            String url = null;
+            String signature = null;
+            boolean cipherSig = false;
+            for (String fmtStreamComponent : fmtStreamComponents) {
+                String fmtStreamComponentParts[] = fmtStreamComponent.split("=");
+                String key = fmtStreamComponentParts[0];
+                String value = fmtStreamComponentParts[1];
+                if (key.equals("itag")) {
+                    itag = Integer.parseInt(value);
+                } else if (key.equals("url")) {
+                    url = URLDecoder.decode(value, "UTF-8");
+                    try {
+                        String sigParam = URLUtil.getQueryParams(url, "UTF-8").get("signature");
+                        if (sigParam != null) { //contains "signature" param
+                            signature = sigParam;
+                        }
+                    } catch (Exception e) {
+                        //
+                    }
+                } else if (key.equals("signature") || key.equals("sig") || key.equals("s")) {
+                    signature = value;
+                    cipherSig = key.equals("s");
+                }
+            }
+            if (itag == -1 || url == null || signature == null) {
+                throw new PluginImplementationException("Invalid YouTube media : " + fmtStream);
+            }
+            YouTubeMedia youTubeMedia = new YouTubeMedia(itag, url, signature, cipherSig);
+            logger.info("Found : " + youTubeMedia);
+            fmtStreamMap.put(itag, youTubeMedia);
         }
+        return fmtStreamMap;
+    }
+
+    private YouTubeMedia getSelectedYouTubeMedia(Map<Integer, YouTubeMedia> ytMediaMap) throws ErrorDuringDownloadingException {
         if (ytMediaMap.isEmpty()) {
             throw new PluginImplementationException("No available YouTube media");
         }
@@ -325,10 +319,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
         }
 
-        YouTubeMedia youTubeMedia = ytMediaMap.get(selectedItagCode);
-        logger.info("Config setting : " + config);
-        logger.info("Media to be downloaded : " + youTubeMedia);
-        return youTubeMedia;
+        return ytMediaMap.get(selectedItagCode);
     }
 
     private boolean isVid2AudSupported(YouTubeMedia ytMedia) {

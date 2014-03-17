@@ -1,25 +1,27 @@
 package cz.vity.freerapid.plugins.services.uppit;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author Kajda
+ * @author ntoskrnl
  */
-public class UppITServiceImpl extends AbstractFileShareService {
-    private final static String SERVICE_NAME = "uppit.com";
+public class UppITServiceImpl extends XFileSharingServiceImpl {
 
-    public String getName() {
-        return SERVICE_NAME;
+    @Override
+    public String getServiceTitle() {
+        return "UppIt";
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;
+    public String getName() {
+        return "uppit.com";
     }
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
         return new UppITFileRunner();
     }
+
 }

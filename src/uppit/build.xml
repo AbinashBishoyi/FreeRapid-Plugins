@@ -2,7 +2,7 @@
 <project name="UppIT.com" default="all" basedir=".">
     <property name="application" value="uppit"/>
 
-    <property name="version" value="0.6.1"/>
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="uppit.jar"/>
@@ -75,7 +75,8 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-
+            <sourcepath location="../recaptcha"/>
+            <sourcepath location="../xfilesharing/"/>
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

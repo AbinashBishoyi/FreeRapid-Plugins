@@ -92,7 +92,8 @@ class WebShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("soubor nebyl nalezen") || contentAsString.contains("Soubor nenalezen")) {
+        if (contentAsString.contains("soubor nebyl nalezen") || contentAsString.contains("Soubor nenalezen")
+                || contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

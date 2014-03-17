@@ -43,22 +43,12 @@ class LetitBitFileRunner extends AbstractRunner {
             checkProblems();
             //name and size are not visible for premium users
             method = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setActionFromIFrameSrcWhereTagContains("check2")
+                    .setReferer(method.getURI().toString())
+                    .setActionFromAHrefWhereATagContains("ownload")
                     .toGetMethod();
-            if (makeRedirectedRequest(method)) {
+            if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
-                method = getMethodBuilder()
-                        .setReferer(method.getURI().toString())
-                        .setActionFromAHrefWhereATagContains("ownload")
-                        .toGetMethod();
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
-                }
-            } else {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -67,7 +57,7 @@ class LetitBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "target=\"_blank\"><span>", "</span>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "File: <span>", "</span>");
         PlugUtils.checkFileSize(httpFile, getContentAsString(), "[<span>", "</span>]");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

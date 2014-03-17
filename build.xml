@@ -109,6 +109,10 @@
         <ant dir="${src.dir}/bitroad/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/rapidshareuser/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/badongo/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/streamcz/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/youtube/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/dataup/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/jandown/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

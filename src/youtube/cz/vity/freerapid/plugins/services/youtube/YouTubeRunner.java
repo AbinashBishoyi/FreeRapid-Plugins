@@ -16,6 +16,8 @@ import java.io.IOException;
 class YouTubeFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(YouTubeFileRunner.class.getName());
     private final static String SERVICE_WEB = "http://www.youtube.com";
+    private String fmtParameter = "";
+    private String fileExtension = ".flv";
 
     @Override
     public void runCheck() throws Exception {
@@ -23,6 +25,7 @@ class YouTubeFileRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
+            checkFmtParameter();
             checkProblems();
             checkName();
         } else {
@@ -37,6 +40,7 @@ class YouTubeFileRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
+            checkFmtParameter();
             checkProblems();
             checkName();
 
@@ -48,7 +52,7 @@ class YouTubeFileRunner extends AbstractRunner {
                 matcher = PlugUtils.matcher("video_id=(.+?)&.+&t=(.+?)&", matcherAsString);
 
                 if (matcher.find()) {
-                    final String finalURL = SERVICE_WEB + "/get_video.php?video_id=" + matcher.group(1) + "&t=" + matcher.group(2);
+                    final String finalURL = SERVICE_WEB + "/get_video.php?video_id=" + matcher.group(1) + "&t=" + matcher.group(2) + fmtParameter;
                     client.setReferer(finalURL);
                     client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
                     getMethod = getGetMethod(finalURL);
@@ -81,7 +85,7 @@ class YouTubeFileRunner extends AbstractRunner {
         final Matcher matcher = getMatcherAgainstContent("<h1\\s?>(.+?)</h1>");
 
         if (matcher.find()) {
-            final String fileName = matcher.group(1).trim() + ".flv";
+            final String fileName = matcher.group(1).trim() + fileExtension;
             logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
         } else {
@@ -90,5 +94,35 @@ class YouTubeFileRunner extends AbstractRunner {
         }
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private void checkFmtParameter() {
+        final Matcher matcher = PlugUtils.matcher("fmt=(\\d+)", fileURL.toLowerCase());
+
+        if (matcher.find()) {
+            final String fmtCode = matcher.group(1);
+
+            if (fmtCode.length() <= 2) {
+                setFmtParameter("&fmt=" + fmtCode);
+                setFileExtension(Integer.parseInt(fmtCode));
+            }
+        }
+    }
+
+    private void setFmtParameter(String fmtParameter) {
+        this.fmtParameter = fmtParameter;
+    }
+
+    private void setFileExtension(int fmtCode) {
+        switch (fmtCode) {
+            case 13:
+            case 17:
+                fileExtension = ".3gp";
+                break;
+            case 18:
+            case 22:
+                fileExtension = ".mp4";
+                break;
+        }
     }
 }

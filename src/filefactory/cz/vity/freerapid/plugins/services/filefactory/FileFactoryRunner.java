@@ -71,16 +71,17 @@ class FileFactoryRunner extends AbstractRunner {
             if (makeRedirectedRequest(httpMethod)) {
                 checkAllProblems();
 
-                final Matcher match = PlugUtils.matcher("<a href=\"(.+?" + Pattern.quote(httpFile.getFileName()) + ")\">", getContentAsString());
-                if (!match.find())
-                    throw new PluginImplementationException("Problem finding final page");
-                getMethod = getGetMethod(match.group(1));
-                if (!makeRedirectedRequest(getMethod)) {
+                if (!getContentAsString().contains("Click here to download now")) {
+                    final Matcher match = PlugUtils.matcher("<a href=\"(.+?" + Pattern.quote(httpFile.getFileName()) + ")\"", getContentAsString());
+                    if (!match.find())
+                        throw new PluginImplementationException("Problem finding final page");
+                    getMethod = getGetMethod(match.group(1));
+                    if (!makeRedirectedRequest(getMethod)) {
+                        checkAllProblems();
+                        throw new PluginImplementationException("Problem loading final page");
+                    }
                     checkAllProblems();
-                    throw new PluginImplementationException("Problem loading final page");
                 }
-                checkAllProblems();
-
                 final HttpMethod finalMethod = getMethodBuilder()
                         .setReferer(httpMethod.getURI().toString())
                         .setActionFromAHrefWhereATagContains("Click here to download now")

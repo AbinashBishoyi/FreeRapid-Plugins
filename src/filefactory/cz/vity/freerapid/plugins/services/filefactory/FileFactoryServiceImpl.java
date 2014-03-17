@@ -21,6 +21,7 @@ public class FileFactoryServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new FileFactoryFileRunner();
+        return new FileFactoryRunner();
     }
+
 }

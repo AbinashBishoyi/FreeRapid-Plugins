@@ -16,9 +16,8 @@ import java.util.regex.Matcher;
 /**
  * @author Kajda, ntoskrnl
  */
-class FileFactoryFileRunner extends AbstractRunner {
-    private static final Logger logger = Logger.getLogger(FileFactoryFileRunner.class.getName());
-    private static final String SERVICE_WEB = "http://www.filefactory.com";
+class FileFactoryRunner extends AbstractRunner {
+    private static final Logger logger = Logger.getLogger(FileFactoryRunner.class.getName());
     private String reCaptchaKey;
     private String captchaCheck;
 
@@ -63,16 +62,10 @@ class FileFactoryFileRunner extends AbstractRunner {
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("path:\"", "\"").toGetMethod();
             if (makeRedirectedRequest(httpMethod)) {
                 checkAllProblems();
-                final String content = getContentAsString();
 
-                HttpMethod finalMethod;
-                try {
-                    finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Download with ").toGetMethod();
-                } catch(BuildMethodException bme) {
-                    finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("download.start.jpg").toGetMethod();
-                }
+                final HttpMethod finalMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("download.start.jpg").toGetMethod();
 
-                downloadTask.sleep(PlugUtils.getWaitTimeBetween(content, "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
+                downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "id=\"startWait\" value=\"", "\"", TimeUnit.SECONDS) + 1);
 
                 if (!tryDownloadAndSaveFile(finalMethod)) {
                     checkAllProblems();
@@ -136,55 +129,6 @@ class FileFactoryFileRunner extends AbstractRunner {
         }
     }
 
-    /*
-    private String getLink() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("\"\\?key=\".+?\"(.+?)\"");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("JavaScript URL not found");
-        }
-        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction("/file/getLink.js?key=" + matcher.group(1)).toGetMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            throw new ServiceConnectionProblemException();
-        }
-        matcher = getMatcherAgainstContent("function\\(\\)\\{\\s*var\\s*\\w+?\\s*=\\s*(.+?);");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing JavaScript");
-        }
-        return parseLink(matcher.group(1));
-    }
-
-    private String parseLink(final String rawlink) throws Exception {
-        final StringBuilder sb = new StringBuilder();
-
-        Matcher matcher = PlugUtils.matcher("'(.*?)'(.*?)'(.*?)'", rawlink);
-        while (matcher.find()) {
-            sb.append(matcher.group(1));
-            Matcher matcher1 = PlugUtils.matcher("\\+\\s*(\\w+)", matcher.group(2));
-            while (matcher1.find()) {
-                final String var = getVar(matcher1.group(1), getContentAsString());
-                sb.append(var);
-            }
-            sb.append(matcher.group(3));
-        }
-
-        return sb.toString();
-    }
-
-    private String getVar(final String s, final String content) throws PluginImplementationException {
-
-        Matcher matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*'([^']*)'", content);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        matcher = PlugUtils.matcher("var\\s*" + s + "\\s*=\\s*([0-9]+)", content);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-
-        throw new PluginImplementationException("Error parsing JavaScript: Variable '" + s + "' not found");
-    }
-    */
-
     private HttpMethod stepCaptcha() throws Exception {
         if (reCaptchaKey == null)
             reCaptchaKey = PlugUtils.getStringBetween(getContentAsString(), "Recaptcha.create(\"", "\"");
@@ -208,11 +152,6 @@ class FileFactoryFileRunner extends AbstractRunner {
         ).toPostMethod();
         httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");//use AJAX
         return httpMethod;
-    }
-
-    @Override
-    protected String getBaseURL() {
-        return SERVICE_WEB;
     }
 
 }

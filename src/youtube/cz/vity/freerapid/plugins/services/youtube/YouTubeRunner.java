@@ -11,7 +11,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -30,8 +29,7 @@ import java.util.regex.Matcher;
  */
 class YouTubeRunner extends AbstractRtmpRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String SERVICE_WEB = "http://www.youtube.com";
-    private static final URI SERVICE_URI = URI.create(SERVICE_WEB);
+
     private YouTubeSettingsConfig config;
     private int fmt = 0;
     private String fileExtension = ".flv";
@@ -39,8 +37,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
         } else {
@@ -54,8 +52,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
 
-        GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             setConfig();
             checkName();
@@ -74,12 +72,12 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 checkName();
 
                 String fmt_url_map = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
-                Matcher matcher = PlugUtils.matcher("url=([^,]+?)\\\\u0026[^,]*itag=" + fmt+",", fmt_url_map+",");
+                Matcher matcher = PlugUtils.matcher("url=([^,]+?)\\\\u0026[^,]*itag=" + fmt + ",", fmt_url_map + ",");
 
                 if (matcher.find()) {
                     setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-                    getMethod = getGetMethod(URLDecoder.decode(matcher.group(1), "UTF-8"));
-                    if (!tryDownloadAndSaveFile(getMethod)) {
+                    method = getGetMethod(URLDecoder.decode(matcher.group(1), "UTF-8"));
+                    if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
@@ -243,68 +241,52 @@ class YouTubeRunner extends AbstractRtmpRunner {
     }
 
     private void parseUserPage() throws Exception {
-        Matcher matcher = PlugUtils.matcher(".+/([^\\?&#]+)", fileURL);
-        if (!matcher.find()) throw new PluginImplementationException("Error parsing file URL");
-        final String user = matcher.group(1);
-
+        final String user = getUserFromUrl();
         final List<URI> uriList = new LinkedList<URI>();
-
-        logger.info("Trying method 1");
-        HttpMethod method = getMethodBuilder()
-                .setReferer(fileURL)
-                .setAction("http://www.youtube.com/profile_ajax?action_ajax=1&user=" + user + "&new=1&box_method=load_playlist_videos_multi&box_name=user_playlist_navigator&playlistName=all")
-                .setParameter("session_token", "")
-                .setParameter("messages", "[{\"type\":\"box_method\",\"request\":{\"name\":\"user_playlist_navigator\",\"x_position\":1,\"y_position\":-2,\"palette\":\"default\",\"method\":\"load_playlist_videos_multi\",\"params\":{\"playlist_name\":\"all\",\"view\":\"grid\",\"playlist_sort\":\"date\"}}}]")
-                .toPostMethod();
-        if (!makeRedirectedRequest(method)) {
-            throw new ServiceConnectionProblemException();
-        }
-        matcher = PlugUtils.matcher("<a href=\"([^\"]+?)\" class=\"video-thumb", getContentAsString().replace("\\\"", "\"").replace("\\/", "/"));
-        while (matcher.find()) {
-            try {
-                uriList.add(SERVICE_URI.resolve(new URI(matcher.group(1))));
-            } catch (URISyntaxException e) {
-                LogUtils.processException(logger, e);
+        final int MAX_RESULTS = 50, MAX_SEARCH = 1000;
+        for (int index = 1; index <= MAX_SEARCH; index += MAX_RESULTS) {
+            final HttpMethod method = getMethodBuilder()
+                    .setReferer(null)
+                    .setAction("http://gdata.youtube.com/feeds/api/users/" + user + "/uploads")
+                    .setParameter("orderby", "published")
+                    .setParameter("start-index", String.valueOf(index))
+                    .setParameter("max-results", String.valueOf(Math.min(MAX_RESULTS, MAX_SEARCH - index + 1)))
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
             }
-        }
-
-        if (uriList.isEmpty()) {
-            logger.info("Trying method 2");
-            int lastSize = -1;
-            int page = 1;
-            while (uriList.size() != lastSize) {
-                lastSize = uriList.size();
-                method = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setAction("http://www.youtube.com/profile_ajax?action_ajax=1&user=" + user + "&new=1&box_method=load_playlist&box_name=user_playlist_navigator&playlistName=uploads&sort=date")
-                        .setParameter("session_token", "")
-                        .setParameter("messages", "[{\"type\":\"box_method\",\"request\":{\"name\":\"user_playlist_navigator\",\"x_position\":1,\"y_position\":-2,\"palette\":\"default\",\"method\":\"load_playlist_page\",\"params\":{\"playlist_name\":\"uploads\",\"encrypted_playlist_id\":\"uploads\",\"query\":\"\",\"encrypted_shmoovie_id\":\"uploads\",\"page_num\":" + page++ + ",\"view\":\"grid\",\"playlist_sort\":\"date\"}}}]")
-                        .toPostMethod();
-                if (!makeRedirectedRequest(method)) {
-                    throw new ServiceConnectionProblemException();
-                }
-                matcher = PlugUtils.matcher("<a href=\"([^\"]+?)\" class=\"video-thumb", getContentAsString().replace("\\\"", "\"").replace("\\/", "/"));
-                while (matcher.find()) {
-                    try {
-                        uriList.add(SERVICE_URI.resolve(new URI(matcher.group(1))));
-                    } catch (URISyntaxException e) {
-                        LogUtils.processException(logger, e);
-                    }
+            final int previousSize = uriList.size();
+            final Matcher matcher = getMatcherAgainstContent("<media:player url='(.+?)'/>");
+            while (matcher.find()) {
+                try {
+                    final String link = PlugUtils.replaceEntities(matcher.group(1)).replace("&feature=youtube_gdata_player", "");
+                    uriList.add(new URI(link));
+                } catch (final URISyntaxException e) {
+                    LogUtils.processException(logger, e);
                 }
             }
+            if (uriList.size() - previousSize < MAX_RESULTS) {
+                break;
+            }
         }
-
         // YouTube returns the videos in descending date order, which is a bit illogical.
         // If the user wants them that way, don't reverse.
         if (!config.isReversePlaylistOrder()) {
             Collections.reverse(uriList);
         }
-
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
         logger.info(uriList.size() + " videos added");
         if (!uriList.isEmpty()) {
             httpFile.getProperties().put("removeCompleted", true);
         }
+    }
+
+    private String getUserFromUrl() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher(".+/([^\\?&#]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing file URL");
+        }
+        return matcher.group(1);
     }
 
 }

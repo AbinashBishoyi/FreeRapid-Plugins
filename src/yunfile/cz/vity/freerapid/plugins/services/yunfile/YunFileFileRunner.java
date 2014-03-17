@@ -42,7 +42,7 @@ class YunFileFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "&nbsp;&nbsp;", "</h2>");
-        PlugUtils.checkFileSize(httpFile, content, "<b>", "</b>");
+        PlugUtils.checkFileSize(httpFile, content, "File Size: <b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

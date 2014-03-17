@@ -43,7 +43,6 @@ public class UlozToServiceImpl extends AbstractFileShareService {
 
     private static final String SERVICE_NAME = "uloz.to";
 
-    @Override
     public String getName() {
         return SERVICE_NAME;
     }
@@ -58,7 +57,7 @@ public class UlozToServiceImpl extends AbstractFileShareService {
         return new UlozToRunner();
     }
 
-    public int getMaxDownloadsFromOneIP(){
+    public int getMaxDownloadsFromOneIP() {
         return 9;
     }
 

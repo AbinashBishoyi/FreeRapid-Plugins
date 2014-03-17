@@ -24,7 +24,6 @@ class ShareatorRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -101,6 +100,7 @@ class ShareatorRunner extends AbstractRunner {
             Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
             logger.info("File size " + a);
             httpFile.setFileSize(a);
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         }
     }
 

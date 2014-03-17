@@ -25,7 +25,6 @@ class DepositFilesRunner extends AbstractRunner {
         getMethod.setFollowRedirects(true);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -110,6 +109,7 @@ class DepositFilesRunner extends AbstractRunner {
         if (matcher.find()) {
             logger.info("File size " + matcher.group(1));
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replaceAll("&nbsp;", "")));
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         }
         matcher = getMatcherAgainstContent("class\\=\"info[^=]*\\=\"([^\"]*)\"");
         if (matcher.find()) {

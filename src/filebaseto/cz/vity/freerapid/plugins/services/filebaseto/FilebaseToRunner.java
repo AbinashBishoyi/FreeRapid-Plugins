@@ -46,6 +46,7 @@ class FilebaseToRunner extends AbstractRunner {
                 if (matcher.find()) {
                     logger.info("File size " + matcher.group(matcher.groupCount()));
                     httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(matcher.groupCount())));
+                    httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
                 }
                 matcher = getMatcherAgainstContent("\"Download ([^\"]+)\"");
                 if (matcher.find()) {

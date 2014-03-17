@@ -30,7 +30,6 @@ class EgoshareRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
@@ -90,6 +89,7 @@ class EgoshareRunner extends AbstractRunner {
             Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
             logger.info("File size " + a);
             httpFile.setFileSize(a);
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         }
         matcher = PlugUtils.matcher("File name: </b></td>\\s*<td align=left><b> ([^<]*)<", content);
         if (matcher.find()) {

@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
+import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import org.apache.commons.codec.binary.Hex;
@@ -16,7 +17,7 @@ public class LetitbitApi {
 
     private static final Logger logger = Logger.getLogger(LetitbitApi.class.getName());
 
-    private static final String VERSION = "1.78";
+    private static final String VERSION = "2.0";
     private static final int MAX_APPID_USES = 20;
 
     private static String appId;
@@ -25,16 +26,20 @@ public class LetitbitApi {
     private final HttpDownloadClient client;
 
     public LetitbitApi(final HttpDownloadClient client) {
-        this.client = client;
+        this.client = new DownloadClient();
+        this.client.initClient(client.getSettings());
     }
 
     public String getDownloadUrl(final String fileURL) throws Exception {
         final String appId = getAppId();
+        final int random = 1 + new Random().nextInt(6);
         final HttpMethod method = new MethodBuilder(client)
-                .setAction("http://api.letitbit.net/internal/index2.php")
+                .setAction("http://api.letitbit.net/internal/index4.php")
                 .setParameter("action", "LINK_GET_DIRECT")
                 .setParameter("link", fileURL)
                 .setParameter("free_link", "1")
+                .setParameter("sh", createRandomAppId() + random)
+                .setParameter("sp", String.valueOf(random + 49))
                 .setParameter("appid", appId)
                 .setParameter("version", VERSION)
                 .toPostMethod();

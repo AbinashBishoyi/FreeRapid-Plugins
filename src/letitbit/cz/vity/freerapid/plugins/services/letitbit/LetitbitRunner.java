@@ -12,6 +12,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import java.net.URL;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
@@ -51,33 +52,18 @@ class LetitbitRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
-            final String content = getContentAsString();
             String pageUrl = fileURL;
 
-            String url = new LetitbitApi(client).getDownloadUrl(fileURL);
+            //temporarily disabled
+            //String url = new LetitbitApi(client).getDownloadUrl(fileURL);
+            String url = null;
 
             if (url == null) {
-                httpMethod = getMethodBuilder(content)
-                        .setReferer(pageUrl)
-                        .setActionFromFormByName("ifree_form", true)
-                        .toPostMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                pageUrl = httpMethod.getURI().toString();
-
-                // Russian IPs may see this different page here, handle it
-                if (PlugUtils.find("action=\"http://s\\d+\\.letitbit\\.net/download3\\.php\"", getContentAsString())) {
-                    httpMethod = getMethodBuilder()
-                            .setReferer(pageUrl)
-                            .setActionFromFormWhereActionContains(".letitbit.net/download3.php", true)
-                            .toPostMethod();
-                    if (!makeRedirectedRequest(httpMethod)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException();
+                for (int i = 1; i <= 3; i++) {
+                    if (!postFreeForm()) {
+                        break;
                     }
-                    pageUrl = httpMethod.getURI().toString();
+                    logger.info("Posted form #" + i);
                 }
 
                 downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
@@ -141,6 +127,21 @@ class LetitbitRunner extends AbstractRunner {
         }
     }
 
+    private boolean postFreeForm() throws Exception {
+        final Matcher matcher = getMatcherAgainstContent("(?is)(<form\\b.+?</form>)");
+        while (matcher.find()) {
+            final String content = matcher.group(1);
+            if (content.contains("md5crypt") && !content.contains("/sms/check")) {
+                final HttpMethod method = getMethodBuilder(content).setActionFromFormByIndex(1, true).toPostMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     private String handleCaptcha(final String pageUrl) throws Exception {
         final String baseUrl = "http://" + new URL(pageUrl).getHost();
         while (true) {
@@ -161,7 +162,9 @@ class LetitbitRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             final String content = getContentAsString().trim();
-            if (!content.isEmpty()) {
+            if (content.contains("error_free_download_blocked")) {
+                throw new ErrorDuringDownloadingException("You have reached the daily download limit");
+            } else if (!content.contains("error_wrong_captcha")) {
                 return content;
             }
         }

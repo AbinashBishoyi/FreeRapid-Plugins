@@ -25,10 +25,10 @@ class UlozToRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     public void run() throws Exception {
@@ -36,7 +36,7 @@ class UlozToRunner extends AbstractRunner {
 
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("id=\"captcha\"")) {
                 checkNameAndSize(getContentAsString());
                 while (getContentAsString().contains("id=\"captcha\"")) {
@@ -47,10 +47,10 @@ class UlozToRunner extends AbstractRunner {
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private String sicherName(String s) throws UnsupportedEncodingException {
@@ -67,12 +67,11 @@ class UlozToRunner extends AbstractRunner {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-        Matcher matcher = getMatcherAgainstContent("soubor nebyl nalezen");
-        if (matcher.find()) {
+        if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
 
-        matcher = PlugUtils.matcher("\\|\\s*([^|]+) \\| </title>", content);
+        Matcher matcher = PlugUtils.matcher("\\|\\s*([^|]+) \\| </title>", content);
         // odebiram jmeno
         String fn;
         if (matcher.find()) {

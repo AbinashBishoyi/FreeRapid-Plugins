@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://multiupload.com/KD6U8WHQV5"));
+            httpFile.setNewURL(new URL("http://www.multiupload.co.uk/Z8M9A9U5PO"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081);
             final MultiUploadServiceImpl service = new MultiUploadServiceImpl();

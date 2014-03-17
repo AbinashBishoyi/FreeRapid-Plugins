@@ -32,7 +32,8 @@ public class MediafireRunner extends AbstractRunner {
                     "function dummyparent() {\n" +
                     "    this.document = document;\n" +
                     "}\n" +
-                    "var parent = new dummyparent();\n";
+                    "var parent = new dummyparent();\n" +
+                    "function jQuery() { }\n";
 
     @Override
     public void runCheck() throws Exception {

@@ -89,8 +89,9 @@ class EasyShareRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException("Unknown error");
                 }
             }
-
-            while (true) {
+            if (!getContentAsString().contains("Type characters") && getContentAsString().contains("Download the file")) {
+                stepNoCaptcha(getContentAsString());
+            } else while (true) {
                 if (!getContentAsString().contains("Type characters")) {
                     checkProblems();
                     logger.warning(getContentAsString());
@@ -113,8 +114,6 @@ class EasyShareRunner extends AbstractRunner {
             logger.warning("Cannot get number from url " + fileURL);
             throw new PluginImplementationException("Plugin implementation problem");
         }
-
-
     }
 
 
@@ -155,30 +154,50 @@ class EasyShareRunner extends AbstractRunner {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
                     logger.info("Entered captcha: " + captcha);
-                    matcher = PlugUtils.matcher("<form action=\"([^\"]*file_contents[^\"]*)\"", contentAsString);
-                    if (matcher.find()) {
-                        s = matcher.group(1);
-                        logger.info("Captcha action from form: " + s);
-                        final PostMethod method = getPostMethod(s);
-                        method.addParameter("id", id);
-                        method.addParameter("captcha", captcha);
-                        if (tryDownloadAndSaveFile(method)) return true;
-                        else {
-                            checkProblems();
-                            if (getContentAsString().contains("Type characters"))
-                                return false;
-                            logger.warning(getContentAsString());
-                            throw new IOException("File input stream is empty.");
-                        }
-                    } else {
-                        logger.warning(getContentAsString());
-                        throw new PluginImplementationException("Action was not found");
-                    }
+                    return finalAction(contentAsString, id, captcha);
                 }
 
             } else throw new PluginImplementationException("Captcha picture was not found");
         }
         return false;
+    }
+
+
+    private boolean stepNoCaptcha(final String contentAsString) throws Exception {
+        if (contentAsString.contains("Download the file")) {
+            logger.info("Captcha not needed ");
+            String id = PlugUtils.getParameter( "id", contentAsString);
+            String captcha = PlugUtils.getParameter( "captcha", contentAsString);
+
+            return finalAction(contentAsString, id, captcha);
+        }
+
+
+        return false;
+    }
+
+    private boolean finalAction(String contentAsString, String id, String captcha) throws Exception {
+        Matcher matcher;
+        String s;
+        matcher = PlugUtils.matcher("<form action=\"([^\"]*file_contents[^\"]*)\"", contentAsString);
+        if (matcher.find()) {
+            s = matcher.group(1);
+            logger.info("Captcha action from form: " + s);
+            final PostMethod method = getPostMethod(s);
+            method.addParameter("id", id);
+            method.addParameter("captcha", captcha);
+            if (tryDownloadAndSaveFile(method)) return true;
+            else {
+                checkProblems();
+                if (getContentAsString().contains("Type characters"))
+                    return false;
+                logger.warning(getContentAsString());
+                throw new IOException("File input stream is empty.");
+            }
+        } else {
+            logger.warning(getContentAsString());
+            throw new PluginImplementationException("Action was not found");
+        }
     }
 
 }

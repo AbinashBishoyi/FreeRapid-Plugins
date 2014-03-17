@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="EasyShare Plugin" default="all" basedir=".">
     <property name="application" value="easyshare"/>
-    <property name="version" value="1.0.3"/>
+    <property name="version" value="1.0.4"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="depositfiles.jar"/>

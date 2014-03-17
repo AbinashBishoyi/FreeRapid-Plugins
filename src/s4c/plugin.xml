@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.s4c.S4cServiceImpl"
-        id="s4c.co.uk" vendor="ntoskrnl" version="1.0.0">
+        id="s4c.co.uk" vendor="ntoskrnl" version="1.0.1">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?s4c\.co\.uk/clic/c_level2\.shtml\?programme_id=\d+"/>
+        <attribute id="urlRegex" value="http://(www\.)?s4c\.co\.uk/clic/c_level2\.shtml\?.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="s4c.co.uk"/>

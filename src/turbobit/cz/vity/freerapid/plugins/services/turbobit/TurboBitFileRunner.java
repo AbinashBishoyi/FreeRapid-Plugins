@@ -7,9 +7,11 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -106,7 +108,7 @@ class TurboBitFileRunner extends AbstractRunner {
 
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
-                    .setAction("/download/getlinktimeout/" + matcher.group(1))
+                    .setAction(getRequestUrl(matcher.group(1)))
                     .toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
 
@@ -202,6 +204,16 @@ class TurboBitFileRunner extends AbstractRunner {
                     .setParameter("captcha_response", captcha)
                     .toPostMethod();
         }
+    }
+
+    private String getRequestUrl(final String fileId) throws Exception {
+        final String random = String.valueOf(1 + new Random().nextInt(100000));
+        final byte[] bytes = (fileId + random).getBytes("ISO-8859-1");
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] ^= 101;
+        }
+        final String base64 = Base64.encodeBase64String(bytes).replace('/', '_');
+        return "/download/getlinktimeout/" + fileId + "/" + random + "/" + base64;
     }
 
 }

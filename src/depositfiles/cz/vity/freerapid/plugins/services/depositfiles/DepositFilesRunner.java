@@ -62,13 +62,14 @@ class DepositFilesRunner extends AbstractRunner {
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
+            checkProblems();
 
-            Matcher matcher = getMatcherAgainstContent("setTimeout\\s*\\(\\s*'load_form\\s*\\(\\s*fid\\s*,\\s*msg\\s*\\)\\s*'\\s*,\\s*(\\d+)\\s*\\)");
+            Matcher matcher = getMatcherAgainstContent("setTimeout\\s*\\(\\s*'load_form.*?'\\s*,\\s*(\\d+)[^\\d]");
             if (!matcher.find()) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Cannot find wait time");
+                throw new PluginImplementationException("Cannot find wait time");
             }
-            int seconds = Integer.parseInt(matcher.group(1)) / 1000;
+            int seconds = Integer.parseInt(matcher.group(1));
+            if (seconds >= 1000) seconds = seconds / 1000;
             logger.info("wait - " + seconds);
 
             matcher = getMatcherAgainstContent("<a href=\"(/get_file\\.php\\?fid=([^&]+)).*?\"[^>]*>");

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.depositfiles.DepositFilesShareServiceImpl" id="depositfiles.com"
-        vendor="Whole team" version="1.4.3">
+        vendor="Whole team" version="1.4.4">
     <attributes>
         <attribute id="urlRegex" value="https?://(www\.)?(depositfiles\.(com|org)|dfiles\.(eu|ru))/.+"/>
-        <attribute id="minver" value="0.853"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="depositfiles.com depositfiles.org dfiles.eu dfiles.ru"/>
         <attribute id="maxDownloads" value="10"/>

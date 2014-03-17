@@ -176,14 +176,9 @@ class FilesMonsterFileRunner extends AbstractRunner {
         if (contentAsString.contains("There are no free download slots available"))
             throw new ServiceConnectionProblemException("No more free download slots");
 
-        if (contentAsString.contains("avaliable for free download in")) {
-            int time = PlugUtils.getWaitTimeBetween(contentAsString,
-                    "avaliable for free download in", "min", TimeUnit.MINUTES);
-            throw new YouHaveToWaitException("Waiting for next file", time);
-        }
-        if (contentAsString.contains("available for free download in")) {
-            int time = PlugUtils.getWaitTimeBetween(contentAsString,
-                    "available for free download in", "min", TimeUnit.MINUTES);
+        if (contentAsString.contains("Next download will be available in")) {
+            final int time = PlugUtils.getWaitTimeBetween(contentAsString,
+                    "Next download will be available in", "min", TimeUnit.MINUTES);
             throw new YouHaveToWaitException("Waiting for next file", time);
         }
     }

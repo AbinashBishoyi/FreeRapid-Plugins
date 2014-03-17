@@ -58,6 +58,9 @@ class WuploadFileRunner extends AbstractRunner {
         if (getContentAsString().contains("This file has been deleted") || getContentAsString().contains("Page Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (getContentAsString().contains("You can only download 1 file at a time")) {
+            throw new ServiceConnectionProblemException("You can only download 1 file at a time");
+        }
     }
 
     private void login() throws Exception {

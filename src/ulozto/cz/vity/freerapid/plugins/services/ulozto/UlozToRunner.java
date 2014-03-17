@@ -5,8 +5,11 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.RedirectException;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
@@ -24,6 +27,7 @@ class UlozToRunner extends AbstractRunner {
 
     public void runCheck() throws Exception {
         super.runCheck();
+        fileURL = checkURL(fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -33,16 +37,20 @@ class UlozToRunner extends AbstractRunner {
 
     public void run() throws Exception {
         super.run();
-
+        fileURL = checkURL(fileURL);       
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("id=\"captcha\"")) {
                 checkNameAndSize(getContentAsString());
                 while (getContentAsString().contains("id=\"captcha\"")) {
-                    PostMethod method = stepCaptcha(getContentAsString());
-                    //    method.setFollowRedirects(true);
-                    if (tryDownloadAndSaveFile(method)) break;
+                    client.getHTTPClient().getParams().setIntParameter(HttpClientParams.MAX_REDIRECTS, 8);
+                    GetMethod method = stepCaptcha(getContentAsString());
+                    
+                        if (tryDownloadAndSaveFile(method)) break;
+                    if(method.getURI().toString().contains("full=y"))         
+                        throw new ServiceConnectionProblemException("<b>Doèasném omezení FREE stahování, zkuste pozdìji</b><br>");
+
                 }
             } else {
                 checkProblems();
@@ -51,6 +59,12 @@ class UlozToRunner extends AbstractRunner {
             }
         } else
             throw new PluginImplementationException();
+    }
+
+    private String checkURL(String fileURL) {
+
+        return fileURL.replaceFirst("(ulozto\\.net|ulozto\\.cz|ulozto\\.sk)", "uloz.to");
+
     }
 
     private String sicherName(String s) throws UnsupportedEncodingException {
@@ -91,7 +105,7 @@ class UlozToRunner extends AbstractRunner {
 
     }
 
-    private PostMethod stepCaptcha(String contentAsString) throws Exception {
+    private GetMethod stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("id=\"captcha\"")) {
             CaptchaSupport captchaSupport = getCaptchaSupport();
             Matcher matcher = PlugUtils.matcher("src=\"([^\"]*captcha[^\"]*)\"", contentAsString);
@@ -115,11 +129,16 @@ class UlozToRunner extends AbstractRunner {
                     postTargetURL = matcher.group(1);
                     logger.info("Captcha target URL " + postTargetURL);
                     client.setReferer(fileURL);
-                    final PostMethod postMethod = getPostMethod(postTargetURL);
-                    postMethod.addParameter("captcha_nb", captcha_nb);
-                    postMethod.addParameter("captcha_user", captcha);
-                    postMethod.addParameter("download", PlugUtils.unescapeHtml("--%3E+St%C3%A1hnout+soubor+%3C--"));
-                    return postMethod;
+//                    final PostMethod postMethod = getPostMethod(postTargetURL);
+                    final GetMethod gMethod = getGetMethod(postTargetURL);
+                    gMethod.addRequestHeader("captcha_nb", captcha_nb);
+                    gMethod.addRequestHeader("captcha_user", captcha);
+                    client.getHTTPClient().getState().addCookie(new Cookie(".uloz.to", "captcha_nb", captcha_nb, "/", 86400, false));
+                     client.getHTTPClient().getState().addCookie(new Cookie(".uloz.to", "captcha_user", captcha, "/", 86400, false));
+//                    postMethod.addParameter("captcha_nb", captcha_nb);
+//                    postMethod.addParameter("captcha_user", captcha);
+                    //                 postMethod.addParameter("download", PlugUtils.unescapeHtml("Stáhnout free"));
+                    return gMethod;
 
                 }
             } else {

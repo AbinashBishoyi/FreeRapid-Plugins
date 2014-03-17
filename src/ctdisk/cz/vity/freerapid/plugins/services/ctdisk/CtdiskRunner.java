@@ -9,7 +9,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.awt.image.BufferedImage;
-import java.io.UnsupportedEncodingException;
+import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -21,6 +21,7 @@ class CtdiskRunner extends AbstractRunner {
     private static final int CAPTCHA_MAX = 10;
     private int captchaCounter = 1;
     private String pageContentWithCaptcha;
+    private Random random = new Random();
 
     @Override
     public void runCheck() throws Exception {
@@ -46,27 +47,23 @@ class CtdiskRunner extends AbstractRunner {
             fileURL = method.getURI().toString();
             final String fileId = getFileId();
             pageContentWithCaptcha = getContentAsString();
-
-            while (true) {
+            while (!getContentAsString().contains("<a class=\"local\" href=\"")) {
                 if (!makeRedirectedRequest(stepCaptcha(fileId))) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                if (getMatcherAgainstContent("<a class=\"telecom\"").find()) {
-                    if (getContentAsString().contains("You have reached")) {
-                        throw new ServiceConnectionProblemException("Free download limit reached");
-                    }
-
-                    final String downloadLinkBase64 = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"telecom\" href=\"", "\"");
-                    final String downloadLink = new String(Base64.decodeBase64(downloadLinkBase64), "UTF-8");
-                    logger.info(String.format("Download link: %s\nDecoded link: %s", downloadLinkBase64, downloadLink));
-                    method = getMethodBuilder().setReferer(fileURL).setAction(downloadLink).toGetMethod();
-                    if (!tryDownloadAndSaveFile(method)) {
-                        checkProblems();
-                        throw new ServiceConnectionProblemException("Error starting download");
-                    }
-                    break;
-                }
+                checkProblems();
+            }
+            if (getContentAsString().contains("You have reached")) {
+                throw new ServiceConnectionProblemException("Free download limit reached");
+            }
+            final String downloadLinkBase64 = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"local\" href=\"", "\"");
+            final String downloadLink = new String(Base64.decodeBase64(downloadLinkBase64), "UTF-8");
+            logger.info(String.format("Download link: %s\nDecoded link: %s", downloadLinkBase64, downloadLink));
+            method = getMethodBuilder().setReferer(fileURL).setAction(downloadLink).toGetMethod();
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -75,18 +72,9 @@ class CtdiskRunner extends AbstractRunner {
     }
 
     private void checkSizeAndName() throws ErrorDuringDownloadingException {
-        final Matcher base64InfoMatcher = PlugUtils.matcher("base64\\.decode\\(\"(.+?)\"", getContentAsString());
-        if (!base64InfoMatcher.find()) {
-            throw new PluginImplementationException("File name and size not found.");
-        }
-        try {
-            final String decodedContent = new String(Base64.decodeBase64(base64InfoMatcher.group(1)), "UTF-8");
-            PlugUtils.checkName(httpFile, decodedContent, "target=\"_blank\">", "</a>");
-            PlugUtils.checkFileSize(httpFile, decodedContent, "filesize=\"", "\"");
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } catch (UnsupportedEncodingException e) {
-            throw new PluginImplementationException("Error decoding content.");
-        }
+        PlugUtils.checkName(httpFile, getContentAsString(), "file_title\">", "</");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "大小：", "</");
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -110,7 +98,7 @@ class CtdiskRunner extends AbstractRunner {
     private HttpMethod stepCaptcha(final String fileId) throws Exception {
         final String urlRoot = getUrlRoot();
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaURL = String.format("%srandcodeV2.php?fid=%s&rand=%f", urlRoot, fileId, 1.0);
+        final String captchaURL = String.format("%srandcodeV2.php?fid=%s&rand=%f", urlRoot, fileId, Math.random());
         logger.info("Captcha URL " + captchaURL);
         final String captcha;
         String captcha_result;
@@ -119,12 +107,14 @@ class CtdiskRunner extends AbstractRunner {
             captcha = PlugUtils.recognize(captchaImage, "-C 0-9");
             if (captcha == null) {
                 logger.info("Could not separate captcha letters (attempt " + captchaCounter + " of " + CAPTCHA_MAX + ")");
-                captcha_result = "000";
+                captcha_result = Integer.toString(random.nextInt(800) + 100);
             } else {
                 captcha_result = captcha.replaceAll("\\D", "");
-                // There should be 3 digital chars, if not then they'll be the default value 000.
-                if (captcha_result.length() != 3)
-                    captcha_result = "000";
+                // There should be 3 digital chars, if not then they'll be the default random value.
+                if (captcha_result.length() != 3) {
+                    logger.info("Captcha length is not 3, randomizing captcha..");
+                    captcha_result = Integer.toString(random.nextInt(800) + 100);
+                }
             }
 
             logger.info("Attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", OCR recognized " + captcha_result);

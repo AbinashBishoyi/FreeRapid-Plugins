@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.filesflash;
 
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
@@ -89,6 +90,7 @@ class FilesFlashRunner extends AbstractRunner {
                 .setActionFromFormWhereTagContains("freedownload.php", true);
         final ReCaptcha reCaptcha = new ReCaptcha(publicKey, client);
         final String captcha = getCaptchaSupport().getCaptcha(reCaptcha.getImageURL());
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
         reCaptcha.setRecognized(captcha);
         if (!makeRedirectedRequest(reCaptcha.modifyResponseMethod(methodBuilder).toPostMethod())) {
             checkProblems();

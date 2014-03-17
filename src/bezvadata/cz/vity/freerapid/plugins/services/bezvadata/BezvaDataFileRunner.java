@@ -1,8 +1,6 @@
 package cz.vity.freerapid.plugins.services.bezvadata;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
@@ -83,6 +81,7 @@ class BezvaDataFileRunner extends AbstractRunner {
         final String captchaImgBase64Str = PlugUtils.getStringBetween(getContentAsString(), "data:image/png;base64,", "\"");
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captcha = captchaSupport.askForCaptcha(captchaSupport.loadCaptcha(new ByteArrayInputStream(Base64.decodeBase64(captchaImgBase64Str))));
+        if (captcha == null) throw new CaptchaEntryInputMismatchException();
         final HttpMethod method = getMethodBuilder()
                 .setReferer(fileURL)
                 .setActionFromFormWhereTagContains("frm-stahnoutFreeForm", true)
@@ -100,6 +99,9 @@ class BezvaDataFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Soubor nenalezen") || contentAsString.contains("nebyla nalezena")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("plně vytížené všechny sloty pro stahování Zdarma")) {
+            throw new YouHaveToWaitException("All free slots are full", 2 * 60);
         }
     }
 

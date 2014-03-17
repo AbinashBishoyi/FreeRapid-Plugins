@@ -5,11 +5,13 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.awt.*;
 import java.awt.geom.QuadCurve2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
@@ -37,7 +39,7 @@ public class SolveMediaCaptcha {
     private final static Logger logger = Logger.getLogger(SolveMediaCaptcha.class.getName());
     private final static String SOLVEMEDIA_CAPTCHA_URL = "http://api.solvemedia.com/papi/";
     private final static String SOLVEMEDIA_CAPTCHA_SECURE_URL = "https://api-secure.solvemedia.com/papi/";
-    private final static String C_FORMAT = "js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox23,os/nt,os/nt6.1,%s,jslib/jquery,jslib/jqueryui";
+    private final static String C_FORMAT = "js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox24,os/nt,os/nt6.1,%s,jslib/jquery,jslib/jqueryui";
 
     private final String publicKey;
     private final HttpDownloadClient client;
@@ -126,11 +128,21 @@ public class SolveMediaCaptcha {
                         captchaResponse[i] = x;
                     }
                     response = new String(captchaResponse);
+                }
+                if (client.getContentAsString().contains("base64")) {
+                    String base64Str;
+                    try {
+                        base64Str = PlugUtils.getStringBetween(client.getContentAsString(), "base64,", "\"");
+                    } catch (PluginImplementationException e) {
+                        throw new PluginImplementationException("Base64 string image representation not found");
+                    }
+                    ByteArrayInputStream bais = new ByteArrayInputStream(Base64.decodeBase64(base64Str));
+                    response = captchaSupport.askForCaptcha(captchaSupport.loadCaptcha(bais));
                 } else { // canvas HTML captcha
                     response = captchaSupport.askForCaptcha(drawHTMLCaptcha(client.getContentAsString(), 300, 150, Color.blue));
                 }
             } else {
-                throw new ServiceConnectionProblemException("Captcha media type 'img' or 'html' not found");
+                throw new ServiceConnectionProblemException("Captcha media type 'img', 'imgmap', or 'html' not found");
             }
             if (response == null) {
                 throw new CaptchaEntryInputMismatchException("No Input");
@@ -333,7 +345,7 @@ public class SolveMediaCaptcha {
                 .setBaseURL(baseUrl)
                 .setAction(action)
                 .toGetMethod();
-        method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0");
+        method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0");
         method.setRequestHeader("Accept", "*/*");
         method.setRequestHeader("Accept-Language", "en-US,en;q=0.5");
         method.setRequestHeader("Connection", "keep-alive");

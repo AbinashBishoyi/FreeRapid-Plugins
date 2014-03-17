@@ -317,8 +317,9 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 throw new ServiceConnectionProblemException();
             }
             try {
-                final String converted = Transcription2SrtUtil.convert(getContentAsString());
-                downloadTask.saveToFile(new ByteArrayInputStream(converted.getBytes("UTF-8")));
+                final byte[] converted = Transcription2SrtUtil.convert(getContentAsString()).getBytes("UTF-8");
+                httpFile.setFileSize(converted.length);
+                downloadTask.saveToFile(new ByteArrayInputStream(converted));
             } catch (final Exception e) {
                 LogUtils.processException(logger, e);
                 throw new PluginImplementationException("Error converting and saving subtitles", e);

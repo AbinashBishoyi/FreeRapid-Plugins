@@ -3,10 +3,9 @@ package cz.vity.freerapid.plugins.services.egoshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -30,7 +29,7 @@ class EgoshareRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
@@ -41,8 +40,7 @@ class EgoshareRunner extends AbstractRunner {
     public void run() throws Exception {
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
+        final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
 
             checkNameAndSize(getContentAsString());
@@ -87,19 +85,8 @@ class EgoshareRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Your requested file could not be found");
         }
 
-        Matcher matcher = PlugUtils.matcher("\\(([0-9.]* .B)\\)", content);
-        if (matcher.find()) {
-            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-            logger.info("File size " + a);
-            httpFile.setFileSize(a);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        }
-        matcher = PlugUtils.matcher("File name: </b></td>\\s*<td align=left><b> ([^<]*)<", content);
-        if (matcher.find()) {
-            final String fn = matcher.group(1);
-            logger.info("File name " + fn);
-            httpFile.setFileName(fn);
-        } else logger.warning("File name was not found" + getContentAsString());
+        PlugUtils.checkName(httpFile, content, "<td align=left><b>", "</b></td>");
+        PlugUtils.checkFileSize(httpFile, content, "</font> (", ")");
     }
 
     private String decode(String input) {
@@ -159,18 +146,8 @@ class EgoshareRunner extends AbstractRunner {
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
-
-                    String ndpage = PlugUtils.getParameter("2ndpage", contentAsString);
-                    final Matcher matcher = PlugUtils.matcher("name=myform action\\=\"([^\"]*)\"", contentAsString);
-                    if (!matcher.find()) {
-                        throw new PluginImplementationException("Captcha form action was not found");
-                    }
-                    s = matcher.group(1);
-                    client.setReferer(initURL);
-                    final PostMethod postMethod = getPostMethod(s);
-
-                    postMethod.addParameter("captchacode", captcha);
-                    postMethod.addParameter("2ndpage", ndpage);
+                    final HttpMethod postMethod = getMethodBuilder(contentAsString).setActionFromFormByName("myform", true).
+                            setReferer(initURL).setParameter("captchacode", captcha).toPostMethod();
 
                     if (makeRequest(postMethod)) {
                         return true;
@@ -201,18 +178,15 @@ class EgoshareRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("You have got max allowed download sessions from the same IP");
-        if (matcher.find()) {
+        String content = getContentAsString();
+
+        if (content.contains("You have got max allowed download sessions from the same IP")) {
             throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP!", 5 * 60);
         }
-        matcher = getMatcherAgainstContent("this download is too big for your");
-        if (matcher.find()) {
-
+        if (content.contains("this download is too big for your")) {
             throw new YouHaveToWaitException("Sorry, this download is too big for your remaining download volume per hour!!", getTimeToWait());
         }
-        matcher = getMatcherAgainstContent("Your requested file could not be found");
-        if (matcher.find()) {
+        if (content.contains("Your requested file could not be found")) {
             throw new URLNotAvailableAnymoreException("Your requested file could not be found");
         }
 

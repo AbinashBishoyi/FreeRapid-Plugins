@@ -8,7 +8,6 @@ import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
-import org.apache.commons.httpclient.util.URIUtil;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -42,12 +41,12 @@ class UlozToRunner extends AbstractRunner {
                 boolean saved = false;
                 while (getContentAsString().contains("id=\"captcha\"")) {
 
-                    client.getHTTPClient().getParams().setIntParameter(HttpClientParams.MAX_REDIRECTS, 8);
+                    setClientParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha(getContentAsString());
 
                     if (saved = tryDownloadAndSaveFile(method)) break;
                     if (method.getURI().toString().contains("full=y"))
-                        throw new ServiceConnectionProblemException("<b>Doèasném omezení FREE stahování, zkuste pozdìji</b><br>");
+                        throw new ServiceConnectionProblemException("Doèasné omezení FREE stahování, zkuste to pozdìji");
 
                 }
                 if (!saved) {
@@ -65,9 +64,7 @@ class UlozToRunner extends AbstractRunner {
     }
 
     private String checkURL(String fileURL) {
-
         return fileURL.replaceFirst("(ulozto\\.net|ulozto\\.cz|ulozto\\.sk)", "uloz.to");
-
     }
 
     private void checkNameAndSize(String content) throws Exception {
@@ -77,7 +74,7 @@ class UlozToRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (getContentAsString().contains("soubor nebyl nalezen")) {
-            throw new URLNotAvailableAnymoreException("<b>Požadovaný soubor nebyl nalezen.</b><br>");
+            throw new URLNotAvailableAnymoreException("Požadovaný soubor nebyl nalezen");
         }
         PlugUtils.checkName(httpFile, content, "|", "| </title>");
         PlugUtils.checkFileSize(httpFile, content, "Velikost souboru je <b>", "</b>");
@@ -93,7 +90,7 @@ class UlozToRunner extends AbstractRunner {
                 throw new CaptchaEntryInputMismatchException();
             } else {
                 MethodBuilder sendForm = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("dwn", true);
-                sendForm.setAction(URIUtil.encodePathQuery(sendForm.getAction()));
+                sendForm.setEncodePathAndQuery(true);
                 sendForm.setAndEncodeParameter("captcha_user", captcha);
                 return sendForm.toPostMethod();
             }
@@ -106,10 +103,10 @@ class UlozToRunner extends AbstractRunner {
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
         if (content.contains("soubor nebyl nalezen")) {
-            throw new URLNotAvailableAnymoreException("<b>Požadovaný soubor nebyl nalezen.</b><br>");
+            throw new URLNotAvailableAnymoreException("Požadovaný soubor nebyl nalezen");
         }
         if (content.contains("stahovat pouze jeden soubor")) {
-            throw new ServiceConnectionProblemException("<b>Mùžete stahovat pouze jeden soubor naráz</b><br>");
+            throw new ServiceConnectionProblemException("Mùžete stahovat pouze jeden soubor naráz");
 
         }
 

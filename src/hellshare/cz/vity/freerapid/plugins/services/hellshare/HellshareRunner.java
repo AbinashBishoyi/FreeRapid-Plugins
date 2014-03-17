@@ -30,7 +30,7 @@ class HellshareRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -41,36 +41,23 @@ class HellshareRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-
-        final int fid;
-        final Matcher fidMatcher = PlugUtils.matcher("http://(?:www\\.)?download\\.hellshare\\.[a-z]{2,3}/[^/]+/(?:[^/]+/)?(\\d+)/?", fileURL);
-        if (fidMatcher.find()) {
-            fid = Integer.parseInt(fidMatcher.group(1));
-        } else {
-            throw new PluginImplementationException("File id not found");
-        }
-
+        final int fid = getFId();
         final HttpMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        checkNameAndSize(getContentAsString());
-
-        final String showDownloadWindowParam;
-        if (getContentAsString().contains("fileDownloadButton-showDownloadWindow")) {
-            showDownloadWindowParam = "fileDownloadButton-showDownloadWindow";
-        } else if (getContentAsString().contains("relatedFileDownloadButton")) {
-            showDownloadWindowParam = "relatedFileDownloadButton-" + fid + "-showDownloadWindow";
-        } else {
-            throw new PluginImplementationException("Plugin is broken - showDownloadWindowParam not found");
+        checkNameAndSize();
+        final Matcher matcher = getMatcherAgainstContent(String.format("<a href=\"(.+?/\\?do=(?:relatedFileDownloadButton-%d-showDownloadWindow|fileDownloadButton-showDownloadWindow))\"", fid));
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Plugin is broken - showDownloadWindowAction not found");
         }
+        final String showDownloadWindowAction = matcher.group(1);
         setFileStreamContentTypes(new String[0], new String[]{"application/json", "application/x-javascript"});
         HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
-                .setAction(fileURL)
-                .setParameter("do", showDownloadWindowParam)
+                .setAction(showDownloadWindowAction)
                 .toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
@@ -101,9 +88,28 @@ class HellshareRunner extends AbstractRunner {
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h1 id=\"filename\">", "</h1>");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "<strong id=\"FileSize_master\">", "</strong>").replace("&nbsp;", " ")));
+    private int getFId() throws PluginImplementationException {
+        final int fid;
+        final Matcher fidMatcher = PlugUtils.matcher("http://(?:www\\.)?download\\.hellshare\\.[a-z]{2,3}/[^/]+/(?:[^/]+/)?(\\d+)/?", fileURL);
+        if (fidMatcher.find()) {
+            fid = Integer.parseInt(fidMatcher.group(1));
+        } else {
+            throw new PluginImplementationException("File id not found");
+        }
+        return fid;
+    }
+
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        Matcher matcher = getMatcherAgainstContent("<h1 id=\"filename\".*?>(.+?)</h1>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Filename not found");
+        }
+        httpFile.setFileName(matcher.group(1).trim());
+        matcher = getMatcherAgainstContent("<strong id=\"FileSize_master\".*?>(.+?)</strong>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Filesize not found");
+        }
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replace("&nbsp;", " ")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -116,7 +122,7 @@ class HellshareRunner extends AbstractRunner {
                 .getAction();
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captcha;
-        //captchaCounter = CAPTCHA_MAX + 1; //it seems captcha recognizer is broken, comment this line if captcha recognizer works.
+        //captchaCounter = CAPTCHA_MAX + 1; //for testing purpose
         if (captchaCounter <= CAPTCHA_MAX) {
             final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaURL));
             captcha = new CaptchaRecognizer().recognize(captchaImage);
@@ -127,11 +133,7 @@ class HellshareRunner extends AbstractRunner {
             if (captcha == null) throw new CaptchaEntryInputMismatchException();
             logger.info("Manual captcha " + captcha);
         }
-
         final MethodBuilder method = getMethodBuilder(downloadWindowContent).setActionFromFormWhereTagContains("captcha-img", true).setParameter("captcha", captcha);
-
-        //logger.info("Adding file to map, final URL: " + method.getEscapedURI());
-        //methodsMap.put(fileURL, method);
         return method.toPostMethod();
     }
 

@@ -15,11 +15,11 @@ public class TestApp extends PluginDevApplication {
 
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://download.hellshare.com/13unci-part2-rar/7980859/"));
-            httpFile.setNewURL(new URL("http://download.hellshare.cz/connie-my-beautiful-wife-mov/8101434"));
+            httpFile.setNewURL(new URL("http://download.hellshare.com/13unci-part2-rar/7980859/"));
+            //httpFile.setNewURL(new URL("http://download.hellshare.cz/connie-my-beautiful-wife-mov/8101434"));
             //httpFile.setNewURL(new URL("http://download.hellshare.pl/richard-burns-rally/richard-burns-rally-pl-zip/6276313/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            connectionSettings.setProxy("90.183.248.54", 8080); //Czech proxy is a must.
+            connectionSettings.setProxy("77.48.30.223", 8080); //Czech proxy is a must.
             //connectionSettings.setProxy("89.187.142.176", 3128); //Czech proxy is a must.
             final HellshareServiceImpl service = new HellshareServiceImpl();
             testRun(service, httpFile, connectionSettings);

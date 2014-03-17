@@ -8,8 +8,8 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.Calendar;
-import java.util.Random;
 import java.util.logging.Logger;
+import java.util.Random;
 import java.util.regex.Matcher;
 
 /**

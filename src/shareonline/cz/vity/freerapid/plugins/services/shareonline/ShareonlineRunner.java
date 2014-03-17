@@ -3,16 +3,16 @@ package cz.vity.freerapid.plugins.services.shareonline;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
@@ -21,6 +21,7 @@ class ShareonlineRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareonlineRunner.class.getName());
     private ServicePluginContext context;
     private String initURL;
+    private int captchaCounter = 1, captchaMax = 5;
 
     public ShareonlineRunner(ServicePluginContext context) {
         super();
@@ -50,14 +51,16 @@ class ShareonlineRunner extends AbstractRunner {
             do {
                 checkProblems();
                 if (!getContentAsString().contains("Please enter the number")) {
-                    logger.info(getContentAsString());
                     throw new PluginImplementationException("No captcha.\nCannot find requested page content");
                 }
                 stepCaptcha(getContentAsString());
 
             } while (getContentAsString().contains("Please enter the number"));
+            logger.info("Captcha OK");
 
-            Matcher matcher = getMatcherAgainstContent("decode\\(\"([^\"]*)\"");
+            checkProblems();
+
+            Matcher matcher = getMatcherAgainstContent("decode\\(\"(.+?)\"");
             if (matcher.find()) {
                 String s = decode(matcher.group(1));
                 logger.info("Found File URL - " + s);
@@ -71,7 +74,6 @@ class ShareonlineRunner extends AbstractRunner {
                 }
             } else {
                 checkProblems();
-                logger.info(getContentAsString());
                 throw new PluginImplementationException();
             }
 
@@ -150,8 +152,8 @@ class ShareonlineRunner extends AbstractRunner {
 
 
     private boolean stepCaptcha(String contentAsString) throws Exception {
+/*
         if (contentAsString.contains("Please enter the number")) {
-
             Matcher matcher = Pattern.compile("captcha", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 String s = "http://www.share-online.biz/captcha.php";
@@ -177,7 +179,29 @@ class ShareonlineRunner extends AbstractRunner {
                 logger.warning(contentAsString);
                 throw new PluginImplementationException("Captcha picture was not found");
             }
+        }
+        return false;
+*/
+        if (getContentAsString().contains("Please enter the number")) {
+            final CaptchaSupport captchaSupport = getCaptchaSupport();
+            String captchaSrc = "http://www.share-online.biz/captcha.php";
+            //logger.info("Captcha URL " + captchaSrc);
 
+            String captcha;
+            if (captchaCounter <= captchaMax) {
+                captcha = PlugUtils.recognize(captchaSupport.getCaptchaImage(captchaSrc), "-d -1 -C 0-9");
+                logger.info("OCR attempt " + captchaCounter + " of " + captchaMax + ", recognized " + captcha);
+                captchaCounter++;
+            } else {
+                captcha = captchaSupport.getCaptcha(captchaSrc);
+                if (captcha == null) throw new CaptchaEntryInputMismatchException();
+            }
+
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("myform", true).setParameter("captchacode", captcha).toPostMethod();
+            if (makeRedirectedRequest(httpMethod)) return true;
+
+        } else {
+            throw new PluginImplementationException("Captcha picture not found");
         }
         return false;
     }
@@ -198,19 +222,19 @@ class ShareonlineRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = getMatcherAgainstContent("You have got max allowed download sessions from the same IP");
-        if (matcher.find()) {
-            throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP!", 5 * 60);
-        }
-        matcher = getMatcherAgainstContent("this download is too big for your");
-        if (matcher.find()) {
+        final String contentAsString = getContentAsString();
 
-            throw new YouHaveToWaitException("Sorry, this download is too big for your remaining download volume per hour!!", getTimeToWait());
+        if (contentAsString.contains("You have got max allowed download sessions from the same IP")) {
+            throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP", 5 * 60);
         }
-        matcher = getMatcherAgainstContent("Your requested file could not be found");
-        if (matcher.find()) {
+        if (contentAsString.contains("this download is too big for your")) {
+            throw new YouHaveToWaitException("This download is too big for your remaining download volume per hour", getTimeToWait());
+        }
+        if (contentAsString.contains("Your requested file could not be found")) {
             throw new URLNotAvailableAnymoreException("Your requested file could not be found");
+        }
+        if (contentAsString.contains("no slots available")) {
+            throw new YouHaveToWaitException("All download slots for free users are in use", 5 * 60);
         }
 
     }

@@ -52,7 +52,7 @@ class HellshareRunner {
                 client.setReferer(fileURL);
 
                 final PostMethod postmethod = client.getPostMethod(fileURL);
-                postmethod.addParameter("free_download_iframe", "FREE+DOWNLOAD");
+                postmethod.addParameter("free_download_iframe", "FREE DOWNLOAD");
                 if (client.makeRequest(postmethod) == HttpStatus.SC_OK) {
                     PostMethod method = stepCaptcha();
                     httpFile.setState(DownloadState.GETTING);
@@ -79,7 +79,7 @@ class HellshareRunner {
 
     private PostMethod stepCaptcha() throws Exception {
 
-        if("".equals(client.getContentAsString()))   {
+        if ("".equals(client.getContentAsString())) {
             throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
 
         }

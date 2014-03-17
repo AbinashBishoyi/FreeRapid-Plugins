@@ -45,7 +45,7 @@ class FileFactoryFileRunner extends AbstractRunner {
 
             final MethodBuilder methodBuilder = getMethodBuilder();
             final HttpMethod httpMethod = methodBuilder.setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).setBaseURL(SERVICE_WEB).toHttpMethod();
-            final String redirectURL = SERVICE_WEB + getMethodBuilder().getAction();
+            final String redirectURL = SERVICE_WEB + methodBuilder.getAction();
 
             if (makeRedirectedRequest(httpMethod)) {
                 /*

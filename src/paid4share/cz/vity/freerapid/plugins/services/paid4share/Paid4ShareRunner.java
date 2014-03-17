@@ -25,10 +25,17 @@ class Paid4ShareRunner extends AbstractRunner {
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            checkProblems();
+            checkSeriousProblems();
             checkNameAndSize();
         } else {
+            checkProblems();
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
+    }
+
+    private void checkSeriousProblems() throws URLNotAvailableAnymoreException {
+        if (getContentAsString().contains("was not found")) {
+            throw new URLNotAvailableAnymoreException("File was not found");
         }
     }
 
@@ -49,22 +56,20 @@ class Paid4ShareRunner extends AbstractRunner {
                 throw new IOException("File input stream is empty");
             }
         } else {
+            checkProblems();
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
         }
     }
 
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-
+        checkSeriousProblems();
         final String contentAsString = getContentAsString();
 
         if (contentAsString.contains("You have got max allowed download sessions from the same IP")) {
             throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP!", 60);
         }
 
-        if (contentAsString.contains("was not found")) {
-            throw new URLNotAvailableAnymoreException("File was not found");
-        }
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {

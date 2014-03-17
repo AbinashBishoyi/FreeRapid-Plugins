@@ -3,12 +3,13 @@ package cz.vity.freerapid.plugins.services.fiberupload;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -22,9 +23,10 @@ import java.util.regex.Matcher;
  */
 class FiberUploadFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FiberUploadFileRunner.class.getName());
-    private static final String SERVICE_TITLE = "FiberUpload";
-    private static final String SERVICE_COOKIE_DOMAIN = ".fiberupload.com";
-    private static final String SERVICE_LOGIN_ADDRESS = "http://fiberupload.com/login.html";
+    private final static String SERVICE_TITLE = "FiberUpload";
+    private final static String SERVICE_COOKIE_DOMAIN = ".fiberupload.com";
+    private final static String SERVICE_LOGIN_REFERER = "http://fiberupload.com/login.html";
+    private final static String SERVICE_LOGIN_ACTION = "http://fiberupload.com";
 
     @Override
     public void runCheck() throws Exception {
@@ -75,7 +77,8 @@ class FiberUploadFileRunner extends AbstractRunner {
                 return false;
             }
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction(SERVICE_LOGIN_ADDRESS)
+                    .setReferer(SERVICE_LOGIN_REFERER)
+                    .setAction(SERVICE_LOGIN_ACTION)
                     .setParameter("op", "login")
                     .setParameter("redirect", "")
                     .setParameter("login", pa.getUsername())
@@ -152,20 +155,15 @@ class FiberUploadFileRunner extends AbstractRunner {
         }
         checkDownloadProblems();
 
-        MethodBuilder methodBuilder = getMethodBuilder()
-                .setReferer(fileURL)
-                .setActionFromAHrefWhereATagContains("DOWNLOAD FILE");
-        final String downloadFileURL = methodBuilder.getAction();
-        logger.info("download file URL : "+downloadFileURL);
-        httpMethod = methodBuilder.toGetMethod();
-        if (!makeRequest(httpMethod)) {
-            checkDownloadProblems();
-            throw new ServiceConnectionProblemException();
+        Header header = httpMethod.getResponseHeader("Location");
+        if (header == null) {
+            throw new PluginImplementationException("Invalid redirect");
         }
-        logger.info("content : " + getContentAsString());
+        final String downloadFileURL = header.getValue();
+        logger.info("download file URL : " + downloadFileURL);
         httpMethod = getMethodBuilder()
                 .setReferer(downloadFileURL)
-                .setAction(downloadFileURL.replaceAll(httpFile.getFileName(),"GO/"+httpFile.getFileName()))
+                .setAction(downloadFileURL.replaceAll(httpFile.getFileName(), "GO/" + httpFile.getFileName()))
                 .toGetMethod();
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -194,8 +192,11 @@ class FiberUploadFileRunner extends AbstractRunner {
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
+        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("server is in maintenance mode")) {
+            throw new YouHaveToWaitException("This server is in maintenance mode", 30 * 60 * 60);
         }
     }
 
@@ -217,6 +218,21 @@ class FiberUploadFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Server problem");
+        }
+        if (contentAsString.contains("file reached max downloads limit")) {
+            throw new PluginImplementationException("This file reached max downloads limit");
+        }
+        if (contentAsString.contains("You can download files up to")) {
+            throw new PluginImplementationException(PlugUtils.getStringBetween(contentAsString, "<div class=\"err\">", ".<br>"));
+        }
+        if (contentAsString.contains("have reached the download-limit")) {
+            throw new YouHaveToWaitException("You have reached the download-limit", 30 * 60 * 60);
+        }
+        if (contentAsString.contains("Error happened when generating Download Link")) {
+            throw new YouHaveToWaitException("Error happened when generating Download Link", 10 * 60 * 60);
+        }
+        if (contentAsString.contains("file is available to premium users only")) {
+            throw new PluginImplementationException("This file is available to premium users only");
         }
     }
 

@@ -38,7 +38,7 @@ public class MediafireRunner extends AbstractRunner {
             final String content = getContentAsString();
             PlugUtils.checkName(httpFile, content, "<div class=\"download_file_title\">", "</div>");
             if (!isPassworded()) {
-                PlugUtils.checkFileSize(httpFile, content, "Download <span>(", ")</span>");
+                PlugUtils.checkFileSize(httpFile, content, ">(", ")<");
             }
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -116,7 +116,7 @@ public class MediafireRunner extends AbstractRunner {
     }
 
     private boolean isPassworded() {
-        return getContentAsString().contains("form_password");
+        return getContentAsString().contains("\"form_password\"");
     }
 
     private void stepPassword() throws Exception {

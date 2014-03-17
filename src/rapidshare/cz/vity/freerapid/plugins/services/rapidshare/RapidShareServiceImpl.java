@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  */
 public class RapidShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "RapidShare.com";
-    private final static Pattern pattern = Pattern.compile("http://(www\\.)?rapidshare\\.com/.*", Pattern.CASE_INSENSITIVE);
+    private final static Pattern pattern = Pattern.compile("http://(www\\.)?rapidshare\\.com/files/[0-9]*/.*", Pattern.CASE_INSENSITIVE);
 
     public String getName() {
         return SERVICE_NAME;

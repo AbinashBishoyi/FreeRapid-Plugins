@@ -37,11 +37,15 @@ class RapidShareRunner {
                     final String error = matcher.group(1);
                     if (error.contains("illegal content"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
+                    if (error.contains("file could not be found"))
+                        throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                     logger.warning(client.getContentAsString());
                     throw new InvalidURLOrServiceProblemException("<b>RapidShare error:</b><br>" + error);
                 }
+                if (client.getContentAsString().contains("file could not be found"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>The file could not be found. Please check the download link.");
                 if (client.getContentAsString().contains("illegal content"))
-                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br> Illegal content. File was removed.");
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Illegal content. File was removed.");
                 logger.warning(client.getContentAsString());
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
             }

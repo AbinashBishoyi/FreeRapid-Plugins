@@ -2,7 +2,6 @@ package cz.vity.freerapid.plugins.services.depositfiles;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
-import cz.vity.freerapid.plugins.services.depositfiles.DepositFilesRunner;
 
 import java.util.regex.Pattern;
 

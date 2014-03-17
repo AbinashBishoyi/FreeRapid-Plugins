@@ -32,7 +32,7 @@ class MegauploadRunner {
         this.downloader = downloader;
         HttpFile httpFile = downloader.getDownloadFile();
         client = downloader.getClient();
-        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);        
+        client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         final String fileURL = httpFile.getFileUrl().toString();
         logger.info("Starting download in TASK " + fileURL);
 
@@ -84,6 +84,7 @@ class MegauploadRunner {
                         downloader.saveToFile(inputStream);
                     } else {
                         checkProblems();
+                        logger.warning(client.getContentAsString());
                         throw new IOException("File input stream is empty.");
                     }
 

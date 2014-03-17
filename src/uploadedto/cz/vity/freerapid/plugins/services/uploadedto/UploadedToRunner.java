@@ -71,6 +71,7 @@ class UploadedToRunner {
                         downloader.saveToFile(inputStream);
                     } else {
                         checkProblems();
+                        logger.warning(client.getContentAsString());
                         throw new IOException("File input stream is empty.");
                     }
 

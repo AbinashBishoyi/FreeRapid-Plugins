@@ -80,7 +80,6 @@ class HitFileFileRunner extends AbstractRunner {
                 if (content.contains("Type the characters you see")) {
                     stepCaptcha(builder);
                 }
-                stepCaptcha(builder);
                 if (!makeRedirectedRequest(builder.toPostMethod())) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
@@ -150,15 +149,9 @@ class HitFileFileRunner extends AbstractRunner {
 
     private void stepCaptcha(MethodBuilder method) throws Exception {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-
         final String captchaImg = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
-        logger.info(">>>>>>>>>>>>> Captcha URL " + captchaImg);
-//        captchaSupport.getCaptchaImage(captchaSrc);
-
         final String captchaTxt = captchaSupport.getCaptcha(captchaImg);
         if (captchaTxt == null) throw new CaptchaEntryInputMismatchException("No Input");
-        logger.info("Manual captcha " + captchaTxt);
-
         method.setParameter("captcha_response", captchaTxt);
     }
 

@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.ArrayList;
@@ -76,16 +77,16 @@ class File2BoxFileRunner extends AbstractRunner {
 
             this.downloadTask.sleep(sleep + 1);
 
-//            if (makeRedirectedRequest(methodBuilder.toPostMethod())) {
-//                //here is the download link extraction
-//                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download file").toHttpMethod();
-//                client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
-            if (!tryDownloadAndSaveFile(methodBuilder.toPostMethod())) {
-                checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
-            }
-//            } else throw new PluginImplementationException();
+            if (makeRedirectedRequest(methodBuilder.toPostMethod())) {
+                //here is the download link extraction
+                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download file").toHttpMethod();
+                client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();//if downloading failed
+                    logger.warning(getContentAsString());//log the info
+                    throw new PluginImplementationException();//some unknown problem
+                }
+            } else throw new PluginImplementationException();
 
         } else {
             checkProblems();

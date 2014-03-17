@@ -87,6 +87,7 @@ class FileSonicFileRunner extends AbstractRunner {
                     }
                 } else if (content.contains("Start download now")) {
                     method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start download now").toGetMethod();
+                    setFileStreamContentTypes("\"application/octet-stream\"");
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");

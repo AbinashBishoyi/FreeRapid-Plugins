@@ -6,18 +6,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author valankar
  */
 public class FileSonicServiceImpl extends AbstractFileShareService {
 
     private static final String PLUGIN_CONFIG_FILE = "plugin_FileSonicPremium.xml";
 
+    @Override
     public String getName() {
         return "filesonic.com_premium";
-    }
-
-    public int getMaxDownloadsFromOneIP() {        
-        return 20;
     }
 
     @Override
@@ -42,7 +40,7 @@ public class FileSonicServiceImpl extends AbstractFileShareService {
         return showAccountDialog(getConfig(), "FileSonic", PLUGIN_CONFIG_FILE);
     }
 
-     PremiumAccount getConfig() throws Exception {
+    PremiumAccount getConfig() throws Exception {
         if (config == null) {
             synchronized (FileSonicServiceImpl.class) {
                 config = getAccountConfigFromFile(PLUGIN_CONFIG_FILE);

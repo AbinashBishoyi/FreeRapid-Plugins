@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.filesonic_premium;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
@@ -20,10 +23,10 @@ import java.util.regex.Pattern;
 class FileSonicFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileSonicFileRunner.class.getName());
 
-    private String ensureENLanguage(String url){
-        Matcher m=Pattern.compile("http://(www\\.)?filesonic.com/([^/]*/)?(file/.*)").matcher(url);
-        if(m.matches()){
-            return "http://www.filesonic.com/en/"+m.group(3);
+    private String ensureENLanguage(String url) {
+        Matcher m = Pattern.compile("http://(www\\.)?filesonic.com/([^/]*/)?(file/.*)").matcher(url);
+        if (m.matches()) {
+            return "http://www.filesonic.com/en/" + m.group(3);
         }
         return url;
     }
@@ -35,8 +38,10 @@ class FileSonicFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
@@ -51,10 +56,10 @@ class FileSonicFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         login();
         final GetMethod method = getGetMethod(fileURL);
+        setFileStreamContentTypes("\"application/octet-stream\"");
         if (!tryDownloadAndSaveFile(method)) {
-            checkProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
+            checkProblems();
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 

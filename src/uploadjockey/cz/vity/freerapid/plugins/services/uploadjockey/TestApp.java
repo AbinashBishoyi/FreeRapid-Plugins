@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Ladislav Vitasek
+ * @author Alex, Arthur Gunawan
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,12 +16,13 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.uploadjockey.com/download/297425/ShortKeys.v2.3.2.1.Incl.Keymaker-CORE.rar"));
+            httpFile.setNewURL(new URL("http://www.uploadjockey.com/download/8468796/internet.download.manager.v5.14.5.only.keygen.rar"));//TODO
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final UploadJockeyServiceImpl service = new UploadJockeyServiceImpl(); //instance of service - of our plugin
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

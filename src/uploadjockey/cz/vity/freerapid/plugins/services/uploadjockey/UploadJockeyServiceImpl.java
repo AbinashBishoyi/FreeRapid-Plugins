@@ -4,27 +4,28 @@ import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Alex
+ * Class that provides basic info about plugin
+ * @author Alex, Arthur Gunawan
  */
 public class UploadJockeyServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "uploadjockey.com";
 
     public String getName() {
-        return SERVICE_NAME;
+        return "uploadjockey.com";
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 1;
+        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
+        return 10;
     }
 
     @Override
     public boolean supportsRunCheck() {
-        return false;
+        return false;//ok
     }
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new UploadJockeyRunner();
+        return new UploadJockeyFileRunner();
     }
 
 }

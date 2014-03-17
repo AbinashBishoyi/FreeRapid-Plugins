@@ -1,13 +1,16 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="uploadjockey.com" version="0.5" vendor="Alex"
+<plugin id="uploadjockey.com" version="1.0.0" vendor="Alex+Arthur Gunawan"
         class="cz.vity.freerapid.plugins.services.uploadjockey.UploadJockeyServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?uploadjockey\.com/download/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="uploadjockey.com"/>
+        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
+        <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
+        <attribute id="removeCompleted" value="true"/>
     </attributes>
 
     <runtime>

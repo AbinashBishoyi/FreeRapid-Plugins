@@ -1,9 +1,9 @@
 package cz.vity.freerapid.plugins.services.bitshare;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -11,11 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Class which contains main code
@@ -49,30 +45,31 @@ class BitShareFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
 
-        final String contentAsString;
+        final String content;
 
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
-            contentAsString = getContentAsString();
+            content = getContentAsString();
             checkProblems();
-            checkNameAndSize(contentAsString);//ok let's extract file name and size from the page
+            checkNameAndSize(content);//ok let's extract file name and size from the page
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
 
-        final String ajaxdl = PlugUtils.getStringBetween(contentAsString, "var ajaxdl = \"", "\";"); // download ID
-        final String action = PlugUtils.getStringBetween(contentAsString, "http://bitshare.com", "request.html")
+        final String ajaxdl = PlugUtils.getStringBetween(content, "var ajaxdl = \"", "\";"); // download ID
+        final String action = PlugUtils.getStringBetween(content, "http://bitshare.com", "request.html")
                 + "request.html";
 
         final HttpMethod postMethodWithID = getMethodBuilder() // click to Download button
                 .setAction(action).setParameter("request", "generateID").setParameter("ajaxid", ajaxdl)
                 .setReferer(fileURL).toPostMethod();
         postMethodWithID.addRequestHeader("X-Requested-With", "XMLHttpRequest"); // send as AJAX
+        setFileStreamContentTypes(new String[]{"text/plain"}, new String[]{"application/json"});
 
         String[] typeTimeCaptcha;
-        if (client.getHTTPClient().executeMethod(postMethodWithID) == 200) {
-            typeTimeCaptcha = processJsonAsString(postMethodWithID).split(":");  // JSON contains data in format "fileType:timeInSecond:captchaRequired"
+        if (makeRequest(postMethodWithID)) {
+            typeTimeCaptcha = getContentAsString().split(":");  // data in format "fileType:timeInSecond:captchaRequired"
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -81,16 +78,17 @@ class BitShareFileRunner extends AbstractRunner {
         downloadTask.sleep(Integer.parseInt(typeTimeCaptcha[1]));
 
         if (Integer.parseInt(typeTimeCaptcha[2]) == 1) {
-            String captchaKey = PlugUtils.getStringBetween(contentAsString, "api.recaptcha.net/noscript?k=", "\"");
+            String captchaKey = PlugUtils.getStringBetween(content, "api.recaptcha.net/noscript?k=", "\"");
             HttpMethod captchaMethod;
             while (true) {
-                captchaMethod = processCaptcha(captchaKey).modifyResponseMethod(getMethodBuilder(contentAsString)
+                captchaMethod = processCaptcha(captchaKey).modifyResponseMethod(getMethodBuilder(content)
                         .setAction(action).setParameter("request", "validateCaptcha").setParameter("ajaxid", ajaxdl)
                         .setReferer(fileURL)).toPostMethod();
                 postMethodWithID.addRequestHeader("X-Requested-With", "XMLHttpRequest"); // send as AJAX
+                setFileStreamContentTypes(new String[]{"text/plain"}, new String[]{"application/json"});
 
-                if (client.getHTTPClient().executeMethod(captchaMethod) == 200) {
-                    if (processJsonAsString(captchaMethod).equals("SUCCESS")) {
+                if (makeRequest(captchaMethod)) {
+                    if (getContentAsString().equals("SUCCESS")) {
                         break;
                     }
                 } else {
@@ -104,10 +102,11 @@ class BitShareFileRunner extends AbstractRunner {
               .setAction(action).setParameter("request", "getDownloadURL").setParameter("ajaxid", ajaxdl)
               .setReferer(fileURL).toPostMethod();
         postMethodWithID.addRequestHeader("X-Requested-With", "XMLHttpRequest"); // send as AJAX
+        setFileStreamContentTypes(new String[]{"text/plain"}, new String[]{"application/json"});
 
-        if (client.getHTTPClient().executeMethod(postMethodForUrl) == 200) {
+        if (makeRequest(postMethodForUrl)) {
             final HttpMethod getMethodForDownload = getMethodBuilder()
-                  .setAction(processJsonAsString(postMethodForUrl).substring("SUCCESS#".length()))
+                  .setAction(getContentAsString().substring("SUCCESS#".length()))
                   .setReferer(fileURL).toGetMethod();
 
             //here is the download link extraction
@@ -119,31 +118,6 @@ class BitShareFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
-    }
-
-    private String processJsonAsString(HttpMethod method) throws PluginImplementationException {
-
-        final StringBuilder content = new StringBuilder();
-        InputStream is = null;
-        try {
-            is = new GZIPInputStream(method.getResponseBodyAsStream());
-            int i;
-            while ((i = is.read()) != -1) {
-                content.append((char) i);
-            }
-        } catch (IOException e) {
-            throw new PluginImplementationException("Error in JSON processing!");
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException e) {
-                    logger.log(Level.WARNING, "InputStream cannot closed.", e);
-                }
-            }
-        }
-
-        return content.toString();
     }
 
     private ReCaptcha processCaptcha(String key) throws Exception {
@@ -161,6 +135,9 @@ class BitShareFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File not available")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("cant download more then 1 files at time")) {
+            throw new YouHaveToWaitException("Cannot download more then 1 files at time", 60);
         }
     }
 

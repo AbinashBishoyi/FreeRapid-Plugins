@@ -19,11 +19,12 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.crackle.com/c/Love_And_A_Bullet"));
+            httpFile.setNewURL(new URL("http://www.crackle.com.br/c/robocop-2"));
+            httpFile.setNewURL(new URL("http://www.crackle.com/c/1941"));
             httpFile.setNewURL(new URL("http://www.crackle.com/c/Seinfeld/The_Phone_Message/2483737"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CrackleServiceImpl service = new CrackleServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

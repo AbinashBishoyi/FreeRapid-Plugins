@@ -1,12 +1,14 @@
 package cz.vity.freerapid.plugins.services.crackle;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
@@ -36,18 +38,25 @@ class CrackleFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("<title>\\s*Watch (.+?) Online Free - Crackle\\s*</title>");
+        Matcher matcher = getMatcherAgainstContent("(?s)<div id=\"doc-title\">(.+?)</div>");
         if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
+            matcher = getMatcherAgainstContent("(?s)<title>(.+?)</title>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File name not found");
+            }
         }
-        String name = matcher.group(1);
-        matcher = PlugUtils.matcher("(.+?), (.+?), Season (\\d+), Episode (\\d+)", name);
+        String name = matcher.group(1).trim();
+        matcher = PlugUtils.matcher("(?:Watch|Assista a(?:o filme)?|Ver(?: la película)?) (.+?) (?:Online Free|gratuito online|gratis en línea) - Crackle", name);
         if (matcher.find()) {
-            name = String.format("%s - S%02dE%02d - %s",
-                    matcher.group(1),
-                    Integer.parseInt(matcher.group(3)),
-                    Integer.parseInt(matcher.group(4)),
-                    matcher.group(2));
+            name = matcher.group(1).trim();
+            matcher = PlugUtils.matcher("(.+?), (.+?), (?:Season|Temporada) (\\d+), (?:Episode|Epis[óo]dio) (\\d+)", name);
+            if (matcher.find()) {
+                name = String.format("%s - S%02dE%02d - %s",
+                        matcher.group(1).trim(),
+                        Integer.parseInt(matcher.group(3)),
+                        Integer.parseInt(matcher.group(4)),
+                        matcher.group(2).trim());
+            }
         }
         httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -63,13 +72,12 @@ class CrackleFileRunner extends AbstractRtmpRunner {
             checkNameAndSize();
             final String id = PlugUtils.getStringBetween(getContentAsString(), "StartPlayer (", ",");
             final String rtmpUrl = "rtmp://" + PlugUtils.getStringBetween(getContentAsString(), "strRtmpCdnUrl=\"", "\"");
-            // This cookie is all it takes to bypass their geo restrictions.
-            addCookie(new Cookie(".crackle.com", "GR", "348", "/", 86400, false));
-            method = getGetMethod("http://www.crackle.com/app/vidwall.ashx?flags=-1&fm=" + id + "&partner=20");
+            method = getMethodBuilder().setAction("/app/vidwall.ashx?flags=-1&fm=" + id + "&partner=20").toGetMethod();
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            checkProblems();
             logger.info(getContentAsString());
             final Matcher matcher = getMatcherAgainstContent("<i\\b[^<>]+?\\bp=\"([^<>\"]+?)\"");
             if (!matcher.find()) {
@@ -88,11 +96,13 @@ class CrackleFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("we couldn&rsquo;t find that page")) {
+        if (getContentAsString().contains("we couldn&rsquo;t find that page")
+                || getContentAsString().contains("A página que você procura está indisponível ou não existe")
+                || getContentAsString().contains("La página que buscas no se encuentra o no existe")) {
             throw new URLNotAvailableAnymoreException("Page not found");
         }
-        if (getContentAsString().contains("<items title=\"Newest\" />")) {
-            throw new NotRecoverableDownloadException("Crackle is unavailable in your region");
+        if (PlugUtils.find("<items title=\"[^\"]*?\" />", getContentAsString())) {
+            throw new URLNotAvailableAnymoreException("Video is not available");
         }
     }
 

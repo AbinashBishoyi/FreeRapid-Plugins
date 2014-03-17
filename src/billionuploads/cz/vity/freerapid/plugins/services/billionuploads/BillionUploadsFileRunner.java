@@ -3,8 +3,10 @@ package cz.vity.freerapid.plugins.services.billionuploads;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.LinkedList;
@@ -26,10 +28,30 @@ class BillionUploadsFileRunner extends XFileSharingRunner {
     }
 
     @Override
+    protected List<FileSizeHandler> getFileSizeHandlers() {
+        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
+        fileSizeHandlers.add(0, new BillionUploadsFileSizeHandler());
+        return fileSizeHandlers;
+    }
+
+    @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("Download you file easily with Billion Uploads download manager");
+        return downloadPageMarkers;
+    }
+
+    @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = new LinkedList<String>();
         downloadLinkRegexes.add("<a href\\s?=\\s?(?:\"|')(http.+?)(?:\"|') id=\"_tlink\"");
+        downloadLinkRegexes.add("<span subway=\"metro\">.+?XXX(.+?)XXX.+?<");
         return downloadLinkRegexes;
+    }
+
+    @Override
+    protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
+        return new String(Base64.decodeBase64(new String(Base64.decodeBase64(super.getDownloadLinkFromRegexes()))));
     }
 
     @Override

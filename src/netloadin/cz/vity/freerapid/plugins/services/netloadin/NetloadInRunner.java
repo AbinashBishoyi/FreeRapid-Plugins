@@ -40,7 +40,7 @@ class NetloadInRunner {
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
             do {
                 stepEnterPage(client.getContentAsString());
-                  if (!client.getContentAsString().contains("Please enter the Securitycode")) {
+                if (!client.getContentAsString().contains("Please enter the Securitycode")) {
                     logger.info(client.getContentAsString());
                     throw new PluginImplementationException("No captcha.\nCannot find requested page content");
 
@@ -135,7 +135,7 @@ class NetloadInRunner {
     private boolean stepCaptcha(String contentAsString) throws Exception {
         if (contentAsString.contains("Please enter the Securitycode")) {
 
-            Matcher matcher = Pattern.compile("src\\=\"([^\"]*)\"\\s*alt\\=\"Sicherheitsbild\"", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = Pattern.compile("src=\"(share\\/includes\\/captcha.*?)\"", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 String s = "/" + replaceEntities(matcher.group(1));
                 String captcha = downloader.getCaptcha(HTTP_NETLOAD + s);
@@ -160,7 +160,11 @@ class NetloadInRunner {
                         return true;
                     }
                 }
-            } else throw new PluginImplementationException("Captcha picture was not found");
+            } else {
+                logger.warning(contentAsString);
+                throw new PluginImplementationException("Captcha picture was not found");
+            }
+
         }
         return false;
     }

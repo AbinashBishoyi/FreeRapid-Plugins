@@ -1,11 +1,7 @@
 package cz.vity.freerapid.plugins.services.easyshare;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.webclient.HttpDownloadClient;
-import cz.vity.freerapid.plugins.webclient.HttpFile;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.HttpStatus;
@@ -15,7 +11,6 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,27 +19,49 @@ import java.util.regex.Pattern;
  * @author Ladislav Vitasek, Ludek Zika
  */
 
-class EasyShareRunner {
+class EasyShareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(EasyShareRunner.class.getName());
-    private HttpDownloadClient client;
-    private HttpFileDownloader downloader;
     private String httpSite;
-    private HttpFile httpFile;
     private String baseURL;
 
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            checkName(client.getContentAsString());
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+    private void checkName(String contentAsString) throws Exception {
+
+        if (!contentAsString.contains("easy-share")) {
+            logger.warning(client.getContentAsString());
+            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+        }
+
+        if (contentAsString.contains("File not found")) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
+
+        }
+        Matcher matcher = PlugUtils.matcher("Download ([^,]+), upload", contentAsString);
+        if (matcher.find()) {
+            final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+        } else logger.warning("File name was not found" + client.getContentAsString());
+    }
+
+
     public void run(HttpFileDownloader downloader) throws Exception {
-        this.downloader = downloader;
-        httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
-        final String fileURL = httpFile.getFileUrl().toString();
         baseURL = fileURL;
         httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-
+            checkName(client.getContentAsString());
             if (!(client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))) {
                 checkProblems();
                 logger.warning(client.getContentAsString());
@@ -53,12 +70,7 @@ class EasyShareRunner {
             }
 
             while (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w=")) {
-                Matcher matcher = Pattern.compile("Download ([^,]+), upload", Pattern.MULTILINE).matcher(client.getContentAsString());
-                if (matcher.find()) {
-                    final String fn = new String(matcher.group(1).getBytes("windows-1252"), "UTF-8");
-                    logger.info("File name " + fn);
-                    httpFile.setFileName(fn);
-                } else logger.warning("File name was not found" + client.getContentAsString());
+                Matcher matcher;
 
                 if (client.getContentAsString().contains("w=")) {
                     matcher = PlugUtils.matcher("w='([0-9]+?)';", client.getContentAsString());
@@ -123,7 +135,7 @@ class EasyShareRunner {
                 String s = matcher.group(1);
                 logger.info(httpSite + s);
                 client.setReferer(baseURL);
-                String captcha = downloader.getCaptcha(httpSite + s);
+                String captcha = getCaptchaSupport().getCaptcha(httpSite + s);
 
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
@@ -137,23 +149,13 @@ class EasyShareRunner {
                         client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
                         method.addParameter("id", id);
                         method.addParameter("captcha", captcha);
-
-                        try {
-                            final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                            if (inputStream != null) {
-                                downloader.saveToFile(inputStream);
-                                return true;
-                            } else {
-                                checkProblems();
-                                if (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))
-                                    return false;
-                                logger.warning(client.getContentAsString());
-                                throw new IOException("File input stream is empty.");
-                            }
-
-                        } finally {
-                            method.abort();
-                            method.releaseConnection();
+                        if (tryDownload(method)) return true;
+                        else {
+                            checkProblems();
+                            if (client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))
+                                return false;
+                            logger.warning(client.getContentAsString());
+                            throw new IOException("File input stream is empty.");
                         }
                     } else {
                         logger.warning(client.getContentAsString());

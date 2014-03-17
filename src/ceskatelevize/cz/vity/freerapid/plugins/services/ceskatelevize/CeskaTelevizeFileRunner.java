@@ -153,6 +153,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
+                checkProblems();
                 referer = httpMethod.getURI().toString();
             }
 
@@ -187,6 +188,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 throw new ServiceConnectionProblemException("Cannot load playlist URL");
 
             }
+            checkProblems();
 
             Matcher matcher = getMatcherAgainstContent("\"url\":\"(.+?)\"");
             if (!matcher.find()) {
@@ -198,6 +200,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Cannot connect to playlist");
             }
+            checkProblems();
             setConfig();
             SwitchItem selectedSwitchItem = getSelectedSwitchItem(getContentAsString());
             Video selectedVideo = getSelectedVideo(selectedSwitchItem);
@@ -215,7 +218,8 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         if (contentAsString.contains("Neexistuj") || contentAsString.contains("Stránka nenalezena")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-        if (contentAsString.contains("content is not available at")) {
+        if (contentAsString.contains("content is not available at")
+                || contentAsString.contains("\"url\":\"error_region\"")) {
             throw new PluginImplementationException("This content is not available at your territory due to limited copyright");
         }
     }

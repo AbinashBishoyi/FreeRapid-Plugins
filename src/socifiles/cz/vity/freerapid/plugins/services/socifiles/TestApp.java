@@ -15,7 +15,8 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://socifiles.com/d/e99325"));
+            //httpFile.setNewURL(new URL("http://socifiles.com/d/e99325"));
+            httpFile.setNewURL(new URL("http://socifiles.com/d/82bb1f"));       //Password: ebookmeme.com
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final SociFilesServiceImpl service = new SociFilesServiceImpl();

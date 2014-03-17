@@ -172,6 +172,9 @@ class NetloadInRunner extends AbstractRunner {
         if (getContentAsString().contains("currently in maintenance work")) {
             throw new ServiceConnectionProblemException("This Server is currently in maintenance work. Please try it in a few hours again.");
         }
+        if (getContentAsString().contains("This file was damaged")) {
+            throw new URLNotAvailableAnymoreException("This file was damaged by a hard-disc crash.");
+        }
     }
 
 }

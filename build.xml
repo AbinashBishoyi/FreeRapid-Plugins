@@ -8,12 +8,9 @@
     <property name="lib.dir" value="lib"/>
     <property name="dev.dir" value="dev"/>
     <property name="plugins.dir" value="plugins"/>
-    <property name="lookandfeel.dir" value="lookandfeel"/>
+
     <property name="lib-src.dir" value="lib-src"/>
     <property name="plugins-src.dir" value="plugins-src"/>
-
-    <property name="resources" value="cz/vity/freerapid/core/resources/"/>
-    <property name="splash" value="${resources}icons/splash.jpg"/>
 
     <fileset id="jars" dir="${lib.dir}" includes="**/*"/>
 
@@ -74,6 +71,7 @@
         <ant dir="${src.dir}/filebaseto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/edisk/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/savefile/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/upnito/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

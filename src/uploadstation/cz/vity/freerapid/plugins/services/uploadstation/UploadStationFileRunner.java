@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author ntoskrnl
+ * @author ntoskrnl, Abinash Bishoyi
  */
 class UploadStationFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadStationFileRunner.class.getName());
@@ -109,7 +109,7 @@ class UploadStationFileRunner extends AbstractRunner {
 
     private void checkProblems() throws Exception {
         final String content = getContentAsString();
-        if (content.contains("The file could not be found") || content.contains("Page not found") || content.contains("File not available")) {
+        if (content.contains("The file could not be found") || content.contains("Page not found") || content.contains("File not available") || content.contains("File is not available")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (PlugUtils.find("\"fail\"\\s*:\\s*\"timeLimit\"", content)) {

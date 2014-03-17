@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.tor;
 import com.subgraph.orchid.Tor;
 import com.subgraph.orchid.TorClient;
 import com.subgraph.orchid.TorConfig;
+import cz.vity.freerapid.plugins.services.geoip.CountryLocator;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.utilities.LogUtils;

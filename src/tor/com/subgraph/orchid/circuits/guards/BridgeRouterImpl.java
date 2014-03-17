@@ -82,7 +82,7 @@ public class BridgeRouterImpl implements BridgeRouter {
     public String getCountryCode() {
         String cc = cachedCountryCode;
         if (cc == null) {
-            cc = CountryCodeService.getInstance().getCountryCodeForAddress(getAddress());
+            cc = CountryCodeService.getInstance().getCountryCodeForAddress(getAddress().getAddressData());
             cachedCountryCode = cc;
         }
         return cc;

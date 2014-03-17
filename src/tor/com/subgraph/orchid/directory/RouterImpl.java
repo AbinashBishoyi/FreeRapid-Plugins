@@ -238,7 +238,7 @@ public class RouterImpl implements Router {
     public String getCountryCode() {
         String cc = cachedCountryCode;
         if (cc == null) {
-            cc = CountryCodeService.getInstance().getCountryCodeForAddress(getAddress());
+            cc = CountryCodeService.getInstance().getCountryCodeForAddress(getAddress().getAddressData());
             cachedCountryCode = cc;
         }
         return cc;

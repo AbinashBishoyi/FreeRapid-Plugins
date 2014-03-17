@@ -244,6 +244,13 @@ public class TorClient {
             return;
         }
         try {
+            /*
+             * Do the following, but with reflection to bypass access checks:
+             *
+             * JceSecurity.isRestricted = false;
+             * JceSecurity.defaultPolicy.perms.clear();
+             * JceSecurity.defaultPolicy.add(CryptoAllPermission.INSTANCE);
+             */
             final Class<?> jceSecurity = Class.forName("javax.crypto.JceSecurity");
             final Class<?> cryptoPermissions = Class.forName("javax.crypto.CryptoPermissions");
             final Class<?> cryptoAllPermission = Class.forName("javax.crypto.CryptoAllPermission");

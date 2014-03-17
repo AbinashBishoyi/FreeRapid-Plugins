@@ -1,6 +1,5 @@
-package cz.vity.freerapid.plugins.services.tor;
+package cz.vity.freerapid.plugins.services.geoip;
 
-import com.subgraph.orchid.data.IPv4Address;
 import com.subgraph.orchid.geoip.CountryCodeService;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -9,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 
+import java.net.InetAddress;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,7 +33,7 @@ public class CountryLocator {
     private static String identifyCountry(final ConnectionSettings settings) {
         try {
             final String s = fetchIpAddress(settings);
-            final IPv4Address ipAddress = IPv4Address.createFromString(s);
+            final InetAddress ipAddress = InetAddress.getByName(s);
             final String country = CountryCodeService.getInstance()
                     .getCountryCodeForAddress(ipAddress).toLowerCase(Locale.ROOT);
             final String connectionName = settings.getProxyURL() != null ? settings.getProxyURL() : "default";

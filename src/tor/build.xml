@@ -39,7 +39,6 @@
         <include name="**/?*.tld"/>
         <include name="**/?*.mid"/>
         <include name="**/?*.wav"/>
-        <include name="**/?*.dat"/>
 
         <exclude name="**/plugin.xml"/>
     </patternset>
@@ -76,7 +75,7 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-
+            <sourcepath location="../geoip"/>
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

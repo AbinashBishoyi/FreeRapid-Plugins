@@ -92,7 +92,7 @@ public class Invoke {
         IoBuffer body = AmfProperty.encode(list.toArray());
         Packet packet = new Packet(header, body);
         session.getPrevHeadersOut().put(channelId, header);
-        logger.fine("encoded invoke: " + toString());
+        logger.info("encoded invoke: " + toString());
         return packet;
     }
 
@@ -112,7 +112,7 @@ public class Invoke {
                 args[i] = properties.get(i + 2).getValue();
             }
         }
-        logger.fine("decoded invoke: " + toString());
+        logger.info("decoded invoke: " + toString());
     }
 
     @Override

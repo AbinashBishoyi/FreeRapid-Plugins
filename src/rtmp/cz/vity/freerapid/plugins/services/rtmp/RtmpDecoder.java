@@ -5,6 +5,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.CumulativeProtocolDecoder;
 import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -27,7 +28,7 @@ class RtmpDecoder extends CumulativeProtocolDecoder {
                 return false;
             }
             session.setServerHandshakeReceived(true);
-            logger.fine("server handshake processed, sending reply");
+            logger.info("server handshake processed, sending reply");
             session.send(Handshake.generateClientRequest2(session));
             session.send(new Invoke("connect", 3, session.getConnectParams()));
             return true;
@@ -45,8 +46,8 @@ class RtmpDecoder extends CumulativeProtocolDecoder {
             return true;
         }
 
-        if (RtmpSession.DEBUG) {
-            logger.finest("packet complete: " + packet);
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("packet complete: " + packet);
         }
 
         for (PacketHandler handler : session.getPacketHandlers()) {

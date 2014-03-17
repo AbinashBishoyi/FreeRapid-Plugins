@@ -31,19 +31,19 @@ class WriterStatus {
             logger.warning("video duration is null");
             return;
         }
-        logger.fine("final video duration: " + (time - seekTime) / 1000 + " seconds, start (seek) time: " + seekTime);
+        logger.info("final video duration: " + (time - seekTime) / 1000 + " seconds, start (seek) time: " + seekTime);
     }
 
     public int getChannelAbsoluteTime(Header header) {
         final int channelId = header.getChannelId();
         Integer channelTime = channelTimeMap.get(channelId);
         if (channelTime == null) { // first packet
-            logger.finest("first packet!");
+            logger.fine("first packet!");
             channelTime = seekTime;
         }
         if (videoChannel == -1 && header.getPacketType() == VIDEO_DATA) {
             videoChannel = channelId;
-            logger.fine("video channel id is: " + videoChannel);
+            logger.info("video channel id is: " + videoChannel);
         }
         if (header.isRelative()) {
             channelTime = channelTime + header.getTime();
@@ -71,9 +71,7 @@ class WriterStatus {
     }
 
     private void logVideoProgress(int time) {
-        if (RtmpSession.DEBUG) {
-            logger.finest("time: " + time + ", seek: " + seekTime);
-        }
+        logger.fine("time: " + time + ", seek: " + seekTime);
         long currentTime = System.currentTimeMillis();
         if (session.getHttpFile() != null && currentTime >= lastUpdateTime + 1000) {
             lastUpdateTime = currentTime;

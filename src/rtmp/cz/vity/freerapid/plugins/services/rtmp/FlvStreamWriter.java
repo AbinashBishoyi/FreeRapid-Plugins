@@ -117,9 +117,7 @@ class FlvStreamWriter implements OutputWriter {
             }
             lastVideoTime = time;
         }
-        if (RtmpSession.DEBUG) {
-            logger.finest(String.format("writing FLV tag %s %s %s", packetType, time, data));
-        }
+        logger.fine(String.format("writing FLV tag %s %s %s", packetType, time, data));
         buffer.clear();
         buffer.put(packetType.byteValue());
         final int size = data.limit();
@@ -139,14 +137,14 @@ class FlvStreamWriter implements OutputWriter {
     private void write(IoBuffer buffer) {
         if (!headerWritten) {
             headerWritten = true;
-            logger.fine("First data packet received, writing FLV header");
+            logger.info("First data packet received, writing FLV header");
             writeHeader();
         }
         try {
             channel.write(buffer.buf());
         } catch (Exception e) {
             if ("Pipe closed".equals(e.getMessage())) {
-                logger.fine("Pipe closed, skipping packet");
+                logger.info("Pipe closed, skipping packet");
             } else {
                 throw new RuntimeException(e);
             }

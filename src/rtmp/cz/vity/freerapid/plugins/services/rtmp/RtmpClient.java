@@ -80,7 +80,7 @@ class RtmpClient extends IoHandlerAdapter {
         this.ioSession = ioSession;
         session.setDecoderOutput(new MinaIoSessionOutput(this));
         session.putInto(ioSession);
-        logger.fine("session opened, starting handshake");
+        logger.info("session opened, starting handshake");
         ioSession.write(Handshake.generateClientRequest1(session));
     }
 
@@ -100,15 +100,15 @@ class RtmpClient extends IoHandlerAdapter {
                 public void run() {
                     try {
                         if (ioSession != null) {
-                            logger.fine("disconnecting, bytes read: " + ioSession.getReadBytes());
+                            logger.info("disconnecting, bytes read: " + ioSession.getReadBytes());
                             CloseFuture future = ioSession.close(true);
-                            logger.fine("closing connection, waiting for thread exit");
+                            logger.info("closing connection, waiting for thread exit");
                             future.awaitUninterruptibly();
-                            logger.fine("connection closed successfully");
+                            logger.info("connection closed successfully");
                         }
-                        logger.finest("disposing connector");
+                        logger.fine("disposing connector");
                         connector.dispose();
-                        logger.finest("connector disposed successfully");
+                        logger.fine("connector disposed successfully");
                     } finally {
                         session.getOutputWriter().close();
                     }

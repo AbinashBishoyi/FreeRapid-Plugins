@@ -23,8 +23,6 @@ import java.util.regex.Pattern;
  */
 public class RtmpSession {
 
-    public static final boolean DEBUG = false;
-
     private static final Logger logger = Logger.getLogger(RtmpSession.class.getName());
 
     private static final String RTMP_SESSION_KEY = "RTMP_SESSION_KEY";
@@ -124,21 +122,21 @@ public class RtmpSession {
         if (!matcher.matches()) {
             throw new PluginImplementationException("Invalid RTMP url: " + url);
         }
-        logger.finest("parsing url: " + url);
+        logger.fine("parsing url: " + url);
         String protocol = matcher.group(1);
-        logger.finest("protocol = '" + protocol + "'");
+        logger.fine("protocol = '" + protocol + "'");
         String hostString = matcher.group(2);
-        logger.finest("host = '" + hostString + "'");
+        logger.fine("host = '" + hostString + "'");
         String portString = matcher.group(3);
         if (portString == null) {
-            logger.finest("port is null in url, will use default 1935");
+            logger.fine("port is null in url, will use default 1935");
         } else {
             portString = portString.substring(1); // skip the ':'
-            logger.finest("port = '" + portString + "'");
+            logger.fine("port = '" + portString + "'");
         }
         String appString = matcher.group(4);
-        logger.finest("app = '" + appString + "'");
-        logger.finest("play = '" + playName + "'");
+        logger.fine("app = '" + appString + "'");
+        logger.fine("play = '" + playName + "'");
         int portInt = portString == null ? 1935 : Integer.parseInt(portString);
         initConnectParams(hostString, portInt, appString, playName, protocol);
     }
@@ -155,22 +153,22 @@ public class RtmpSession {
         if (!matcher.matches()) {
             throw new PluginImplementationException("Invalid RTMP url: " + url);
         }
-        logger.finest("parsing url: " + url);
+        logger.fine("parsing url: " + url);
         String protocol = matcher.group(1);
-        logger.finest("protocol = '" + protocol + "'");
+        logger.fine("protocol = '" + protocol + "'");
         String hostString = matcher.group(2);
-        logger.finest("host = '" + hostString + "'");
+        logger.fine("host = '" + hostString + "'");
         String portString = matcher.group(3);
         if (portString == null) {
-            logger.finest("port is null in url, will use default 1935");
+            logger.fine("port is null in url, will use default 1935");
         } else {
             portString = portString.substring(1); // skip the ':'
-            logger.finest("port = '" + portString + "'");
+            logger.fine("port = '" + portString + "'");
         }
         String appString = matcher.group(4);
-        logger.finest("app = '" + appString + "'");
+        logger.fine("app = '" + appString + "'");
         String playString = matcher.group(5);
-        logger.finest("play = '" + playString + "'");
+        logger.fine("play = '" + playString + "'");
         int portInt = portString == null ? 1935 : Integer.parseInt(portString);
         initConnectParams(hostString, portInt, appString, playString, protocol);
     }
@@ -241,15 +239,15 @@ public class RtmpSession {
     }
 
     public void initSwfVerification(File localSwfFile) {
-        logger.fine("initializing swf verification data for: " + localSwfFile.getAbsolutePath());
+        logger.info("initializing swf verification data for: " + localSwfFile.getAbsolutePath());
         try {
             swfHash = new byte[32];
             swfSize = SwfVerificationHelper.getSwfHash(localSwfFile, swfHash);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        logger.fine("swf hash: " + Utils.toHex(swfHash, false));
-        logger.fine("swf size: " + swfSize);
+        logger.info("swf hash: " + Utils.toHex(swfHash, false));
+        logger.info("swf size: " + swfSize);
     }
 
     //==========================================================================

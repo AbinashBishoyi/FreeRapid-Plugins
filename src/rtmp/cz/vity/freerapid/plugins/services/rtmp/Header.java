@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.rtmp;
 
 import org.apache.mina.core.buffer.IoBuffer;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -225,11 +226,11 @@ public class Header {
             case TINY:
                 break;
         }
-        if (RtmpSession.DEBUG) {
+        if (logger.isLoggable(Level.FINE)) {
             byte[] bytes = new byte[out.position()];
             out.rewind();
             out.get(bytes);
-            logger.finest("encoded header: " + toString() + " --> " + Utils.toHex(bytes));
+            logger.fine("encoded header: " + toString() + " --> " + Utils.toHex(bytes));
         }
     }
 

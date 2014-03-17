@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.rtmp;
 
 import org.apache.mina.core.buffer.IoBuffer;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static cz.vity.freerapid.plugins.services.rtmp.Header.Type.*;
@@ -161,16 +162,16 @@ public class Packet {
             header.setRelative(prevPacket.header.isRelative());
         }
 
-        if (RtmpSession.DEBUG) {
+        if (logger.isLoggable(Level.FINE)) {
             byte[] bytes = new byte[in.position() - position];
             for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = in.get(position + i);
             }
             if (isNewPacket) {
-                logger.finest("====================");
-                logger.finest("starting new header: " + header + " <-- " + Utils.toHex(bytes));
+                logger.fine("====================");
+                logger.fine("starting new header: " + header + " <-- " + Utils.toHex(bytes));
             } else {
-                logger.finest("resumed prev header: " + header + " <-- " + Utils.toHex(bytes)
+                logger.fine("resumed prev header: " + header + " <-- " + Utils.toHex(bytes)
                         + "<-- " + prevPacket.header);
             }
         }

@@ -59,7 +59,7 @@ public class AmfObject {
             byte[] endMarker = new byte[3];
             in.get(endMarker);
             if (endMarker[0] == 0x00 && endMarker[1] == 0x00 && endMarker[2] == 0x09) {
-                logger.finest("decoded end marker: [00 00 09]");
+                logger.fine("decoded end marker: [00 00 09]");
                 return;
             }
             in.position(in.position() - 3);
@@ -83,7 +83,7 @@ public class AmfObject {
         for (AmfProperty property : properties) {
             property.encode(out);
         }
-        logger.finest("encoding end marker: [00 00 09]");
+        logger.fine("encoding end marker: [00 00 09]");
         out.put(new byte[]{0x00, 0x00, 0x09});
     }
 

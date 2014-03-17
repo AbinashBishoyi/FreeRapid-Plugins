@@ -111,16 +111,16 @@ class Handshake {
         DHPublicKey publicKey = (DHPublicKey) keyPair.getPublic();
         BigInteger dh_Y = publicKey.getY();
         byte[] result = dh_Y.toByteArray();
-        logger.finest("public key as bytes, len = [" + result.length + "]: " + Utils.toHex(result));
+        logger.fine("public key as bytes, len = [" + result.length + "]: " + Utils.toHex(result));
         byte[] temp = new byte[128];
         if (result.length < 128) {
             System.arraycopy(result, 0, temp, 128 - result.length, result.length);
             result = temp;
-            logger.finest("padded public key length to 128");
+            logger.fine("padded public key length to 128");
         } else if (result.length > 128) {
             System.arraycopy(result, result.length - 128, temp, 0, 128);
             result = temp;
-            logger.finest("truncated public key length to 128");
+            logger.fine("truncated public key length to 128");
         }
         return result;
     }
@@ -136,7 +136,7 @@ class Handshake {
             throw new RuntimeException(e);
         }
         byte[] sharedSecret = keyAgreement.generateSecret();
-        logger.finest("shared secret (" + sharedSecret.length + " bytes): " + Utils.toHex(sharedSecret));
+        logger.fine("shared secret (" + sharedSecret.length + " bytes): " + Utils.toHex(sharedSecret));
         return sharedSecret;
     }
 
@@ -160,7 +160,7 @@ class Handshake {
         buf.put(randomBytes);
         buf.flip();
         if (session.isEncrypted()) {
-            logger.fine("creating client handshake part 1 for encryption");
+            logger.info("creating client handshake part 1 for encryption");
             KeyPair keyPair = generateKeyPair(session);
             byte[] clientPublicKey = getPublicKey(keyPair);
             byte[] dhPointer = getFourBytesFrom(buf, HANDSHAKE_SIZE - 4);
@@ -168,7 +168,7 @@ class Handshake {
             buf.position(dhOffset);
             buf.put(clientPublicKey);
             session.setClientPublicKey(clientPublicKey);
-            logger.finest("client public key: " + Utils.toHex(clientPublicKey));
+            logger.fine("client public key: " + Utils.toHex(clientPublicKey));
 
             byte[] digestPointer = getFourBytesFrom(buf, 8);
             int digestOffset = calculateOffset(digestPointer, 728, 12);
@@ -207,7 +207,7 @@ class Handshake {
         session.setServerResponse(serverResponse);
 
         int typeNum = serverResponse[0];
-        logger.finest("Server sent RTMP type " + typeNum);
+        logger.fine("Server sent RTMP type " + typeNum);
         HandshakeType type = HandshakeType.valueOf(typeNum);
         session.setHandshakeType(type);
         if (!session.isEncrypted() && type.isEncrypted()) {
@@ -222,17 +222,17 @@ class Handshake {
         IoBuffer partOne = IoBuffer.allocate(HANDSHAKE_SIZE);
         partOne.put(serverResponse, 1, HANDSHAKE_SIZE);
         partOne.flip();
-        logger.finest("server response part 1: " + partOne);
+        logger.fine("server response part 1: " + partOne);
 
         if (session.isEncrypted()) {
-            logger.fine("processing server response for encryption");
+            logger.info("processing server response for encryption");
             byte[] serverTime = new byte[4];
             partOne.get(serverTime);
-            logger.finest("server time: " + Utils.toHex(serverTime));
+            logger.fine("server time: " + Utils.toHex(serverTime));
 
             byte[] serverVersion = new byte[4];
             partOne.get(serverVersion);
-            logger.finest("server version: " + Utils.toHex(serverVersion));
+            logger.fine("server version: " + Utils.toHex(serverVersion));
 
             byte[] digestPointer = new byte[4]; // position 8
             partOne.get(digestPointer);
@@ -252,14 +252,14 @@ class Handshake {
 
             byte[] serverPublicKey = new byte[128];
             if (Arrays.equals(digest, serverDigest)) {
-                logger.fine("type 1 digest comparison success");
+                logger.info("type 1 digest comparison success");
                 byte[] dhPointer = getFourBytesFrom(partOne, HANDSHAKE_SIZE - 4);
                 int dhOffset = calculateOffset(dhPointer, 632, 772);
                 partOne.position(dhOffset);
                 partOne.get(serverPublicKey);
                 session.setServerDigest(serverDigest);
             } else {
-                logger.fine("type 1 digest comparison failed, trying type 2 algorithm");
+                logger.info("type 1 digest comparison failed, trying type 2 algorithm");
                 digestPointer = getFourBytesFrom(partOne, 772);
                 digestOffset = calculateOffset(digestPointer, 728, 776);
                 message = new byte[messageLength];
@@ -273,7 +273,7 @@ class Handshake {
                 partOne.position(digestOffset);
                 partOne.get(serverDigest);
                 if (Arrays.equals(digest, serverDigest)) {
-                    logger.fine("type 2 digest comparison success");
+                    logger.info("type 2 digest comparison success");
                     byte[] dhPointer = getFourBytesFrom(partOne, 768);
                     int dhOffset = calculateOffset(dhPointer, 632, 8);
                     partOne.position(dhOffset);
@@ -283,7 +283,7 @@ class Handshake {
                     throw new RuntimeException("digest comparison failed");
                 }
             }
-            logger.finest("server public key: " + Utils.toHex(serverPublicKey));
+            logger.fine("server public key: " + Utils.toHex(serverPublicKey));
             byte[] sharedSecret = getSharedSecret(serverPublicKey, session.getKeyAgreement());
 
             byte[] digestOut = Utils.sha256(serverPublicKey, sharedSecret);
@@ -309,7 +309,7 @@ class Handshake {
         partTwo.put(serverResponse, 1 + HANDSHAKE_SIZE, HANDSHAKE_SIZE);
         partTwo.flip();
 
-        logger.finest("server response part 2: " + partTwo);
+        logger.fine("server response part 2: " + partTwo);
 
         // validate server response part 2, not really required for client, but just to show off ;)
         if (session.isEncrypted()) {
@@ -327,7 +327,7 @@ class Handshake {
             byte[] serverSignature = new byte[SHA256_LEN];
             partTwo.get(serverSignature);
             if (Arrays.equals(signature, serverSignature)) {
-                logger.fine("server response part 2 validation success");
+                logger.info("server response part 2 validation success");
             } else {
                 logger.warning("server response part 2 validation failed, not Flash Player v9/v10 handshake?");
             }
@@ -350,7 +350,7 @@ class Handshake {
             swfv.flip();
             swfv.get(swfvBytes);
             session.setSwfVerification(swfvBytes);
-            logger.fine("calculated swf verification response: " + Utils.toHex(swfvBytes));
+            logger.info("calculated swf verification response: " + Utils.toHex(swfvBytes));
         }
 
         return true;
@@ -358,7 +358,7 @@ class Handshake {
 
     public static Handshake generateClientRequest2(RtmpSession session) {
         if (session.isEncrypted()) {
-            logger.fine("creating client handshake part 2 for encryption");
+            logger.info("creating client handshake part 2 for encryption");
             byte[] randomBytes = new byte[HANDSHAKE_SIZE];
             Random random = new Random();
             random.nextBytes(randomBytes);

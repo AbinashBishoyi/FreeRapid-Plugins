@@ -139,7 +139,7 @@ public class AmfProperty {
                 value = decodeString(in);
                 break;
             case OBJECT:
-                logger.finest("decoding nested object");
+                logger.fine("decoding nested object");
                 AmfObject object = new AmfObject();
                 object.decode(in, true);
                 value = object;
@@ -148,7 +148,7 @@ public class AmfProperty {
                 break;
             case ARRAY:
                 int arraySize = in.getInt();
-                logger.finest("decoding nested array of size: " + arraySize);
+                logger.fine("decoding nested array of size: " + arraySize);
                 AmfObject array = new AmfObject();
                 for (int i = 0; i < arraySize; i++) {
                     AmfProperty prop = new AmfProperty();
@@ -159,7 +159,7 @@ public class AmfProperty {
                 break;
             case MAP:
                 in.getInt(); // will always be 0
-                logger.finest("decoding map (name value pairs)");
+                logger.fine("decoding map (name value pairs)");
                 AmfObject map = new AmfObject();
                 map.decode(in, true);
                 value = map;
@@ -180,11 +180,11 @@ public class AmfProperty {
             default:
                 throw new RuntimeException("unknown type");
         }
-        logger.finest("decoded property: " + toString());
+        logger.fine("decoded property: " + toString());
     }
 
     public void encode(IoBuffer out) {
-        logger.finest("encoding property: " + toString());
+        logger.fine("encoding property: " + toString());
         if (name != null) {
             encodeString(out, name);
         }
@@ -203,12 +203,12 @@ public class AmfProperty {
             case NULL:
                 break;
             case OBJECT:
-                logger.finest("encoding nested object");
+                logger.fine("encoding nested object");
                 AmfObject object = (AmfObject) value;
                 object.encode(out);
                 break;
             case MAP:
-                logger.finest("encoding nested map");
+                logger.fine("encoding nested map");
                 out.putInt(0);
                 AmfObject map = (AmfObject) value;
                 for (AmfProperty prop : map.getProperties()) {
@@ -216,7 +216,7 @@ public class AmfProperty {
                 }
                 break;
             case ARRAY:
-                logger.finest("encoding nested array");
+                logger.fine("encoding nested array");
                 AmfObject array = (AmfObject) value;
                 out.putInt(array.getProperties().size());
                 for (AmfProperty prop : array.getProperties()) {

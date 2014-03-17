@@ -20,7 +20,7 @@ class RtmpeIoFilter extends IoFilterAdapter {
         RtmpSession session = RtmpSession.getFrom(ioSession);
         final int bytesReadSoFar = (int) ioSession.getReadBytes();    // TODO what if bigger than int ?
         if (bytesReadSoFar > session.getBytesReadLastSent() + 600 * 1024) {
-            logger.fine("sending bytes read " + bytesReadSoFar);
+            logger.info("sending bytes read " + bytesReadSoFar);
             session.send(Packet.bytesRead(bytesReadSoFar));
             session.setBytesReadLastSent(bytesReadSoFar);
         }

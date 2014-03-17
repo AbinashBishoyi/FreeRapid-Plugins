@@ -80,7 +80,14 @@ class FilePostFileRunner extends AbstractRunner {
                 logger.info(content);
 
                 if (content.contains("wait_time")) {
-                    int wait = PlugUtils.getNumberBetween(content, "\"wait_time\":\"", "\"}}");
+                    int wait = 60;
+                    try {
+                        // please don't use PlugUtils.getNumberBetween, as it will throw exception on negative time value
+                        // which is perfectly valid, see the logic below
+                        wait = Integer.parseInt(PlugUtils.getStringBetween(content, "\"wait_time\":\"", "\"}}"));
+                    } catch (NumberFormatException ignored) {
+                    }
+
                     logger.info("wait: " + wait);
 
                     if (wait > 0) {

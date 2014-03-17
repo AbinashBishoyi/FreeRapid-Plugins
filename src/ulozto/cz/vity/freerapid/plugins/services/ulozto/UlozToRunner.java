@@ -102,20 +102,30 @@ class UlozToRunner extends AbstractRunner {
         if (getContentAsString().contains("soubor nebyl nalezen")) {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
         }
-        Matcher m = Pattern.compile("<h2 class=\"nadpis\"[^>]*><a href=\"[^\"]*\">([^<]+)</a>").matcher(content);
-        if (!m.find()) throw new PluginImplementationException("Cannot find filename");
 
-        httpFile.setFileName(m.group(1));
-        m = Pattern.compile("<div class=\"info_velikost\"[^>]*>\\s*<div>\\s*(?:.+\\| *)?([^<\\|]+)\\s*</div>").matcher(content);
+        String fileName = null;
+        try {
+            fileName = PlugUtils.getStringBetween(getContentAsString(), "- ", "</title>");
+        } catch (PluginImplementationException e) {
+            Matcher m = Pattern.compile("<h2 class=\"nadpis\"[^>]*><a href=\"[^\"]*\">([^<]+)</a>").matcher(content);
+            if (!m.find()) {
+                throw new PluginImplementationException("Cannot find filename");
+            }
+            fileName = m.group(1);
+        }
+
+
+        httpFile.setFileName(fileName);
+        Matcher m = Pattern.compile("<div class=\"info_velikost\"[^>]*>\\s*<div>\\s*(?:.+\\| *)?([^<\\|]+)\\s*</div>").matcher(content);
         if (!m.find()) throw new PluginImplementationException("Cannot find filesize");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(m.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private HttpMethod stepCaptcha() throws Exception {
-        if(getContentAsString().contains("Please click here to continue")) {
-           logger.info("Using HTML redirect");
-           return getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Please click here to continue").toGetMethod();
+        if (getContentAsString().contains("Please click here to continue")) {
+            logger.info("Using HTML redirect");
+            return getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Please click here to continue").toGetMethod();
         }
         CaptchaSupport captchaSupport = getCaptchaSupport();
         MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");

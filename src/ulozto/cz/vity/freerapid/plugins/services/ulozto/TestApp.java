@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.uloz.to/1579588/7-harry-potter-a-relikvie-smrti-kniha-mp3-svet-warez-cz-part2-rar"));
-            httpFile.setNewURL(new URL("http://www.ulozto.cz/7098526/la-professoressa-lingur-italia-porno-pantyhose-incest-mature-gangbang-mpg"));
+            httpFile.setNewURL(new URL("http://www.ulozto.sk/9278001/scooby-doo-a-scrappy-doo-scoobyho-predkove-avi"));
             testRun(new UlozToServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

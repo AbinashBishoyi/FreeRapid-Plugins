@@ -194,11 +194,12 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             Video selectedVideo;
             setConfig();
             if (makeRequest(getPlayListMethod)) {
-                if (!getContentAsString().startsWith("http")) {
-                    throw new PluginImplementationException("Server returned invalid playlist URL");
+                final Matcher matcher = getMatcherAgainstContent("(http://[^<>]+)");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Playlist URL not found");
                 }
-                final String playlistURL = getContentAsString();
-                final HttpMethod playlistMethod = new GetMethod(URLDecoder.decode(playlistURL, "UTF-8"));
+                final String playlistUrl = URLDecoder.decode(matcher.group(1), "UTF-8").replace("hashedId", "id");
+                final HttpMethod playlistMethod = new GetMethod(playlistUrl);
                 if (!makeRedirectedRequest(playlistMethod)) {
                     throw new PluginImplementationException("Cannot connect to playlist");
                 }

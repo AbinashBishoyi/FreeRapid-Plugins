@@ -59,22 +59,34 @@ class UploadedtoFileRunner extends AbstractRunner {
         addCookie(new Cookie(".uploaded.net", "lang", "en", "/", 86400, false));
         login();
         HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        if (fileURL.contains("/f/") || fileURL.contains("/folder/")) {
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            List<URI> list = new LinkedList<URI>();
+            final Matcher m = PlugUtils.matcher("<h2><a href=\"(.+?)/from/", getContentAsString());
+            while (m.find()) {
+                list.add(new URI("http://uploaded.net/" + m.group(1).trim()));
+            }
+            if (list.isEmpty()) throw new PluginImplementationException("No links found");
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+            httpFile.setFileName("Link(s) Extracted !");
+            httpFile.setState(DownloadState.COMPLETED);
+            httpFile.getProperties().put("removeCompleted", true);
+            return;
+        }
+
+        int httpStatus = client.makeRequest(method, false);
+        if (httpStatus / 100 == 3) {    // direct download
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
+            }
+        } else if (httpStatus == 200) {
             checkProblems();
             checkNameAndSize();
-            if (fileURL.contains("/f/") || fileURL.contains("/folder/")) {
-                List<URI> list = new LinkedList<URI>();
-                final Matcher m = PlugUtils.matcher("<h2><a href=\"(.+?)/from/", getContentAsString());
-                while (m.find()) {
-                    list.add(new URI("http://uploaded.net/" + m.group(1).trim()));
-                }
-                if (list.isEmpty()) throw new PluginImplementationException("No links found");
-                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
-                httpFile.setFileName("Link(s) Extracted !");
-                httpFile.setState(DownloadState.COMPLETED);
-                httpFile.getProperties().put("removeCompleted", true);
-                return;
-            }
             method = getMethodBuilder().setActionFromFormWhereTagContains("Premium Download", true).toGetMethod();
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();

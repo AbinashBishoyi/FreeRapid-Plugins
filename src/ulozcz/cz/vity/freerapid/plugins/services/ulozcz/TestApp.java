@@ -1,6 +1,5 @@
 package cz.vity.freerapid.plugins.services.ulozcz;
 
-import cz.vity.freerapid.plugins.services.nahrajcz.NahrajCzServiceImpl;
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
@@ -19,12 +18,12 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             httpFile.setNewURL(new URL("http://www.uloz.cz/show/file/86271-Simpsonovi.18x09.Kill.Gil-prvni.a.druhy.dil.avi"));
             //httpFile.setNewURL(new URL("http://www.uloz.cz/show/file/98355-putty.exe"));
-            
+
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final NahrajCzServiceImpl service = new NahrajCzServiceImpl(); //instance of service - of our plugin
+            final UlozCzServiceImpl service = new UlozCzServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

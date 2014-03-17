@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.ulozto.UlozToServiceImpl"
-        id="uloz.to" vendor="Lukiz+JPEXS" version="1.0.20">
+<plugin class="cz.vity.freerapid.plugins.services.rajce.RajceServiceImpl"
+        id="rajce.cz" vendor="Vity" version="1.0.2">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(uloz\.to|ulozto\.net|ulozto\.cz|ulozto\.sk)/.+"/>
+        <attribute id="urlRegex" value="http://(.*?\.)?rajce\.idnes\.cz/.*"/>
         <attribute id="minver" value="0.851"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="uloz.to"/>
+        <attribute id="services" value="rajce.idnes.cz"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="uloz.to" path="/" type="code"/>
+        <library id="rajce.cz" path="/" type="code"/>
     </runtime>
 </plugin>

@@ -33,7 +33,7 @@ class UlozToRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).setParameter("disclaimer", "1").toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
@@ -43,7 +43,7 @@ class UlozToRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
+        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).setParameter("disclaimer", "1").toHttpMethod();
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("captcha_user")) {
@@ -51,7 +51,7 @@ class UlozToRunner extends AbstractRunner {
                 checkNameAndSize(getContentAsString());
                 boolean saved = false;
                 captchaCount = 0;
-                while (getContentAsString().contains("captcha_user")) {
+                while (getContentAsString().contains("captcha_user") || getContentAsString().contains("?captcha=no")) {
                     client.getHTTPClient().getParams().setIntParameter(HttpClientParams.MAX_REDIRECTS, 8);
                     HttpMethod method = stepCaptcha();
                     method.setFollowRedirects(false);
@@ -63,7 +63,7 @@ class UlozToRunner extends AbstractRunner {
                     }
                     if (method.getStatusCode() == 302) {
                         String nextUrl = method.getResponseHeader("Location").getValue();
-                        method = getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).toHttpMethod();
+                        method = getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).setParameter("disclaimer", "1").toHttpMethod();
                         if (nextUrl.contains("captcha=no#cpt")) {
                             makeRequest(method);
                             logger.warning("Wrong captcha code");

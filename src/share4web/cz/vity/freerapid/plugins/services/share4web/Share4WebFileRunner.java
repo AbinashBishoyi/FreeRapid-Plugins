@@ -60,9 +60,13 @@ class Share4WebFileRunner extends AbstractRunner {
             }
             checkProblems();
             final String timerURL = httpMethod.getURI().toString();
+            if (getContentAsString().contains("Download file!</a>")) {
+                httpMethod = getMethodBuilder().setReferer(timerURL).setActionFromAHrefWhereATagContains("Download file!").toPostMethod();
+            } else {
+                httpMethod = getMethodBuilder().setReferer(timerURL).setActionFromFormWhereTagContains("stepForm", true).toPostMethod();
+            }
             final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var timerRest =", ";", TimeUnit.SECONDS);
             downloadTask.sleep(waitTime + 1);
-            httpMethod = getMethodBuilder().setReferer(timerURL).setActionFromFormWhereTagContains("stepForm", true).toPostMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

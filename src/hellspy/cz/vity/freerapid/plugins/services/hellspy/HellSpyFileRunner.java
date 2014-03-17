@@ -111,15 +111,12 @@ class HellSpyFileRunner extends AbstractRunner {
 
     private void login() throws Exception {
         synchronized (HellSpyFileRunner.class) {
-
             if (cookies == null) {
                 logger.info("Logging in");
                 HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
                 if (!makeRedirectedRequest(httpMethod))
                     throw new ServiceConnectionProblemException();
-
                 setLanguage();
-
                 HellSpyServiceImpl service = (HellSpyServiceImpl) getPluginService();
                 PremiumAccount pa = service.getConfig();
                 if (!pa.isSet()) {
@@ -153,7 +150,17 @@ class HellSpyFileRunner extends AbstractRunner {
             } else {
                 for(Cookie c:cookies)
                     addCookie(c);
+                HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
+                if (!makeRedirectedRequest(httpMethod))
+                    throw new ServiceConnectionProblemException();
+                setLanguage();
             }
+
+            HttpMethod httpMethod = getGetMethod(SERVICE_WEB);
+                if (!makeRedirectedRequest(httpMethod))
+                    throw new ServiceConnectionProblemException();
+                setLanguage();
+
         }
     }
 

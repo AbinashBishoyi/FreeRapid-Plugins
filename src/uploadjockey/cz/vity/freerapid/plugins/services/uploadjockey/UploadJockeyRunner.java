@@ -7,11 +7,11 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.net.MalformedURLException;
+//import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import javax.swing.JOptionPane;
+//import javax.swing.JOptionPane;
 
 /**
  * @author Alex
@@ -81,14 +81,15 @@ class UploadJockeyRunner extends AbstractRunner {
 
                     if (ffOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(ffURL));
+                            this.httpFile.setPluginID("filefactory.com");
                     }  else
 
                     if (dpOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(dpURL));
-                            
+                            this.httpFile.setPluginID("depositfiles.com");
                     }
 
-                    this.httpFile.setPluginID("");
+                    
                     this.httpFile.setState(DownloadState.QUEUED);
 
                     
@@ -109,12 +110,12 @@ class UploadJockeyRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("was not found")) {
-            throw new URLNotAvailableAnymoreException("The page you requested was not found in our database.");
-        }
-    }
+    //private void checkProblems() throws ErrorDuringDownloadingException {
+    //    final String contentAsString = getContentAsString();
+    //    if (contentAsString.contains("was not found")) {
+    //        throw new URLNotAvailableAnymoreException("The page you requested was not found in our database.");
+    //    }
+    //}
 
         private String checkDepositFiles(String content) throws Exception {
         if (!content.contains("depositfiles")) {
@@ -143,26 +144,26 @@ class UploadJockeyRunner extends AbstractRunner {
             return "ok";
    }
     
-        private String checkUploadedto(String content) throws Exception {
+ //       private String checkUploadedto(String content) throws Exception {
+//
+//        if (!content.contains("uploaded.to")) {
+//            return "not available";
+//        }
+//        if (content.contains("File doesn")) {
+//            return "not available";
+//        }
+//
+//        Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
+//        if (matcher.find()) {
+//            final String fileSize = matcher.group(1);
+//            logger.info("File size " + fileSize);
+//            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
 
-        if (!content.contains("uploaded.to")) {
-            return "not available";
-        }
-        if (content.contains("File doesn")) {
-            return "not available";
-        }
-
-        Matcher matcher = PlugUtils.matcher("([0-9.]+ .B)", content);
-        if (matcher.find()) {
-            final String fileSize = matcher.group(1);
-            logger.info("File size " + fileSize);
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(fileSize));
-
-        } else return "not available";
+//        } else return "not available";
 //        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        return "ok";
+//        return "ok";
 
-    }
+//    }
         private String checkFileFactory(String contentAsString) throws URLNotAvailableAnymoreException, YouHaveToWaitException, InvalidURLOrServiceProblemException {
         Matcher matcher = PlugUtils.matcher("Size: ([0-9-\\.]* .B)", contentAsString);
         if (!matcher.find()) {

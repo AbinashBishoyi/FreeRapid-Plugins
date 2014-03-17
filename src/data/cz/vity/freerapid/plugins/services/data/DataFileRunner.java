@@ -7,7 +7,6 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
@@ -48,14 +47,20 @@ class DataFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final String downloadURL = dataurl(fileURL);
-            final HttpMethod httpMethod = getGetMethod(downloadURL);
-
-            //here is the download link extraction
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
+            final Matcher matcher = getMatcherAgainstContent("download_it\"><a href=\"(.*?)\"");
+            if (matcher.find()) {
+                final String downURL = matcher.group(1);
+                logger.info("downURL: " + downURL);
+                final GetMethod getmethod = getGetMethod(downURL);
+                if (!tryDownloadAndSaveFile(getmethod)) {
+                    checkProblems();
+                    logger.info(getContentAsString());
+                    throw new PluginImplementationException();
+                }
+            } else {
+                checkProblems();
+                logger.info(getContentAsString());
+                throw new PluginImplementationException();
             }
         } else {
             checkProblems();
@@ -68,19 +73,6 @@ class DataFileRunner extends AbstractRunner {
         if (contentAsString.contains("nem létezik")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-    }
-
-    private String dataurl(String url) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("data.hu/get/(.*?)$", url);
-        if (matcher.find()) {
-            url = "http://ddl.data.hu/get/0/" + matcher.group(1).trim();
-            url = url.replaceFirst(".html?", "");
-            logger.info("New url: " + url);
-        } else {
-            logger.warning("File url not found");
-            throw new URLNotAvailableAnymoreException("File not found");
-        }
-        return url;
     }
 
 }

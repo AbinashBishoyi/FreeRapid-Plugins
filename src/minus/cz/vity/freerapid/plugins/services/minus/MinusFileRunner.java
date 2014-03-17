@@ -92,6 +92,9 @@ class MinusFileRunner extends AbstractRunner {
         if (content.contains("The page you requested does not exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (content.contains("The folder you requested has been deleted or has expired")) {
+            throw new URLNotAvailableAnymoreException("Folder not found");
+        }
     }
 
     private boolean isPageAListing() {

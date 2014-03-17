@@ -108,7 +108,7 @@ class FileFactoryRunner {
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
             String contentAsString = client.getContentAsString();
-            Matcher matcher = Pattern.compile("Size: ([0-9-\\.]*) MB", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = Pattern.compile("Size: ([0-9-\\.]*) (.)B", Pattern.MULTILINE).matcher(contentAsString);
             if (!matcher.find()) {
                 if (contentAsString.contains("file has been deleted") || contentAsString.contains("file is no longer available")) {
                     throw new URLNotAvailableAnymoreException("This file has been deleted.");
@@ -120,7 +120,9 @@ class FileFactoryRunner {
                 }
             }
             String s = matcher.group(1);
-            httpFile.setFileSize((long) Float.parseFloat(s) * 1024 * 1024);
+            int factor = 1024;
+            if (matcher.group(2).contains("M")) factor=1024*1024;
+            httpFile.setFileSize((long) Float.parseFloat(s) * factor);
             //href="/dlf/f/a3f880/b/2/h/dd8f6f6df8ec3d79aef99536de9aab06/j/0/n/KOW_-_Monica_divx_002" id="basicLink"
             matcher = Pattern.compile("href=\"(.*?)\" id=\"basicLink\"", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {

@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, ntoskrnl, CapCap, Abinash Bishoyi
+ * @author Ladislav Vitasek, Ludek Zika, ntoskrnl, CapCap, Abinash Bishoyi, birchie
  */
 class UploadingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadingRunner.class.getName());
@@ -66,7 +66,7 @@ class UploadingRunner extends AbstractRunner {
             }
             downloadTask.sleep(Integer.parseInt(matcher.group(1)) + 1);
 
-            method = getMethodBuilder()       // get download link
+            method = getMethodBuilder()       // get link to download page
                     .setReferer(fileURL)
                     .setAction("http://uploading.com/files/get/?ajax")
                     .setParameter("action", "get_link")
@@ -76,10 +76,20 @@ class UploadingRunner extends AbstractRunner {
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
-                throw new ServiceConnectionProblemException("Error getting download link");
+                throw new ServiceConnectionProblemException("Error getting link to download page");
             }
             checkProblems();
             matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download page link not found");
+            }
+            method = getGetMethod((matcher.group(1).replace("\\/", "/")));
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error getting download page");
+            }
+            checkProblems();
+            matcher = getMatcherAgainstContent("\"file_form\"\\s+?action=\"(http.+?)\"");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Download link not found");
             }

@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.pbs;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
@@ -74,14 +71,11 @@ class PbsFileRunner extends AbstractRtmpRunner {
         if (location == null) {
             throw new PluginImplementationException("No redirect location");
         }
-        final String[] rtmpData = location.getValue().split("<break>");
+        final String[] rtmpData = location.getValue().split("mp4:");
         if (rtmpData.length != 2) {
             throw new PluginImplementationException("Error parsing RTMP URL");
         }
-        final RtmpSession rtmpSession = new RtmpSession(rtmpData[0], rtmpData[1]);
-        if (rtmpSession.getPlayName().contains(".mp4") && !rtmpSession.getPlayName().startsWith("mp4:")) {
-            rtmpSession.setPlayName("mp4:" + rtmpSession.getPlayName());
-        }
+        final RtmpSession rtmpSession = new RtmpSession(rtmpData[0], "mp4:" + rtmpData[1]);
         rtmpSession.getConnectParams().put("pageUrl", fileURL);
         tryDownloadAndSaveFile(rtmpSession);
     }
@@ -89,6 +83,9 @@ class PbsFileRunner extends AbstractRtmpRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("We were unable to find the page that was requested")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("unavailable in your region")) {
+            throw new NotRecoverableDownloadException("This video is not available in your region");
         }
         if (getContentAsString().contains("Media is not available")) {
             throw new PluginImplementationException("Media is not available");

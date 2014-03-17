@@ -2,102 +2,103 @@ package cz.vity.freerapid.plugins.services.rapidshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.HttpMethod;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek
+ * @author Ladislav Vitasek, ntoskrnl
  */
 class RapidShareRunner extends AbstractRunner {
-
     private final static Logger logger = Logger.getLogger(RapidShareRunner.class.getName());
+    private final static String SERVICE_WEB = "http://rapidshare.com/";
     private PluginContext context;
+    private String fileID;
+    private String fileName;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
-            enterCheck();
-        } else
-            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+        checkURL();
+        final HttpMethod method = getMethodBuilder()
+                .setReferer(SERVICE_WEB)
+                .setAction("http://api.rapidshare.com/cgi-bin/rsapi.cgi")
+                .setParameter("sub", "download_v1")
+                .setParameter("fileid", fileID)
+                .setAndEncodeParameter("filename", fileName)
+                .setParameter("try", "1")
+                .setParameter("cbf", "RSAPIDispatcher")
+                .setParameter("cbid", "1")
+                .toGetMethod();
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         context = getPluginService().getPluginContext();
-
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
-            enterCheck();
-            Matcher matcher = getMatcherAgainstContent("form id=\"ff\" action=\"([^\"]*)\"");
-            if (!matcher.find()) {
-                throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
-            }
-            String s = matcher.group(1);
-            logger.info("Found File URL - " + s);
-            client.setReferer(fileURL);
-            final PostMethod postMethod = getPostMethod(s);
-            postMethod.addParameter("dl.start", "Free");
-            if (makeRequest(postMethod)) {
-                matcher = getMatcherAgainstContent("var c=([0-9]+);");
-                if (!matcher.find()) {
-                    checkProblems();
-                    logger.warning(getContentAsString());
-                    throw new PluginImplementationException();
-                }
-                s = matcher.group(1);
-
-                int seconds = new Integer(s);
-                matcher = getMatcherAgainstContent("form name=\"dlf\" action=\"([^\"]*)\"");
-                if (matcher.find()) {
-                    s = matcher.group(1);
-                    logger.info("Download URL: " + s);
-                    String myUrl = getPrefferedMirror();
-                    if (!"".equals(myUrl)) s = myUrl;
-                    //implemented http://wordrider.net/forum/read.php?11,3017,3028#msg-3028
-                    int i1 = s.toLowerCase().indexOf("http://");
-                    if (i1 == 0) {
-                        i1 += "http://".length();
-                        final int i2 = s.indexOf('/', i1);
-                        if (i2 > 0) {
-                            final String subs = s.substring(i1, i2);
-                            String ip = translateToIP(subs);
-                            logger.info("Changing " + subs + " to " + ip);
-                            s = new StringBuilder(s).replace(i1, i2, ip).toString();
-                        }
-                    }
-                    downloadTask.sleep(seconds + 1);
-                    final PostMethod method = getPostMethod(s);
-                    method.addParameter("mirror", "on");
-
-                    if (!tryDownloadAndSaveFile(method)) {
-                        checkProblems();
-                        logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty.");
-                    }
-                } else {
-                    checkProblems();
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
-                }
-            } else
-                throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
-        } else
-            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+        runCheck();
+        final Matcher matcher = getMatcherAgainstContent("DL:(.+?),(.+?),(\\d+)");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing API response");
+        }
+        final int wait = Integer.parseInt(matcher.group(3)) + 1;
+        String host = matcher.group(1);
+        final String prefer = getPreferredMirror();
+        if (prefer != null && !prefer.isEmpty()) host = prefer;
+        host = translateToIP(host);
+        final HttpMethod method = getMethodBuilder()
+                .setReferer(SERVICE_WEB)
+                .setAction("http://" + host + "/cgi-bin/rsapi.cgi")
+                .setParameter("sub", "download_v1")
+                .setParameter("editparentlocation", "1")
+                .setParameter("bin", "1")
+                .setParameter("fileid", fileID)
+                .setAndEncodeParameter("filename", fileName)
+                .setParameter("dlauth", matcher.group(2))
+                .toGetMethod();
+        downloadTask.sleep(wait);
+        if (!tryDownloadAndSaveFile(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException("Error starting download");
+        }
     }
 
-    private String getPrefferedMirror() throws Exception {
+    private void checkURL() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("/files/(\\d+)/(.+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing file URL");
+        }
+        fileID = matcher.group(1);
+        fileName = matcher.group(2);
+        httpFile.setFileName(fileName);
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("File not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        Matcher matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds[^\"']*");
+        if (matcher.find()) {
+            throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1) + 10));
+        }
+        matcher = getMatcherAgainstContent("ERROR:([^\"']+)");
+        if (matcher.find()) {
+            throw new NotRecoverableDownloadException("RapidShare error: " + matcher.group(1));
+        }
+    }
+
+    private String getPreferredMirror() throws Exception {
         RapidShareServiceImpl service = (RapidShareServiceImpl) getPluginService();
         RapidShareMirrorConfig config = service.getConfig();
         MirrorChooser chooser = new MirrorChooser(context, config);
@@ -105,6 +106,7 @@ class RapidShareRunner extends AbstractRunner {
         return chooser.getPreferredURL(getContentAsString());
     }
 
+    /*
     private void enterCheck() throws ErrorDuringDownloadingException {
         Matcher matcher;
         if (!getContentAsString().contains("form id=\"ff\" action=")) {
@@ -192,14 +194,31 @@ class RapidShareRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("There are no more download slots available for free users right now");
         }
     }
+    */
 
-    private static String translateToIP(final String value) {
+    private static String translateToIP(String s) {
+        //implemented http://wordrider.net/forum/read.php?11,3017,3028#msg-3028
+        int i1 = s.toLowerCase().indexOf("http://");
+        if (i1 == 0) {
+            i1 += "http://".length();
+            final int i2 = s.indexOf('/', i1);
+            if (i2 > 0) {
+                final String subs = s.substring(i1, i2);
+                String ip = hostToIP(subs);
+                logger.info("Changing " + subs + " to " + ip);
+                s = new StringBuilder(s).replace(i1, i2, ip).toString();
+            }
+        }
+        return s;
+    }
+
+    private static String hostToIP(final String value) {
         try {
             InetAddress addr = InetAddress.getByName(value);
             byte[] ipAddr = addr.getAddress();
 
             // Convert to dot representation
-            StringBuilder ipAddrStr = new StringBuilder(20);
+            StringBuilder ipAddrStr = new StringBuilder(15);
             final int length = ipAddr.length;
             for (int i = 0; i < length; i++) {
                 if (i > 0) {

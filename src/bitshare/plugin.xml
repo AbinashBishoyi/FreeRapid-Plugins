@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.bitshare.BitShareServiceImpl"
-        id="bitshare.com" vendor="Stan" version="1.0.1">
+        id="bitshare.com" vendor="Stan" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bitshare\.com/.+"/>
         <attribute id="minver" value="0.851"/>
@@ -11,7 +11,8 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com" plugin-version="1.0" reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
+                plugin-version="1.0" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="bitshare.com" path="/" type="code"/>

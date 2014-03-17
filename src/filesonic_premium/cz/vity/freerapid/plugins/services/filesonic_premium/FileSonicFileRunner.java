@@ -44,7 +44,7 @@ class FileSonicFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<span>Filename: </span> <strong>", "</strong>");
+        PlugUtils.checkName(httpFile, content, "<title>Download ", " for free on Filesonic.com</title>");
         PlugUtils.checkFileSize(httpFile, content, "<span class=\"size\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

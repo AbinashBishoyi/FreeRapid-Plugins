@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -45,6 +46,13 @@ class BitShareFileRunner extends AbstractRunner {
         PlugUtils.checkName(httpFile, content, "<h1>Downloading ", " - ");
         PlugUtils.checkFileSize(httpFile, content, " - ", "</h1>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        final int i = fileURL.lastIndexOf('/');
+        if (i > 0) {
+            final int i2 = fileURL.toLowerCase(Locale.ENGLISH).lastIndexOf(".html");
+            if (i2 > i) {
+                httpFile.setFileName(fileURL.substring(i + 1, i2));
+            }
+        }
     }
 
     @Override
@@ -85,7 +93,7 @@ class BitShareFileRunner extends AbstractRunner {
         downloadTask.sleep(Integer.parseInt(typeTimeCaptcha[1])); // waiting
 
         if (Integer.parseInt(typeTimeCaptcha[2]) == 1) { // recognize captcha if is necessary
-            while (!getContentAsString().equals("SUCCESS")) {
+            while (!"SUCCESS".equals(getContentAsString())) {
                 checkProblems();
                 if (!makeRequest(stepCaptcha(content, action, ajaxdl))) {
                     checkProblems();
@@ -102,8 +110,8 @@ class BitShareFileRunner extends AbstractRunner {
 
         if (makeRequest(postMethodForUrl)) {
             final HttpMethod getMethodForDownload = getMethodBuilder()
-                  .setAction(getContentAsString().substring("SUCCESS#".length()))
-                  .setReferer(fileURL).toGetMethod();
+                    .setAction(getContentAsString().substring("SUCCESS#".length()))
+                    .setReferer(fileURL).toGetMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(getMethodForDownload)) {

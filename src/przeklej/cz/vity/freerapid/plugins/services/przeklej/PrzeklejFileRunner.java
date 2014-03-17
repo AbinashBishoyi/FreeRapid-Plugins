@@ -46,6 +46,7 @@ class PrzeklejFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
+            //<a class="download" href="/download/0001pbb7n03p/testbitmap-rar" >Pobierz plik</a>
             final String finalURL = "http://przeklej.pl" + PlugUtils.getStringBetween(contentAsString, "a class=\"download\" href=\"", "\" >Pobierz plik");
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(finalURL).toHttpMethod();
             //here is the download link extraction

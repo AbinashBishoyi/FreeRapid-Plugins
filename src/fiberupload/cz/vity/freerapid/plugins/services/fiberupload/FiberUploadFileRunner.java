@@ -1,239 +1,107 @@
 package cz.vity.freerapid.plugins.services.fiberupload;
 
-import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
-import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
-import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
  * @author tong2shot
  */
-class FiberUploadFileRunner extends AbstractRunner {
+class FiberUploadFileRunner extends XFileSharingRunner {
     private final static Logger logger = Logger.getLogger(FiberUploadFileRunner.class.getName());
-    private final static String SERVICE_TITLE = "FiberUpload";
-    private final static String SERVICE_COOKIE_DOMAIN = ".fiberupload.com";
-    private final static String SERVICE_LOGIN_REFERER = "http://fiberupload.com/login.html";
-    private final static String SERVICE_LOGIN_ACTION = "http://fiberupload.com";
 
     @Override
-    public void runCheck() throws Exception {
-        super.runCheck();
-        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "english", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            checkFileProblems();
-            checkNameAndSize(getContentAsString());
-        } else {
-            checkFileProblems();
-            throw new ServiceConnectionProblemException();
-        }
+    protected List<FileSizeHandler> getFileSizeHandlers() {
+        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
+        fileSizeHandlers.add(0, new FiberUploadFileSizeHandler());
+        return fileSizeHandlers;
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher filenameMatcher = PlugUtils.matcher("<h2>Download File :<font.*?> (.+) -", content);
-        final Matcher filesizeMatcher = PlugUtils.matcher("(?:.+) - (.+?)</font></h2>", content);
-        if (filenameMatcher.find()) {
-            final String fileName = filenameMatcher.group(1).trim();
-            logger.info("File name " + fileName);
-            httpFile.setFileName(fileName);
-        } else {
-            throw new PluginImplementationException("File name not found");
-        }
-
-        if (filesizeMatcher.find()) {
-            final String fileSize = filesizeMatcher.group(1);
-            logger.info("File size " + fileSize);
-            final long size = PlugUtils.getFileSizeFromString(fileSize);
-            httpFile.setFileSize(size);
-        } else {
-            throw new PluginImplementationException("File size not found");
-        }
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    }
-
-    private boolean login() throws Exception {
-        synchronized (FiberUploadFileRunner.class) {
-            FiberUploadServiceImpl service = (FiberUploadServiceImpl) getPluginService();
-            PremiumAccount pa = service.getConfig();
-
-            //for testing purpose
-            //pa.setPassword("freerapid");
-            //pa.setUsername("freerapid2");
-            if (pa == null || !pa.isSet()) {
-                logger.info("No account data set, skipping login");
-                return false;
-            }
-            final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(SERVICE_LOGIN_REFERER)
-                    .setAction(SERVICE_LOGIN_ACTION)
-                    .setParameter("op", "login")
-                    .setParameter("redirect", "")
-                    .setParameter("login", pa.getUsername())
-                    .setParameter("password", pa.getPassword())
-                    .setParameter("submit", "")
-                    .toPostMethod();
-            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "login", pa.getUsername(), "/", null, false));
-            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "xfss", "", "/", null, false));
-            if (!makeRedirectedRequest(httpMethod))
-                throw new ServiceConnectionProblemException("Error posting login info");
-            if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new BadLoginException("Invalid " + SERVICE_TITLE + "registered account login information!");
-
-            return true;
-        }
+    @Override
+    protected List<FileNameHandler> getFileNameHandlers() {
+        final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
+        fileNameHandlers.add(0, new FiberUploadFileNameHandler());
+        return fileNameHandlers;
     }
 
     @Override
     public void run() throws Exception {
-        super.run();
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko Firefox/11.0");
-        login();
+        setLanguageCookie();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "english", "/", 86400, false));
-        GetMethod method = getGetMethod(fileURL);
+        login();
+        HttpMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
-            logger.warning(getContentAsString());
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
         checkFileProblems();
-        checkNameAndSize(getContentAsString());
-
-        HttpMethod httpMethod = getMethodBuilder()
-                .setReferer(fileURL)
-                .setBaseURL(fileURL)
-                .setActionFromFormWhereTagContains("method_free", true)
-                .removeParameter("method_premium")
-                .toPostMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();
-            logger.warning(getContentAsString());
-            throw new ServiceConnectionProblemException();
-        }
+        checkNameAndSize();
         checkDownloadProblems();
-
-        String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
-        Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, getContentAsString());
-        if (waitTimematcher.find()) {
-            downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)));
-        }
-
-        String password = "";
-        if (isPassworded()) {
-            password = getDialogSupport().askForPassword(SERVICE_TITLE);
-            if (password == null) {
-                throw new NotRecoverableDownloadException("This file is secured with a password");
+        for (int loopCounter = 0; ; loopCounter++) {
+            if (loopCounter >= 8) {
+                //avoid infinite loops
+                throw new PluginImplementationException("Cannot proceed to download link");
             }
-        }
-        while (getContentAsString().contains("recaptcha/api/challenge")) {
-            MethodBuilder methodBuilder = getMethodBuilder()
+            final MethodBuilder methodBuilder = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromFormByName("F1", true)
-                    .setAction(fileURL)
-                    .removeParameter("method_premium");
-            if (isPassworded()) {
-                methodBuilder.setParameter("password", password);
+                    .setActionFromFormWhereTagContains("method_free", true)
+                    .setAction(fileURL);
+            if (!methodBuilder.getParameters().get("method_free").isEmpty()) {
+                methodBuilder.removeParameter("method_premium");
             }
-            httpMethod = stepCaptcha(methodBuilder);
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkDownloadProblems();
-                throw new ServiceConnectionProblemException();
+            final int waitTime = getWaitTime();
+            final long startTime = System.currentTimeMillis();
+            stepPassword(methodBuilder);
+            if (!stepCaptcha(methodBuilder)) {                // skip the wait timer if its on the same page
+                sleepWaitTime(waitTime, startTime);           //   as a captcha of type ReCaptcha
             }
+            method = methodBuilder.toPostMethod();
+            final int httpStatus = client.makeRequest(method, false);
+            if (httpStatus / 100 == 3) {
+                //redirect to download file location
+                final Header locationHeader = method.getResponseHeader("Location");
+                if (locationHeader == null) {
+                    throw new PluginImplementationException("Invalid redirect");
+                }
+                //this code is slightly different from super.run(), that's why we need to override it.
+                final String downloadFileURL = locationHeader.getValue();
+                logger.info("download file URL : " + downloadFileURL);
+                method = getMethodBuilder()
+                        .setReferer(downloadFileURL)
+                        .setAction(downloadFileURL.replaceAll(httpFile.getFileName(), "GO/" + httpFile.getFileName()))
+                        .toGetMethod();
+                break;
+            } else if (getContentAsString().contains("File Download Link Generated")
+                    || getContentAsString().contains("This direct link will be ")) {
+                //page containing download link
+                final Matcher matcher = getMatcherAgainstContent("<a href=\"(http.+?" + Pattern.quote(httpFile.getFileName()) + ")\"");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Download link not found");
+                }
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction(matcher.group(1))
+                        .toGetMethod();
+                break;
+            }
+            checkDownloadProblems();
         }
-        checkDownloadProblems();
-
-        Header header = httpMethod.getResponseHeader("Location");
-        if (header == null) {
-            throw new PluginImplementationException("Invalid redirect");
-        }
-        final String downloadFileURL = header.getValue();
-        logger.info("download file URL : " + downloadFileURL);
-        httpMethod = getMethodBuilder()
-                .setReferer(downloadFileURL)
-                .setAction(downloadFileURL.replaceAll(httpFile.getFileName(), "GO/" + httpFile.getFileName()))
-                .toGetMethod();
-
-        if (!tryDownloadAndSaveFile(httpMethod)) {
+        setFileStreamContentTypes("text/plain");
+        if (!tryDownloadAndSaveFile(method)) {
             checkDownloadProblems();
             throw new ServiceConnectionProblemException("Error starting download");
         }
     }
-
-    private boolean isPassworded() {
-        return getContentAsString().contains("<input type=\"password\" name=\"password\" class=\"myForm\">");
-    }
-
-    private HttpMethod stepCaptcha(MethodBuilder methodBuilder) throws Exception {
-        final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha/api/challenge\\?k=(.*?)\">");
-        reCaptchaKeyMatcher.find();
-        final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
-        final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
-        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
-        }
-        r.setRecognized(captcha);
-
-        return r.modifyResponseMethod(methodBuilder).toPostMethod();
-    }
-
-    private void checkFileProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed")) {
-            throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (contentAsString.contains("server is in maintenance mode")) {
-            throw new YouHaveToWaitException("This server is in maintenance mode", 30 * 60 * 60);
-        }
-    }
-
-    private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("till next download")) {
-            String regexRule = "(?:([0-9]+) hours?, )?(?:([0-9]+) minutes?, )?(?:([0-9]+) seconds?) till next download";
-            Matcher matcher = PlugUtils.matcher(regexRule, contentAsString);
-            int waitHours = 0, waitMinutes = 0, waitSeconds = 0, waitTime;
-            if (matcher.find()) {
-                if (matcher.group(1) != null)
-                    waitHours = Integer.parseInt(matcher.group(1));
-                if (matcher.group(2) != null)
-                    waitMinutes = Integer.parseInt(matcher.group(2));
-                waitSeconds = Integer.parseInt(matcher.group(3));
-            }
-            waitTime = (waitHours * 60 * 60) + (waitMinutes * 60) + waitSeconds;
-            throw new YouHaveToWaitException("You have to wait " + waitTime + " seconds", waitTime);
-        }
-        if (contentAsString.contains("Undefined subroutine")) {
-            throw new PluginImplementationException("Server problem");
-        }
-        if (contentAsString.contains("file reached max downloads limit")) {
-            throw new PluginImplementationException("This file reached max downloads limit");
-        }
-        if (contentAsString.contains("You can download files up to")) {
-            throw new PluginImplementationException(PlugUtils.getStringBetween(contentAsString, "<div class=\"err\">", ".<br>"));
-        }
-        if (contentAsString.contains("have reached the download-limit")) {
-            throw new YouHaveToWaitException("You have reached the download-limit", 30 * 60 * 60);
-        }
-        if (contentAsString.contains("Error happened when generating Download Link")) {
-            throw new YouHaveToWaitException("Error happened when generating Download Link", 10 * 60 * 60);
-        }
-        if (contentAsString.contains("file is available to premium users only")) {
-            throw new PluginImplementationException("This file is available to premium users only");
-        }
-    }
-
 }

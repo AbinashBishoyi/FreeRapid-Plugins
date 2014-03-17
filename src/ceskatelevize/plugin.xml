@@ -8,7 +8,6 @@
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="ceskatelevize.cz"/>
         <attribute id="hasOptions" value="true"/>
-        <!-- TODO max count of parallel downloads -->
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

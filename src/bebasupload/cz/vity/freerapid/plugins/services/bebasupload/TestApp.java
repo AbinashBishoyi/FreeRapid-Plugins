@@ -2,34 +2,36 @@ package cz.vity.freerapid.plugins.services.bebasupload;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
 import java.net.URL;
 
 /**
- * @author Arthur Gunawan
+ * @author Arthur Gunawan, tong2shot
  */
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
-        final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
+        final HttpFile httpFile = getHttpFile();
         try {
-            //we set file URL
-            //httpFile.setNewURL(new URL("http://bebasupload.com/g6gw3vrilyd2"));
-            httpFile.setNewURL(new URL("http://bebasupload.com/l157n4cumn4p/www.indofiles.org_WNTTLKAKVN72PARNT.part1.rar.html"));
-            //the way we connect to the internet
-            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
+            httpFile.setNewURL(new URL("http://bebasupload.com/cvygx48g125a/IDFL.US-Steven.Jam.Feel.The.Vibration(FullAlbum).rar.html"));
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final BebasUploadServiceImpl service = new BebasUploadServiceImpl(); //instance of service - of our plugin
-            //runcheck makes the validation
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
-            //all output goes to the console
-        } catch (Exception e) {//catch possible exception
-            e.printStackTrace(); //writes error output - stack trace to console
+            final BebasUploadServiceImpl service = new BebasUploadServiceImpl();
+            //for testing purpose
+
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("freerapid");
+            config.setPassword("freerapid");
+            service.setConfig(config);
+
+            testRun(service, httpFile, connectionSettings);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        this.exit();//exit application
+        this.exit();
     }
 
     /**
@@ -39,6 +41,6 @@ public class TestApp extends PluginDevApplication {
      * @param args arguments for application
      */
     public static void main(String[] args) {
-        Application.launch(TestApp.class, args);//starts the application - calls startup() internally
+        Application.launch(TestApp.class, args);
     }
 }

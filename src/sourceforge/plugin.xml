@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.sourceforge.SourceForgeServiceImpl"
+        id="sourceforge.net" vendor="Abinash Bishoyi" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www|downloads\.)?sourceforge\.net/.+"/>
+        <attribute id="minver" value="0.852"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="sourceforge.net"/>
+        <attribute id="maxDownloads" value="10"/>
+        <attribute id="faviconImage" value="resources/icon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="sourceforge.net" path="/" type="code"/>
+    </runtime>
+</plugin>

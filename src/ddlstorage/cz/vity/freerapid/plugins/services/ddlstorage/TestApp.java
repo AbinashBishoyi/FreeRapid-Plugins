@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.ddlstorage.com/yp11q5rwogcb/bUNuO5CQruwO.part001.rev.htm"));
+            httpFile.setNewURL(new URL("http://www.ddlstorage.com/8gaqzz5s43jt"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final DdlStorageServiceImpl service = new DdlStorageServiceImpl();

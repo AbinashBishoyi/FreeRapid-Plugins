@@ -7,7 +7,6 @@
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="imagefap.com"/>
-        <!-- TODO max count of parallel downloads -->
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

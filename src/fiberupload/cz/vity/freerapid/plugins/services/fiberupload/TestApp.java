@@ -17,8 +17,16 @@ public class TestApp extends PluginDevApplication {
         try {
             httpFile.setNewURL(new URL("http://fiberupload.com/lnqp1xl8y6cp/LECGVIDBTS.zip"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("118.97.197.176", 80); //eg we can use local proxy to sniff HTTP communication
             final FiberUploadServiceImpl service = new FiberUploadServiceImpl();
+
+            //for testing purpose
+            /*
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("freerapid");
+            config.setPassword("freerapid");
+            service.setConfig(config);
+            */
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

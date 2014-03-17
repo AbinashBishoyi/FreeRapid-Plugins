@@ -7,9 +7,7 @@
                    value="http://(www\.)?(linkcrypt.ws|klnk.de|link-protector.com|link-safe.net|linkzip.net)/.+"/>
         <attribute id="minver" value="0.851"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services"
-                   value="linkcrypt.ws klnk.de link-protector.com link-safe.net linkx.in linkzip.net klnk.de"/>
-        <!-- TODO max count of parallel downloads -->
+        <attribute id="services" value="linkcrypt.ws klnk.de link-protector.com link-safe.net linkx.in linkzip.net klnk.de"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

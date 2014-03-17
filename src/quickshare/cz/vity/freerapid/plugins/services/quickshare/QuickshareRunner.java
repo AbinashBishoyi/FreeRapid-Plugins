@@ -1,47 +1,39 @@
 package cz.vity.freerapid.plugins.services.quickshare;
 
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
-import cz.vity.freerapid.plugins.webclient.*;
-import org.apache.commons.httpclient.HttpStatus;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
-import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
-class QuickshareRunner {
-    private final static Logger logger = Logger.getLogger(cz.vity.freerapid.plugins.services.quickshare.QuickshareRunner.class.getName());
-    private HttpDownloadClient client;
+class QuickshareRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(QuickshareRunner.class.getName());
+
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
 
     public void run(HttpFileDownloader downloader) throws Exception {
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        String fileURL = httpFile.getFileUrl().toString();
         logger.info("Starting download in TASK " + fileURL);
-
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
             if (client.getContentAsString().contains("var server")) {
-                Matcher matcher = PlugUtils.matcher("zev: <strong>([^<]*)</strong>", client.getContentAsString());
-                if (matcher.find()) {
-                    String fn = matcher.group(matcher.groupCount());
-                    logger.info("File name " + fn);
-                    httpFile.setFileName(fn);
-                }
-                matcher = PlugUtils.matcher("([0-9.]+)</strong>( .B)", client.getContentAsString());
-                if (matcher.find()) {
-                    Long a = PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2));
-                    logger.info("File size " + a);
-                    httpFile.setFileSize(a);
-                }
+                checkNameAndSize(client.getContentAsString());
                 downloader.sleep(5);
                 String server = getVar("server", client.getContentAsString());
                 String id1 = getVar("ID1", client.getContentAsString());
@@ -59,20 +51,10 @@ class QuickshareRunner {
                 method.addParameter("ID3", id3);
                 method.addParameter("ID4", id4);
 
-                httpFile.setState(DownloadState.GETTING);
-                try {
-                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                    if (inputStream != null) {
-                        downloader.saveToFile(inputStream);
-
-                    } else {
-                        checkProblems();
-                        logger.info(client.getContentAsString());
-                        throw new ServiceConnectionProblemException("Všechny volné sloty jsou obsazeny nebo se z této IP již stahuje");
-                    }
-                } finally {
-                    method.abort();
-                    method.releaseConnection();
+                if (!tryDownload(method)) {
+                    checkProblems();
+                    logger.info(client.getContentAsString());
+                    throw new ServiceConnectionProblemException("Všechny volné sloty jsou obsazeny nebo se z této IP již stahuje");
                 }
             } else {
                 checkProblems();
@@ -81,6 +63,29 @@ class QuickshareRunner {
             }
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+    private void checkNameAndSize(String content) throws Exception {
+        if (!content.contains("QuickShare")) {
+            logger.warning(client.getContentAsString());
+            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+        }
+
+        if (content.contains("location.href='/chyba'")) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zøejmì neexistuje</b><br>"));
+        }
+        Matcher matcher = PlugUtils.matcher("zev: <strong>([^<]*)</strong>", content);
+        if (matcher.find()) {
+            String fn = matcher.group(matcher.groupCount());
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+        }
+        matcher = PlugUtils.matcher("([0-9.]+)</strong>( .B)", content);
+        if (matcher.find()) {
+            Long a = PlugUtils.getFileSizeFromString(matcher.group(1) + matcher.group(2));
+            logger.info("File size " + a);
+            httpFile.setFileSize(a);
+        }
     }
 
     private String getVar(String s, String contentAsString) throws PluginImplementationException {
@@ -92,12 +97,16 @@ class QuickshareRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        Matcher matcher;
-        matcher = PlugUtils.matcher("(c|C)hyba", client.getContentAsString());
-        if (matcher.find()) {
+        String content = client.getContentAsString();
+        if (content.contains("location.href='/chyba'")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zøejmì neexistuje</b><br>"));
         }
-
+        if (content.contains("obsazen na 100 %")) {
+            throw new YouHaveToWaitException(String.format("<b>Chyba! Volné sloty obsazeny</b><br>"), 60);
+        }
+        if (content.contains("Pokud chcete stahovat bez")) {
+            throw new ServiceConnectionProblemException(String.format("<b>Chyba! Momentálnì je z Vaší IP adresy již jedno stahování</b><br>"));
+        }
 
     }
 }

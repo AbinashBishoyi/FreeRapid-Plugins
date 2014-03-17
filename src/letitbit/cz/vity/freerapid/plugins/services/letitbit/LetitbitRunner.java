@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.Cookie;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -20,6 +21,7 @@ class LetitbitRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".letitbit.net","lang", "en", "/", null, false));
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRequest(httpMethod)) {
@@ -46,6 +48,7 @@ class LetitbitRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".letitbit.net","lang", "en", "/", null, false));
         client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {

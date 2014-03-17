@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.saavn.SaavnServiceImpl"
-        id="saavn.com" vendor="tong2shot" version="1.1.0">
+        id="saavn.com" vendor="tong2shot" version="1.1.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?saavn\.com/(s/#!/)?(s|p)/.+"/>
         <attribute id="minver" value="0.854"/>

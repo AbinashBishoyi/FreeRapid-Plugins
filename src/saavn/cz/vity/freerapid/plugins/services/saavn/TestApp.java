@@ -18,7 +18,9 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.saavn.com/s/#!/s/song/hindi/Commando+-+A+One+Man+Army/Saawan+Bairi/G1kIZTF2UQA"));
             //httpFile.setNewURL(new URL("http://www.saavn.com/s/#!/p/album/hindi/Commando+-+A+One+Man+Army-2013/toW1RtiMfQg_"));
             //httpFile.setNewURL(new URL("http://www.saavn.com/s/#!/s/album/hindi/Ek+Thi+Daayan-2013/q1hxqLqbrv4_"));
-            httpFile.setNewURL(new URL("http://www.saavn.com/s/#!/p/song/hindi/Ek+Thi+Daayan/Sapna+Re+Sapna/JkUHeiQFGnQ"));
+            //httpFile.setNewURL(new URL("http://www.saavn.com/s/#!/p/song/hindi/Ek+Thi+Daayan/Sapna+Re+Sapna/JkUHeiQFGnQ"));
+            //httpFile.setNewURL(new URL("http://www.saavn.com/s/album/hindi/Sangam-1964/VWRNpIxHl-g_"));
+            httpFile.setNewURL(new URL("http://www.saavn.com/p/song/hindi/Sangam/Bol-Radha-Bol/PxlaXR9pDwA"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final SaavnServiceImpl service = new SaavnServiceImpl();

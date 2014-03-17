@@ -93,7 +93,7 @@ class SaavnFileRunner extends AbstractVideo2AudioRunner {
     }
 
     private boolean isSongUrl(final String url) {
-        return url.matches("http://(?:www\\.)?saavn\\.com/(?:s/#!/)?s/.+");
+        return url.matches("http://(?:www\\.)?saavn\\.com/(?:s/#!/)?(s|p)/.+");
     }
 
     private MethodBuilder getMediaInfoMethod() throws BuildMethodException {

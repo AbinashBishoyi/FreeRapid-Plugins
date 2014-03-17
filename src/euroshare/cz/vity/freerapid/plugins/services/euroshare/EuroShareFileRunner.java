@@ -35,7 +35,7 @@ class EuroShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        Matcher match = PlugUtils.matcher("<strong>(.+?)</strong> \\((.+?)\\)</span>", content);
+        Matcher match = PlugUtils.matcher("<h1.*?>(.+?) \\((.+?)\\)</h1>", content);
         if (!match.find())
             throw new PluginImplementationException("File name/size not found");
         httpFile.setFileName(match.group(1).trim());
@@ -52,7 +52,8 @@ class EuroShareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("class=\"downloadButton\"").toHttpMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
+                    .setActionFromAHrefWhereATagContains("STIAHNUŤ AKO FREE").toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -67,7 +68,8 @@ class EuroShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Požadovaný súbor sa na serveri nenachádza alebo bol odstránený")) {
+        if (contentAsString.contains("Požadovaný súbor sa na serveri nenachádza alebo bol odstránený") ||
+                contentAsString.contains("Súbor neexistuje")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

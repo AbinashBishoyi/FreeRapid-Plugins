@@ -84,7 +84,8 @@ class StiahniSiFileRunner extends AbstractRunner {
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Všetky free sloty sú obsadené")) {
+        if (contentAsString.contains("Všetky free sloty sú obsadené") ||
+                contentAsString.contains("Všechny free sloty jsou obsazené")) {
             throw new YouHaveToWaitException("All free slots are occupied", 5 * 60);
         }
         if (contentAsString.contains("Paralelné sťahovanie nieje pre free uzivateľov povolené")) {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.euroshare.EuroShareServiceImpl"
-        id="euroshare.eu" vendor="birchie" version="1.0.0">
+        id="euroshare.eu" vendor="birchie" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?euroshare\.(eu|hu|pl|cz|sk)/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="euroshare.eu"/>
         <attribute id="maxDownloads" value="1"/>

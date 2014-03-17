@@ -6,7 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import java.util.TreeSet;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -49,10 +49,26 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             if(!makeRedirectedRequest(playlistMethod)){
                 throw new PluginImplementationException("Cannot connet to playlist");
             }
-
-            base=PlugUtils.getStringBetween(getContentAsString(), "base=\"", "\"").replace("&amp;", "&");
-            Matcher videoMatcher=getMatcherAgainstContent("<video src=\"([^\"]+)\" system-bitrate=\"([0-9]+)\" label=\"([0-9]+)p\" enabled=\"true\" */>");
-
+            Matcher switchMatcher=Pattern.compile("<switchItem id=\"([^\"]+)\" base=\"([^\"]+)\" begin=\"([^\"]+)\" duration=\"([^\"]+)\" clipBegin=\"([^\"]+)\">\\s*(<video[^>]*>\\s*)*</switchItem>",Pattern.MULTILINE+Pattern.DOTALL).matcher(getContentAsString());
+            
+            TreeSet<SwitchItem> body=new TreeSet<SwitchItem>();
+            while(switchMatcher.find()){
+                SwitchItem newItem=new SwitchItem();
+                String swItemText=switchMatcher.group(0);
+                newItem.base=switchMatcher.group(2).replace("&amp;", "&");
+                newItem.duration=Double.parseDouble(switchMatcher.group(4));
+                Matcher videoMatcher=Pattern.compile("<video src=\"([^\"]+)\" system-bitrate=\"([0-9]+)\" label=\"([0-9]+)p\" enabled=\"true\" */>").matcher(swItemText);
+                while(videoMatcher.find()){
+                    newItem.videos.add(new Video(videoMatcher.group(1),videoMatcher.group(3)));
+                }
+                body.add(newItem);
+            }
+            if(body.isEmpty()){
+                throw new PluginImplementationException("No stream found.");
+            }
+            SwitchItem selectedSwitch=body.first();
+            base=selectedSwitch.base;
+            
             int preferredQualityInt=config.getQualitySetting();
 
             videoSrc=null;
@@ -64,32 +80,32 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             String highestQualitySrc=null;
             int lowestQuality=0;
             String lowestQualitySrc=null;
-            while(videoMatcher.find()){
-                int qualInt=Integer.parseInt(videoMatcher.group(3));
+            for(Video video:selectedSwitch.videos) {
+                int qualInt=Integer.parseInt(video.label);
                 if(qualInt>highestQuality){
                     highestQuality=qualInt;
-                    highestQualitySrc=videoMatcher.group(1);
+                    highestQualitySrc=video.src;
                 }
                 if((lowestQuality==0)||(qualInt<lowestQuality)){
                     lowestQuality=qualInt;
-                    lowestQualitySrc=videoMatcher.group(1);
+                    lowestQualitySrc=video.src;
                 }
                 if(preferredQualityInt>0){
                         if(qualInt>preferredQualityInt){
                             if((nearestHigher==0)||(nearestHigher>qualInt)){
                                 nearestHigher=qualInt;
-                                nearestHigherSrc=videoMatcher.group(1);
+                                nearestHigherSrc=video.src;
                             }
                         }
                         if(qualInt<preferredQualityInt){
                             if((nearestLower==0)||(nearestLower<qualInt)){
                                 nearestLower=qualInt;
-                                nearestLowerSrc=videoMatcher.group(1);
+                                nearestLowerSrc=video.src;
                             }
                         }
                 }
                 if(qualInt==preferredQualityInt){
-                    videoSrc=videoMatcher.group(1);
+                    videoSrc=video.src;
                     break;
                 }
             }

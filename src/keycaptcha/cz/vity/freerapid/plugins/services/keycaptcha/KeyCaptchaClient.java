@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 
 /**
  * @author ntoskrnl
+ * @author tong2shot
  */
 class KeyCaptchaClient {
 

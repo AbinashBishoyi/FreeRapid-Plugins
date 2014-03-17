@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.keycaptcha;
 
 import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.interfaces.DialogSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import org.apache.commons.httpclient.HttpMethod;
@@ -21,7 +22,9 @@ public class KeyCaptcha {
 
     public KeyCaptcha(final DialogSupport dialogSupport, final HttpDownloadClient client) {
         this.dialogSupport = dialogSupport;
-        this.kc = new KeyCaptchaClient(client);
+        final HttpDownloadClient c = new DownloadClient();
+        c.initClient(client.getSettings());
+        this.kc = new KeyCaptchaClient(c);
     }
 
     public HttpMethod recognize(final String pageContent, final String pageUrl) throws Exception {

@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.bayfiles;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -36,7 +37,7 @@ class BayFilesFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<p title=\"", "\">");
-        PlugUtils.checkFileSize(httpFile, content, "<strong>", "</strong></p>");//TODO
+        PlugUtils.checkFileSize(httpFile, content, "<strong>", "</strong></p>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -47,17 +48,12 @@ class BayFilesFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             String contentAsString = getContentAsString();//check for response
-            int waitTime;
-            if (contentAsString.contains("has recently downloaded a file")) {
-               waitTime = PlugUtils.getWaitTimeBetween(contentAsString,"Upgrade to premium or wait "," minutes.</strong>",TimeUnit.MINUTES);
-               downloadTask.sleep(waitTime);
-            }
 
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
             final String vfid = PlugUtils.getStringBetween(contentAsString, "var vfid = ", ";");
-            waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "id=\"countDown\">", "</strong>", TimeUnit.SECONDS);
+            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "id=\"countDown\">", "</strong>", TimeUnit.SECONDS);
             logger.info("vfid = " + vfid);
 
             MethodBuilder ajaxMethodBuilder = getMethodBuilder()
@@ -114,6 +110,9 @@ class BayFilesFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         } else if (contentAsString.contains("is already downloading")) {
             throw new ServiceConnectionProblemException("Your IP address is already downloading a file");
+        } else if (contentAsString.contains("has recently downloaded a file")) {
+            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "Upgrade to premium or wait", "minutes.</strong>", TimeUnit.MINUTES);
+            throw new YouHaveToWaitException("Waiting time between downloads", waitTime);
         }
     }
 

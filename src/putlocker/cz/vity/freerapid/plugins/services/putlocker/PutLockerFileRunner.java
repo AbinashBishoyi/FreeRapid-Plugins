@@ -18,6 +18,7 @@ import java.util.logging.Logger;
  * Class which contains main code
  *
  * @author tong2shot
+ * @author birchie
  */
 class PutLockerFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(PutLockerFileRunner.class.getName());

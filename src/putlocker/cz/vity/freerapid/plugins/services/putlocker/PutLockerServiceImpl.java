@@ -42,7 +42,6 @@ public class PutLockerServiceImpl extends AbstractFileShareService {
             if (config == null) {
                 if (!storage.configFileExists(CONFIG_FILE)) {
                     config = new PutLockerSettingsConfig();
-                    config.setVideoQuality(VideoQuality.High);
                 } else {
                     config = storage.loadConfigFromFile(CONFIG_FILE, PutLockerSettingsConfig.class);
                 }

@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
  *
  * @author tong2shot
  * @author ntoskrnl
+ * @author birchie
  */
 public abstract class XFileSharingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XFileSharingRunner.class.getName());

@@ -42,7 +42,8 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkAllProblems();
             checkNameAndSize();
             final String contentAsString = getContentAsString();
-            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(URLDecoder.decode(PlugUtils.getStringBetween(contentAsString, "var comeonguys = '", "';"), "UTF-8").substring(PlugUtils.getNumberBetween(contentAsString, "substring(", ");"))).toHttpMethod();
+            final String var = PlugUtils.getStringBetween(contentAsString, "unescape(", ")");
+            httpMethod = getMethodBuilder().setReferer(fileURL).setAction(URLDecoder.decode(PlugUtils.getStringBetween(contentAsString, "var " + var + " = '", "';"), "UTF-8").substring(PlugUtils.getNumberBetween(contentAsString, "substring(", ");"))).toHttpMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkAllProblems();

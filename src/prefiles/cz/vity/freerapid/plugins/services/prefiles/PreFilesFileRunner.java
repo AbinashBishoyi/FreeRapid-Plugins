@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Class which contains main code
  *
- * @author CrazyCoder
+ * @author CrazyCoder, Abinash Bishoyi
  */
 class PreFilesFileRunner extends XFileSharingRunner {
     @Override
@@ -22,7 +22,7 @@ class PreFilesFileRunner extends XFileSharingRunner {
         fileNameHandlers.add(new FileNameHandler() {
             @Override
             public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-                httpFile.setFileName(PlugUtils.getStringBetween(content, "<div class=\"filename_bar\"><h2>", "<small>"));
+                httpFile.setFileName(PlugUtils.getStringBetween(content, "<div class=\"filename_bar\"><i></i><h2>", "<small>"));
             }
         });
         return fileNameHandlers;

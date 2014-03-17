@@ -4,11 +4,13 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 
 /**
@@ -20,12 +22,13 @@ class xHamsterFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(xHamsterFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        checkURL();
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -33,7 +36,8 @@ class xHamsterFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        httpFile.setFileName(PlugUtils.getStringBetween(PlugUtils.getStringBetween(content, "element_str_id", "/div>"), ">", "<") + ".flv");
+        PlugUtils.checkName(httpFile, content, "<h1 >", "</h1>");
+        httpFile.setFileName(httpFile.getFileName() + ".flv");
         PlugUtils.checkFileSize(httpFile, content, "Download this video (", ")");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -41,33 +45,23 @@ class xHamsterFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkURL();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-
-            String Re_URL = PlugUtils.getStringBetween(PlugUtils.getStringBetween(contentAsString, "id=\"embed_code_source\"", "</textarea>"), "src=\"", "\"");
-            HttpMethod methodB = getGetMethod(Re_URL);
-            if (!makeRedirectedRequest(methodB)) {
-                checkProblems();    //if redirecting failed
-                throw new ServiceConnectionProblemException("Error starting download-1");//some unknown problem
-            }
-
-            final String contentAsStringB = getContentAsString();//check for response
-            String flvServer = PlugUtils.getStringBetween(contentAsStringB, "srv=", "&");
-            String flvJoiner;
-            if (contentAsStringB.contains("url_mode")) flvJoiner = "/key=";
-            else flvJoiner = "/flv2/";
-            String flvDetail = PlugUtils.getStringBetween(contentAsStringB, "file=", "&");
-            String FullFlvHttp = flvServer + flvJoiner + flvDetail;
-
-            HttpMethod methodC = getMethodBuilder().setAction(FullFlvHttp).toGetMethod();
-
-            if (!tryDownloadAndSaveFile(methodC)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize(getContentAsString());
+            final String srv = PlugUtils.getStringBetween(getContentAsString(), "'srv': '", "',");
+            final String file = PlugUtils.getStringBetween(getContentAsString(), "'file': '", "',");
+            final String videoURL = file.startsWith("http") ? URLDecoder.decode(file, "UTF-8") : srv + "/key=" + file;
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setReferer(fileURL.replace("88.208.24.43", "xhamster.com"))
+                    .setAction(videoURL)
+                    .toGetMethod();
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -77,8 +71,14 @@ class xHamsterFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("not found on this server")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (contentAsString.contains("not found on this server") ||
+                contentAsString.contains("This video was deleted")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
+
+    private void checkURL() {
+        fileURL = fileURL.replaceFirst("xhamster\\.com", "88.208.24.43");
+    }
+
 }

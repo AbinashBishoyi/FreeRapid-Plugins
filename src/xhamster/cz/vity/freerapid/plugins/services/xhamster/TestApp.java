@@ -13,22 +13,17 @@ import java.net.URL;
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
-        final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
+        final HttpFile httpFile = getHttpFile();
         try {
-            //we set file URL
             httpFile.setNewURL(new URL("http://xhamster.com/movies/1149264/topless_beach_girls_down_under.html"));
-            //the way we connect to the internet
-            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final xHamsterServiceImpl service = new xHamsterServiceImpl(); //instance of service - of our plugin
-            //runcheck makes the validation
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
-            //all output goes to the console
-        } catch (Exception e) {//catch possible exception
-            e.printStackTrace(); //writes error output - stack trace to console
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
+            //connectionSettings.setProxy("75.125.40.18", 3128); //eg we can use local proxy to sniff HTTP communication
+            final xHamsterServiceImpl service = new xHamsterServiceImpl();
+            testRun(service, httpFile, connectionSettings);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        this.exit();//exit application
+        this.exit();
     }
 
     /**

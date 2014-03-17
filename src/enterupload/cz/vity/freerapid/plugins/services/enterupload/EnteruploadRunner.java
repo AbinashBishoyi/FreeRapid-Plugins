@@ -136,7 +136,7 @@ class EnteruploadRunner extends AbstractRunner {
 
             if (code == null) {
                 //throw new CaptchaEntryInputMismatchException();
-                return "error";
+                return "cancel";
 
 
             } else {

@@ -1,8 +1,10 @@
 package cz.vity.freerapid.plugins.services.freakshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -36,21 +38,40 @@ class FreakShareFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         runCheck();
 
-        String hostName =  fileURL.substring(0,fileURL.indexOf("/",8));
+        String hostName = fileURL.substring(0, fileURL.indexOf("/", 8));
 
         waitForTime();
         HttpMethod httpMethod = getMethodBuilder()
-                .setActionFromFormWhereActionContains( hostName + "/files", true)
+                .setActionFromFormWhereActionContains(hostName + "/files", true)
                 .toHttpMethod();
 
         if (!makeRedirectedRequest(httpMethod))
             throw new ServiceConnectionProblemException();
+
+        final String contentAsString = getContentAsString();
         checkProblems();
         waitForTime();
 
-        httpMethod = getMethodBuilder()
-                .setActionFromFormWhereActionContains( hostName + "/files", true)
-                .toHttpMethod();
+        final MethodBuilder methodBuilder = getMethodBuilder(contentAsString)
+                .setActionFromFormWhereActionContains(hostName + "/files", true);
+
+        //captcha
+        final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha\\.net/noscript\\?k=(.*?)\"");
+        if (reCaptchaKeyMatcher.find()) {
+            final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
+
+            logger.info("recaptcha public key : " + reCaptchaKey);
+
+            final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+            final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            r.setRecognized(captcha);
+            r.modifyResponseMethod(methodBuilder);
+        }
+
+        httpMethod = methodBuilder.toHttpMethod();
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException("Error starting download");

@@ -9,6 +9,8 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -19,10 +21,18 @@ class FileSonicFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FileSonicFileRunner.class.getName());
 
 
+    private String ensureENLanguage(String url){
+        Matcher m=Pattern.compile("http://(www\\.)?filesonic.com/([^/]*/)?(file/.*)").matcher(url);
+        if(m.matches()){
+            return "http://www.filesonic.com/en/"+m.group(3);
+        }
+        return url;
+    }
+
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(ensureENLanguage(fileURL));//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
@@ -40,7 +50,7 @@ class FileSonicFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
+        final GetMethod method = getGetMethod(ensureENLanguage(fileURL)); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems

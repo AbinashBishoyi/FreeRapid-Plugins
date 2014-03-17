@@ -69,6 +69,7 @@
         <ant dir="${src.dir}/ulozto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/loadto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/shareator/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/quickshare/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

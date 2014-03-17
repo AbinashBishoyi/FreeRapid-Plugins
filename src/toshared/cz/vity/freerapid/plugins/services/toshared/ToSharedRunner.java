@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.toshared;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -37,9 +38,22 @@ class ToSharedRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setActionFromTextBetween("$.get('", "',").toGetMethod();
+            String url = PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',");
+            String l2surl = url.substring(url.length() - 32);
+            if (l2surl.charAt(0) % 2 == 1) {
+                l2surl = l2surl.charAt(0) + l2surl.substring(17);
+            } else {
+                l2surl = l2surl.substring(0, 15) + l2surl.charAt(l2surl.length() - 1);
+            }
+            url = url.substring(0, url.indexOf("id=") + 3) + l2surl;
+            method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setAction(url).toGetMethod();
+            method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (makeRedirectedRequest(method)) {
-                method = getMethodBuilder().setReferer(fileURL).setAction(getContentAsString().trim()).toGetMethod();
+                final String content = getContentAsString().trim();
+                if (content.isEmpty() || content.equals("#")) {
+                    throw new PluginImplementationException("Download link not found");
+                }
+                method = getMethodBuilder().setReferer(fileURL).setAction(content).toGetMethod();
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");

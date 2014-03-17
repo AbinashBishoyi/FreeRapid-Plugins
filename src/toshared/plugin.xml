@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="2shared.com" version="1.0.2" vendor="Tiago Hillebrandt+ntoskrnl"
+<plugin id="2shared.com" version="1.0.3" vendor="Tiago Hillebrandt+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.toshared.ToSharedServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?2shared\.com/.+"/>

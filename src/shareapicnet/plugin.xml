@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="shareapic.net" version="0.1" vendor="Alex"
+        class="cz.vity.freerapid.plugins.services.shareapicnet.ShareapicnetServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://[0-9a-z\-]+\.shareapic\.net/content\.php.+"/>
+        <attribute id="minver" value="0.81"/>
+        <attribute id="maxver" value="0.82"/>
+        <attribute id="services" value="shareapic.net"/>
+        <attribute id="faviconImage" value="resources/favicon.gif"/>
+    </attributes>
+
+    <runtime>
+        <library id="shareapic.net" path="/" type="code"/>
+    </runtime>
+</plugin>

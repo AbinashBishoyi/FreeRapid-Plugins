@@ -5,10 +5,10 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -56,7 +56,7 @@ class IFolderFileRunner extends AbstractRunner {
             String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            Matcher matcher = getMatcherAgainstContent("(http://ints.ifolder.ru/ints/\\?(?:[a-zA-Z0-9\\-]+?.)?ifolder.ru/[0-9]+\\?ints_code=)");
+            Matcher matcher = getMatcherAgainstContent("(http://ints\\.ifolder\\.ru/ints/\\?(?:[a-zA-Z0-9\\-]+?.)?(?:ifolder\\.ru|files\\.metalarea\\.org)/[0-9]+\\?ints_code=)");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Cannot find link on first page");
             }
@@ -70,16 +70,16 @@ class IFolderFileRunner extends AbstractRunner {
                 String nextAction = matcher.group(1);
                 final HttpMethod method3 = getMethodBuilder().setReferer("").setAction(nextAction).toHttpMethod();
                 if (makeRedirectedRequest(method3)) {
-                    final HttpMethod method4 = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();                    
+                    final HttpMethod method4 = getMethodBuilder().setReferer("").setActionFromTextBetween("<frame id=\"f_top\" name = \"f_top\" src=\"", "\"").setBaseURL("http://ints.ifolder.ru/").toHttpMethod();
                     if (makeRedirectedRequest(method4)) {
-                        int delay = PlugUtils.getWaitTimeBetween(getContentAsString(), "var delay = ", ";",TimeUnit.SECONDS);
+                        int delay = PlugUtils.getWaitTimeBetween(getContentAsString(), "var delay = ", ";", TimeUnit.SECONDS);
                         downloadTask.sleep(delay);
 
 
                         /*
                          * Note: Server sends response with no Status-Line and no headers, Special method must be executed
                          */
-                        final HttpMethod method4b = new GetMethodNoStatus("http://ints.ifolder.ru"+method4.getPath()+"?"+method4.getQueryString());
+                        final HttpMethod method4b = new GetMethodNoStatus("http://ints.ifolder.ru" + method4.getPath() + "?" + method4.getQueryString());
                         if (makeRedirectedRequest(method4b)) {
                             do {
                                 CaptchaSupport captchaSupport = getCaptchaSupport();

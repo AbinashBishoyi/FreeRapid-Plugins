@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.yunfile;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -12,11 +13,13 @@ import java.net.URLEncoder;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
  * @author Stan
+ * @author tong2shot
  */
 class YunFileFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(YunFileFileRunner.class.getName());
@@ -110,8 +113,25 @@ class YunFileFileRunner extends AbstractRunner {
                         .setActionFromFormByName("down_from", true)
                         .toPostMethod();
             } else {
-                final String fileId = PlugUtils.getStringBetween(getContentAsString(), "fileId.value = \"", "\"");
-                final String vid = PlugUtils.getStringBetween(getContentAsString(), "vid.value = \"", "\"");
+                final String fileId;
+                final String vid;
+                final String varVid;
+                Matcher matcher = getMatcherAgainstContent("fileId\\.value\\s*=\\s*[\"'](.+?)[\"']\\s*;");
+                if (!matcher.find()) {
+                    fileId = getFileIdFromUrl();
+                } else {
+                    fileId = matcher.group(1);
+                }
+                matcher = getMatcherAgainstContent("vid\\.value\\s*=\\s*([\"']?.+?[\"']?)\\s*;");
+                if (!matcher.find()) throw new PluginImplementationException("Vid value not found");
+                if (matcher.group(1).contains("\"") || matcher.group(1).contains("'")) { //vid is string
+                    vid = matcher.group(1).replace("\"", "").replace("'", "");
+                } else { //vid param is stored in variable
+                    varVid = matcher.group(1);
+                    matcher = getMatcherAgainstContent(String.format("var %s\\s*=\\s*[\"'](.+?)[\"']\\s*;", varVid));
+                    if (!matcher.find()) throw new PluginImplementationException("Error parsing var vid");
+                    vid = matcher.group(1);
+                }
                 httpMethod = getMethodBuilder()
                         .setReferer(downloadPageUrl)
                         .setActionFromFormWhereTagContains("fileId", true)
@@ -120,7 +140,7 @@ class YunFileFileRunner extends AbstractRunner {
                         .toPostMethod();
                 addCookie(new Cookie(".yunfile.com", "referer", URLEncoder.encode(downloadPageUrl, "UTF-8"), "/", 86400, false));
             }
-
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //they send non-standard filename attachment header
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -129,6 +149,12 @@ class YunFileFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private String getFileIdFromUrl() throws PluginImplementationException {
+        final Matcher matcher = PlugUtils.matcher("/([^/]+)/?$", fileURL);
+        if (!matcher.find()) throw new PluginImplementationException("Error parsing URL");
+        return matcher.group(1);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

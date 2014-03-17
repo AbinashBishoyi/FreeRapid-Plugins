@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://videos.sapo.pt/fL4ClUnAA3tjEp9vJnAT"));
-            httpFile.setNewURL(new URL("http://videos.sapo.pt/j8oesYR3oQtf1ZjwqLNo"));
+            httpFile.setNewURL(new URL("http://videos.sapo.pt/qZzy5mnnmF8pLz0Ur9Mv"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final SapoPtServiceImpl service = new SapoPtServiceImpl();

@@ -36,7 +36,11 @@ class SapoPtFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<div class=\"tit\">", "</div>");
+        try {
+            PlugUtils.checkName(httpFile, content, "<div class=\"tit\">", "</div>");
+        } catch (Exception e) {
+            PlugUtils.checkName(httpFile, content, "<div class=\"titvideo\">", "</div>");
+        }
         httpFile.setFileName(httpFile.getFileName() + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -62,7 +66,7 @@ class SapoPtFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod)) {
                 throw new ServiceConnectionProblemException("Error loading video javascript");
             }
-            final String swfURL = PlugUtils.getStringBetween(getContentAsString(), "swfobject.embedSWF(\"", "\"");
+            final String swfURL = PlugUtils.getStringBetween(getContentAsString(), "swfobject.embedSWF('", "'");
             final String player = swfURL.contains("flvplayer.swf") ? "INTERNO" : "EXTERNO";
             final long time = System.currentTimeMillis() / 1000;
             final String token = DigestUtils.md5Hex("sve9f#73s" + fileId + time);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.filebox.FileboxServiceImpl" id="filebox.com"
-        vendor="Kajda+Vity+birchie" version="2.0.3">
+        vendor="Kajda+Vity+birchie" version="2.0.4">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filebox\.com/.+"/>
         <attribute id="minver" value="0.854"/>

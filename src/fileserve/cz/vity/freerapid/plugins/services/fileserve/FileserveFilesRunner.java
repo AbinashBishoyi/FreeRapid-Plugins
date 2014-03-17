@@ -3,9 +3,13 @@ package cz.vity.freerapid.plugins.services.fileserve;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.NameValuePair;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -49,6 +53,13 @@ class FileserveFilesRunner extends AbstractRunner {
             }
             String recaptcha = "http://www.google.com/recaptcha/api/challenge?k=" + matcher.group(1) + "&ajax=1&cachestop=0." + System.currentTimeMillis();
 
+            List<NameValuePair> extraHiddenParams = new ArrayList<NameValuePair>();
+            matcher = PlugUtils.matcher("<input[^>]+name=\"([^\"]+)\"[^>]+value=\"([^\"]+)\"[^>]*>", getContentAsString().replaceFirst("(?s)^.*?(<input[^>]+id=\"recaptcha_[^\"]+_field\"[^>]*>.*?)<div[^>]+id=\"captchaAreaLabel\"[^>]*>.*$", "$1"));
+            while (matcher.find()) {
+                extraHiddenParams.add(new NameValuePair(matcher.group(1), matcher.group(2)));
+            }
+            logger.info("Captcha extra hidden params (" + extraHiddenParams.size() + "): " + extraHiddenParams);
+
             do {
                 logger.info("Captcha URL: " + recaptcha);
                 getMethod = getGetMethod(recaptcha);
@@ -69,18 +80,25 @@ class FileserveFilesRunner extends AbstractRunner {
                     throw new CaptchaEntryInputMismatchException();
                 }
 
-                HttpMethod postMethod = getMethodBuilder()
+                MethodBuilder mb = getMethodBuilder()
                         .setAction("/checkReCaptcha.php")
                         .setReferer(fileURL)
-                        .setEncodePathAndQuery(true)
+                        .setEncodePathAndQuery(true);
+
+                for (NameValuePair param : extraHiddenParams) {
+                    mb.setParameter(param.getName(), param.getValue());
+                }
+
+                mb
                         .setParameter("recaptcha_challenge_field", recaptcha_challenge_field)
                         .setParameter("recaptcha_response_field", captcha)
-                        .setParameter("recaptcha_shortencode_field", fileKey)
-                        .toPostMethod();
-                if (!makeRedirectedRequest(postMethod)) {
+                        .setParameter("recaptcha_shortencode_field", fileKey);
+
+                if (!makeRedirectedRequest(mb.toPostMethod())) {
                     throw new ServiceConnectionProblemException();
                 }
-            } while (!getContentAsString().contains("success"));
+            }
+            while (!getContentAsString().matches(".*?success\"?\\s*:\\s*1.*?")); // {"success":1} -> OK, {"success":0,"error": ... } -> try again
 
             HttpMethod pMethod = getMethodBuilder().setAction(fileURL).setReferer(fileURL)
                     .setParameter("downloadLink", "wait")

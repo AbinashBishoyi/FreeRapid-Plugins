@@ -7,7 +7,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
-import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
+import cz.vity.freerapid.plugins.services.tor.TorProxyClient;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.binary.Hex;
@@ -71,10 +71,8 @@ class ItvFileRunner extends AbstractRtmpRunner {
                     .toPostMethod();
             ((PostMethod) method).setRequestEntity(new StringRequestEntity(
                     String.format(PLAYLIST_REQUEST_BASE, productionId, getRandomGuid()), "text/xml", "utf-8"));
-            if (!client.getSettings().isProxySet()) {
-                Tunlr.setupMethod(method);
-            }
-            if (!makeRedirectedRequest(method)) {
+            final TorProxyClient torClient = TorProxyClient.forCountry("gb", client, getPluginService().getPluginContext().getConfigurationStorageSupport());
+            if (!torClient.makeRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }

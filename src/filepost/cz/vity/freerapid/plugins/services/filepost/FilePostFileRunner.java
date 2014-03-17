@@ -6,13 +6,17 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -22,12 +26,12 @@ import java.util.regex.Matcher;
  */
 class FilePostFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FilePostFileRunner.class.getName());
-    private final static Lock LOCK = new ReentrantLock(true);
-    private static volatile long lastRequest;
+    private final static Semaphore SEMAPHORE = new Semaphore(5, true);
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".filepost.com", "lang", "1", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequestWithSleep(getMethod)) {
             checkProblems();
@@ -39,8 +43,10 @@ class FilePostFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<title>FilePost.com: Download", "- fast &amp; secure!</title>");
-        PlugUtils.checkFileSize(httpFile, content, "<span>Size:</span>", "</li>");
+        if (!isFolder()) {
+            PlugUtils.checkName(httpFile, content, "<title>FilePost.com: Download", "- fast &amp; secure!</title>");
+            PlugUtils.checkFileSize(httpFile, content, "<span>Size:</span>", "</li>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -48,6 +54,7 @@ class FilePostFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".filepost.com", "lang", "1", "/", 86400, false));
         HttpMethod method = getGetMethod(fileURL);
         if (makeRequestWithSleep(method)) {
             final String contentAsString = getContentAsString();
@@ -55,6 +62,11 @@ class FilePostFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);
 
             fileURL = method.getURI().toString();
+
+            if (isFolder()) {
+                parseFolder();
+                return;
+            }
 
             final Cookie sid = getCookieByName("SID");
             if (sid == null) {
@@ -168,18 +180,33 @@ class FilePostFileRunner extends AbstractRunner {
     }
 
     private boolean makeRequestWithSleep(final HttpMethod method) throws Exception {
-        LOCK.lockInterruptibly();
+        SEMAPHORE.acquire();
         try {
-            final long interval = 500L;
-            if (lastRequest > System.currentTimeMillis() - interval) {
-                Thread.sleep(interval);
-            }
-            final boolean b = makeRedirectedRequest(method);
-            lastRequest = System.currentTimeMillis();
-            return b;
+            return makeRedirectedRequest(method);
         } finally {
-            LOCK.unlock();
+            SEMAPHORE.release();
         }
+    }
+
+    private boolean isFolder() {
+        return fileURL.contains("/folder/");
+    }
+
+    private void parseFolder() throws Exception {
+        final List<URI> list = new LinkedList<URI>();
+        final Matcher matcher = getMatcherAgainstContent("<a class=\"dl\" href=\"(.+?)\"");
+        while (matcher.find()) {
+            try {
+                list.add(new URI(matcher.group(1)));
+            } catch (final URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+        }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No links found");
+        }
+        httpFile.getProperties().put("removeCompleted", true);
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
     }
 
 }

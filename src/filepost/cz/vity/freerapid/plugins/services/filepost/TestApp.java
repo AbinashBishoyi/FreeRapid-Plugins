@@ -16,6 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             httpFile.setNewURL(new URL("https://filepost.com/files/3514d318/Standard_Deviants_-_Statistics.part01.rar"));
+            //httpFile.setNewURL(new URL("https://filepost.com/folder/2b7157ef/"));//folder
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             final FilePostServiceImpl service = new FilePostServiceImpl();
             testRun(service, httpFile, connectionSettings);

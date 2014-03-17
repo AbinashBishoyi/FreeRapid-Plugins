@@ -2,7 +2,7 @@
 <project name="Indowebster Plugin" default="all" basedir=".">
     <property name="application" value="indowebster"/>
 
-    <property name="version" value="0.6"/>
+    <property name="version" value="1.1"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="indowebster.jar"/>
@@ -23,8 +23,6 @@
     <property name="plugins.dir" value="plugins"/>
 
     <fileset id="jars" dir="${lib.dir}" includes="**/*"/>
-
-    <property name="dev.dir" value="../../dev"/>
 
     <patternset id="compiler.resources">
         <include name="**/?*.properties"/>
@@ -71,52 +69,6 @@
             <fileset dir="${src.dir}" includes="plugin.xml"/>
         </copy>
 
-    </target>
-
-    <target name="yguard">
-        <taskdef name="yguard" classname="com.yworks.yguard.YGuardTask"
-                 classpath="yguard.jar"/>
-        <yguard>
-            <externalclasses>
-                <fileset refid="jars"/>
-            </externalclasses>
-
-            <inoutpair in="${dist.dir}/${version.name}.frp" out="${dist.dir}/${version.name}.frp"/>
-
-            <shrink logfile="shrinklog.xml">
-                <keep>
-                    <class classes="public"
-                           methods="public" fields="public">
-                        <patternset>
-                            <include name="cz.vity.**.*"/>
-                        </patternset>
-                    </class>
-                    <!--   <class classes="public"
-                    methods="public" fields="public">
-                      <patternset>
-                        <include name="jpswfdec.SWFDec"/>
-                      </patternset>
-                    </class>-->
-                </keep>
-            </shrink>
-            <rename>
-                <keep>
-                    <class classes="public"
-                           methods="public" fields="public">
-                        <patternset>
-                            <include name="cz.vity.**.*"/>
-                        </patternset>
-                    </class>
-                    <!--<class classes="public"
-                    methods="public" fields="public">
-                      <patternset>
-                        <include name="jpswfdec.SWFDec"/>
-                      </patternset>
-                    </class>-->
-                </keep>
-            </rename>
-
-        </yguard>
     </target>
 
     <target name="compile" depends="clean, init" description="compiling source codes">
@@ -173,17 +125,6 @@
             </fileset>
         </jar>
 
-        <!-- todle zapnout <antcall target="yguard" />	 -->
-        <!--<zip destfile="${dist.dir}/${version.name}-src.frp">-->
-        <!--<fileset dir=".">-->
-        <!--<include name="${lib.dir}/"/>-->
-        <!--<include name="${src.dir}/"/>-->
-
-        <!--<include name="${plugins.dir}/"/>-->
-
-        <!--<include name="build.xml"/>-->
-        <!--</fileset>-->
-        <!--</zip>-->
     </target>
 
 </project>

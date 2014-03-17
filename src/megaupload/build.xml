@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="Megaupload Plugin" default="all" basedir=".">
     <property name="application" value="megaupload"/>
-    <property name="version" value="1.7.6"/>
+    <property name="version" value="1.7.7"/>
     <property name="version.name" value="${application}"/>
 
 

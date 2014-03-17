@@ -521,7 +521,7 @@ public class CaptchaReader {
 
 
     public static String read(BufferedImage image){
-        if(net==null) net=new NeuralNet("neuralData.xml");
+        if(net==null) net=new NeuralNet("resources/neuralData.xml");
         return decodeWithNet(image, net);
     }   
 }

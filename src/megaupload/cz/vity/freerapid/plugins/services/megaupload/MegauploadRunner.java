@@ -168,6 +168,7 @@ class MegauploadRunner extends AbstractRunner {
 
                 if (captchaCount++ < 3) {
                     captcha=CaptchaReader.read(captchaImage);
+                    logger.info("Read captcha:"+captcha);
                 }else{
                     captcha = getCaptchaSupport().askForCaptcha(captchaImage);
                 } 

@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareSupport.java 981 2008-12-07 12:00:52Z Vity $
+ * $Id: RapidShareSupport.java 1022 2008-12-09 20:10:51Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -22,6 +22,7 @@ package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,7 +30,7 @@ import java.util.logging.Logger;
  * Support class for RS.
  *
  * @author Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
- * @version $Revision: 981 $ ($Date: 2008-12-07 17:30:52 +0530 (Sun, 07 Dec 2008) $)
+ * @version $Revision: 1022 $ ($Date: 2008-12-10 01:40:51 +0530 (Wed, 10 Dec 2008) $)
  */
 class RapidShareSupport {
 
@@ -53,6 +54,13 @@ class RapidShareSupport {
             }
         }
         return "";
+    }
+
+    public static int getSecondToMidnight() {
+		Calendar now = Calendar.getInstance();
+		Calendar midnight =	Calendar.getInstance();
+		midnight.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)+1, 0, 0, 1);
+		return (int) ((midnight.getTimeInMillis() - now.getTimeInMillis()) / 1000f);
     }
 
 }

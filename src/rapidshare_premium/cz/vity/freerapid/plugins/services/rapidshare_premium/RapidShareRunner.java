@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 1021 2008-12-09 13:18:52Z Vity $
+ * $Id: RapidShareRunner.java 1022 2008-12-09 20:10:51Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -35,7 +35,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -168,7 +167,10 @@ class RapidShareRunner extends AbstractRunner {
             throw new BadLoginException("<b>RapidShare error:</b><br> Your premium account has not been found.");
         }
         if (code.contains("you have exceeded the download limit")) {
-            throw new YouHaveToWaitException("<b>RapidShare known error:</b><br> You have exceeded the download limit.", getSecondToMidnight());
+            int pause = 20 * 60;
+            int toMidnight = RapidShareSupport.getSecondToMidnight();
+            if (toMidnight > 18 * 3600) pause = toMidnight + 5 * 60;
+            throw new YouHaveToWaitException("<b>RapidShare known error:</b><br> You have exceeded the download limit.", pause);
         }
 
         // Match another error messages from standard error box
@@ -251,13 +253,6 @@ class RapidShareRunner extends AbstractRunner {
             logger.info("Builded RS cookie: " + cookie);
             client.getHTTPClient().getState().addCookie(new Cookie("rapidshare.com", "user", cookie, "/", 86400, false));
         }
-    }
-
-    private int getSecondToMidnight() {
-        Calendar instance = Calendar.getInstance();
-        final long nowMillis = instance.getTimeInMillis();
-        instance.set(instance.get(Calendar.YEAR), instance.get(Calendar.MONTH), instance.get(Calendar.DAY_OF_MONTH) + 1, 0, 5, 0);
-        return (int) ((instance.getTimeInMillis() - nowMillis) / 1000f);
     }
 
     private void setBadConfig() {

@@ -102,6 +102,9 @@ class RapidShareRunner extends AbstractRunner {
                 || content.contains("All free download slots are full")) {
             throw new ServiceConnectionProblemException("All free download slots are full");
         }
+        if (content.contains("File owner's public traffic exhausted")) {
+            throw new ServiceConnectionProblemException("File owner's public traffic exhausted");
+        }
         Matcher matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds[^\"']*");
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)) + 10);

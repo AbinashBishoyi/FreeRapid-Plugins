@@ -136,12 +136,57 @@ class YouTubeFileRunner extends AbstractRunner {
         } catch (UnsupportedEncodingException e) {
             LogUtils.processException(logger, e);
         }
+        //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
         String formats[] = fmt_map.split(",");
-        int quality = config.getQualitySetting();
-        if (quality == 4) quality = formats.length - 1; //maximum available
-        if (quality >= formats.length) quality = formats.length - 1;
-        String selectedFormat = formats[formats.length - 1 - quality];
-        fmt = Integer.parseInt(selectedFormat.substring(0, selectedFormat.indexOf("/")));
+        String formatParts[][]=new String[formats.length][];
+        for(int f=0;f<formats.length;f++){
+           //Example: 37/1920x1080/9/0/115
+           formatParts[f]=formats[f].split("\\/"); 
+        }
+        int qualityWidth=config.getQualityWidth();
+        int qualityIndex=-1;
+        if(qualityWidth==YouTubeSettingsConfig.MAX_WIDTH){
+            logger.info("Selecting maximal quality");
+            qualityIndex=0;
+        }else if(qualityWidth==YouTubeSettingsConfig.MIN_WIDTH){
+            logger.info("Selecting minimal quality");
+            qualityIndex=formatParts.length-1;
+        }else{
+            int nearestGreater=Integer.MAX_VALUE;
+            int nearestGreaterIndex=-1;
+            int nearestLower=Integer.MIN_VALUE;
+            int nearestLowerIndex=-1;
+            for(int f=0;f<formatParts.length;f++){
+                String wh[]=formatParts[f][1].split("x");
+                int h=Integer.parseInt(wh[1]);
+                if(h==qualityWidth){
+                    qualityIndex=f;
+                    break;
+                }else{
+                    if((h>qualityWidth)&&(nearestGreater>h)){
+                        nearestGreater=h;
+                        nearestGreaterIndex=f;
+                    }
+                    if((h<qualityWidth)&&(nearestLower<h)){
+                        nearestLower=h;
+                        nearestLowerIndex=f;
+                    }
+                }
+            }
+            if(qualityIndex==-1){
+               if(nearestLowerIndex!=-1){
+                   qualityIndex=nearestLowerIndex;
+                   logger.info("Selected quality not found, using nearest lower");
+               }else{
+                   qualityIndex=nearestGreaterIndex;
+                   logger.info("Selected quality not found, using nearest greater");
+               }
+            }
+        }
+
+        if(qualityIndex==-1) throw new PluginImplementationException("Cannot select quality");
+        logger.info("Quality to download: fmt"+formatParts[qualityIndex][0]+" "+formatParts[qualityIndex][1]);
+        fmt = Integer.parseInt(formatParts[qualityIndex][0]);
         setFileExtension(fmt);
     }
 
@@ -153,6 +198,8 @@ class YouTubeFileRunner extends AbstractRunner {
                 break;
             case 18:
             case 22:
+            case 37:
+            case 38:
                 fileExtension = ".mp4";
                 break;
         }

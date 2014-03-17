@@ -15,7 +15,7 @@ public class NarodServiceImpl extends AbstractFileShareService {
 
     public int getMaxDownloadsFromOneIP() {
         //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
-        return 1;
+        return 999; // ???
     }
 
     @Override

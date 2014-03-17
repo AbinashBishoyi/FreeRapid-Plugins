@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="netoload.in" version="1.0.0"
+        class="cz.vity.freerapid.plugins.services.netloadin.NetloadInShareServiceImpl">
+    <runtime>
+        <library id="netload.in" path="/" type="code"/>
+    </runtime>
+</plugin>

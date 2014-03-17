@@ -74,7 +74,7 @@ class AddatFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("nem tal·lhatÛ")) {
+        if (contentAsString.contains("nem tal√°lhat√≥")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

@@ -79,7 +79,7 @@ class EdiskRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (content.contains("neexistuje z ")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>PoÅ¾adovanÃ½ soubor nebyl nalezen.</b><br>"));
         }
         PlugUtils.checkFileSize(httpFile, content, "Velikost souboru: <strong>", "</strong>");
         PlugUtils.checkName(httpFile, content, "nout soubor:&nbsp;<span class=\"bold\">", " (");

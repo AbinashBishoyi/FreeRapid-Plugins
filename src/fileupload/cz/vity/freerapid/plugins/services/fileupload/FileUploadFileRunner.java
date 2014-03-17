@@ -64,8 +64,8 @@ class FileUploadFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("This file has been deleted");
         }
 
-        if (contentAsString.contains("Diese Datei wurde vom User oder durch eine Abuse-Meldung gelöscht") || contentAsString.contains("Datei existiert nicht auf unserem Server")) {
-            throw new URLNotAvailableAnymoreException("Diese Datei wurde vom User oder durch eine Abuse-Meldung gelöscht");
+        if (contentAsString.contains("Diese Datei wurde vom User oder durch eine Abuse-Meldung gelÃ¶scht") || contentAsString.contains("Datei existiert nicht auf unserem Server")) {
+            throw new URLNotAvailableAnymoreException("Diese Datei wurde vom User oder durch eine Abuse-Meldung gelÃ¶scht");
         }
     }
 
@@ -76,7 +76,7 @@ class FileUploadFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws Exception {
         final String contentAsString = getContentAsString();
         PlugUtils.checkName(httpFile, contentAsString, "<h1>Download \"", "\"<");
-        PlugUtils.checkFileSize(httpFile, contentAsString, checkFileURL(fileURL) ? "Filesize:</b></td><td> " : "Dateigröße:</b></td><td> ", "<");
+        PlugUtils.checkFileSize(httpFile, contentAsString, checkFileURL(fileURL) ? "Filesize:</b></td><td> " : "DateigrÃ¶ÃŸe:</b></td><td> ", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

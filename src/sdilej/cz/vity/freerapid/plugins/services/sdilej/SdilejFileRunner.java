@@ -63,7 +63,7 @@ class SdilejFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "Název souboru: ", "<");
+        PlugUtils.checkName(httpFile, contentAsString, "NÃ¡zev souboru: ", "<");
         PlugUtils.checkFileSize(httpFile, contentAsString, "Velikost souboru: ", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

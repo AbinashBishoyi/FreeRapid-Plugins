@@ -32,7 +32,7 @@ class DataFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<div class=\"download_filename\">", "</div>");
-        PlugUtils.checkFileSize(httpFile, content.replace("1,000.0 MB", "1 GB"), "fájlméret:", "<div");
+        PlugUtils.checkFileSize(httpFile, content.replace("1,000.0 MB", "1 GB"), "fÃ¡jlmÃ©ret:", "<div");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -68,10 +68,10 @@ class DataFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("nem létezik")) {
+        if (contentAsString.contains("nem lÃ©tezik")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-        if (contentAsString.contains("200 MB-nál nagyobb")) {
+        if (contentAsString.contains("200 MB-nÃ¡l nagyobb")) {
             throw new NotRecoverableDownloadException("Premium account needed for files >200MB");  //let to know user in FRD
         }
 

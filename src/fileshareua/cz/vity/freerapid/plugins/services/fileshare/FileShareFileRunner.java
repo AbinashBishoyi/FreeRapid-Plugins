@@ -55,14 +55,8 @@ class FileShareFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod)) {
                 throw new ServiceConnectionProblemException();
             }
-            String url_to_download = PlugUtils.getStringBetween(getContentAsString(),  "href=\"", "\" id=\"dl_link");
-            httpMethod = getMethodBuilder().setAction(url_to_download).toGetMethod();//getMethod.getPath() + "?fr").toGetMethod();
-
-//            if (!makeRedirectedRequest(httpMethod)) {
-//                throw new ServiceConnectionProblemException();
-//            }
-
-//            httpMethod = getMethodBuilder().setReferer(httpMethod.getURI().toString()).setActionFromAHrefWhereATagContains("Скачать файл").toGetMethod();
+            String url_to_download = PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\" id=\"dl_link");
+            httpMethod = getMethodBuilder().setAction(url_to_download).toGetMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 logger.warning(getContentAsString());

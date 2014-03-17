@@ -64,7 +64,7 @@ class NahrajFileRunner extends AbstractRunner {
         final Matcher matcher = getMatcherAgainstContent("Neznam. soubor");
 
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException("Neznamý soubor");
+            throw new URLNotAvailableAnymoreException("NeznamÃ½ soubor");
         }
     }
 
@@ -74,7 +74,7 @@ class NahrajFileRunner extends AbstractRunner {
         final Matcher matcher = getMatcherAgainstContent("V.cen.sobn. download");
 
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Vícenásobný download", 60);
+            throw new YouHaveToWaitException("VÃ­cenÃ¡sobnÃ½ download", 60);
         }
     }
 

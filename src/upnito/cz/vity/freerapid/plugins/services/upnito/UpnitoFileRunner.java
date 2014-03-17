@@ -45,7 +45,7 @@ class UpnitoFileRunner extends AbstractRunner {
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         //novy zpusob stahovani souboru
         if (content.contains("download.php")) {
-            //chyst·ö sa stiahnuù s˙bor flyshare.frp (<strong>4</strong>KB)</td>
+            //chyst√°≈° sa stiahnu≈• s√∫bor flyshare.frp (<strong>4</strong>KB)</td>
             PlugUtils.checkName(httpFile, content, "bor", "(<strong");
             Matcher matcher = PlugUtils.matcher("\\(<strong>([0-9]+)</strong>(.?B)\\)", content);
             if (matcher.find()) {
@@ -84,7 +84,7 @@ class UpnitoFileRunner extends AbstractRunner {
             this.downloadTask.sleep(10);
             final MethodBuilder builder = getMethodBuilder();
             builder.setBaseURL("http://dl1.upnito.sk").setActionFromFormByName("gdl", true).setReferer(newUrl);
-            builder.setAndEncodeParameter("tahaj", "Stiahnuù");
+            builder.setAndEncodeParameter("tahaj", "Stiahnu≈•");
             final HttpMethod httpMethod = builder.toHttpMethod();
             addCookie(new Cookie(".upnito.sk", "verifytext", builder.getParameters().get("verifytext")));
 //            final PostMethod postMethod = getPostMethod(newUrl);
@@ -93,7 +93,7 @@ class UpnitoFileRunner extends AbstractRunner {
 //            postMethod.addParameter("file", "");
 //            postMethod.addParameter("userinput", "");
 //            postMethod.addParameter("validated", "yes");
-//            postMethod.addParameter("tahaj", "Stiahnuù");
+//            postMethod.addParameter("tahaj", "Stiahnu≈•");
 
             //downloadTask.sleep(650);
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -122,14 +122,14 @@ class UpnitoFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("bol zmazan") || contentAsString.contains("bor sa na serveri nenach") || contentAsString.contains("bor nebol n")) {
-            throw new URLNotAvailableAnymoreException("S˙bor bol zmazan˝");
+            throw new URLNotAvailableAnymoreException("S√∫bor bol zmazan√Ω");
         }
         if (contentAsString.contains("za sebou stahovat ten")) {
             throw new YouHaveToWaitException("Nemozete tolkokrat za sebou stahovat ten isty subor!", 60);
         }
 
         if (PlugUtils.find("te stiahnu. zadarmo", contentAsString)) {
-            throw new ServiceConnectionProblemException("Z·ùaû 100% - nemÙûte stiahnuù zadarmo");
+            throw new ServiceConnectionProblemException("Z√°≈•a≈æ 100% - nem√¥≈æte stiahnu≈• zadarmo");
         }
 
         if (contentAsString.contains("Neplatny download")) {

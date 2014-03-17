@@ -54,7 +54,7 @@ class QuickshareRunner extends AbstractRunner {
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new ServiceConnectionProblemException("Všechny volné sloty jsou obsazeny nebo se z této IP již stahuje");
+                    throw new ServiceConnectionProblemException("VÅ¡echny volnÃ© sloty jsou obsazeny nebo se z tÃ©to IP jiÅ¾ stahuje");
                 }
             } else {
                 checkProblems();
@@ -72,7 +72,7 @@ class QuickshareRunner extends AbstractRunner {
         }
 
         if (content.contains("location.href='/chyba'")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zøejmì neexistuje</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zÅ™ejmÄ› neexistuje</b><br>"));
         }
         Matcher matcher = PlugUtils.matcher("zev: <strong>([^<]*)</strong>", content);
         if (matcher.find()) {
@@ -100,13 +100,13 @@ class QuickshareRunner extends AbstractRunner {
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         String content = getContentAsString();
         if (content.contains("location.href='/chyba'")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zøejmì neexistuje</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Chyba! Soubor zÅ™ejmÄ› neexistuje</b><br>"));
         }
         if (content.contains("obsazen na 100 %")) {
-            throw new YouHaveToWaitException(String.format("<b>Chyba! Volné sloty obsazeny</b><br>"), 60);
+            throw new YouHaveToWaitException(String.format("<b>Chyba! VolnÃ© sloty obsazeny</b><br>"), 60);
         }
         if (content.contains("Pokud chcete stahovat bez")) {
-            throw new ServiceConnectionProblemException(String.format("<b>Chyba! Momentálnì je z Vaší IP adresy již jedno stahování</b><br>"));
+            throw new ServiceConnectionProblemException(String.format("<b>Chyba! MomentÃ¡lnÄ› je z VaÅ¡Ã­ IP adresy jiÅ¾ jedno stahovÃ¡nÃ­</b><br>"));
         }
 
     }

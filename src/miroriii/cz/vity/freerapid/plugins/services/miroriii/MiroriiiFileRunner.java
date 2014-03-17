@@ -68,7 +68,7 @@ class MiroriiiFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Désolé ce fichier est introuvable.")) {
+        if (content.contains("DÃ©solÃ© ce fichier est introuvable.")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
@@ -101,7 +101,7 @@ class MiroriiiFileRunner extends AbstractRunner {
         serviceErrorMessages.put("HotFile.com", new String[]{"404 - Not Found", "File not found", "removed due to copyright", "document.getElementById('dwltmr"});
         serviceErrorMessages.put("Uploaded.to", new String[]{"The file status can only be queried by premium users"});
         serviceErrorMessages.put("Free.fr", new String[]{"Fichier inexistant."});
-        serviceErrorMessages.put("Sharehoster", new String[]{"Votre téléchargement n'est malheureusement pas disponible pour le moment!", "? ?????????, ???? ?????? ? ????????? ????? ?? ????????.", "Your download is currently unavailable!"});
+        serviceErrorMessages.put("Sharehoster", new String[]{"Votre tÃ©lÃ©chargement n'est malheureusement pas disponible pour le moment!", "? ?????????, ???? ?????? ? ????????? ????? ?? ????????.", "Your download is currently unavailable!"});
 
     }
 
@@ -177,8 +177,7 @@ class MiroriiiFileRunner extends AbstractRunner {
                 }
                 if (found) break;
             }
-        }
-        catch (PatternSyntaxException ex) {
+        } catch (PatternSyntaxException ex) {
             // Syntax error in the regular expression
         }
         if (found) {

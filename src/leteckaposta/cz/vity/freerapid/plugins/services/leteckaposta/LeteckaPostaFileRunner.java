@@ -57,10 +57,10 @@ class LeteckaPostaFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private void checkURL(){
-       Matcher m=Pattern.compile(".*/([0-9]+)/?").matcher(fileURL);
-        if(m.matches()){
-            fileURL="http://sharegadget.com/"+m.group(1)+"//cs";
+    private void checkURL() {
+        Matcher m = Pattern.compile(".*/([0-9]+)/?").matcher(fileURL);
+        if (m.matches()) {
+            fileURL = "http://sharegadget.com/" + m.group(1) + "//cs";
         }
     }
 
@@ -82,7 +82,7 @@ class LeteckaPostaFileRunner extends AbstractRunner {
                 if (!tryDownloadAndSaveFile(getMethod)) {
                     checkProblems();
                     logger.warning(getContentAsString());
-                    throw new ServiceConnectionProblemException("Vaöe adresa IP uû stahuje maxim·lnÌ poËet soubor˘ stahnuteln˝ch najednou");
+                    throw new ServiceConnectionProblemException("Va≈°e adresa IP u≈æ stahuje maxim√°ln√≠ po√®et soubor√π stahnuteln√Ωch najednou");
                 }
             } else throw new PluginImplementationException("Plugin error: Download link not found");
         } else {
@@ -100,7 +100,7 @@ class LeteckaPostaFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Soubor neexistuje");
         }
         if (contentAsString.contains("stahuje maxim")) {
-            throw new ServiceConnectionProblemException("Vaöe adresa IP uû stahuje maxim·lnÌ poËet soubor˘ stahnuteln˝ch najednou");
+            throw new ServiceConnectionProblemException("Va≈°e adresa IP u≈æ stahuje maxim√°ln√≠ po√®et soubor√π stahnuteln√Ωch najednou");
         }
     }
 

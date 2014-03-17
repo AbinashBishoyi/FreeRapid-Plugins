@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 
 /**
  * @author Jan Smejkal (edit from CZshare profi to RapidShare)
- * @edit Frantiöek Musil (lister@gamesplit.cz, repair multidownload)
+ * @edit Franti≈°ek Musil (lister@gamesplit.cz, repair multidownload)
  */
 class ShareRapidRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareRapidRunner.class.getName());
@@ -56,17 +56,17 @@ class ShareRapidRunner extends AbstractRunner {
             }
 
             matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\"><a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
-            if(matcher.find()) {
+            if (matcher.find()) {
                 String downURL = matcher.group(1);
-                if(!downURL.contains("http://"))
+                if (!downURL.contains("http://"))
                     downURL = serverURL + downURL;
-                for(int i = 0; i <= maxReconnect; i++) {
+                for (int i = 0; i <= maxReconnect; i++) {
                     final GetMethod method = getGetMethod(downURL);
 
                     httpFile.setState(DownloadState.GETTING);
-                    if(tryDownloadAndSaveFile(method))
+                    if (tryDownloadAndSaveFile(method))
                         return;
-                    if(!getContentAsString().equals(""))
+                    if (!getContentAsString().equals(""))
                         checkProblems();
                     downloadTask.sleep(timeToCheck);
 
@@ -80,8 +80,8 @@ class ShareRapidRunner extends AbstractRunner {
                     }
                     */
                 }
-                if(getContentAsString().equals(""))
-                   throw new NotRecoverableDownloadException("No credit for download this file or too many downloads!");
+                if (getContentAsString().equals(""))
+                    throw new NotRecoverableDownloadException("No credit for download this file or too many downloads!");
                 checkProblems();
                 logger.info(getContentAsString());
                 throw new PluginImplementationException();
@@ -136,14 +136,14 @@ class ShareRapidRunner extends AbstractRunner {
 
             PostMethod postmethod = getPostMethod(postURL);
 
-            PlugUtils.addParameters(postmethod, getContentAsString(), new String[]{"hash","sbmt"});
+            PlugUtils.addParameters(postmethod, getContentAsString(), new String[]{"hash", "sbmt"});
             postmethod.addParameter("login", pa.getUsername());
             postmethod.addParameter("pass1", pa.getPassword());
 
             if (makeRedirectedRequest(postmethod)) {
                 matcher = getMatcherAgainstContent("<title>P.ehled ..tu - Share-Rapid</title>");
-                if(!matcher.find()) {
-                    badConfig=true;
+                if (!matcher.find()) {
+                    badConfig = true;
                     throw new NotRecoverableDownloadException("Bad ShareRapid account login information!");
                 }
                 GetMethod getMethod = getGetMethod(fileURL);
@@ -164,7 +164,7 @@ class ShareRapidRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new NotRecoverableDownloadException("No credit for download!");
         }
-        if(badConfig) {
+        if (badConfig) {
             throw new NotRecoverableDownloadException("Bad ShareRapid account login information!");
         }
     }

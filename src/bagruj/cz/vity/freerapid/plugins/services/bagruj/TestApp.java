@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Ladislav Vitasek & Tom·ö Proch·zka <to.m.p@atomsoft.cz>
+ * @author Ladislav Vitasek & Tom√°≈° Proch√°zka <to.m.p@atomsoft.cz>
  */
 public class TestApp extends PluginDevApplication {
     protected void startup() {

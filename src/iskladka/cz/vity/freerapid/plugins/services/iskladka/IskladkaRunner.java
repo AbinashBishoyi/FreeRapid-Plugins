@@ -130,7 +130,7 @@ class IskladkaRunner extends AbstractRunner {
         Matcher matcher;
         matcher = getMatcherAgainstContent("Tento soubor ji. na .* nem.me");
         if (matcher.find()) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Tento soubor jiû nenÌ k dispozici.</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Tento soubor ji≈æ nen√≠ k dispozici.</b><br>"));
         }
     }
 

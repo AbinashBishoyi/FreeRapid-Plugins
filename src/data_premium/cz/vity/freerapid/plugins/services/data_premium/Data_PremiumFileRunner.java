@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.data_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -37,7 +36,7 @@ class Data_PremiumFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<div class=\"download_filename\">", "</div>");
-        PlugUtils.checkFileSize(httpFile, content.replace("1,000.0 MB", "1 GB"), "fájlméret:", "<div");
+        PlugUtils.checkFileSize(httpFile, content.replace("1,000.0 MB", "1 GB"), "fÃ¡jlmÃ©ret:", "<div");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -57,7 +56,7 @@ class Data_PremiumFileRunner extends AbstractRunner {
             }
 
             makeRedirectedRequest(getMethod);
-            matcher = getMatcherAgainstContent("Nincs érvényes prémium elõfizetésed!");
+            matcher = getMatcherAgainstContent("Nincs Ã©rvÃ©nyes prÃ©mium elÃµfizetÃ©sed!");
             if (matcher.find()) {
                 logger.info("No premium");
                 throw new NotRecoverableDownloadException("Not premium account!");
@@ -141,7 +140,7 @@ class Data_PremiumFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("nem létezik")) {
+        if (contentAsString.contains("nem lÃ©tezik")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

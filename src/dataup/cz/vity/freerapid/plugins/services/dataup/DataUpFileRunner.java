@@ -64,8 +64,8 @@ class DataUpFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Es wurde kein Download unter diesem Link gefunden");
         }
 
-        if (contentAsString.contains("Die Datei wurde vom Benutzer gelöscht")) {
-            throw new URLNotAvailableAnymoreException("Die Datei wurde vom Benutzer gelöscht");
+        if (contentAsString.contains("Die Datei wurde vom Benutzer gelÃ¶scht")) {
+            throw new URLNotAvailableAnymoreException("Die Datei wurde vom Benutzer gelÃ¶scht");
         }
     }
 
@@ -75,7 +75,7 @@ class DataUpFileRunner extends AbstractRunner {
         final Matcher matcher = getMatcherAgainstContent("Der Download Link ist aus Sicherheitsgr.nden nur 5 Minuten Aktiv");
 
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Der Download Link ist aus Sicherheitsgründen nur 5 Minuten Aktiv. Fordere den Download bitte neu an", 10);
+            throw new YouHaveToWaitException("Der Download Link ist aus SicherheitsgrÃ¼nden nur 5 Minuten Aktiv. Fordere den Download bitte neu an", 10);
         }
     }
 

@@ -52,46 +52,46 @@ class PrzeklejFileRunner extends AbstractRunner {
             //Getting download url
             String finalURL = "http://www.przeklej.pl" + PlugUtils.getStringBetween(contentAsString, "<h1><a href=\"", "\" title=\"Pobierz plik\"");
             //If file is password protected
-            if(contentAsString.contains("WprowadŸ has³o")){
+            if (contentAsString.contains("WprowadÅº hasÅ‚o")) {
                 logger.info(">>>>> The file is password protected <<<<<");
-                while(getContentAsString().contains("WprowadŸ has³o")) {
+                while (getContentAsString().contains("WprowadÅº hasÅ‚o")) {
                     final PostMethod post = getPostMethod(finalURL);
                     post.setParameter("haslo[haslo]", getPassword());
                     client.setReferer(fileURL);
-                        final int resultCode = client.makeRequest(post, false);
-                    logger.info("----------- "+getContentAsString()+"---------------");
-                        if (!isRedirect(resultCode))
-                            throw new PluginImplementationException("Redirect not found");
+                    final int resultCode = client.makeRequest(post, false);
+                    logger.info("----------- " + getContentAsString() + "---------------");
+                    if (!isRedirect(resultCode))
+                        throw new PluginImplementationException("Redirect not found");
                     Cookie[] cookies = client.getHTTPClient().getState().getCookies();
-                    for(Cookie c : cookies){
+                    for (Cookie c : cookies) {
                         logger.info(">>>>> " + c.getName() + " : " + c.getValue() + " <<<<<");
                     }
-                    logger.info("~~~~~~~~~~~~~   "+"   ~~~~~~~~~~~~~~");
-                        final Header responseLocation = post.getResponseHeader("Location");//Location does not return correct URL
-                        if (responseLocation == null)
-                            throw new PluginImplementationException("Location header not found");
-                        logger.info(">>>>> Location: "+responseLocation.getValue()+" <<<<<");
+                    logger.info("~~~~~~~~~~~~~   " + "   ~~~~~~~~~~~~~~");
+                    final Header responseLocation = post.getResponseHeader("Location");//Location does not return correct URL
+                    if (responseLocation == null)
+                        throw new PluginImplementationException("Location header not found");
+                    logger.info(">>>>> Location: " + responseLocation.getValue() + " <<<<<");
                     //Getting correct file name from redirect URL
                     Pattern p = Pattern.compile("http://.*\\.przeklej.pl/[a-z0-9]+/[a-z0-9]+/(.*)\\?przid=.*");
                     Matcher m = p.matcher(responseLocation.getValue());
-                    if(!m.find()){
+                    if (!m.find()) {
                         p = Pattern.compile("/(plik)/.*");
                         m = p.matcher(responseLocation.getValue());
                         //If there is no download url then check if there is redirect to bad password page
-                        if(!m.find()) {
+                        if (!m.find()) {
                             logger.warning(getContentAsString());
                             throw new PluginImplementationException("Error while preparing download");
                         } else throw new BadLoginException("Incorrect password");
                     }
-                    logger.info(">>>>> File name: "+m.group(1).trim()+" <<<<<");
+                    logger.info(">>>>> File name: " + m.group(1).trim() + " <<<<<");
                     //Setting correct file name in case site will cut some part of it
                     httpFile.setFileName(m.group(1).trim());
-                        final HttpMethod finalHttpMethod = getMethodBuilder().setReferer(finalURL).setAction(responseLocation.getValue()).toHttpMethod();
-                        if (!tryDownloadAndSaveFile(finalHttpMethod)) {
-                            checkProblems();
-                            logger.warning(getContentAsString());
-                            throw new PluginImplementationException();
-                        }
+                    final HttpMethod finalHttpMethod = getMethodBuilder().setReferer(finalURL).setAction(responseLocation.getValue()).toHttpMethod();
+                    if (!tryDownloadAndSaveFile(finalHttpMethod)) {
+                        checkProblems();
+                        logger.warning(getContentAsString());
+                        throw new PluginImplementationException();
+                    }
                 }
             } else {
                 logger.info(">>>>> The file is unprotected <<<<<");
@@ -103,7 +103,7 @@ class PrzeklejFileRunner extends AbstractRunner {
                     throw new PluginImplementationException();//some unknown problem
                 }
             }
-            
+
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -117,10 +117,10 @@ class PrzeklejFileRunner extends AbstractRunner {
         }
     }
 
-    private String getPassword() throws Exception{
+    private String getPassword() throws Exception {
 
         PrzeklejPasswordUI ps = new PrzeklejPasswordUI();
-        if(getDialogSupport().showOKCancelDialog(ps, "Secured file on Przeklej.pl")){
+        if (getDialogSupport().showOKCancelDialog(ps, "Secured file on Przeklej.pl")) {
             return (ps.getPassword());
         } else throw new NotRecoverableDownloadException("This file is password secured");
 

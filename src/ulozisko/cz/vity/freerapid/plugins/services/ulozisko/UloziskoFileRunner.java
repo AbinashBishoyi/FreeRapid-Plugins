@@ -58,8 +58,8 @@ class UloziskoFileRunner extends AbstractRunner {
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("Zadanı súbor neexistuje")) {
-            throw new URLNotAvailableAnymoreException("Zadanı súbor neexistuje");
+        if (contentAsString.contains("ZadanÃ½ sÃºbor neexistuje")) {
+            throw new URLNotAvailableAnymoreException("ZadanÃ½ sÃºbor neexistuje");
         }
     }
 
@@ -67,19 +67,19 @@ class UloziskoFileRunner extends AbstractRunner {
         checkSeriousProblems();
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("Neopísali ste správny overovací reazec")) {
-            throw new YouHaveToWaitException("Neopísali ste správny overovací reazec", 4);
+        if (contentAsString.contains("NeopÃ­sali ste sprÃ¡vny overovacÃ­ reÅ¥azec")) {
+            throw new YouHaveToWaitException("NeopÃ­sali ste sprÃ¡vny overovacÃ­ reÅ¥azec", 4);
         }
 
-        if (contentAsString.contains("Prekroèili ste download-limit pre free pouívate¾ov")) {
-            throw new YouHaveToWaitException("Prekroèili ste download-limit pre free pouívate¾ov", PlugUtils.getWaitTimeBetween(contentAsString, "cas = ", ";", TimeUnit.SECONDS));
+        if (contentAsString.contains("PrekroÄili ste download-limit pre free pouÅ¾Ã­vateÄ¾ov")) {
+            throw new YouHaveToWaitException("PrekroÄili ste download-limit pre free pouÅ¾Ã­vateÄ¾ov", PlugUtils.getWaitTimeBetween(contentAsString, "cas = ", ";", TimeUnit.SECONDS));
         }
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         PlugUtils.checkName(httpFile, contentAsString, "\">", "</div><br /><br /><br /><b>Detaily");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "Ve¾kos súboru: <strong>", "<");
+        PlugUtils.checkFileSize(httpFile, contentAsString, "VeÄ¾kosÅ¥ sÃºboru: <strong>", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

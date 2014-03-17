@@ -11,7 +11,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -33,6 +32,7 @@ class DisperseiTFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        checkProblems();//check problems
         PlugUtils.checkName(httpFile, content, "<label>File:</label>", "<br />");
         PlugUtils.checkFileSize(httpFile, content, "<span class=\"note\">Size: ", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -45,14 +45,8 @@ class DisperseiTFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            Matcher matcher = getMatcherAgainstContent("<a href=\"(.+)\"><h1 align=\"center\">Download</h1></a>");
-            if (!matcher.find()){
-                throw new PluginImplementationException();
-            }
-            String s = matcher.group(1);
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(s).toHttpMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -68,7 +62,7 @@ class DisperseiTFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("does not exist!")) {
+        if (contentAsString.contains("The file you are trying to access does not exist!")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         } else
         if (contentAsString.contains("has been removed!")){

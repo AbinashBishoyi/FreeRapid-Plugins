@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="disperseit.com" version="1.0" vendor="Eterad"
+<plugin id="disperseit.com" version="1.0.1" vendor="Eterad"
         class="cz.vity.freerapid.plugins.services.disperseit.DisperseiTServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?disperseit\.com/view/.+"/>

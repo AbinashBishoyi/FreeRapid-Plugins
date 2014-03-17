@@ -1,12 +1,7 @@
 package cz.vity.freerapid.plugins.services.rapidshare;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.interfaces.ConfigurationStorageSupport;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
-
-import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author Ladislav Vitasek
@@ -46,7 +41,6 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
         }
     }
 
-    private final static Logger logger = Logger.getLogger(RapidShareServiceImpl.class.getName());
     private static final String SERVICE_NAME = "RapidShare.com";
 
     @Override
@@ -63,36 +57,5 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new RapidShareRunner();
     }
-
-    @Override
-    public void showOptions() throws Exception {
-
-        //this bloody shit should be rewritten
-        final RapidShareMirrorConfig config = getConfig();
-        MirrorChooser chooser = new MirrorChooser(getPluginContext(), config);
-        chooser.chooseFromList();
-    }
-
-    RapidShareMirrorConfig getConfig() throws Exception {
-        ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
-        if (mirrorConfig == null)
-            mirrorConfig = new RapidShareMirrorConfig();
-        mirrorConfig.setAr(new ArrayList<MirrorBean>());
-        if (!storage.configFileExists(MirrorChooser.CONFIGFILE)) {
-            logger.info("Initializing new mirrorConfig ");
-        } else {
-            logger.info("Loading mirrorConfig from config file");
-            try {
-                mirrorConfig = storage.loadConfigFromFile(MirrorChooser.CONFIGFILE, RapidShareMirrorConfig.class);
-                logger.info("Loading mirrorConfig from config file failed");
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Loading mirrorConfig from config file failed", e);
-            }
-        }
-        MirrorChooser.initPreferred(mirrorConfig);
-        return mirrorConfig;
-    }
-
-    private volatile RapidShareMirrorConfig mirrorConfig;
 
 }

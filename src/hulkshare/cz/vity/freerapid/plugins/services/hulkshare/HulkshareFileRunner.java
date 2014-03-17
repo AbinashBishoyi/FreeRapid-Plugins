@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.hulkshare;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -20,7 +19,6 @@ import java.util.logging.Logger;
 class HulkshareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HulkshareFileRunner.class.getName());
 
-
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
@@ -28,8 +26,10 @@ class HulkshareFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
@@ -47,15 +47,13 @@ class HulkshareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final String x = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\" onclick=\"");
-//            System.out.println("x = " + x);
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(x).toHttpMethod();
+            final String x = PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\" onclick=\"download");
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(x).toGetMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new PluginImplementationException();//some unknown problem
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else {
             checkProblems();
@@ -65,10 +63,7 @@ class HulkshareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
-        }
-        if (contentAsString.contains("No such user exist")) {
+        if (contentAsString.contains("File Not Found") || contentAsString.contains("No such user exist")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

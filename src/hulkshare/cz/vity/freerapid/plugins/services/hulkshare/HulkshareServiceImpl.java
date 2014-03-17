@@ -5,16 +5,18 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * Class that provides basic info about plugin
+ *
  * @author Vity
  */
 public class HulkshareServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "hulkshare.com";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
-        //TODO don't forget to update this value, in plugin.xml don't forget to update this value too
         return 1;
     }
 

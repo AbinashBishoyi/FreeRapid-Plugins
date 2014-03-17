@@ -83,18 +83,18 @@ class WatFileRunner extends AbstractRunner {
                 .setAction("/get" + url)
                 .setParameter("token", getToken(url))
                 .setParameter("domain", "www.wat.tv")
-                .setParameter("domain2", "null")
-                .setParameter("revision", "4.1.028")
+                .setParameter("refererURL", "www.wat.tv")
+                .setParameter("revision", "04.00.123%0A")
                 .setParameter("synd", "0")
                 .setParameter("helios", "1")
-                .setParameter("context", "swf2")
+                .setParameter("context", "playerWat")
                 .setParameter("pub", "1")
                 .setParameter("country", "FR")
                 .setParameter("sitepage", "")
                 .setParameter("lieu", "wat")
                 .setParameter("playerContext", "CONTEXT_WAT")
                 .setParameter("getURL", "1")
-                .setParameter("version", "WIN%202011,1,102,55")
+                .setParameter("version", "WIN%2011,7,700,224")
                 .toGetMethod();
         if (makeRedirectedRequest(method)) {
             return getContentAsString().trim();
@@ -104,7 +104,7 @@ class WatFileRunner extends AbstractRunner {
     }
 
     private String getToken(final String url) throws Exception {
-        final String salt = "9b673b13fa4682ed14c3cfa5af5310274b514c4133e9b3a81e6e3aba00912564";
+        final String salt = "9b673b13fa4682ed14c3cfa5af5310274b514c4133e9b3a81e6e3aba009l2564";
         final String time = String.format("%08x", System.currentTimeMillis() / 1000);
         return DigestUtils.md5Hex(salt + url + time) + "/" + time;
     }

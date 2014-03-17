@@ -24,12 +24,15 @@ public class SoundReader {
     private boolean nuly=true;
     private long pocetNul=0;
     private String word="";
-    private Classifier classifier=null;
+    private static Classifier classifier=null;
 
     
     public SoundReader() {
-        classifier=new Classifier();
-        classifier.load("/resources/captcha.bin");
+       if(classifier==null)
+       {
+         classifier=new Classifier();
+         classifier.load("/resources/captcha.bin");
+       }
     }
 
 

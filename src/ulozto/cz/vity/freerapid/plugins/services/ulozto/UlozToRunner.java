@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.httpclient.methods.PostMethod;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, JPEXS (captcha)
@@ -24,17 +25,33 @@ import java.util.regex.Pattern;
 class UlozToRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UlozToRunner.class.getName());
     private int captchaCount = 0;
-    private static SoundReader captchaReader = null;
 
     public UlozToRunner() {
         super();
     }
 
+    private void ageCheck(String content) throws Exception{
+       if(content.contains("confirmContent")){ //eroticky obsah vyzaduje potvruemo
+               String confirmUrl=checkURL(fileURL)+"?do=askAgeForm-submit";               
+               PostMethod confirmMethod = (PostMethod) getMethodBuilder()
+                       .setAction(confirmUrl)
+                       .setEncodePathAndQuery(true)
+                       .setAndEncodeParameter("agree", "Souhlas\u00edm")
+                       .toPostMethod();
+               makeRedirectedRequest(confirmMethod);
+               if(getContentAsString().contains("confirmContent")){
+                  throw new PluginImplementationException("Cannot confirm age");
+               }
+       }
+    }
+    
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).setParameter("disclaimer", "1").toHttpMethod();
+        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
+            checkProblems();
+            ageCheck(getContentAsString());
             checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException();
@@ -43,12 +60,13 @@ class UlozToRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).setParameter("disclaimer", "1").toHttpMethod();
+        final HttpMethod getMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         getMethod.setFollowRedirects(true);
-        if (makeRedirectedRequest(getMethod)) {
-            if (getContentAsString().contains("captchaContainer")) {
-
-                checkNameAndSize(getContentAsString());
+        if (makeRedirectedRequest(getMethod)) { 
+            checkProblems();
+            ageCheck(getContentAsString());
+            checkNameAndSize(getContentAsString());
+            if (getContentAsString().contains("captchaContainer")) {                
                 boolean saved = false;
                 captchaCount = 0;
                 while (getContentAsString().contains("captchaContainer") || getContentAsString().contains("?captcha=no")) {
@@ -63,8 +81,8 @@ class UlozToRunner extends AbstractRunner {
                     }
                     if ((method.getStatusCode() == 302)||(method.getStatusCode() == 303)) {
                         String nextUrl = method.getResponseHeader("Location").getValue();
-                        method = getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).setParameter("disclaimer", "1").toHttpMethod();
-                        if (nextUrl.contains("captcha=no#cpt")) {
+                        method = getMethodBuilder().setReferer(method.getURI().toString()).setAction(nextUrl).toHttpMethod();
+                        if (nextUrl.contains("captcha=no#cpt")) { //takhle to uz asi v nove verzi neni, ale pro jistotu
                             makeRequest(method);
                             logger.warning("Wrong captcha code");
                             continue;
@@ -72,7 +90,7 @@ class UlozToRunner extends AbstractRunner {
                         if (nextUrl.contains("full=y"))
                             throw new YouHaveToWaitException("Nejsou dostupne FREE sloty", 40);
                         downloadTask.sleep(new Random().nextInt(15) + new Random().nextInt(3));
-                        if (saved = tryDownloadAndSaveFile(method)) break;
+                        if (saved = tryDownloadAndSaveFile(method)) break;                        
                     }
                     checkProblems();
                 }
@@ -86,7 +104,10 @@ class UlozToRunner extends AbstractRunner {
                 throw new PluginImplementationException();
             }
         } else
-            throw new PluginImplementationException();
+        {
+           checkProblems();
+           throw new PluginImplementationException();
+        }
     }
 
     private String checkURL(String fileURL) {
@@ -103,35 +124,39 @@ class UlozToRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Pozadovany soubor nebyl nalezen");
         }
         
-        httpFile.setFileName(PlugUtils.getStringBetween(content, "class=\"jsShowDownload\">", "</a>"));
+        PlugUtils.checkName(httpFile, content, "class=\"jsShowDownload\">", "</a>");
 
-        String size=PlugUtils.getStringBetween(content, "<span id=\"fileSize\">", "</span>");
-        if(size.contains("|")){
-           size=size.substring(size.indexOf("|")+1).trim();
-        }
         
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
+        String size="";
+        try{
+            size=PlugUtils.getStringBetween(content, "<span id=\"fileSize\">", "</span>");
+            if(size.contains("|")){
+               size=size.substring(size.indexOf("|")+1).trim();
+            }
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
+        }catch(PluginImplementationException ex){
+           //u online videi neni velikost
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-
+    
     private HttpMethod stepCaptcha() throws Exception {
         if (getContentAsString().contains("Please click here to continue")) {
             logger.info("Using HTML redirect");
             return getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Please click here to continue").toGetMethod();
         }
         CaptchaSupport captchaSupport = getCaptchaSupport();
-        MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha");
+        MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("class=\"captcha\"");
         String captcha = "";
-        if (captchaCount++ < 3) {
+        if (captchaCount++ < 6) {
             logger.info("captcha url:" + captchaMethod.getAction());
             Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
             if (m.find()) {
                 String number = m.group(1);
-                if (captchaReader == null) {
-                    captchaReader = new SoundReader();
-                }
+                SoundReader captchaReader = new SoundReader();          
                 HttpMethod methodSound = getMethodBuilder().setAction("http://img.uloz.to/captcha/sound/" + number + ".mp3").toGetMethod();
                 captcha = captchaReader.parse(client.makeRequestForFile(methodSound));
+                methodSound.releaseConnection();
             }
         } else {
             captcha = captchaSupport.getCaptcha(captchaMethod.getAction());

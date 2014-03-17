@@ -1,14 +1,15 @@
 package cz.vity.freerapid.plugins.services.bebasupload;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -33,22 +34,33 @@ class BebasUploadFileRunner extends AbstractRunner {
             throw new PluginImplementationException();
     }
 
-    private void Login() throws Exception {
-        PostMethod postMethod = getPostMethod("http://bebasupload.com/");
+    private boolean login() throws Exception {
+        synchronized (BebasUploadFileRunner.class) {
+            BebasUploadServiceImpl service = (BebasUploadServiceImpl) getPluginService();
+            PremiumAccount pa = service.getConfig();
 
-        postMethod.addParameter("op", "login");
-        postMethod.addParameter("redirect", "");
-        postMethod.addParameter("login", "freerapid");
-        postMethod.addParameter("password", "freerapid");
-        postMethod.addParameter("submit", "");
+            if (pa == null || !pa.isSet()) {
+                logger.info("No account data set, skipping login");
+                return false;
+            }
 
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setAction("http://bebasupload.com/")
+                    .setParameter("op", "login")
+                    .setParameter("redirect", "")
+                    .setParameter("login", pa.getUsername())
+                    .setParameter("password", pa.getPassword())
+                    .setParameter("submit", "")
+                    .toPostMethod();
+            addCookie(new Cookie(".bebasupload.com", "login", pa.getUsername(), "/", null, false));
+            addCookie(new Cookie(".bebasupload.com", "xfss", "", "/", null, false));
+            if (!makeRedirectedRequest(httpMethod))
+                throw new ServiceConnectionProblemException("Error posting login info");
+            if (getContentAsString().contains("Incorrect Login or Password"))
+                throw new NotRecoverableDownloadException("Invalid BebasUpload registered account login information!");
 
-        addCookie(new Cookie(".bebasupload.com", "login", "freerapid", "/", null, false));
-        addCookie(new Cookie(".bebasupload.com", "xfss", "", "/", null, false));
-
-        makeRedirectedRequest(postMethod);
-
-
+            return true;
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
@@ -61,11 +73,9 @@ class BebasUploadFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
 
-
         logger.info("Starting download in TASK " + fileURL);
-        Login();
-        String content = getContentAsString();
-
+        login();
+        String content;
 
         GetMethod method = getGetMethod(fileURL); //create GET request
         if (!makeRedirectedRequest(method)) { //we make the main request
@@ -75,30 +85,48 @@ class BebasUploadFileRunner extends AbstractRunner {
 
         content = getContentAsString();
 
-
-        HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).setBaseURL(fileURL).setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).removeParameter("method_premium").toHttpMethod();//TODO
+        HttpMethod httpMethod = getMethodBuilder()
+                .setAction(fileURL)
+                .setBaseURL(fileURL)
+                .setReferer(fileURL)
+                .setActionFromFormWhereTagContains("Free Download", true)
+                .removeParameter("method_premium")
+                .toHttpMethod();
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();//if downloading failed
             logger.warning(getContentAsString());//log the info
             throw new PluginImplementationException();//some unknown problem
         }
         content = getContentAsString();
-
         checkProblems();
+        MethodBuilder methodBuilder = getMethodBuilder(content)
+                .setActionFromFormByName("F1", true)
+                .setAction(fileURL)
+                .removeParameter("method_premium");
 
-        if (content.contains("Wait <span id=\"countdown\">")) {
-            String stringWait = PlugUtils.getStringBetween(content, "Wait <span id=\"countdown\">", "</span>");
-            int wait = new Integer(stringWait);
-            downloadTask.sleep(wait);
+        //process wait time
+        String waitTimeRule = "id=\"countdown_str\".*?<span id=\".*?\">.*?(\\d+).*?</span";
+        Matcher waitTimematcher = PlugUtils.matcher(waitTimeRule, content);
+        if (waitTimematcher.find()) {
+            downloadTask.sleep(Integer.parseInt(waitTimematcher.group(1)));
         }
-        if (content.contains("captcha")) {
-            logger.info("CAPTCHA INPUT!!!");
 
-            httpMethod = stepCaptcha();
-
+        if (content.contains("recaptcha")) {
+            httpMethod = stepCaptcha(methodBuilder);
         } else {
-            httpMethod = getMethodBuilder().setAction(fileURL).setBaseURL(fileURL).setReferer(fileURL).setActionFromFormByName("F1", true).removeParameter("method_premium").toHttpMethod();//TODO
-
+            httpMethod = methodBuilder.toPostMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();//if downloading failed
+                logger.warning(getContentAsString());//log the info
+                throw new PluginImplementationException();//some unknown problem
+            }
+            content = getContentAsString();
+            checkProblems();
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setActionFromAHrefWhereATagContains(httpFile.getFileName())
+                    .toGetMethod();
+            logger.info("Final URL : " + httpMethod.getURI().toString());
         }
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -106,30 +134,27 @@ class BebasUploadFileRunner extends AbstractRunner {
             logger.warning(getContentAsString());//log the info
             throw new PluginImplementationException();//some unknown problem
         }
-        content = getContentAsString();
-        logger.info(content);
-        checkProblems();
-
     }
 
-    private HttpMethod stepCaptcha() throws Exception {
+    private HttpMethod stepCaptcha(MethodBuilder methodBuilder) throws Exception {
+        final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha/api/noscript\\?k=(.*?)\"");
+        if (!reCaptchaKeyMatcher.find()) {
+            throw new PluginImplementationException("ReCaptcha key not found");
+        }
+        final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
 
-        CaptchaSupport captchaSupport = getCaptchaSupport();
-        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("captchas").getAction();
-        checkProblems();
+        logger.info("recaptcha public key : " + reCaptchaKey);
 
-
-        logger.info("Captcha URL " + s);
-        String captcha = captchaSupport.getCaptcha(s);
+        final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
-        } else {
-            final HttpMethod postMethod = getMethodBuilder().setActionFromFormByName("F1", true).setAction(fileURL).
-                    setParameter("code", captcha).removeParameter("method_premium").toPostMethod();
-            return postMethod;
-
         }
+        r.setRecognized(captcha);
+        return r.modifyResponseMethod(methodBuilder)
+                .toPostMethod();
     }
+
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         int xMinutes = 0;

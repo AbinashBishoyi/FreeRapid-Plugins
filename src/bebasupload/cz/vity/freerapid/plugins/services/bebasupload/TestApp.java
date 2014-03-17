@@ -16,10 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://bebasupload.com/g6gw3vrilyd2"));//TODO
+            //httpFile.setNewURL(new URL("http://bebasupload.com/g6gw3vrilyd2"));
+            httpFile.setNewURL(new URL("http://bebasupload.com/l157n4cumn4p/www.indofiles.org_WNTTLKAKVN72PARNT.part1.rar.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final BebasUploadServiceImpl service = new BebasUploadServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

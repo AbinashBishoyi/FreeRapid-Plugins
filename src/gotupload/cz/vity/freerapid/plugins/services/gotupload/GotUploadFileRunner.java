@@ -32,8 +32,8 @@ class GotUploadFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h2>Download File", "</h2>");
-        PlugUtils.checkFileSize(httpFile, content, "(", ")</font>");
+        PlugUtils.checkName(httpFile, content, "Filename:</b></td><td>", "</td>");
+        PlugUtils.checkFileSize(httpFile, content, "Size:</b></td><td>", "<small>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -69,7 +69,6 @@ class GotUploadFileRunner extends AbstractRunner {
                 getmethod.addParameter("rand", random);
                 getmethod.addParameter("referer", fileURL);
                 getmethod.addParameter("btn_download", "Sending File...");
-                downloadTask.sleep(45);
                 if (!tryDownloadAndSaveFile(getmethod)) {
                     checkProblems();//if downloading failed
                     logger.warning(getContentAsString());//log the info
@@ -93,11 +92,14 @@ class GotUploadFileRunner extends AbstractRunner {
         if (getContentAsString().contains("You have to wait")) {
             matcher = getMatcherAgainstContent("You have to wait ([0-9]+) minute");
             if (matcher.find()) {
-                throw new YouHaveToWaitException("You have reached the download-limit for free-users.", Integer.parseInt(matcher.group(1)) * 60 + 59);
+                throw new YouHaveToWaitException("You have reached the download limit", Integer.parseInt(matcher.group(1)) * 60 + 59);
             }
             throw new ServiceConnectionProblemException("You have reached the download-limit for free-users.");
         }
-        if (contentAsString.contains("Not Found|No such user")) {
+        if (contentAsString.contains("You have reached the download")) {
+            throw new ErrorDuringDownloadingException("You have reached the download-limit for free-users.");
+        }
+        if (contentAsString.contains("Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

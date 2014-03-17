@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.gotupload.com/z9a0jn5jor43/Mx_Vs_Atv_Reflex_XBOX360-SPARE.sfv"));
+            httpFile.setNewURL(new URL("http://gotupload.com/5i0mc50v8u32/The.Sims.3.World.Adventures-RELOADED_sharedb.net.part14.rar.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

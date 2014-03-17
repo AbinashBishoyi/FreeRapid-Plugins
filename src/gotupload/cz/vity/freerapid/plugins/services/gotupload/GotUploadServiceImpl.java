@@ -14,7 +14,7 @@ public class GotUploadServiceImpl extends AbstractFileShareService {
     }
 
     public int getMaxDownloadsFromOneIP() {
-        return 1;
+        return 2;
     }
 
     @Override

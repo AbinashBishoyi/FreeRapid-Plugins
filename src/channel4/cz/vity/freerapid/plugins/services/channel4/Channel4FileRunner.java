@@ -23,14 +23,15 @@ import java.util.regex.Matcher;
 class Channel4FileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(Channel4FileRunner.class.getName());
     private final static byte[] DECRYPT_KEY = "STINGMIMI".getBytes(Charset.forName("UTF-8"));
-    private static SwfVerificationHelper helper;
+    private final static SwfVerificationHelper helper = new SwfVerificationHelper("http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer_am2.swf");
+    private String id;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         checkFileUrl();
-        final HttpMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
         } else {
@@ -41,7 +42,7 @@ class Channel4FileRunner extends AbstractRtmpRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String name;
-        final Matcher matcher = getMatcherAgainstContent("id=\"brandLink\">\\s*<span>\\s*(.+?)(?: \\| Series (\\d+))?(?: \\| Episode (\\d+))? \\- (.+?)\\s*</span>");
+        final Matcher matcher = getMatcherAgainstContent("id=\"brandLink\">\\s*(.+?)(?: \\| Series (\\d+))?(?: \\| Episode (\\d+))? \\- (.+?)\\s*</");
         if (matcher.find()) {
             final String program = matcher.group(1).replace(": ", " - ");
             final String seasonNum = matcher.group(2);
@@ -67,7 +68,7 @@ class Channel4FileRunner extends AbstractRtmpRunner {
         } else {
             try {
                 name = PlugUtils.getStringBetween(getContentAsString(), "<title>", "- 4oD - Channel 4</title>");
-            } catch (PluginImplementationException e) {
+            } catch (final PluginImplementationException e) {
                 throw new PluginImplementationException("File name not found");
             }
         }
@@ -80,7 +81,8 @@ class Channel4FileRunner extends AbstractRtmpRunner {
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing file URL");
         }
-        fileURL = matcher.group(1) + "/player/" + matcher.group(2);
+        id = matcher.group(2);
+        fileURL = matcher.group(1) + "/player/" + id;
     }
 
     @Override
@@ -92,12 +94,7 @@ class Channel4FileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            prepareSwfvHelper();
-            Matcher matcher = PlugUtils.matcher("/programmes/(.+?)/4od.+?(\\d+)$", fileURL);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Error parsing file URL");
-            }
-            method = getGetMethod("http://www.channel4.com/programmes/" + matcher.group(1) + "/4od/asset/" + matcher.group(2) + "?" + System.currentTimeMillis());
+            method = getGetMethod("http://ais.channel4.com/asset/" + id);
             makeRedirectedRequest(method);
             if (getContentAsString().contains("status=\"ERROR\"")) {
                 if (getContentAsString().contains("ip tested positive for anonymous activity")) {
@@ -106,7 +103,8 @@ class Channel4FileRunner extends AbstractRtmpRunner {
                     throw new URLNotAvailableAnymoreException("Video not found");
                 } else {
                     try {
-                        throw new NotRecoverableDownloadException(PlugUtils.getStringBetween(getContentAsString(), "<description>", "</description>"));
+                        throw new NotRecoverableDownloadException(
+                                PlugUtils.getStringBetween(getContentAsString(), "<description>", "</description>"));
                     } catch (PluginImplementationException e) {
                         throw new NotRecoverableDownloadException("Error fetching playlist");
                     }
@@ -114,14 +112,18 @@ class Channel4FileRunner extends AbstractRtmpRunner {
             }
             logger.info(getContentAsString());
             final String streamUri = PlugUtils.getStringBetween(getContentAsString(), "<streamUri>", "</streamUri>");
-            matcher = PlugUtils.matcher("(rtmpe?)://(.+?)/(.+?/)(mp4:.+)", streamUri);
+            if (streamUri.startsWith("http")) {
+                throw new PluginImplementationException("This link is currently not supported by the plugin");
+            }
+            final Matcher matcher = PlugUtils.matcher("(rtmpe?)://(.+?)/(.+?/)(mp4:.+)", streamUri);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Error parsing stream URI");
             }
-            final boolean ak = PlugUtils.getStringBetween(getContentAsString(), "<cdn>", "</cdn>").equalsIgnoreCase("ak");
+            final boolean ak = "ak".equalsIgnoreCase(PlugUtils.getStringBetween(getContentAsString(), "<cdn>", "</cdn>"));
             final String auth = getAuthParams(getContentAsString(), ak);
             final String playName = matcher.group(4);
-            final RtmpSession rtmpSession = new RtmpSession(matcher.group(2), 1935, matcher.group(3) + auth, ak ? playName : playName + auth, matcher.group(1));
+            final RtmpSession rtmpSession = new RtmpSession(
+                    matcher.group(2), 1935, matcher.group(3) + auth, ak ? playName : playName + auth, matcher.group(1));
             rtmpSession.getConnectParams().put("swfUrl", helper.getSwfURL());
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
             helper.setSwfVerification(rtmpSession, client);
@@ -133,18 +135,9 @@ class Channel4FileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("This page cannot be found") || getContentAsString().contains("Please try again later")) {
+        if (getContentAsString().contains("This page cannot be found")
+                || getContentAsString().contains("Please try again later")) {
             throw new URLNotAvailableAnymoreException("Page not found");
-        }
-    }
-
-    private void prepareSwfvHelper() throws ErrorDuringDownloadingException {
-        synchronized (Channel4FileRunner.class) {
-            final String swfURL = "http://www.channel4.com/static/programmes/asset/flash/swf/"
-                    + PlugUtils.getStringBetween(getContentAsString(), "var fourodPlayerFile = '", "';");
-            if (helper == null || !swfURL.equals(helper.getSwfURL())) {
-                helper = new SwfVerificationHelper(swfURL);
-            }
         }
     }
 
@@ -161,8 +154,7 @@ class Channel4FileRunner extends AbstractRtmpRunner {
             return "?auth=" + h + "&aifp=" + aifp + "&slist=" + slist;
         } else {
             final String e = PlugUtils.getStringBetween(content, "<e>", "</e>");
-            final String ip = PlugUtils.getStringBetween(content, "<ip>", "</ip>");
-            return "?e=" + e + "&ip=" + ip + "&h=" + h;
+            return "?e=" + e + "&h=" + h;
         }
     }
 

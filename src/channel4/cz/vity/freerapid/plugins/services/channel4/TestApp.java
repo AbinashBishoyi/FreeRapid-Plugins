@@ -16,10 +16,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //log everything
-            //InputStream is = new BufferedInputStream(new FileInputStream("C:\\Users\\Administrator\\Desktop\\logtest.properties"));
+            //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.channel4.com/programmes/the-it-crowd/4od/player/3110819"));
+            httpFile.setNewURL(new URL("http://www.channel4.com/programmes/the-plot-to-bring-down-britains-planes/4od#3322743"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 9050, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication

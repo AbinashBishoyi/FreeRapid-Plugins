@@ -114,7 +114,7 @@ class FileSonicFileRunner extends AbstractRunner {
 
     private void handleFolder() throws ErrorDuringDownloadingException {
         final List<URI> list = new LinkedList<URI>();
-        final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://(?:www\\.)?filesonic\\.[a-z]{2,3}/file/.+?)\">");
+        final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://(?:www\\.)?filesonic\\.[a-z]{2,3}(?:\\.[a-z]{2,3})?/file/.+?)\">");
         while (matcher.find()) {
             try {
                 list.add(new URI(matcher.group(1)));

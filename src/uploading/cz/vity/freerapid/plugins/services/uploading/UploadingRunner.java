@@ -8,6 +8,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.Calendar;
+import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -16,6 +17,7 @@ import java.util.regex.Matcher;
  */
 class UploadingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadingRunner.class.getName());
+    private final static Random random = new Random(System.nanoTime());
 
     @Override
     public void runCheck() throws Exception {
@@ -45,11 +47,13 @@ class UploadingRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+
             method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("downloadform", true).toPostMethod();
-            downloadTask.sleep(2);
+
             if (makeRedirectedRequest(method)) {
                 checkProblems();
-                final String fileId = PlugUtils.getParameter("file_id", getContentAsString());
+
+                //      final String fileId = PlugUtils.getParameter("file_id", getContentAsString());
                 if (getContentAsString().contains("timeadform")) {
                     method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("timeadform", true).toPostMethod();
                     int wait;
@@ -72,7 +76,7 @@ class UploadingRunner extends AbstractRunner {
                 method = getMethodBuilder()
                         .setReferer(fileURL)
                         .setAction("http://uploading.com/files/get/?JsHttpRequest=" + System.currentTimeMillis() + "-xml")
-                        .setParameter("file_id", fileId)
+                                //.setParameter("file_id", fileId)
                         .setParameter("pass", "")
                         .setParameter("code", PlugUtils.getStringBetween(fileURL, "get/", "/"))
                         .setParameter("action", "get_link")
@@ -135,7 +139,8 @@ class UploadingRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("Requested file not found");
         }
         if (getContentAsString().contains("Service Not Available")) {
-            throw new ServiceConnectionProblemException("Service Not Available");
+            throw new YouHaveToWaitException("Service Not Available For Now", random.nextInt(10));
+            //  throw new ServiceConnectionProblemException("Service Not Available");
         }
         if (getContentAsString().contains("Download Limit")) {
             Matcher matcher = getMatcherAgainstContent("Sorry[\\D]*(\\d)* minutes");

@@ -6,7 +6,9 @@ import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
+import cz.vity.freerapid.utilities.LogUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
 
@@ -67,9 +69,22 @@ class PluginDevDownloadTask implements HttpFileDownloadTask {
      * @throws Exception Error during writing or if inputStream is null
      */
     public void saveToFile(InputStream inputStream) throws Exception {
-        logger.info("Simulating saving file from stream");
-        sleep(1);
-        logger.info("File succesfully saved");
+        logger.info("Simulating saving file from a stream - trying to read 2KB of data");
+        final byte[] buffer = new byte[1024 * 2];
+        try {
+            final int read = inputStream.read(buffer);
+            logger.info(read + " of bytes were succesfully read from the stream");
+            sleep(1);
+            logger.info("File succesfully \"saved\"");
+        } catch (IOException e) {
+            logger.info("Closing file stream");
+            try {
+                inputStream.close();
+            } catch (IOException e1) {
+                LogUtils.processException(logger, e1);
+            }
+        }
+
     }
 
     /**

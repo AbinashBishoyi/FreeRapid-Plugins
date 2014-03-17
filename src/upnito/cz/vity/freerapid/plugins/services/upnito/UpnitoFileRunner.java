@@ -59,6 +59,7 @@ class UpnitoFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             final String contentAsString = getContentAsString();
+            checkProblems();
             checkNameAndSize(contentAsString);
             client.setReferer(fileURL);
             final PostMethod postMethod = getPostMethod(fileURL);
@@ -89,6 +90,10 @@ class UpnitoFileRunner extends AbstractRunner {
 
         if (contentAsString.contains("za sebou stahovat ten")) {
             throw new ServiceConnectionProblemException("Nemozete tolkokrat za sebou stahovat ten isty subor!");
+        }
+
+        if (PlugUtils.find("te stiahnu. zadarmo", contentAsString)) {
+            throw new ServiceConnectionProblemException("Z·ùaû 100% - nemÙûte stiahnuù zadarmo");
         }
 
         if (contentAsString.contains("Neplatny download")) {

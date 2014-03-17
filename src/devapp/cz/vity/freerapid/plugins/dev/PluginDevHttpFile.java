@@ -101,6 +101,7 @@ class PluginDevHttpFile implements HttpFile {
     @Override
     public void setState(DownloadState state) {
         this.state = state;
+        logger.info("Setting state to " + state);
     }
 
     /**

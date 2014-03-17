@@ -177,7 +177,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
         public RtmpSession getSession() {
             logger.info("Downloading stream: " + this);
-            return new RtmpSession(server, 80, app, play, true);
+            return new RtmpSession(server, 1935, app, play, true);
         }
 
         @Override

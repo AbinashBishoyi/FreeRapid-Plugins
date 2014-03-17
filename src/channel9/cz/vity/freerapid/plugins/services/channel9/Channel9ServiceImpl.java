@@ -14,7 +14,7 @@ public class Channel9ServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "channel9.com";
+        return "channel9.msdn.com";
     }
 
     @Override

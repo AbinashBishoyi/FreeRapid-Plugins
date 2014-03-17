@@ -4,9 +4,8 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
-import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.services.adobehds.HdsDownloader;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -19,11 +18,8 @@ import java.util.regex.Matcher;
  *
  * @author ntoskrnl
  */
-class RuTubeFileRunner extends AbstractRtmpRunner {
+class RuTubeFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RuTubeFileRunner.class.getName());
-
-    private final static String SWF_URL = "http://rutube.ru/player.swf";
-    private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     @Override
     public void runCheck() throws Exception {
@@ -54,34 +50,18 @@ class RuTubeFileRunner extends AbstractRtmpRunner {
             checkNameAndSize();
             final Matcher matcher = getMatcherAgainstContent("http://video.rutube.ru/(\\d+)");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Track id not found");
+                throw new PluginImplementationException("Video ID not found");
             }
             final String trackId = matcher.group(1);
-            method = getMethodBuilder()
-                    .setReferer(String.format("%s/?hash=%s&referer=%s", SWF_URL, trackId, fileURL))
-                    .setAction(String.format("http://rutube.ru/trackinfo/%s.xml?referer=%s", trackId, fileURL))
-                    .toGetMethod();
+            method = getMethodBuilder().setReferer(fileURL).setAction("http://rutube.ru/api/play/trackinfo/" + trackId).toGetMethod();
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
-            final String playlistUrl = PlugUtils.getStringBetween(getContentAsString(), "<default>", "</default>") + "?referer=" + fileURL;
-            logger.info("playlistUrl = " + playlistUrl);
-            method = getGetMethod(playlistUrl);
-            if (!makeRedirectedRequest(method)) {
-                throw new ServiceConnectionProblemException();
-            }
-            if (getContentAsString().contains("<media href=")) {
-                throw new PluginImplementationException("This link is currently not supported by the plugin");
-            }
-            final String baseUrl = PlugUtils.getStringBetween(getContentAsString(), "<baseURL>", "</baseURL>");
-            final String mediaUrl = PlugUtils.replaceEntities(
-                    PlugUtils.getStringBetween(getContentAsString(), "<media url=\"", "\""));
-            logger.info("baseUrl = " + baseUrl);
-            logger.info("mediaUrl = " + mediaUrl);
-            final RtmpSession rtmpSession = createRtmpSession(baseUrl, mediaUrl);
-            tryDownloadAndSaveFile(rtmpSession);
+            final String manifestUrl = PlugUtils.getStringBetween(getContentAsString(), "<default>", "</default>");
+            final HdsDownloader downloader = new HdsDownloader(client, httpFile, downloadTask);
+            downloader.tryDownloadAndSaveFile(manifestUrl);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -89,25 +69,9 @@ class RuTubeFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Запрашиваемая вами страница не найдена")) {
+        if (getContentAsString().contains("Страница не найдена")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-    }
-
-    private RtmpSession createRtmpSession(final String baseUrl, final String mediaUrl) throws Exception {
-        final int index = mediaUrl.indexOf("mp4:");
-        if (index == -1) {
-            throw new PluginImplementationException("Error parsing media URL");
-        }
-        final String tcUrl = baseUrl + mediaUrl.substring(0, index);
-        final String playName = mediaUrl.substring(index);
-        logger.info("tcUrl = " + tcUrl);
-        logger.info("playName = " + playName);
-        final RtmpSession rtmpSession = new RtmpSession(tcUrl, playName);
-        rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
-        rtmpSession.getConnectParams().put("pageUrl", fileURL);
-        helper.setSwfVerification(rtmpSession, client);
-        return rtmpSession;
     }
 
 }

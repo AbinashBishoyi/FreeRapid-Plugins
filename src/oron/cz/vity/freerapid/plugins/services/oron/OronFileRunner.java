@@ -108,14 +108,18 @@ class OronFileRunner extends AbstractRunner {
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
-        Matcher err_m = PlugUtils.matcher("<font class=\"err\">([^<>]+)<", getContentAsString());
+        Matcher err_m = getMatcherAgainstContent("<font class=\"err\">([^<>]+)<");
         if (err_m.find()) {
-            Matcher m = PlugUtils.matcher("You have to wait(?:.*?\\b([0-9]+) hour)?(?:.*?\\b([0-9]+) minute)?(?:.*\\b([0-9]+) second)?", err_m.group(1));
-            if (m.find())
-                throw new YouHaveToWaitException(m.group(),
-                        Integer.parseInt("0" + m.group(1)) * 3600 +
-                                Integer.parseInt("0" + m.group(2)) * 60 +
-                                Integer.parseInt("0" + m.group(3)));
+            Matcher matcher = getMatcherAgainstContent("You have to wait (\\d+? hours?)?(?:, )?(\\d+? minutes?)?(?:, )?(\\d+? seconds?)? until the next download becomes available");
+            if (matcher.find()) {
+                final String hours = matcher.group(1);
+                final String minutes = matcher.group(2);
+                final String seconds = matcher.group(3);
+                throw new YouHaveToWaitException(matcher.group(),
+                        (hours == null ? 0 : (Integer.parseInt(hours) * 3600))
+                                + (minutes == null ? 0 : (Integer.parseInt(minutes) * 60))
+                                + (seconds == null ? 0 : (Integer.parseInt(seconds))));
+            }
             unimplemented();
         }
     }

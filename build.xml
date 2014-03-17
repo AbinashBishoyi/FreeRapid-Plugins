@@ -70,6 +70,7 @@
         <ant dir="${src.dir}/shareator/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/quickshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/hellshare/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/hellshare_full/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/filebaseto/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/edisk/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/mediafire/" antfile="build.xml" inheritall="false"/>
@@ -113,6 +114,8 @@
         <ant dir="${src.dir}/youtube/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/dataup/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/jandown/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/sharerapid/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/hotfile/" antfile="build.xml" inheritall="false"/>
     </target>
 
     <target name="manualBuild" description="building">

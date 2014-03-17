@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 public class EgoshareShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "egoshare.com";
     private final static Pattern pattern = Pattern.compile("http://(www\\.)?egoshare\\.com/.*", Pattern.CASE_INSENSITIVE);
+    private ServicePluginContext context = new ServicePluginContext();
 
     public String getName() {
         return SERVICE_NAME;
@@ -27,7 +28,7 @@ public class EgoshareShareServiceImpl extends AbstractFileShareService {
 
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
-        new EgoshareRunner().run(downloader);
+        new EgoshareRunner().run(downloader, context);
     }
 
 }

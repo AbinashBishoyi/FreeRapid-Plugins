@@ -3,13 +3,14 @@ package cz.vity.freerapid.plugins.services.egoshare;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.*;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Date;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,12 +22,13 @@ class EgoshareRunner {
     private final static Logger logger = Logger.getLogger(EgoshareRunner.class.getName());
     private HttpDownloadClient client;
     private HttpFileDownloader downloader;
-
+    private ServicePluginContext context;
     private String initURL;
     private String enterURL;
 
-    public void run(HttpFileDownloader downloader) throws Exception {
+    public void run(HttpFileDownloader downloader, ServicePluginContext context) throws Exception {
         this.downloader = downloader;
+        this.context = context;
         HttpFile httpFile = downloader.getDownloadFile();
         client = downloader.getClient();
         final String fileURL = httpFile.getFileUrl().toString();
@@ -40,7 +42,7 @@ class EgoshareRunner {
             if (matcher.find()) {
                 Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
                 logger.info("File size " + a);
-                 httpFile.setFileSize(a);
+                httpFile.setFileSize(a);
             }
             matcher = Pattern.compile("File name: </b></td>\\s*<td align=left><b> ([^<]*)<", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
@@ -70,6 +72,7 @@ class EgoshareRunner {
                 try {
                     final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
                     if (inputStream != null) {
+                        setTicket(new Date());
                         downloader.saveToFile(inputStream);
                     } else {
                         checkProblems();
@@ -160,8 +163,8 @@ class EgoshareRunner {
                     postMethod.addParameter("captchacode", captcha);
                     postMethod.addParameter("2ndpage", ndpage);
                     client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
-                     if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
-                          return true;
+                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                        return true;
                     }
                 }
             } else {
@@ -181,6 +184,21 @@ class EgoshareRunner {
             throw new PluginImplementationException("Parameter " + s + " was not found");
     }
 
+    private int getTimeToWait() {
+        long startOfTicket = context.getStartOfTicket().getTime();
+        long now = new Date().getTime();
+        if ((now - startOfTicket) < 60 * 60 * 1000)
+            return new Long(((startOfTicket + 1000 * 60 * 60) - now) / 1000).intValue();
+        return 20 * 60;
+    }
+
+    private void setTicket(Date newTime) {
+        long oldTime = context.getStartOfTicket().getTime();
+
+        if ((newTime.getTime() - oldTime) > 60 * 60 * 1000)
+            context.setStartOfTicket(newTime);
+    }
+
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
         matcher = Pattern.compile("You have got max allowed download sessions from the same IP", Pattern.MULTILINE).matcher(client.getContentAsString());
@@ -190,7 +208,7 @@ class EgoshareRunner {
         matcher = Pattern.compile("this download is too big for your", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {
 
-            throw new YouHaveToWaitException("Sorry, this download is too big for your remaining download volume per hour!!", 10 * 60);
+            throw new YouHaveToWaitException("Sorry, this download is too big for your remaining download volume per hour!!", getTimeToWait());
         }
         matcher = Pattern.compile("Your requested file could not be found", Pattern.MULTILINE).matcher(client.getContentAsString());
         if (matcher.find()) {

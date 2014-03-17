@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 public class ShareonlineShareServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "share-online.biz";
     private final static Pattern pattern = Pattern.compile("http://(www\\.)?share-online\\.biz/.*", Pattern.CASE_INSENSITIVE);
+    private ServicePluginContext context = new ServicePluginContext();
 
     public String getName() {
         return SERVICE_NAME;
@@ -27,7 +28,7 @@ public class ShareonlineShareServiceImpl extends AbstractFileShareService {
 
     public void run(HttpFileDownloader downloader) throws Exception {
         super.run(downloader);
-        new ShareonlineRunner().run(downloader);
+        new ShareonlineRunner().run(downloader, context);
     }
 
 }

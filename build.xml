@@ -285,7 +285,7 @@
         <move file="${newplugin.dir}/ServiceImpl.java" tofile="${newplugin.dir}/${fullWithoutDot}ServiceImpl.java"/>
 
         <move todir="${newplugin.java.dir}">
-            <fileset dir="${newplugin.dir}" includes="/**/?*.java"/>
+            <fileset dir="${newplugin.dir}" includes="**/?*.java"/>
         </move>
 
     </target>

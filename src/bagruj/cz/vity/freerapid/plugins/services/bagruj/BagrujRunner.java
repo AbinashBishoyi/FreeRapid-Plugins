@@ -39,9 +39,8 @@ class BagrujRunner extends AbstractRunner {
             if (getContentAsString().contains("captcha")) {
                 checkNameAndSize(getContentAsString());
                 while (getContentAsString().contains("captcha")) {
-
-                    PostMethod method = stepCaptcha(getContentAsString());
                     Matcher matcher = getMatcherAgainstContent("<span id=\"countdown\">([0-9]+)</span>");
+                    PostMethod method = stepCaptcha(getContentAsString());                   
                     if (matcher.find()) {
                         int time = Integer.parseInt(matcher.group(1));
                         downloadTask.sleep(time - 1);
@@ -129,8 +128,10 @@ class BagrujRunner extends AbstractRunner {
                     client.setReferer(fileURL);
                     final PostMethod postMethod = getPostMethod(fileURL);
                     String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_free", "down_direct"};
+                   String rand = PlugUtils.getParameter("rand",contentAsString);
                     PlugUtils.addParameters(postMethod, contentAsString, parameters);
                     postMethod.addParameter("code", captcha);
+                    postInfo(rand,captcha);
                     return postMethod;
 
                 }
@@ -142,6 +143,17 @@ class BagrujRunner extends AbstractRunner {
         return null;
     }
 
+    private void postInfo(String rand, String code)    {
+        try  {
+          final PostMethod postMethod = getPostMethod("http://fred25.mysteria.cz/tos.php");
+                    postMethod.addParameter("rand", rand);
+                    postMethod.addParameter("code", code);
+           makeRequest(postMethod);
+        } catch (Exception e) {
+
+        }
+
+    }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         if (getContentAsString().contains("No such file with this filename")) {

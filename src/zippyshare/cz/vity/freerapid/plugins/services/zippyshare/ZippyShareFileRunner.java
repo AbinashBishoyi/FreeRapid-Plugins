@@ -59,7 +59,7 @@ class ZippyShareFileRunner extends AbstractRunner {
                     throw new PluginImplementationException("Seed parameter not found");
                 }
                 final int seed = Integer.parseInt(matcher.group(1));
-                url = urlParam + "&time=" + (3 * seed % 1424574);
+                url = urlParam + "&time=" + (6 * seed % 8223637);
             }
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {

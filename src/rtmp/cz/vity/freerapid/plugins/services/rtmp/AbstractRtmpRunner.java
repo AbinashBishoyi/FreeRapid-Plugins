@@ -40,6 +40,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
 
         httpFile.getProperties().remove(DownloadClient.START_POSITION);
         httpFile.getProperties().remove(DownloadClient.SUPPOSE_TO_DOWNLOAD);
+        httpFile.setResumeSupported(false);
 
         final String fn = httpFile.getFileName();
         if (fn == null || fn.isEmpty())

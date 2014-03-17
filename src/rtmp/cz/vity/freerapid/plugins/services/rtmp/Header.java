@@ -165,7 +165,6 @@ public class Header {
 
         final Header prevHeader = session.getPrevHeadersIn().get(channelId);
 
-        // TODO handle 'extended' time values greater than 3 bytes
         switch (headerType) {
             case LARGE:
                 time = Utils.readInt24(in);
@@ -193,6 +192,11 @@ public class Header {
                 streamId = prevHeader.streamId;
                 break;
         }
+
+        if (time == 0xffffff) {
+            time = in.getInt();
+        }
+
         return true;
     }
 

@@ -72,6 +72,7 @@
         <ant dir="${src.dir}/bitshare" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/blogspot" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/cbs" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/channel9" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/channel4" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/co" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/cobrashare" antfile="build.xml" inheritall="false"/>

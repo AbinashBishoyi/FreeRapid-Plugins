@@ -68,7 +68,7 @@ class YandexDiskFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            final String downloadURL = "http:" + PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "\"url\":\"", "\""));
+            final String downloadURL = PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "\"url\":\"", "\""));
             logger.info(downloadURL);
             httpMethod = getMethodBuilder()
                     .setReferer(fileURL)

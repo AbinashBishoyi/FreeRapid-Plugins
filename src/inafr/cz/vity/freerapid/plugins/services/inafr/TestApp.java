@@ -17,7 +17,8 @@ public class TestApp extends PluginDevApplication {
         try {
             //httpFile.setNewURL(new URL("http://www.ina.fr/sport/football/video/CAA7600524501/glasgow-la-folle-nuit.fr.html"));
             //httpFile.setNewURL(new URL("http://www.ina.fr/economie-et-societe/vie-sociale/video/CAB93031104/la-fete-a-marseille.fr.html"));
-            httpFile.setNewURL(new URL("http://www.ina.fr/ardisson/les-integrales/video/CPB94001383/long-courrier-une-nuit-a-rio.fr.html"));
+            //httpFile.setNewURL(new URL("http://www.ina.fr/ardisson/les-integrales/video/CPB94001383/long-courrier-une-nuit-a-rio.fr.html"));
+            httpFile.setNewURL(new URL("http://www.ina.fr/video/RCC8905214122"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final InaFrServiceImpl service = new InaFrServiceImpl();

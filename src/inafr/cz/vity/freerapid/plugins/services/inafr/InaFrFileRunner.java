@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.inafr;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -10,6 +11,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -46,7 +48,12 @@ class InaFrFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
-            final String videoId = PlugUtils.getStringBetween(fileURL, "/video/", "/");
+            final String videoId;
+            Matcher matcher = PlugUtils.matcher("/video/([^/]+)", fileURL);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Video id not found");
+            }
+            videoId = matcher.group(1);
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction(String.format("http://player.ina.fr/notices/%s.mrss?site=visio", videoId))

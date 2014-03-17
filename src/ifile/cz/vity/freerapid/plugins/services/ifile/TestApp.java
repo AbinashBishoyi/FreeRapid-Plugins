@@ -13,21 +13,17 @@ import java.net.URL;
 public class TestApp extends PluginDevApplication {
     @Override
     protected void startup() {
-        final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
+        final HttpFile httpFile = getHttpFile();
         try {
-            //we set file URL
-            httpFile.setNewURL(new URL("http://ifile.it/tnev95/ebooksclub.org__Cynics__Ancient_Philosophies_.l_61xjtontx7ox45.pdf"));
-            //the way we connect to the internet
-            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
+            httpFile.setNewURL(new URL("http://ifile.it/pebw7y1/CD-9942-rm.rar"));
+            final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final IFileServiceImpl service = new IFileServiceImpl(); //instance of service - of our plugin
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
-            //all output goes to the console
-        } catch (Exception e) {//catch possible exception
-            e.printStackTrace(); //writes error output - stack trace to console
+            final IFileServiceImpl service = new IFileServiceImpl();
+            testRun(service, httpFile, connectionSettings);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        this.exit();//exit application
+        this.exit();
     }
 
     /**
@@ -37,6 +33,6 @@ public class TestApp extends PluginDevApplication {
      * @param args arguments for application
      */
     public static void main(String[] args) {
-        Application.launch(TestApp.class, args);//starts the application - calls startup() internally
+        Application.launch(TestApp.class, args);
     }
 }

@@ -23,9 +23,16 @@ class FlyUploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FlyUploadRunner.class.getName());
     private final static String baseURL = "http://www.flyupload.com";
 
+
+    private void setEncoding() {
+        client.getHTTPClient().getParams().setParameter("pageCharset", "Windows-1250");
+        client.getHTTPClient().getParams().setHttpElementCharset("Windows-1250");
+    }
+
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        setEncoding();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
@@ -47,6 +54,7 @@ class FlyUploadRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        setEncoding();
         logger.info("Starting download in TASK " + fileURL);
         if (!fileURL.toLowerCase().contains("&c=1"))
             fileURL = fileURL + "&c=1";

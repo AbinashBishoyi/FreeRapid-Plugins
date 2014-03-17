@@ -11,10 +11,12 @@ public class MultiUploadServiceImpl extends AbstractFileShareService {
     private static final String CONFIG_FILE = "MultiUploadSettings.xml";
     private volatile MultiUploadSettingsConfig config;
 
+    @Override
     public String getName() {
         return "multiupload.com";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 9;
     }

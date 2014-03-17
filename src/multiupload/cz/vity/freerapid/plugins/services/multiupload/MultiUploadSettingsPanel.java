@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.multiupload;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -21,7 +20,7 @@ public class MultiUploadSettingsPanel extends JPanel {
     private final JCheckBox checkDownloadService = new JCheckBox("Check for file errors on download server");
 
     public MultiUploadSettingsPanel(MultiUploadServiceImpl service) throws Exception {
-        super(new BorderLayout());
+        super();
         config = service.getConfig();
         initPanel();
     }
@@ -33,62 +32,62 @@ public class MultiUploadSettingsPanel extends JPanel {
         checkDownloadService.setSelected(config.getCheckDownloadService());
 
         moveUp.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 moveUpActionPerformed(e);
             }
         });
 
         moveDown.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 moveDownActionPerformed(e);
             }
         });
 
         checkDownloadService.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 config.setCheckDownloadService(checkDownloadService.isSelected());
             }
         });
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        GroupLayout layout = new GroupLayout(this);
         setLayout(layout);
 
         layout.setHorizontalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
+                layout.createSequentialGroup()
                         .addContainerGap()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(serviceLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup()
+                                .addComponent(serviceLabel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGroup(layout.createSequentialGroup()
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                                .addComponent(scrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(moveUp, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(moveDown, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                                .addComponent(checkDownloadService, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addContainerGap()));
+                                        .addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 105, GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup()
+                                        .addComponent(moveUp, GroupLayout.PREFERRED_SIZE, 105, GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(moveDown, GroupLayout.PREFERRED_SIZE, 105, GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(checkDownloadService, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addContainerGap()
+        );
 
         layout.setVerticalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
+                layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(serviceLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(scrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(serviceLabel, GroupLayout.PREFERRED_SIZE, 16, GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.CENTER)
+                                .addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                                 .addGroup(layout.createSequentialGroup()
-                                .addComponent(moveUp, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(moveDown, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(checkDownloadService, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
+                                .addComponent(moveUp, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(moveDown, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(checkDownloadService, GroupLayout.PREFERRED_SIZE, 16, GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap()
+        );
     }
 
-    private void moveUpActionPerformed(java.awt.event.ActionEvent e) {
+    private void moveUpActionPerformed(ActionEvent e) {
         final int selected = serviceList.getSelectedIndex();
         if ((selected < 0) || ((selected - 1) < 0))
             return;
@@ -98,7 +97,7 @@ public class MultiUploadSettingsPanel extends JPanel {
         serviceList.setSelectedIndex(selected - 1);
     }
 
-    private void moveDownActionPerformed(java.awt.event.ActionEvent e) {
+    private void moveDownActionPerformed(ActionEvent e) {
         final int selected = serviceList.getSelectedIndex();
         if ((selected < 0) || ((selected + 1) > (serviceStrings.length - 1)))
             return;
@@ -107,4 +106,5 @@ public class MultiUploadSettingsPanel extends JPanel {
         serviceStrings[selected] = temp;
         serviceList.setSelectedIndex(selected + 1);
     }
+
 }

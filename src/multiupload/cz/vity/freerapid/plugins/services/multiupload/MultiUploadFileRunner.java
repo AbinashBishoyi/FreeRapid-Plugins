@@ -62,7 +62,7 @@ class MultiUploadFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Please select file") || content.contains("<h1>Not Found</h1>")) {
+        if (content.contains("the link you have clicked is not available") || content.contains("Please select file") || content.contains("<h1>Not Found</h1>")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

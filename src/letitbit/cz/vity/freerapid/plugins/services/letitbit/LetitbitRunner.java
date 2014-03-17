@@ -67,7 +67,7 @@ class LetitbitRunner extends AbstractRunner {
 
             if (!getContentAsString().contains("\"dvifree\"")) {
                 //Russian IPs may see a different page here, let's handle it
-                final HttpMethod httpMethodR = getMethodBuilder().setReferer(secondPageUrl).setActionFromFormByIndex(1, true).toPostMethod();
+                final HttpMethod httpMethodR = getMethodBuilder().setReferer(secondPageUrl).setActionFromFormWhereActionContains("letitbit.net", true).toPostMethod();
                 if (!makeRedirectedRequest(httpMethodR)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();

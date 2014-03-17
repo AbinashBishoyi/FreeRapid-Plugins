@@ -48,14 +48,14 @@ class SunPornoFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
-            HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(contentAsString, "<a href=\"", "\" title=\"Download movie"));
+            HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(contentAsString, "<a href=\"", "\">Download movie"));
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error getting download link");
             }
-            httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "window.location.href = '", "';"));
+            httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "href=\"", "\"> Click here to download"));
 
-            Matcher match = PlugUtils.matcher("window.location.href.+(\\.\\w{3})';", getContentAsString());
+            Matcher match = PlugUtils.matcher("href=\".+(\\.\\w{3})\"> Click here to download", getContentAsString());
             if (!match.find()) {
                 throw new ErrorDuringDownloadingException("Error getting file type");
             }

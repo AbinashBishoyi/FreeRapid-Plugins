@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Meow
+ * @author Meow <meowmeowsama@gmail.com>
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://u.115.com/file/t077ddbb1d"));//TODO
+            httpFile.setNewURL(new URL("http://u.115.com/file/f577e56e02"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

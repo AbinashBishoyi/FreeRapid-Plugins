@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.tube8;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -11,6 +12,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -34,9 +36,11 @@ class Tube8FileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "var videotitle=\"", "\";");
+        final Matcher match = PlugUtils.matcher("videotitle\\s*?=\\s*?\"(.+?)\";", content);
+        if (!match.find())
+            throw new PluginImplementationException("File name not found");
         //remove old extension if it exists
-        String name = httpFile.getFileName();
+        String name = match.group(1);
         final int pos = name.lastIndexOf('.');
         if (pos != -1) name = name.substring(0, pos);
         httpFile.setFileName(name + ".flv");
@@ -56,8 +60,14 @@ class Tube8FileRunner extends AbstractRunner {
             client.getHTTPClient().getParams().setParameter("dontUseHeaderFilename", true);
             client.getHTTPClient().getParams().setParameter("X-Requested-With", "XMLHttpRequest");
 
-            final String hash = PlugUtils.getStringBetween(contentAsString, "var hash = \"", "\";");
-            final String videoId = PlugUtils.getStringBetween(contentAsString, "var videoId = ", ";");
+            Matcher match = PlugUtils.matcher("hash\\s*?=\\s*?\"(.+?)\";", contentAsString);
+            if (!match.find())
+                throw new PluginImplementationException("Token 'hash' not found");
+            final String hash = match.group(1).trim();
+            match = PlugUtils.matcher("videoId\\s*?=\\s*?\"?(.+?)\"?;", contentAsString);
+            if (!match.find())
+                throw new PluginImplementationException("Token 'videoId' not found");
+            final String videoId = match.group(1).trim();
             final MethodBuilder ajaxMethodBuilder = getMethodBuilder()
                     .setAction("http://www.tube8.com/ajax/getVideoDownloadURL.php")
                     .setParameter("hash", hash)
@@ -95,8 +105,6 @@ class Tube8FileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found");
         } else if (contentAsString.contains("This video is deleted")) {
             throw new URLNotAvailableAnymoreException("This video is deleted");
-        } else if (!PlugUtils.matcher("var videoId", contentAsString).find()) {
-            throw new URLNotAvailableAnymoreException("File not found");
         }
 
     }

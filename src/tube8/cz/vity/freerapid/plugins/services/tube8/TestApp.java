@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.tube8.com/amateur/brianna-frost-sex-dance/442062/"));
-            httpFile.setNewURL(new URL("http://www.tube8.com/amateur/new-problems-old-solutions/2795171/"));
+            httpFile.setNewURL(new URL("http://www.tube8.com/amateur/elianne-fucks-her-girlfriend-on-webcam-part/723651/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

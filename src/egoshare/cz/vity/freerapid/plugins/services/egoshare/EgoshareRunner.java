@@ -1,14 +1,14 @@
 package cz.vity.freerapid.plugins.services.egoshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.*;
-import org.apache.commons.httpclient.HttpStatus;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.logging.Logger;
@@ -18,38 +18,35 @@ import java.util.regex.Pattern;
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
-class EgoshareRunner {
+class EgoshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(EgoshareRunner.class.getName());
-    private HttpDownloadClient client;
-    private HttpFileDownloader downloader;
     private ServicePluginContext context;
     private String initURL;
-    private String enterURL;
 
-    public void run(HttpFileDownloader downloader, ServicePluginContext context) throws Exception {
-        this.downloader = downloader;
+    public EgoshareRunner(ServicePluginContext context) {
+        super();
         this.context = context;
-        HttpFile httpFile = downloader.getDownloadFile();
-        client = downloader.getClient();
-        final String fileURL = httpFile.getFileUrl().toString();
+    }
+
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+
+    public void run(HttpFileDownloader downloader) throws Exception {
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
 
-            Matcher matcher = Pattern.compile("\\(([0-9.]* .B)\\)", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + a);
-                httpFile.setFileSize(a);
-            }
-            matcher = Pattern.compile("File name: </b></td>\\s*<td align=left><b> ([^<]*)<", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                final String fn = matcher.group(1);
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-            } else logger.warning("File name was not found" + client.getContentAsString());
+            checkNameAndSize(client.getContentAsString());
+            Matcher matcher;
 
             do {
                 checkProblems();
@@ -61,7 +58,7 @@ class EgoshareRunner {
 
             } while (client.getContentAsString().contains("Please enter the number"));
 
-            matcher = Pattern.compile("decode\\(\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = PlugUtils.matcher("decode\\(\"([^\"]*)\"", client.getContentAsString());
             if (matcher.find()) {
                 String s = decode(matcher.group(1));
                 logger.info("Found File URL - " + s);
@@ -69,19 +66,13 @@ class EgoshareRunner {
                     throw new InterruptedException();
                 httpFile.setState(DownloadState.GETTING);
                 final GetMethod method = client.getGetMethod(s);
-                try {
-                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                    if (inputStream != null) {
-                        setTicket(new Date());
-                        downloader.saveToFile(inputStream);
-                    } else {
-                        checkProblems();
-                        throw new IOException("File input stream is empty.");
-                    }
-                } finally {
-                    method.abort();
-                    method.releaseConnection();
+                Date newDate = new Date();
+                if (tryDownload(method)) setTicket(newDate);
+                else {
+                    checkProblems();
+                    throw new IOException("File input stream is empty.");
                 }
+
             } else {
                 checkProblems();
                 logger.info(client.getContentAsString());
@@ -90,6 +81,26 @@ class EgoshareRunner {
 
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+    private void checkNameAndSize(String content) throws Exception {
+
+        if (content.contains("Your requested file could not be found")) {
+            throw new URLNotAvailableAnymoreException("Your requested file could not be found");
+        }
+
+        Matcher matcher = PlugUtils.matcher("\\(([0-9.]* .B)\\)", content);
+        if (matcher.find()) {
+            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+            logger.info("File size " + a);
+            httpFile.setFileSize(a);
+        }
+        matcher = PlugUtils.matcher("File name: </b></td>\\s*<td align=left><b> ([^<]*)<", content);
+        if (matcher.find()) {
+            final String fn = matcher.group(1);
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+        } else logger.warning("File name was not found" + client.getContentAsString());
     }
 
     private String decode(String input) {
@@ -146,13 +157,13 @@ class EgoshareRunner {
             Matcher matcher = Pattern.compile("captcha", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 String s = "http://www.egoshare.com/captcha.php";
-                String captcha = downloader.getCaptcha(s);
+                String captcha = getCaptchaSupport().getCaptcha(s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
 
-                    String ndpage = getParameter("2ndpage", contentAsString);
-                    matcher = Pattern.compile("name=myform action\\=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
+                    String ndpage = PlugUtils.getParameter("2ndpage", contentAsString);
+                    matcher = PlugUtils.matcher("name=myform action\\=\"([^\"]*)\"", contentAsString);
                     if (!matcher.find()) {
                         throw new PluginImplementationException("Captcha form action was not found");
                     }
@@ -162,8 +173,8 @@ class EgoshareRunner {
 
                     postMethod.addParameter("captchacode", captcha);
                     postMethod.addParameter("2ndpage", ndpage);
-                    client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
-                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+
+                    if (makeRequest(postMethod)) {
                         return true;
                     }
                 }
@@ -174,14 +185,6 @@ class EgoshareRunner {
 
         }
         return false;
-    }
-
-    private String getParameter(String s, String contentAsString) throws PluginImplementationException {
-        Matcher matcher = Pattern.compile("name=\"" + s + "\"[^v>]*value=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else
-            throw new PluginImplementationException("Parameter " + s + " was not found");
     }
 
     private int getTimeToWait() {
@@ -201,16 +204,16 @@ class EgoshareRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         Matcher matcher;
-        matcher = Pattern.compile("You have got max allowed download sessions from the same IP", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = PlugUtils.matcher("You have got max allowed download sessions from the same IP", client.getContentAsString());
         if (matcher.find()) {
             throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP!", 5 * 60);
         }
-        matcher = Pattern.compile("this download is too big for your", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = PlugUtils.matcher("this download is too big for your", client.getContentAsString());
         if (matcher.find()) {
 
             throw new YouHaveToWaitException("Sorry, this download is too big for your remaining download volume per hour!!", getTimeToWait());
         }
-        matcher = Pattern.compile("Your requested file could not be found", Pattern.MULTILINE).matcher(client.getContentAsString());
+        matcher = PlugUtils.matcher("Your requested file could not be found", client.getContentAsString());
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException("Your requested file could not be found");
         }

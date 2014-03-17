@@ -105,6 +105,9 @@ class RapidShareRunner extends AbstractRunner {
         if (content.contains("File owner's public traffic exhausted")) {
             throw new ServiceConnectionProblemException("File owner's public traffic exhausted");
         }
+        if (content.contains("Download permission denied by uploader")) {
+            throw new ServiceConnectionProblemException("Download permission denied by uploader");
+        }
         Matcher matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds[^\"']*");
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)) + 10);

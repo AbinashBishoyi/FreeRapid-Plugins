@@ -128,6 +128,9 @@ class ShareonlineRunner extends AbstractRunner {
         if (getContentAsString().contains("No other download thread possible")) {
             throw new ServiceConnectionProblemException("No other download thread possible");
         }
+        if (getContentAsString().contains("This IP adress is already in use for another download")) {
+            throw new ServiceConnectionProblemException("This IP address is already in use for another download");
+        }
         if (getContentAsString().contains("Proxy-Download not supported for free access")) {
             throw new ServiceConnectionProblemException("Share-Online detected that you are using a proxy");
         }

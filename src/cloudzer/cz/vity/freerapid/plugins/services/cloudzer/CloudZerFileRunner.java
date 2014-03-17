@@ -96,11 +96,11 @@ class CloudZerFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("File Not Found")) {//TODO
+        if (content.contains("File Not Found") || content.contains("Please check the URL for typing errors")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (content.contains("You have reached the max. number of possible free downloads for this hour")) {
-            throw new YouHaveToWaitException("Hourly free download limit reached", 600);
+            throw new YouHaveToWaitException("Hourly free download limit reached", 3 * 60 * 60); // 3 hour wait between downloads
         }
     }
 

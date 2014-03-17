@@ -95,12 +95,12 @@ class FlvStreamWriter implements OutputWriter {
     }
 
     public synchronized void write(Packet.Type packetType, IoBuffer data, final int time) {
-        if (session.getPauseMode() == 3) {
+        if (session.getPauseMode() == PauseMode.RESUMING) {
             if (time <= session.getPauseTimestamp()) {
                 logger.info("Skipping packet");
                 return;
             } else {
-                session.setPauseMode(0);
+                session.setPauseMode(PauseMode.PLAYING);
             }
         }
         if (packetType == Packet.Type.AUDIO_DATA) {

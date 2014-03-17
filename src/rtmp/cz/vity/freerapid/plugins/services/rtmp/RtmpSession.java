@@ -61,7 +61,7 @@ public class RtmpSession {
     private byte[] serverDigest;
     private byte[] serverResponse;
     private int pauseTimestamp;
-    private int pauseMode = 0;
+    private PauseMode pauseMode = PauseMode.PLAYING;
     private HttpFile httpFile;
     private ConnectionSettings connectionSettings;
     private String secureToken;
@@ -500,12 +500,16 @@ public class RtmpSession {
         this.pauseTimestamp = pauseTimestamp;
     }
 
-    public int getPauseMode() {
+    public PauseMode getPauseMode() {
         return pauseMode;
     }
 
-    public void setPauseMode(int pauseMode) {
+    public void setPauseMode(PauseMode pauseMode) {
         this.pauseMode = pauseMode;
+    }
+
+    public void disablePauseWorkaround() {
+        pauseMode = PauseMode.DISABLED;
     }
 
     public HttpFile getHttpFile() {

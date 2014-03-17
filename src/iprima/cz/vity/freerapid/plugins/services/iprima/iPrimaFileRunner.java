@@ -70,6 +70,7 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
             final RtmpSession rtmpSession = new RtmpSession("bcastmw.livebox.cz", 80, "iprima_token?auth=" + auth, playName);
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
             rtmpSession.getConnectParams().put("swfUrl", "http://embed.livebox.cz/iprimaplay/flash/LiveboxPlayer.swf?nocache=" + System.currentTimeMillis());
+            rtmpSession.disablePauseWorkaround();
             tryDownloadAndSaveFile(rtmpSession);
         } else {
             checkProblems();

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.iprima.iPrimaServiceImpl"
-        id="iprima.cz" vendor="JPEXS+ntoskrnl" version="1.1.0">
+        id="iprima.cz" vendor="JPEXS+ntoskrnl" version="1.1.1">
     <attributes>
         <attribute id="urlRegex" value="http://play\.iprima\.cz/.+"/>
         <attribute id="minver" value="0.853"/>
@@ -12,7 +12,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.1"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.10"
                 reverse-lookup="false"/>
     </requires>
     <runtime>

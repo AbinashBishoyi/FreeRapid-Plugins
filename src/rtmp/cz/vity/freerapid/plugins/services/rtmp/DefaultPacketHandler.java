@@ -47,22 +47,22 @@ class DefaultPacketHandler implements PacketHandler {
                     }
                 } else if (type == 31) {
                     logger.info("Server sent BufferEmpty, sending pause");
-                    if (session.getPauseMode() == 0) {
+                    if (session.getPauseMode() == PauseMode.PLAYING) {
                         final int time = session.getOutputWriter().getStatus().getVideoChannelTime();
                         session.setPauseTimestamp(time);
                         session.send(new Invoke("pause", 8, null, true, time));
-                        session.setPauseMode(1);
-                    } else if (session.getPauseMode() == 2) {
+                        session.setPauseMode(PauseMode.PAUSING);
+                    } else if (session.getPauseMode() == PauseMode.PAUSED) {
                         logger.info("Sending unpause");
                         session.send(new Invoke("pause", 8, null, false, session.getPauseTimestamp()));
-                        session.setPauseMode(3);
+                        session.setPauseMode(PauseMode.RESUMING);
                     }
                 } else if (type == 32) {
                     logger.info("Server sent BufferReady");
                 } else if (type == 1) {
                     logger.info("Server sent Stream EOF");
-                    if (session.getPauseMode() == 1) {
-                        session.setPauseMode(2);
+                    if (session.getPauseMode() == PauseMode.PAUSING) {
+                        session.setPauseMode(PauseMode.PAUSED);
                     }
                 } else {
                     logger.info("not handling unknown control message type: " + type + " " + packet);
@@ -152,10 +152,10 @@ class DefaultPacketHandler implements PacketHandler {
                         logger.info("disconnecting");
                         session.getDecoderOutput().disconnect();
                     } else if (code.equals("NetStream.Pause.Notify")) {
-                        if (session.getPauseMode() == 1 || session.getPauseMode() == 2) {
+                        if (session.getPauseMode() == PauseMode.PAUSING || session.getPauseMode() == PauseMode.PAUSED) {
                             logger.info("Sending unpause");
                             session.send(new Invoke("pause", 8, null, false, session.getPauseTimestamp()));
-                            session.setPauseMode(3);
+                            session.setPauseMode(PauseMode.RESUMING);
                         }
                     }
                 } else if (methodName.equals("onBWDone")) {

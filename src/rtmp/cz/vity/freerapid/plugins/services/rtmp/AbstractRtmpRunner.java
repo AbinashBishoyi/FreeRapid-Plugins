@@ -40,7 +40,7 @@ public abstract class AbstractRtmpRunner extends AbstractRunner {
             throw new IOException("No defined file name");
         httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(PlugUtils.unescapeHtml(fn), "_"));
 
-        client.getHTTPClient().getParams().getBooleanParameter("noContentLengthAvailable", true);
+        client.getHTTPClient().getParams().setBooleanParameter("noContentLengthAvailable", true);
 
         RtmpClient rtmpClient = null;
         try {

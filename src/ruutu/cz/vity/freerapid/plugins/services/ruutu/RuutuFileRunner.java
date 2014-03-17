@@ -11,7 +11,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URLDecoder;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -35,16 +34,7 @@ class RuutuFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("<p class=\"name\"></p>")) {
-            final Matcher matcher = PlugUtils.matcher("avid=(\\d+)", fileURL);
-            if (matcher.find()) {
-                httpFile.setFileName(matcher.group(1));
-            } else {
-                httpFile.setFileName("Ruutu-" + System.currentTimeMillis());
-            }
-        } else {
-            PlugUtils.checkName(httpFile, getContentAsString(), "<p class=\"name\">", "</p>");
-        }
+        PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "| Ruutu.fi</title>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

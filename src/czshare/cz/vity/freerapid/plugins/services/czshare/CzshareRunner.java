@@ -158,7 +158,7 @@ class CzshareRunner extends AbstractRunner {
             } else emptyCaptcha = false;
         } while (emptyCaptcha);
 
-        matcher = getMatcherAgainstContent("<form action=\"([^\"]*)\" method=\"get\">");
+        matcher = getMatcherAgainstContent("<form action=\"([^\"]*)\" method=\"post\">");
         if (!matcher.find()) {
             throw new PluginImplementationException();
         }

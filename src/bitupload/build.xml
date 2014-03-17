@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="Cramit Plugin" default="all" basedir=".">
-    <property name="application" value="cramit"/>
+<project name="BitUpload.com" default="all" basedir=".">
+    <property name="application" value="bitupload"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="cramit.jar"/>
+    <property name="mainjar.file" value="bitupload.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -47,12 +47,6 @@
         <fileset refid="jars"/>
     </path>
 
-    <target name="clean" description="clean up">
-        <delete dir="${build.dir}"/>
-        <delete dir="${classes.dir}"/>
-        <delete dir="${dist.dir}/${version.name}.frp"/>
-    </target>
-
     <path id="dist-jars">
         <fileset dir="${build.dir}/${lib.dir}" includes="**/*.jar"/>
         <fileset dir="${build.dir}" includes="${mainjar.file}"/>
@@ -81,9 +75,7 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-            <sourcepath location="../xfilesharing/"/>
-            <sourcepath location="../recaptcha/"/>
-            <sourcepath location="../solvemediacaptcha/"/>
+
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->
@@ -101,6 +93,12 @@
         <mkdir dir="${classes.dir}"/>
         <mkdir dir="${build.dir}"/>
         <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <target name="clean" description="clean up">
+        <delete dir="${build.dir}"/>
+        <delete dir="${classes.dir}"/>
+        <delete dir="${dist.dir}/${version.name}.frp"/>
     </target>
 
     <target name="all" depends="clean,init,compile, build, dist" description="build all"/>

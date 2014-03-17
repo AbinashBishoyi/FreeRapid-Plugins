@@ -1,6 +1,5 @@
 package cz.vity.freerapid.plugins.services.alfafiles;
 
-import cz.vity.freerapid.plugins.services.alfafiles.AlfaFilesFileRunner;
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
@@ -23,7 +22,7 @@ public class AlfaFilesServiceImpl extends AbstractFileShareService {
 
     @Override
     public boolean supportsRunCheck() {
-        return true;//ok
+        return false;//ok
     }
 
     @Override

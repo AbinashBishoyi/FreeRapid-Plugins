@@ -1,13 +1,12 @@
 package cz.vity.freerapid.plugins.services.alfafiles;
 
-import cz.vity.freerapid.plugins.dev.PluginDevApplication;
-import cz.vity.freerapid.plugins.services.alfafiles.TestApp;
-import cz.vity.freerapid.plugins.services.alfafiles.AlfaFilesServiceImpl;
-import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
+import java.net.URL;
+
 import org.jdesktop.application.Application;
 
-import java.net.URL;
+import cz.vity.freerapid.plugins.dev.PluginDevApplication;
+import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 
 /**
  * @author Arthur Gunawan

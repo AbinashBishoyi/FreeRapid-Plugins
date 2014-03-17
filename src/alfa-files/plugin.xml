@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="alfa-files.com" version="1.0.1" vendor="RickCL"
+<plugin id="alfa-files.com" version="1.0.2" vendor="RickCL"
         class="cz.vity.freerapid.plugins.services.alfafiles.AlfaFilesServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?alfa-files\.com/.+"/>
@@ -11,9 +11,7 @@
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-    <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com" plugin-version="1.0" reverse-lookup="false"/>
-    </requires>
+
     <runtime>
         <library id="alfa-files.com" path="/" type="code"/>
     </runtime>

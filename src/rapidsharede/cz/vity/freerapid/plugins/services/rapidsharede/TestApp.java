@@ -22,7 +22,7 @@ public class TestApp extends PluginDevApplication {
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final RapidShareDeServiceImpl service = new RapidShareDeServiceImpl(); //instance of service - of our plugin
-            testRunCheck(service, httpFile, connectionSettings);//download file with service and its Runner
+            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console
@@ -39,4 +39,5 @@ public class TestApp extends PluginDevApplication {
     public static void main(String[] args) {
         Application.launch(TestApp.class, args);//starts the application - calls startup() internally
     }
+
 }

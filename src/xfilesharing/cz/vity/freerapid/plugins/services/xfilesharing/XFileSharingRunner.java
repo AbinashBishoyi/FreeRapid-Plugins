@@ -57,6 +57,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         fileSizeHandlers.add(new FileSizeHandlerB());
         fileSizeHandlers.add(new FileSizeHandlerC());
         fileSizeHandlers.add(new FileSizeHandlerD());
+        //fileSizeHandlers.add(new FileSizeHandlerNoSize();
         return fileSizeHandlers;
     }
 

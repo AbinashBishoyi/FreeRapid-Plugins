@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.filenuke.FileNukeServiceImpl"
-        id="filenuke.com" vendor="birchie" version="1.0.0">
+        id="filenuke.com" vendor="birchie" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?filenuke\.com/.+"/>
         <attribute id="minver" value="0.853"/>
@@ -15,7 +15,7 @@
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.7" reverse-lookup="false"/>
+                plugin-version="1.0.9" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="filenuke.com" path="/" type="code"/>

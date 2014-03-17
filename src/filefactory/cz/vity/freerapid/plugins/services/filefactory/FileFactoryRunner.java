@@ -81,6 +81,7 @@ class FileFactoryRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Sorry, this file is no longer available") ||
                 contentAsString.contains("the file you are requesting is no longer available") ||
+                contentAsString.contains("file is no longer available") ||
                 contentAsString.contains("This file has been deleted") ||
                 contentAsString.contains("Invalid Download Link") ||
                 contentAsString.contains("This file has been removed")) {

@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.imageporter.ImagePorterServiceImpl"
-        id="imageporter.com" vendor="birchie" version="1.0.3">
+<plugin class="cz.vity.freerapid.plugins.services.filehippo.FileHippoServiceImpl"
+        id="filehippo.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?imageporter\.com/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?filehippo\.com/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="imageporter.com"/>
+        <attribute id="services" value="filehippo.com"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="imageporter.com" path="/" type="code">
-            <export prefix="*"/>
-        </library>
+        <library id="filehippo.com" path="/" type="code"/>
     </runtime>
 </plugin>

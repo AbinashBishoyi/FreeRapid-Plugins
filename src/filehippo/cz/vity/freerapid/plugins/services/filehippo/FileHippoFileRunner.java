@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.imageporter;
+package cz.vity.freerapid.plugins.services.filehippo;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
@@ -16,8 +16,8 @@ import java.util.logging.Logger;
  *
  * @author birchie
  */
-public class ImagePorterFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(ImagePorterFileRunner.class.getName());
+class FileHippoFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(FileHippoFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -32,9 +32,9 @@ public class ImagePorterFileRunner extends AbstractRunner {
         }
     }
 
-    protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Filename:</b></td><td nowrap>", "</td>");
-        PlugUtils.checkFileSize(httpFile, content, "Size:</b></td><td>", "<small>");
+    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, content, "<h1><span itemprop=\"name\">", "</span></h1>");
+        PlugUtils.checkFileSize(httpFile, content, "<em>", " (Freeware");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -42,14 +42,21 @@ public class ImagePorterFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod method = getGetMethod(fileURL); //create GET request
+        final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
-            final String content = getContentAsString();//check for response
+            final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
-            checkNameAndSize(content);//extract file name and size from the page
+            checkNameAndSize(contentAsString);//extract file name and size from the page
+            final HttpMethod httpMethod = getMethodBuilder()
+                    .setActionFromAHrefWhereATagContains("<b>Download").toHttpMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            final HttpMethod dlMethod = getMethodBuilder()
+                    .setActionFromAHrefWhereATagContains("download.png").toHttpMethod();
 
-            final HttpMethod httpMethod = getGetMethod(PlugUtils.getStringBetween(content, "()\" ><img src=\"", "\" id="));
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            if (!tryDownloadAndSaveFile(dlMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
@@ -59,12 +66,9 @@ public class ImagePorterFileRunner extends AbstractRunner {
         }
     }
 
-    protected void checkProblems() throws ErrorDuringDownloadingException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("The file you were looking for could not be found") ||
-                contentAsString.contains("No such file with this filename") ||
-                contentAsString.contains("The file was deleted") ||
-                contentAsString.contains("The file expired")) {
+        if (contentAsString.contains("the page you requested could not be found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

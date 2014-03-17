@@ -34,7 +34,7 @@ class FileShareFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "\">\n" + "        <span>", "</span>");
-        PlugUtils.checkFileSize(httpFile, content, "\\u0420\\u0430\\u0437\\u043C\\u0435\\u0440: <b>", "</b>");
+        PlugUtils.checkFileSize(httpFile, content, "\u0420\u0430\u0437\u043C\u0435\u0440: <b>", "</b>");
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

@@ -17,8 +17,6 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             httpFile.setNewURL(new URL("http://d01.megashares.com/index.php?d01=ZuOELFW"));
-            //they say only <550MB files are downloadable by free users... bullshit. this 28GB file (!) works just fine:
-            //httpFile.setNewURL(new URL("http://d01.megashares.com/?d01=S6jPVkI"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

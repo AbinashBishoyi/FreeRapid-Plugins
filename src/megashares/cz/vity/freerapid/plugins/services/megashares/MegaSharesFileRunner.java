@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.megashares;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
@@ -14,6 +11,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -23,6 +21,7 @@ import java.util.logging.Logger;
 class MegaSharesFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegaSharesFileRunner.class.getName());
     private final static String SERVICE_WEB = "http://d01.megashares.com/";
+    private final static String FILESIZE_MAX = "550MB";
     private final static int CAPTCHA_MAX = 5;
     private int captchaCounter = 1;
 
@@ -33,6 +32,7 @@ class MegaSharesFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            checkDownloadLimit();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -51,15 +51,16 @@ class MegaSharesFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
-            checkProblems();
-            checkNameAndSize();
 
-            /*
-             * Captcha only needs to be posted once every 2 hours.
-             * Synchronize this part to make sure it's posted only once.
-             */
-            synchronized (MegaSharesFileRunner.class) {
+        /*
+         * Captcha only needs to be posted once every 2 hours.
+         * Synchronize this part to make sure it's posted only once.
+         */
+        synchronized (MegaSharesFileRunner.class) {
+            if (makeRedirectedRequest(method)) {
+                checkProblems();
+                checkNameAndSize();
+                checkDownloadLimit();
                 while (getContentAsString().contains("id=\"replace_sec_pprenewal\"")) {
                     if (!makeRedirectedRequest(stepCaptcha())) {
                         throw new ServiceConnectionProblemException("Error posting captcha");
@@ -68,17 +69,17 @@ class MegaSharesFileRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException();
                     }
                 }
-            }
-
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download_file").toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
+            } else {
                 checkProblems();
-                logger.warning(getContentAsString());
-                throw new ServiceConnectionProblemException("Error starting download");
+                throw new ServiceConnectionProblemException();
             }
-        } else {
+        }
+
+        final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download_file").toGetMethod();
+        if (!tryDownloadAndSaveFile(httpMethod)) {
             checkProblems();
-            throw new ServiceConnectionProblemException();
+            logger.warning(getContentAsString());
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
@@ -90,19 +91,31 @@ class MegaSharesFileRunner extends AbstractRunner {
         if (content.contains("All download slots for this link are currently filled")) {
             throw new ServiceConnectionProblemException("All download slots for this link are currently filled. Please try again momentarily.");
         }
-        /*
-         * There's no real need to check for download limits,
-         * because they are just lousy client-side JS functions.
-         * Once the "passport" (captcha function) is validated,
-         * you can freely download as much as you want
-         * if you simply ignore the JS-hide-element commands.
-         */
+    }
+
+    /*
+     * This is separate from checkProblems() because
+     * it needs to be called after setting file size.
+     */
+
+    private void checkDownloadLimit() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("id=\"too_large_for_free_box\"")) {
+            if (httpFile.getFileSize() > PlugUtils.getFileSizeFromString(FILESIZE_MAX)) {
+                throw new NotRecoverableDownloadException("Only users with premium accounts are allowed to download files larger than " + FILESIZE_MAX);
+            }
+            final Matcher matcher = getMatcherAgainstContent("<strong>(\\d+?)</strong>:<strong>(\\d+?)</strong>:<strong>(\\d+?)</strong>");
+            if (!matcher.find()) throw new PluginImplementationException("Waiting time not found");
+            final int hours = Integer.valueOf(matcher.group(1));
+            final int minutes = Integer.valueOf(matcher.group(2));
+            final int seconds = Integer.valueOf(matcher.group(3));
+            throw new YouHaveToWaitException("This link's filesize is larger than what you have left on your passport", 3600 * hours + 60 * minutes + seconds + 5);
+        }
     }
 
     private HttpMethod stepCaptcha() throws Exception {
         final String content = getContentAsString();
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = SERVICE_WEB + getMethodBuilder().setBaseURL(SERVICE_WEB).setActionFromImgSrcWhereTagContains("Security Code").getAction();
+        final String captchaSrc = SERVICE_WEB + getMethodBuilder().setActionFromImgSrcWhereTagContains("Security Code").getAction();
         logger.info("Captcha URL " + captchaSrc);
 
         final String captcha;
@@ -151,6 +164,11 @@ class MegaSharesFileRunner extends AbstractRunner {
             }
         }
         return output;
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return SERVICE_WEB;
     }
 
 }

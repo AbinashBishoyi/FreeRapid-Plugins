@@ -71,8 +71,8 @@ class HellshareRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        PlugUtils.checkName(httpFile, content, "Obsah ", "o velikosti");
-        PlugUtils.checkFileSize(httpFile, content, "o velikosti", "byl nahr");
+        PlugUtils.checkName(httpFile, content, "<strong id=\"FileName_master\">", "</strong>");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "<strong id=\"FileSize_master\">", "</strong>").replace("&nbsp;", " ")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

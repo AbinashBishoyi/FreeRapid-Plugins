@@ -4,12 +4,16 @@ import cz.vity.freerapid.plugins.dev.plugimpl.DevDialogSupport;
 import cz.vity.freerapid.plugins.dev.plugimpl.DevPluginContextImpl;
 import cz.vity.freerapid.plugins.dev.plugimpl.DevStorageSupport;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.services.rapidsharede.ssl.EasySSLProtocolSocketFactory;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginContext;
 import cz.vity.freerapid.plugins.webclient.interfaces.ShareDownloadService;
+import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.protocol.Protocol;
+import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.jdesktop.application.Application;
 
 import java.net.ProxySelector;
@@ -39,6 +43,17 @@ public abstract class PluginDevApplication extends Application {
     protected void initialize(String[] args) {
         super.initialize(args);
         ProxySelector.setDefault(null);
+        try {
+            trustAllCerts();
+        } catch (Exception e) {
+            LogUtils.processException(logger, e);
+        }
+    }
+
+    private void trustAllCerts() throws Exception {
+        ProtocolSocketFactory sf = new EasySSLProtocolSocketFactory();
+        Protocol p = new Protocol("https", sf, 443);
+        Protocol.registerProtocol("https", p);
     }
 
     /**

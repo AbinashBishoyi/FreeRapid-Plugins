@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.shareplace;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -78,6 +75,9 @@ class SharePlaceFileRunner extends AbstractRunner {
         final String content = getContentAsString();
         if (content.contains("Your requested file is not found") || content.contains("Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (content.contains("You have got max allowed download sessions from the same IP")) {
+            throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP", 2 * 60);
         }
     }
 

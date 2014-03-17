@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -92,7 +93,7 @@ class PutLockerFileRunner extends AbstractRunner {
                     throw new PluginImplementationException();
                 }
                 contentAsString = getContentAsString();
-                final String downloadURL2 = PlugUtils.getStringBetween(contentAsString,"url=\"","\"");
+                final String downloadURL2 = PlugUtils.getStringBetween(contentAsString, "url=\"", "\"");
                 httpMethod = getMethodBuilder()
                         .setReferer(fileURL)
                         .setAction(downloadURL2)
@@ -100,7 +101,10 @@ class PutLockerFileRunner extends AbstractRunner {
             }
 
             //logger.info(httpMethod.getURI().toString());
-            
+
+            //they sometimes wrap the name in quotes
+            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
+
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed

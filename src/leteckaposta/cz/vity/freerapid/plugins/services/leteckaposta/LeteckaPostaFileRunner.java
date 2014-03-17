@@ -11,18 +11,20 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Vity
  */
 class LeteckaPostaFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(LeteckaPostaFileRunner.class.getName());
-    private final static String LETECKA_POSTA_CZ_WEB = "http://leteckaposta.cz";
+    private final static String LETECKA_POSTA_WEB = "http://sharegadget.com";
 
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkURL();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
@@ -55,9 +57,17 @@ class LeteckaPostaFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
+    private void checkURL(){
+       Matcher m=Pattern.compile(".*/([0-9]+)/?").matcher(fileURL);
+        if(m.matches()){
+            fileURL="http://sharegadget.com/"+m.group(1)+"//cs";
+        }
+    }
+
     @Override
     public void run() throws Exception {
         super.run();
+        checkURL();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -67,7 +77,7 @@ class LeteckaPostaFileRunner extends AbstractRunner {
             client.setReferer(fileURL);
             final Matcher matcher = getMatcherAgainstContent("href='(.*?)' class='download-link");
             if (matcher.find()) {
-                final GetMethod getMethod = getGetMethod(LETECKA_POSTA_CZ_WEB + matcher.group(1));
+                final GetMethod getMethod = getGetMethod(LETECKA_POSTA_WEB + matcher.group(1));
 
                 if (!tryDownloadAndSaveFile(getMethod)) {
                     checkProblems();
@@ -84,6 +94,9 @@ class LeteckaPostaFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Soubor neexistuje")) {
+            throw new URLNotAvailableAnymoreException("Soubor neexistuje");
+        }
+        if (contentAsString.contains("The file does not exist")) {
             throw new URLNotAvailableAnymoreException("Soubor neexistuje");
         }
         if (contentAsString.contains("stahuje maxim")) {

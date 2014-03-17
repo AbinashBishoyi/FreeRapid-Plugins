@@ -53,12 +53,16 @@ class YouTubeRunner extends AbstractRtmpRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
+        setConfig();
+
+        if (checkSubtitles()) {
+            return;
+        }
 
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             fileURL = method.getURI().toString();
-            setConfig();
             checkName();
 
             if (isUserPage()) {
@@ -285,6 +289,46 @@ class YouTubeRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("Error parsing file URL");
         }
         return matcher.group(1);
+    }
+
+    private String getIdFromUrl() throws ErrorDuringDownloadingException {
+        final Matcher matcher = PlugUtils.matcher("[\\?&]v=([^\\?&#]+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error parsing file URL");
+        }
+        return matcher.group(1);
+    }
+
+    private boolean checkSubtitles() throws Exception {
+        if (fileURL.contains("#subtitles:")) {
+            fileExtension = ".srt";
+            runCheck();
+            final String url = "http://www.youtube.com/api/timedtext?type=track"
+                    + fileURL.substring(fileURL.indexOf("#subtitles:") + 11);
+            final HttpMethod method = getGetMethod(url);
+            if (!makeRedirectedRequest(method)) {
+                throw new ServiceConnectionProblemException();
+            }
+            logger.info(getContentAsString());//TODO convert to srt and save to file
+            return true;
+        } else if (config.isDownloadSubtitles()) {
+            final String id = getIdFromUrl();
+            final HttpMethod method = getGetMethod("http://www.youtube.com/api/timedtext?type=list&v=" + id);
+            if (makeRedirectedRequest(method)) {
+                final List<URI> list = new LinkedList<URI>();
+                final Matcher matcher = getMatcherAgainstContent("<track id=\"\\d*\" name=\"(.*?)\" lang_code=\"(.*?)\"");
+                while (matcher.find()) {
+                    final String url = fileURL + "#subtitles:&v=" + id + "&name=" + matcher.group(1) + "&lang=" + matcher.group(2);
+                    try {
+                        list.add(new URI(url));
+                    } catch (final URISyntaxException e) {
+                        LogUtils.processException(logger, e);
+                    }
+                }
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+            }
+        }
+        return false;
     }
 
 }

@@ -6,6 +6,7 @@ package cz.vity.freerapid.plugins.services.youtube;
 public class YouTubeSettingsConfig {
     private int qualitySetting;
     private boolean reversePlaylistOrder;
+    private boolean downloadSubtitles;
 
     public static final int MIN_WIDTH = -2;
     public static final int MAX_WIDTH = -1;
@@ -33,5 +34,13 @@ public class YouTubeSettingsConfig {
 
     public boolean isReversePlaylistOrder() {
         return reversePlaylistOrder;
+    }
+
+    public void setDownloadSubtitles(boolean downloadSubtitles) {
+        this.downloadSubtitles = downloadSubtitles;
+    }
+
+    public boolean isDownloadSubtitles() {
+        return downloadSubtitles;
     }
 }

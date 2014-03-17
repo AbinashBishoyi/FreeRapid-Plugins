@@ -24,9 +24,11 @@ public class YouTubeSettingsPanel extends JPanel {
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);
         final JCheckBox orderCheckBox = new JCheckBox("Sort by newest first when adding links from user pages");
+        final JCheckBox subtitlesCheckBox = new JCheckBox("Download subtitles whenever available");
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         orderCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        subtitlesCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         int qs = config.getQualitySetting();
         for (int i = 0; i < qualityIndexMap.length; i++) {
             if (qualityIndexMap[i] == qs) {
@@ -48,11 +50,18 @@ public class YouTubeSettingsPanel extends JPanel {
                 config.setReversePlaylistOrder(orderCheckBox.isSelected());
             }
         });
+        subtitlesCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setDownloadSubtitles(subtitlesCheckBox.isSelected());
+            }
+        });
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(qualityLabel);
         add(qualityList);
         add(Box.createRigidArea(new Dimension(0, 15)));
         add(orderCheckBox);
+        add(subtitlesCheckBox);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }
 

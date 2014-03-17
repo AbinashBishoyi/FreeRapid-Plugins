@@ -10,6 +10,7 @@
         <!-- ID pluginu, pro ktere je to premium -->
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>

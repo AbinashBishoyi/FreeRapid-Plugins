@@ -29,7 +29,7 @@ class RapidShareRunner extends AbstractRunner {
                 matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (matcher.find()) {
                     final String error = matcher.group(1);
-                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed"))
+                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed") || error.contains("file is neither allocated to") || error.contains("limit is reached"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                     if (error.contains("file could not be found"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
@@ -44,6 +44,8 @@ class RapidShareRunner extends AbstractRunner {
                     throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Illegal content. File was removed.");
                 if (client.getContentAsString().contains("file has been removed"))
                     throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Due to a violation of our terms of use, the file has been removed from the server.");
+                if (client.getContentAsString().contains("limit is reached"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>To download this file, the uploader either needs to transfer this file into his/her Collector's Account, or upload the file again. The file can later be moved to a Collector's Account. The uploader just needs to click the delete link of the file to get further information.");
                 logger.warning(client.getContentAsString());
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
             }
@@ -64,7 +66,7 @@ class RapidShareRunner extends AbstractRunner {
                 matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (matcher.find()) {
                     final String error = matcher.group(1);
-                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed"))
+                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed") || error.contains("file is neither allocated to") || error.contains("limit is reached"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                     if (error.contains("file could not be found"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
@@ -79,6 +81,8 @@ class RapidShareRunner extends AbstractRunner {
                     throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Illegal content. File was removed.");
                 if (client.getContentAsString().contains("file has been removed"))
                     throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>Due to a violation of our terms of use, the file has been removed from the server.");
+                if (client.getContentAsString().contains("limit is reached"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>To download this file, the uploader either needs to transfer this file into his/her Collector's Account, or upload the file again. The file can later be moved to a Collector's Account. The uploader just needs to click the delete link of the file to get further information.");
                 logger.warning(client.getContentAsString());
                 throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
             }
@@ -138,7 +142,7 @@ class RapidShareRunner extends AbstractRunner {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         final String contentAsString = client.getContentAsString();
         if (contentAsString.contains("You have reached the")) {
-            matcher = Pattern.compile("try again in about ([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
+            matcher = Pattern.compile("try again in about ([0-9]+) minute", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("You have reached the download-limit for free-users.", Integer.parseInt(matcher.group(1)) * 60 + 10);
             }
@@ -150,7 +154,7 @@ class RapidShareRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Your IP address %s is already downloading a file. <br>Please wait until the download is completed.", ip));
         }
         if (contentAsString.contains("Currently a lot of users")) {
-            matcher = Pattern.compile("Please try again in ([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
+            matcher = Pattern.compile("Please try again in ([0-9]+) minute", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);
             }

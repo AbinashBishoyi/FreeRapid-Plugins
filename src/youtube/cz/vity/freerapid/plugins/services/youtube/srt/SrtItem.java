@@ -7,21 +7,21 @@ import java.math.BigDecimal;
  */
 public class SrtItem {
 
-    private int counter;
-    private String start;
+    private final int counter;
+    private final String start;
+    private final String end;
     private String text = "";
-    private final double end;
 
     public SrtItem(int counter, String start, String dur) {
         this.counter = counter;
         this.start = start;
-        end = new BigDecimal(start).add(new BigDecimal(dur)).doubleValue();
+        this.end = new BigDecimal(start).add(new BigDecimal(dur)).toPlainString();
     }
 
-    private String toTimeFormat(String value) {
+    private static String toTimeFormat(String value) {
         final String[] split = value.split("\\.");
-        final Long sec = Long.valueOf(split[0]);
-        long h, m, s;
+        final int sec = Integer.parseInt(split[0]);
+        final int h, m, s;
         h = sec / 3600;
         m = (sec / 60) % 60;
         s = sec % 60;
@@ -34,10 +34,16 @@ public class SrtItem {
 
     @Override
     public String toString() {
-        final String lineSeparator = System.getProperty("line.separator");
-        final StringBuilder builder = new StringBuilder();
-        builder.append(counter).append(lineSeparator).append(toTimeFormat(start)).append(" --> ").append(toTimeFormat(String.valueOf(end))).append(lineSeparator).append(text).append(lineSeparator).append(lineSeparator);
-        return builder.toString();
+        return new StringBuilder()
+                .append(counter)
+                .append("\r\n")
+                .append(toTimeFormat(start))
+                .append(" --> ")
+                .append(toTimeFormat(end))
+                .append("\r\n")
+                .append(text)
+                .append("\r\n\r\n")
+                .toString();
     }
 
 }

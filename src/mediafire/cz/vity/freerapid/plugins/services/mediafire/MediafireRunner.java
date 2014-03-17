@@ -69,9 +69,6 @@ class MediafireRunner extends AbstractRunner {
         if (content.contains("Unknown or invalid Folder")) {
             throw new URLNotAvailableAnymoreException("Folder not found");
         }
-        if (content.contains("This folder is empty")) {
-            throw new NotRecoverableDownloadException("This folder is empty");
-        }
     }
 
     @Override

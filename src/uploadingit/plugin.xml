@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.pinterest.PinterestServiceImpl"
-        id="pinterest.com" vendor="bircie" version="1.1.3">
+<plugin class="cz.vity.freerapid.plugins.services.uploadingit.UploadingItServiceImpl"
+        id="uploadingit.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?pinterest\.com/.+?/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?uploadingit\.com/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="pinterest.com"/>
-        <attribute id="maxDownloads" value="100"/>
+        <attribute id="services" value="uploadingit.com"/>
+        <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="pinterest.com" path="/" type="code"/>
+        <library id="uploadingit.com" path="/" type="code"/>
     </runtime>
 </plugin>

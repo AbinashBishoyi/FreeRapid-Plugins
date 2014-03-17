@@ -26,6 +26,8 @@ import java.util.regex.Matcher;
 class PinterestFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(PinterestFileRunner.class.getName());
 
+    private final static int PINSperPAGE = 25;
+
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
@@ -46,8 +48,8 @@ class PinterestFileRunner extends AbstractRunner {
                 throw new PluginImplementationException("File name not found");
             httpFile.setFileName(match.group(1).trim());
         } else {
-            httpFile.setFileName("Board: " + PlugUtils.getStringBetween(content, "<h1>", "</h1>"));
-            final Matcher match = PlugUtils.matcher("<div.+?PinCount.+?PinCount.+?>\\s+?(.+?)Pins</div>", content);
+            httpFile.setFileName("Board: " + PlugUtils.getStringBetween(content, "<h1 class=\"boardName\">", "</h1>"));
+            final Matcher match = PlugUtils.matcher("<div.+?PinCount.+?PinCount.+?>\\s+?(.+?)Pins\\s+?</div>", content);
             if (match.find())
                 httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
         }
@@ -77,13 +79,13 @@ class PinterestFileRunner extends AbstractRunner {
                 final Matcher matchPin = PlugUtils.matcher("<a href=\"(/pin/[^\"]+?)\" class=\"pinImageWrapper", content);
                 while (matchPin.find())
                     list.add(new URI("http://www.pinterest.com" + matchPin.group(1)));
-                int maxSize = 25;
+                int maxSize = PINSperPAGE;
                 // check for more links
                 if (list.size() == maxSize) {
                     final String source = PlugUtils.getStringBetween(content, "<link rel=\"canonical\" href=\"", "\">");
                     final Matcher matchD1 = PlugUtils.matcher("name\": \"BoardFeedResource\", (\"options\": \\{\"board_id\":.+?)\\},", content);
                     if (!matchD1.find()) throw new PluginImplementationException("Error D1");
-                    final Matcher matchD2 = PlugUtils.matcher("P.setContext\\((.+?)\\);", content);
+                    final Matcher matchD2 = PlugUtils.matcher("setContext\\((.+?)\\);", content);
                     if (!matchD2.find()) throw new PluginImplementationException("Error D2");
                     final Matcher matchD3 = PlugUtils.matcher("Footer-\\d+?\"\\}\\], \"errorStrategy\": 1, \"data\": \\{\\}, (\"options\": \\{\"scrollable\": true.+?), \"uid\": \"Grid-\\d", content);
                     if (!matchD3.find()) throw new PluginImplementationException("Error D3");
@@ -93,7 +95,7 @@ class PinterestFileRunner extends AbstractRunner {
                     long time = System.currentTimeMillis();
 
                     while (list.size() == maxSize) {
-                        maxSize += 25;
+                        maxSize += PINSperPAGE;
                         time += 1;
                         final HttpMethod httpMethod = getMethodBuilder()
                                 .setReferer(fileURL)

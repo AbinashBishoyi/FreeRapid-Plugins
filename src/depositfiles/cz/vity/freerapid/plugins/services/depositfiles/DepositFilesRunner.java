@@ -57,6 +57,12 @@ class DepositFilesRunner {
               a = (a*1024*1024);
               httpFile.setFileSize(a.longValue());
                 }
+              matcher = Pattern.compile("class\\=\"info[^=]*\\=\"([^\"]*)\"", Pattern.MULTILINE ).matcher(client.getContentAsString());
+              if (matcher.find()) {
+             logger.info("File name " + matcher.group(1) );
+              httpFile.setFileName(matcher.group(1));
+                }
+
             logger.info("Submit form to - " + s);
             client.setReferer(fileURL);
             final PostMethod postMethod = client.getPostMethod(HTTP_DEPOSITFILES + s);
@@ -72,7 +78,7 @@ class DepositFilesRunner {
                 }
                 s = matcher.group(1);
                 int seconds = new Integer(s);
-
+                         logger.info("wait - " + s);
 
             if (downloader.isTerminated())
                 throw new InterruptedException();

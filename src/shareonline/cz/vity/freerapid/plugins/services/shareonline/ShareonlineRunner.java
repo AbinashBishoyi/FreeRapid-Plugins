@@ -1,14 +1,14 @@
 package cz.vity.freerapid.plugins.services.shareonline;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.webclient.*;
-import org.apache.commons.httpclient.HttpStatus;
+import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.logging.Logger;
@@ -18,38 +18,36 @@ import java.util.regex.Pattern;
 /**
  * @author Ladislav Vitasek, Ludek Zika
  */
-class ShareonlineRunner {
+class ShareonlineRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareonlineRunner.class.getName());
-    private HttpDownloadClient client;
-    private HttpFileDownloader downloader;
     private ServicePluginContext context;
     private String initURL;
-    private String enterURL;
 
-    public void run(HttpFileDownloader downloader, ServicePluginContext context) throws Exception {
-        this.downloader = downloader;
+    public ShareonlineRunner(ServicePluginContext context) {
+        super();
         this.context = context;
-        HttpFile httpFile = downloader.getDownloadFile();
+    }
+
+    public void runCheck(HttpFileDownloader downloader) throws Exception {
+        super.runCheck(downloader);
+        final GetMethod getMethod = client.getGetMethod(fileURL);
+        if (makeRequest(getMethod)) {
+            checkNameAndSize(client.getContentAsString());
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        } else
+            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+    }
+
+    public void run(HttpFileDownloader downloader) throws Exception {
+        super.run(downloader);
         client = downloader.getClient();
-        final String fileURL = httpFile.getFileUrl().toString();
         initURL = fileURL;
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod getMethod = client.getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
-        if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
+        if (makeRequest(getMethod)) {
 
-            Matcher matcher = Pattern.compile("\\(([0-9.]* .B)\\)", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + a);
-                httpFile.setFileSize(a);
-            }
-            matcher = Pattern.compile("File name:((<[^>]*>)|\\s)*([^<]+)<", Pattern.MULTILINE).matcher(client.getContentAsString());
-            if (matcher.find()) {
-                final String fn = matcher.group(matcher.groupCount());
-                logger.info("File name " + fn);
-                httpFile.setFileName(fn);
-            } else logger.warning("File name was not found" + client.getContentAsString());
+            checkNameAndSize(client.getContentAsString());
 
             do {
                 checkProblems();
@@ -61,26 +59,19 @@ class ShareonlineRunner {
 
             } while (client.getContentAsString().contains("Please enter the number"));
 
-            matcher = Pattern.compile("decode\\(\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
+            Matcher matcher = Pattern.compile("decode\\(\"([^\"]*)\"", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
                 String s = decode(matcher.group(1));
                 logger.info("Found File URL - " + s);
                 if (downloader.isTerminated())
                     throw new InterruptedException();
-                httpFile.setState(DownloadState.GETTING);
+
                 final GetMethod method = client.getGetMethod(s);
-                try {
-                    final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
-                    if (inputStream != null) {
-                        setTicket(new Date());
-                        downloader.saveToFile(inputStream);
-                    } else {
-                        checkProblems();
-                        throw new IOException("File input stream is empty.");
-                    }
-                } finally {
-                    method.abort();
-                    method.releaseConnection();
+                Date newDate = new Date();
+                if (tryDownload(method)) setTicket(newDate);
+                else {
+                    checkProblems();
+                    throw new IOException("File input stream is empty.");
                 }
             } else {
                 checkProblems();
@@ -91,6 +82,27 @@ class ShareonlineRunner {
         } else
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
+
+    private void checkNameAndSize(String content) throws Exception {
+
+        if (content.contains("Your requested file could not be found")) {
+            throw new URLNotAvailableAnymoreException("Your requested file could not be found");
+        }
+
+        Matcher matcher = PlugUtils.matcher("\\(([0-9.]* .B)\\)", content);
+        if (matcher.find()) {
+            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+            logger.info("File size " + a);
+            httpFile.setFileSize(a);
+        }
+        matcher = PlugUtils.matcher("File name:((<[^>]*>)|\\s)*([^<]+)<", content);
+        if (matcher.find()) {
+            final String fn = matcher.group(matcher.groupCount());
+            logger.info("File name " + fn);
+            httpFile.setFileName(fn);
+        } else logger.warning("File name was not found" + client.getContentAsString());
+    }
+
 
     private String decode(String input) {
 
@@ -146,7 +158,7 @@ class ShareonlineRunner {
             Matcher matcher = Pattern.compile("captcha", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 String s = "http://www.share-online.biz/captcha.php";
-                String captcha = downloader.getCaptcha(s);
+                String captcha = getCaptchaSupport().getCaptcha(s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
@@ -160,8 +172,7 @@ class ShareonlineRunner {
 
                     postMethod.addParameter("captchacode", captcha);
 
-                    client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
-                    if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
+                    if (makeRequest(postMethod)) {
                         return true;
                     }
                 }
@@ -172,14 +183,6 @@ class ShareonlineRunner {
 
         }
         return false;
-    }
-
-    private String getParameter(String s, String contentAsString) throws PluginImplementationException {
-        Matcher matcher = Pattern.compile("name=\"" + s + "\"[^v>]*value=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else
-            throw new PluginImplementationException("Parameter " + s + " was not found");
     }
 
     private int getTimeToWait() {

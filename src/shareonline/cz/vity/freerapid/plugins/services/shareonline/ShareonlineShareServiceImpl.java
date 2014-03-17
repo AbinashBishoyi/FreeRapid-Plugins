@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.services.shareonline;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
-import cz.vity.freerapid.plugins.webclient.HttpFileDownloader;
+import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
  * @author Ladislav Vitasek
@@ -19,9 +19,14 @@ public class ShareonlineShareServiceImpl extends AbstractFileShareService {
     }
 
 
-    public void run(HttpFileDownloader downloader) throws Exception {
-        super.run(downloader);
-        new ShareonlineRunner().run(downloader, context);
+    @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
+
+    @Override
+    protected PluginRunner getPluginRunnerInstance() {
+        return new ShareonlineRunner(context);
     }
 
 }

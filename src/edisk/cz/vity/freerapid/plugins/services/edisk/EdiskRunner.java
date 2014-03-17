@@ -6,10 +6,10 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
  * @author Ladislav Vitasek, Ludek Zika, JPEXS (Sound Captcha)
  */
 class EdiskRunner extends AbstractRunner {
+    public static final String SERVICE_WEB = "http://www.edisk.cz";
     private final static Logger logger = Logger.getLogger(EdiskRunner.class.getName());
 
     public EdiskRunner() {
@@ -38,25 +39,23 @@ class EdiskRunner extends AbstractRunner {
         super.run();
         final HttpMethod httpMethod = getMethodBuilder().setAction(checkURL(fileURL)).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {
-            if (getContentAsString().contains("text z obr")) {
-                checkNameAndSize(getContentAsString());
+            final HttpMethod httpMethod2 = getMethodBuilder().setActionFromAHrefWhereATagContains("POMALU").setBaseURL(SERVICE_WEB).toHttpMethod();
 
-                PostMethod method = stepCaptcha(getContentAsString(), true);
-                makeRequest(method);
-
-                while (getContentAsString().contains("text z obr")) {
-                    PostMethod method2 = stepCaptcha(getContentAsString(), false);
-
-                    makeRequest(method2);
-
-                }
-                String finalURL = getContentAsString();
-                GetMethod finalMethod = getGetMethod(finalURL);
-
-                if (!tryDownloadAndSaveFile(finalMethod)) {
+            if (makeRedirectedRequest(httpMethod2)) {
+                String action = PlugUtils.getStringBetween(getContentAsString(), "countDown('", "',");
+                downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "var waitSecs = ", ";", TimeUnit.SECONDS));
+                final HttpMethod httpMethod3 = getMethodBuilder().setAction("/x-download/" + action).setBaseURL(SERVICE_WEB).setParameter("action", action).toPostMethod();
+                if (makeRedirectedRequest(httpMethod3)) {
+                    final HttpMethod finalMethod = getMethodBuilder().setAction(getContentAsString()).toGetMethod();
+                    if (!tryDownloadAndSaveFile(finalMethod)) {
+                        checkProblems();
+                        logger.warning(getContentAsString());
+                        throw new IOException("File input stream is empty.");
+                    }
+                } else {
                     checkProblems();
-                    logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty.");
+                    logger.info(getContentAsString());
+                    throw new PluginImplementationException();
                 }
 
             } else {
@@ -80,17 +79,17 @@ class EdiskRunner extends AbstractRunner {
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
         if (content.contains("neexistuje z ")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Poï¿½adovanï¿½ soubor nebyl nalezen.</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Požadovaný soubor nebyl nalezen.</b><br>"));
         }
-        PlugUtils.checkFileSize(httpFile, content, "Velikost souboru:", "<br");
-        PlugUtils.checkName(httpFile, content, "ut soubor:", "(");
+        PlugUtils.checkFileSize(httpFile, content, "Velikost souboru: <strong>", "</strong>");
+        PlugUtils.checkName(httpFile, content, "nout soubor:&nbsp;<span class=\"bold\">", " (");
 
     }
 
 
     private PostMethod stepCaptcha(String contentAsString, boolean hack) throws Exception {
         if (contentAsString.contains("text z obr")) {
-            String captcha="";
+            String captcha = "";
             Matcher matcher;
 
             if (hack) {
@@ -100,28 +99,28 @@ class EdiskRunner extends AbstractRunner {
 
                 CaptchaSupport captchaSupport = getCaptchaSupport();
                 String host = "http://" + httpFile.getFileUrl().getHost();
-                String captchaImgUrl = getMethodBuilder(contentAsString).setActionFromImgSrcWhereTagContains("captcha").getAction();                
+                String captchaImgUrl = getMethodBuilder(contentAsString).setActionFromImgSrcWhereTagContains("captcha").getAction();
                 captchaImgUrl = host + captchaImgUrl;
-                Matcher m=Pattern.compile("/([0-9]+)$").matcher(captchaImgUrl);
-                String captchaNumber="";
+                Matcher m = Pattern.compile("/([0-9]+)$").matcher(captchaImgUrl);
+                String captchaNumber = "";
                 logger.info("Captcha Image URL " + captchaImgUrl);
-                if(m.find()){
-                    captchaNumber=m.group(1);
-                    String captchaSoundUrl="http://www.edisk.cz/x-generate-member-audio-captcha/"+captchaNumber;
+                if (m.find()) {
+                    captchaNumber = m.group(1);
+                    String captchaSoundUrl = "http://www.edisk.cz/x-generate-member-audio-captcha/" + captchaNumber;
                     logger.info("Captcha Sound URL " + captchaSoundUrl);
                     //request for image must be done first in order to download sound
-                    HttpMethod imageMethod=getMethodBuilder().setAction(captchaImgUrl).toGetMethod();
+                    HttpMethod imageMethod = getMethodBuilder().setAction(captchaImgUrl).toGetMethod();
                     client.makeRequestForFile(imageMethod);
                     imageMethod.releaseConnection();
 
                     //download sound
-                    HttpMethod soundMethod=getMethodBuilder().setAction(captchaSoundUrl).toGetMethod();
+                    HttpMethod soundMethod = getMethodBuilder().setAction(captchaSoundUrl).toGetMethod();
                     soundMethod.setFollowRedirects(true);
-                    captcha=SoundReader.readWav(client.makeRequestForFile(soundMethod));
+                    captcha = SoundReader.readWav(client.makeRequestForFile(soundMethod));
                     soundMethod.releaseConnection();
                     logger.info("Captcha read: " + captcha);
-                }                
-                if((captcha==null)||(captcha.length()<4)){
+                }
+                if ((captcha == null) || (captcha.length() < 4)) {
                     String captchaR = captchaSupport.getCaptcha(captchaImgUrl);
                     if (captchaR == null) {
                         throw new CaptchaEntryInputMismatchException();
@@ -165,10 +164,10 @@ class EdiskRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
         if (getContentAsString().contains("neexistuje z ")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>Poï¿½adovanï¿½ soubor nebyl nalezen.</b><br>"));
+            throw new URLNotAvailableAnymoreException(String.format("<b>Po?adovan? soubor nebyl nalezen.</b><br>"));
         }
         if (getContentAsString().contains("stahovat pouze jeden soubor")) {
-            throw new ServiceConnectionProblemException(String.format("<b>Mï¿½ete stahovat pouze jeden soubor narï¿½z</b><br>"));
+            throw new ServiceConnectionProblemException(String.format("<b>M?ete stahovat pouze jeden soubor nar?z</b><br>"));
 
         }
 

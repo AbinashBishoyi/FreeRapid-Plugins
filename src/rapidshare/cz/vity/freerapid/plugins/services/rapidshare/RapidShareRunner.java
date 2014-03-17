@@ -35,13 +35,15 @@ class RapidShareRunner {
                 matcher = Pattern.compile("class=\"klappbox\">((\\s|.)*?)</div>", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (matcher.find()) {
                     final String error = matcher.group(1);
-                    if (error.contains("illegal content") || error.contains("file has been removed"))
+                    if (error.contains("illegal content") || error.contains("file has been removed") || error.contains("has removed file"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                     if (error.contains("file could not be found"))
                         throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>" + error);
                     logger.warning(client.getContentAsString());
                     throw new InvalidURLOrServiceProblemException("<b>RapidShare error:</b><br>" + error);
                 }
+                if (client.getContentAsString().contains("has removed file"))
+                    throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>The uploader has removed this file from the server.");
                 if (client.getContentAsString().contains("file could not be found"))
                     throw new URLNotAvailableAnymoreException("<b>RapidShare error:</b><br>The file could not be found. Please check the download link.");
                 if (client.getContentAsString().contains("illegal content"))

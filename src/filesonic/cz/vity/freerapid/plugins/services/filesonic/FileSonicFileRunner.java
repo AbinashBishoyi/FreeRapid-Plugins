@@ -100,8 +100,8 @@ class FileSonicFileRunner extends AbstractRunner {
                     } catch (PluginImplementationException e) {
                         method = getMethodBuilder().setReferer(fileURL).setAction(startUrl).toPostMethod();
                     }
-                } else if (content.contains("Start Download Now")) {
-                    method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Start Download Now").toGetMethod();
+                } else if (content.contains("class=\"downloadLink\"")) {
+                    method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download").toGetMethod();
                     setFileStreamContentTypes("\"application/octet-stream\"");
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();

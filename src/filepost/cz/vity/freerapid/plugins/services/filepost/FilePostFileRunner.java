@@ -12,6 +12,7 @@ import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author CrazyCoder
@@ -51,7 +52,15 @@ class FilePostFileRunner extends AbstractRunner {
             fileURL = method.getURI().toString();
 
             final Cookie sid = getCookieByName("SID");
-            final String code = PlugUtils.getStringBetween(fileURL, "/files/", "/");
+            if (sid == null) {
+                throw new PluginImplementationException("SID cookie not found");
+            }
+
+            final Matcher matcher = PlugUtils.matcher("/files/([^/]+)", fileURL);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error parsing file URL");
+            }
+            final String code = matcher.group(1);
             logger.info("Code: " + code);
 
             final String captchaKey = PlugUtils.getStringBetween(getContentAsString(), "key:\t\t\t'", "',");
@@ -71,12 +80,7 @@ class FilePostFileRunner extends AbstractRunner {
                 logger.info(content);
 
                 if (content.contains("wait_time")) {
-                    int wait = 60;
-                    try {
-                        wait = Integer.parseInt(PlugUtils.getStringBetween(content, "\"wait_time\":\"", "\"}}"));
-                    } catch (NumberFormatException ignored) {
-                    }
-
+                    int wait = PlugUtils.getNumberBetween(content, "\"wait_time\":\"", "\"}}");
                     logger.info("wait: " + wait);
 
                     if (wait > 0) {
@@ -119,6 +123,9 @@ class FilePostFileRunner extends AbstractRunner {
 
     private MethodBuilder ajaxBuilder(Cookie sid, String code, boolean start) throws URIException, PluginImplementationException {
         final Cookie time = getCookieByName("time");
+        if (time == null) {
+            throw new PluginImplementationException("Time cookie not found");
+        }
 
         final String startUrl = getBaseURL() + "/files/get/?SID=" + sid.getValue() + "&JsHttpRequest=" + time.getValue() + "-xml";
         logger.info("Start URL: " + startUrl);

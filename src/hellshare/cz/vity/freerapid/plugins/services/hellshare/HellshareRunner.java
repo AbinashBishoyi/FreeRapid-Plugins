@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.io.*;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika
@@ -20,7 +19,7 @@ import java.io.*;
 class HellshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(HellshareRunner.class.getName());
     private final static Map<String, PostMethod> methodsMap = new HashMap<String, PostMethod>();
-    private final static int WAIT_TIME = 30;
+    private final static int WAIT_TIME = 20;
 
     @Override
     public void runCheck() throws Exception {
@@ -53,8 +52,7 @@ class HellshareRunner extends AbstractRunner {
                 return;
 
             matcher = getMatcherAgainstContent("<input type=\"button\" value=\"FREE DOWNLOAD\" onclick=\"document[.]getElementById[(]\'FreeDownProgress\'[)][.]style.display=\'block\'; document[.]getElementById[(]\'FreeDownProgress\'[)][.]src=\'([^\']+)\'\" />");
-            if(matcher.find())
-            {
+            if (matcher.find()) {
                 String downURL = matcher.group(1);
                 final GetMethod getmethod = getGetMethod(downURL);
                 if (makeRequest(getmethod)) {
@@ -62,7 +60,7 @@ class HellshareRunner extends AbstractRunner {
                     httpFile.setState(DownloadState.GETTING);
                     if (!tryDownloadAndSaveFile(method)) {
                         matcher = getMatcherAgainstContent("Omlouv.me se, ale tento soubor nen. pro danou zemi v tuto chv.li dostupn.. Pracujeme na odstran.n. probl.mu.|We are sorry, but this file is not accessible at this time for this country. We are currenlty working on fixing this problem");
-                        if(matcher.find())
+                        if (matcher.find())
                             throw new PluginImplementationException("This file is not available for this country for this moment");
                         boolean finish = false;
                         while (!finish) {
@@ -113,8 +111,7 @@ class HellshareRunner extends AbstractRunner {
         client.setReferer(fileURL);
 
         matcher = getMatcherAgainstContent("<input type=\"button\" value=\"FREE DOWNLOAD\" onclick=\"document[.]getElementById[(]\'FreeDownProgress\'[)][.]style.display=\'block\'; document[.]getElementById[(]\'FreeDownProgress\'[)][.]src=\'([^\']+)\'\" />");
-        if(matcher.find())
-        {
+        if (matcher.find()) {
             String downURL = matcher.group(1);
             final GetMethod getmethod = getGetMethod(downURL);
             if (makeRequest(getmethod)) {
@@ -169,12 +166,12 @@ class HellshareRunner extends AbstractRunner {
         method.addParameters(met.getParameters());
 
         httpFile.setState(DownloadState.GETTING);
-        if(tryDownloadAndSaveFile(method))
+        if (tryDownloadAndSaveFile(method))
             methodsMap.remove(fileURL);
         else {
             checkProblems();
             Matcher matcher = getMatcherAgainstContent("Omlouv.me se, ale tento soubor nen. pro danou zemi v tuto chv.li dostupn.. Pracujeme na odstran.n. probl.mu.|We are sorry, but this file is not accessible at this time for this country. We are currenlty working on fixing this problem");
-            if(matcher.find())
+            if (matcher.find())
                 throw new PluginImplementationException("This file is not available for this country for this moment");
 
             matcher = getMatcherAgainstContent("<img src=\"([^\"]*)\" border=\"0\" align=\"antispam\" align=\"middle\" id=\"captcha-img\" ");
@@ -219,7 +216,7 @@ class HellshareRunner extends AbstractRunner {
         String finalURL = matcher.group(1);
 
         final PostMethod method = getPostMethod(finalURL);
-        
+
         PlugUtils.addParameters(method, getContentAsString(), new String[]{"submit"});
         method.addParameter("captcha", captcha);
 
@@ -235,6 +232,9 @@ class HellshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Na serveru jsou .* free download|Na serveri s. vyu.it. v.etky free download sloty|A szerveren az .sszes free download slot ki van haszn.lva");
         if (matcher.find()) {
+            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
+        }
+        if (getContentAsString().contains("Stahujete soub")) {
             throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
         }
     }

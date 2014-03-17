@@ -49,6 +49,7 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
                 logger.info("Initializing new mirrorConfig ");
                 mirrorConfig = new RapidShareMirrorConfig();
                 mirrorConfig.setAr(new ArrayList<MirrorBean>());
+                MirrorChooser.initPreferred(mirrorConfig);
             } else {
                 logger.info("Loading mirrorConfig from config file");
                 mirrorConfig = storage.loadConfigFromFile(MirrorChooser.CONFIGFILE, RapidShareMirrorConfig.class);

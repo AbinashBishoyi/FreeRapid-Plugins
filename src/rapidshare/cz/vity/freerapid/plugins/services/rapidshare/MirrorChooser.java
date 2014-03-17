@@ -52,7 +52,7 @@ class MirrorChooser {
 
     private void makeMirrorList() throws Exception {
         logger.info("Making list of mirrors ");
-        mirrorConfig.getAr().add(MirrorBean.createDefault());
+        initPreferred(mirrorConfig);
         Matcher matcher = PlugUtils.matcher("<input (checked)? type=\"radio\" name=\"mirror\" onclick=\"document.dlf.action=.'http://rs[0-9]+([^.]+)[^']*.';\" /> ([^<]*)<br", content);
         while (matcher.find()) {
 
@@ -62,7 +62,6 @@ class MirrorChooser {
             logger.info("Found mirror " + mirrorName + " ident " + ident);
             mirrorConfig.getAr().add(new MirrorBean(mirrorName, ident));
         }
-        getMirrorConfig().setChosen(MirrorBean.createDefault());
         logger.info("Saving config ");
         storage.storeConfigToFile(getMirrorConfig(), CONFIGFILE);
         // <input checked type="radio" name="mirror" onclick="document.dlf.action=\'http://rs332gc.rapidshare.com/files/168531395/2434660/rkdr.part3.rar\';" /> GlobalCrossing<br />
@@ -96,7 +95,7 @@ class MirrorChooser {
     public String getPreferredURL(String content) throws Exception {
         this.content = content;
         logger.info("Checking existing RapidShareMirrorConfig: " + storage.configFileExists(CONFIGFILE));
-        if (!storage.configFileExists(CONFIGFILE)) {
+        if (!storage.configFileExists(CONFIGFILE) || mirrorConfig.getAr().size() < 2) {
             makeMirrorList();
         }
 
@@ -104,5 +103,13 @@ class MirrorChooser {
 
     }
 
+    static void initPreferred(RapidShareMirrorConfig mirrorConfig) {
+        logger.info("Initializing preferred mirror as default ");
+
+        MirrorBean defaultBean = MirrorBean.createDefault();
+        if (!mirrorConfig.getAr().contains(defaultBean)) 
+            mirrorConfig.getAr().add(defaultBean);
+        mirrorConfig.setChosen(defaultBean);
+    }
 
 }

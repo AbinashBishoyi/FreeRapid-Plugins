@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareSupport.java 1022 2008-12-09 20:10:51Z ATom $
+ * $Id: RapidShareSupport.java 1789 2009-06-19 09:25:50Z Atom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -20,40 +20,20 @@
 
 package cz.vity.freerapid.plugins.services.rapidshare_premium;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Calendar;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Support class for RS.
  *
  * @author Tomáš Procházka &lt;<a href="mailto:tomas.prochazka@atomsoft.cz">tomas.prochazka@atomsoft.cz</a>&gt;
- * @version $Revision: 1022 $ ($Date: 2008-12-10 01:40:51 +0530 (Wed, 10 Dec 2008) $)
+ * @version $Revision: 1789 $ ($Date: 2009-06-19 14:55:50 +0530 (Fri, 19 Jun 2009) $)
  */
 class RapidShareSupport {
-
 
     /**
      * Do not instantiate RapidShareSupport.
      */
     private RapidShareSupport() {
-    }
-
-    public static String buildCookie(String login, String password) {
-        if (login == null || password == null) return null;
-
-        try {
-            return login + "-" + URLEncoder.encode(password, "iso-8859-1");
-        } catch (UnsupportedEncodingException ex) {
-            try {
-                return login + "-" + URLEncoder.encode(password, "UTF-8");
-            } catch (UnsupportedEncodingException ex1) {
-                Logger.getLogger(RapidShareSupport.class.getName()).log(Level.SEVERE, "Password encoding failed.");
-            }
-        }
-        return "";
     }
 
     public static int getSecondToMidnight() {

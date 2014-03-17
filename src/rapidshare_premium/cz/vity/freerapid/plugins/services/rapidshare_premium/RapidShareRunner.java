@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 1440 2009-02-27 01:37:28Z Vity $
+ * $Id: RapidShareRunner.java 1789 2009-06-19 09:25:50Z Atom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -252,17 +252,39 @@ class RapidShareRunner extends AbstractRunner {
                 badConfig = false;
             }
 
-            String cookie = RapidShareSupport.buildCookie(pa.getUsername(), pa.getPassword());
+            String cookie = login(pa.getUsername(), pa.getPassword());
             logger.info("Builded RS cookie: " + cookie);
-            client.getHTTPClient().getState().addCookie(new Cookie("rapidshare.com", "user", cookie, "/", 86400, false));
+
+            client.getHTTPClient().getState().addCookie(new Cookie("rapidshare.com", "enc", cookie, "/", 86400, false));
         }
     }
+
+	private String login(String login, String password) throws IOException {
+		if (RapidShareRunner.cookie !=null) {
+			return RapidShareRunner.cookie;
+		}
+
+        final PostMethod pm = getPostMethod("https://ssl.rapidshare.com/cgi-bin/premiumzone.cgi");
+		pm.addParameter("login", login);
+		pm.addParameter("password", password);
+        client.makeRequest(pm, false);
+        pm.releaseConnection();
+        Cookie[] cookies = client.getHTTPClient().getState().getCookies();
+		for (Cookie c : cookies) {
+			if ("enc".equals(c.getName())) {
+				RapidShareRunner.cookie = c.getValue();
+				return c.getValue();
+			}
+		}
+		return null;
+	}
 
     private void setBadConfig() {
         badConfig = true;
     }
 
     private boolean badConfig = false;
+	private static String cookie = null;;
 
 }
 

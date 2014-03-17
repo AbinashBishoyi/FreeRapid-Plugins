@@ -2,21 +2,26 @@ package cz.vity.freerapid.plugins.services.bagruj;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, Smisek
  */
 class BagrujRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(BagrujRunner.class.getName());
+    private final static Map<String, GetMethod> methodsMap = new HashMap<String, GetMethod>();     // added by Smisek
 
     public BagrujRunner() {
         super();
@@ -27,12 +32,19 @@ class BagrujRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
+            checkCaptcha();     // added by Smisek
         } else
             throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     public void run() throws Exception {
         super.run();
+
+        Login();     // added by Smisek
+
+        if (checkInQueue())     // added by Smisek
+            return;
+
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             if (getContentAsString().contains("captcha")) {
@@ -79,6 +91,91 @@ class BagrujRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
     }
 
+    // added by Smisek
+    private boolean checkInQueue() throws Exception {
+        if (!methodsMap.containsKey(fileURL))
+            return false;
+
+        GetMethod method = methodsMap.get(fileURL);
+        methodsMap.remove(fileURL);
+
+        httpFile.setState(DownloadState.GETTING);
+        return tryDownloadAndSaveFile(method);
+    }
+
+    // added by Smisek
+    private void checkCaptcha() throws Exception {
+        if (getContentAsString().contains("captcha")) {
+            checkNameAndSize(getContentAsString());
+            while (getContentAsString().contains("captcha")) {
+                Matcher matcher = getMatcherAgainstContent("<span id=\"countdown\">([0-9]+)</span>");
+                PostMethod method = stepCaptcha(getContentAsString());
+                if (matcher.find()) {
+                    int time = Integer.parseInt(matcher.group(1));
+                    downloadTask.sleep(time - 1);
+                }
+                if (!makeRedirectedRequest(method))
+                    throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+            }
+            if (!getContentAsString().contains("pro tvoji IP adresu n")) {
+                checkProblems();
+                logger.info(getContentAsString());
+                throw new PluginImplementationException("Cannot find requested page content");
+            }
+
+            Matcher matcher = getMatcherAgainstContent("(http://[^\"]+)\">\\1");
+
+            if (!matcher.find()) {
+                checkProblems();
+                logger.info(getContentAsString());
+                throw new PluginImplementationException("Cannot find requested page content");
+            }
+
+            String finalURL = matcher.group(1);
+            GetMethod finalMethod = getGetMethod(finalURL);
+
+            methodsMap.put(fileURL, finalMethod);
+        } else {
+            checkProblems();
+            logger.info(getContentAsString());
+            throw new PluginImplementationException();
+        }
+    }
+
+    //added by Smisek
+    private void Login() throws Exception {
+        synchronized (BagrujRunner.class) {
+            BagrujServiceImpl service = (BagrujServiceImpl) getPluginService();
+            service.SetMaxDown(1);
+            PremiumAccount pa = service.getConfig();
+            if (!pa.isSet()) {
+                return;
+            }
+
+            Matcher matcher;
+            String postURL = "http://bagruj.cz/";
+
+            PostMethod postmethod = getPostMethod(postURL);
+
+            postmethod.addParameter("login", pa.getUsername());
+            postmethod.addParameter("password", pa.getPassword());
+            postmethod.addParameter("op", "login");
+
+            if (makeRedirectedRequest(postmethod)) {
+                String c=getContentAsString();
+                matcher = getMatcherAgainstContent("op=logout\">Odhl.sit</a>");
+                if(!matcher.find()) {
+                    return;
+                }
+                GetMethod getMethod = getGetMethod(fileURL);
+                if (!makeRedirectedRequest(getMethod)) {
+                    throw new PluginImplementationException();
+                } else {
+                    service.SetMaxDown(2);
+                }
+            }
+        }
+    }
 
     private void checkNameAndSize(String content) throws Exception {
 
@@ -118,6 +215,7 @@ class BagrujRunner extends AbstractRunner {
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info("Captcha URL " + s);
+
                 String captcha = captchaSupport.getCaptcha(s);
 
                 if (captcha == null) {

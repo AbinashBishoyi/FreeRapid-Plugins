@@ -12,6 +12,7 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -30,7 +31,7 @@ class EmbedUploadFileRunner extends AbstractRunner {
     private EmbedUploadSettingsConfig config;
 
     private boolean isSingleLinkURL() {
-        return PlugUtils.find("/\\?[A-Z]{2}=", fileURL);
+        return PlugUtils.find("/\\?[A-Z0-9]{2}=", fileURL);
     }
 
     private void setConfig() throws Exception {
@@ -68,8 +69,8 @@ class EmbedUploadFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final List<URI> list = new LinkedList<URI>();
-        final boolean isSingleLinkURL;
-        if (isSingleLinkURL = isSingleLinkURL()) {
+        final boolean isSingleLinkURL = isSingleLinkURL();
+        if (isSingleLinkURL) {
             processLink(fileURL, list);
         } else {
             final GetMethod method = getGetMethod(fileURL);
@@ -79,9 +80,13 @@ class EmbedUploadFileRunner extends AbstractRunner {
             }
             checkProblems();
             checkNameAndSize();
-            final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://www\\.embedupload\\.com/\\?[A-Z]{2}=[A-Z0-9]+?)\"");
+            final Matcher matcher = getMatcherAgainstContent("<a href=\"(http://www\\.embedupload\\.com/\\?[A-Z0-9]{2}=[A-Z0-9]+?)\"");
             while (matcher.find()) {
-                processLink(matcher.group(1), list);
+                try {
+                    processLink(matcher.group(1), list);
+                } catch (ErrorDuringDownloadingException e) {
+                    // discard the exception, sometimes they throw "You should click on the download link : not authorized" error message
+                }
             }
         }
         if (list.isEmpty()) throw new PluginImplementationException("No links found");
@@ -100,7 +105,7 @@ class EmbedUploadFileRunner extends AbstractRunner {
         httpFile.getProperties().put("removeCompleted", true);
     }
 
-    private void processLink(final String singleLinkPage, final List<URI> list) throws Exception {
+    private void processLink(final String singleLinkPage, final List<URI> list) throws ErrorDuringDownloadingException, IOException {
         final HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction(singleLinkPage)

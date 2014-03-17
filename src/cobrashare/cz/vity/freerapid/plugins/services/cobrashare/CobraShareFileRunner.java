@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek
+ * @author Ladislav Vitasek, Abinash Bishoyi
  */
 class CobraShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CobraShareFileRunner.class.getName());
@@ -33,9 +33,9 @@ class CobraShareFileRunner extends AbstractRunner {
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException, IOException {
         checkProblems();
 
-        PlugUtils.checkName(httpFile, getContentAsString(), "<td class=\"popis\">File name :&nbsp;</td>\n<td class=\"data\">", "</td>");
+        PlugUtils.checkName(httpFile, getContentAsString(), "<td class=\"popis\">N�zov s�boru :&nbsp;</td>\n<td class=\"data\">", "</td>");
 
-        Matcher matcher = PlugUtils.matcher("Size :&nbsp;<\\/td>\\s*<td class=\"data\">(.+?)<", content);
+        Matcher matcher = PlugUtils.matcher("Ve�kos� :&nbsp;<\\/td>\\s*<td class=\"data\">(.+?)<", content);
         if (matcher.find()) {
             final String stringSize = matcher.group(1);
             logger.info("String size:" + stringSize);

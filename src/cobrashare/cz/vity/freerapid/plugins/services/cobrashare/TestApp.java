@@ -20,10 +20,10 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.cobrashare.sk:38080/CobraShare-v.0.9/download/Shredderman+Up+by+andrej190.part2.rar?id=jA0EAwMCKLBu6nqF11JgyRJgYrkeYoLNPbo5QndkOb9BdAE%3D"));
+            httpFile.setNewURL(new URL("http://www.cobrashare.sk:38080/CS/dw/Solarium.part01.rar?id=jA0EAwMC5R7vAuQn081gyRJaTInWUZlm%2BAIffIPLL8yE%2Fr0%3D"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CobraShareServiceImpl service = new CobraShareServiceImpl(); //instance of service - of our plugin
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

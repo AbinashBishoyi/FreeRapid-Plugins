@@ -87,6 +87,7 @@ class HellshareRunner {
         Matcher matcher;
         matcher = PlugUtils.matcher("<img id=\"captcha-img\" src=\"([^\"]*)\"", client.getContentAsString());
         if (!matcher.find()) {
+            checkProblems();
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
         }
 
@@ -148,6 +149,10 @@ class HellshareRunner {
         matcher = PlugUtils.matcher("Soubor nenalezen", client.getContentAsString());
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
+        }
+        matcher = PlugUtils.matcher("Na serveru jsou .* free download", client.getContentAsString());
+        if (matcher.find()) {
+            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
         }
 
 

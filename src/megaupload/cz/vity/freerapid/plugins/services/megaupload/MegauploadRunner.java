@@ -103,12 +103,12 @@ class MegauploadRunner {
 
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, IOException, YouHaveToWaitException {
-        Matcher matcher;
+
         final String contentAsString = client.getContentAsString();
         if (contentAsString.contains("Download limit exceeded")) {
-            final GetMethod getMethod = client.getGetMethod(HTTP_SITE + "/premium/??");
+            final GetMethod getMethod = client.getGetMethod(HTTP_SITE + "/premium/???????????????");
             if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
-                matcher = PlugUtils.matcher("Please wait ([0-9]+)", client.getContentAsString());
+                Matcher matcher = PlugUtils.matcher("Please wait ([0-9]+)", client.getContentAsString());
                 if (matcher.find()) {
                     throw new YouHaveToWaitException("You used up your limit for file downloading!", 1 + 60 * Integer.parseInt(matcher.group(1)));
                 }

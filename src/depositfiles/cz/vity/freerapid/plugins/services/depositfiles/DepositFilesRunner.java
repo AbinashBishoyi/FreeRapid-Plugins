@@ -130,6 +130,10 @@ class DepositFilesRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 + 20);
         }
+        matcher = Pattern.compile("Please try in\\s*([0-9]+) hour", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(content);
+        if (matcher.find()) {
+            throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 * 60 + 20);
+        }
 
         matcher = PlugUtils.matcher("slots[^<]*busy", content);
         if (matcher.find()) {

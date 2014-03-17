@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="quickshare.cz_premium" version="1.0" vendor="JPEXS"
+        class="cz.vity.freerapid.plugins.services.quickshare_premium.QuickShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?quickshare\.cz/.+"/>
+        <attribute id="minver" value="0.82"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="quickshare.cz"/>
+        <!-- ID pluginu, pro ktere je to premium -->
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="quickshare.cz" path="/" type="code"/>
+    </runtime>
+</plugin>

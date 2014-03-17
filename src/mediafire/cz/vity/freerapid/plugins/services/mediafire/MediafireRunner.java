@@ -146,7 +146,7 @@ public class MediafireRunner extends AbstractRunner {
             logger.warning(rawScript);
             throw new PluginImplementationException("Error parsing last function in first JavaScript");
         }
-        final String partOfFunction = matcher.group(1);
+        final String partOfFunction = matcher.group(1).replace("\\'", "'");
         //logger.info(partOfFunction);
 
         final String preparedScript = rawScript.replace("setTimeout(", "return '/dynamic/download.php?qk=' + qk + '&pk1=' + pk1 + '&r=' + pKr; setTimeout(");
@@ -210,7 +210,7 @@ public class MediafireRunner extends AbstractRunner {
     }
 
     private HttpMethod findThirdUrl(final String text) throws ErrorDuringDownloadingException {
-        logger.info(text);
+        //logger.info(text);
         return getMethodBuilder(text).setReferer(fileURL).setActionFromAHrefWhereATagContains("").toGetMethod();
     }
 
@@ -224,7 +224,7 @@ public class MediafireRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("The key you provided for file download was invalid")
+        if (content.contains("The key you provided for file download")
                 || content.contains("How can MediaFire help you?")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }

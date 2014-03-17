@@ -42,7 +42,7 @@ class GrooveSharkFileRunner extends AbstractRunner {
     }
 
     private String getSongToken() throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher(".+/([^\\?]+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("/s/[^/]+/(\\w+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing file URL");
         }

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.grooveshark.GrooveSharkServiceImpl"
-        id="grooveshark.com" vendor="ntoskrnl" version="1.0.5">
+        id="grooveshark.com" vendor="ntoskrnl" version="1.0.6">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?grooveshark\.com/(#!?/)?s/.+"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.853"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="grooveshark.com"/>
         <attribute id="maxDownloads" value="10"/>

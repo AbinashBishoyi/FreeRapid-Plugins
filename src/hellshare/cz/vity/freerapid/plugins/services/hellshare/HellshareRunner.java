@@ -21,7 +21,7 @@ class HellshareRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
             throw new PluginImplementationException();
@@ -39,21 +39,29 @@ class HellshareRunner extends AbstractRunner {
             Matcher matcher = getMatcherAgainstContent("([0-9.]+)%");
             if (matcher.find()) {
                 if (matcher.group(1).equals("100"))
-                    throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
+                    throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", 30);
             }
             client.setReferer(fileURL);
 
-            final PostMethod postmethod = getPostMethod(fileURL);
-            postmethod.addParameter("free_download_iframe", "FREE DOWNLOAD");
-            if (makeRequest(postmethod)) {
-                PostMethod method = stepCaptcha();
-                httpFile.setState(DownloadState.GETTING);
-                if (!tryDownloadAndSaveFile(method)) {
-                    boolean finish = false;
-                    while (!finish) {
-                        method = stepCaptcha();
-                        finish = tryDownloadAndSaveFile(method);
+            matcher = getMatcherAgainstContent("<input type=\"button\" value=\"FREE DOWNLOAD\" onclick=\"document[.]getElementById[(]\'FreeDownProgress\'[)][.]style.display=\'block\'; document[.]getElementById[(]\'FreeDownProgress\'[)][.]src=\'([^\']+)\'\" />");
+            if(matcher.find())
+            {
+                String downURL = matcher.group(1);
+                final GetMethod getmethod = getGetMethod(downURL);
+                if (makeRequest(getmethod)) {
+                    PostMethod method = stepCaptcha();
+                    httpFile.setState(DownloadState.GETTING);
+                    if (!tryDownloadAndSaveFile(method)) {
+                        boolean finish = false;
+                        while (!finish) {
+                            method = stepCaptcha();
+                            finish = tryDownloadAndSaveFile(method);
+                        }
                     }
+                } else {
+                    checkProblems();
+                    logger.info(getContentAsString());
+                    throw new PluginImplementationException();
                 }
             } else {
                 checkProblems();
@@ -66,14 +74,14 @@ class HellshareRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        if (getContentAsString().contains("free_download_iframe")) {
-            Matcher matcher = PlugUtils.matcher("<div class=\"download-filename\">([^<]*)</div>", content);
+        if (getContentAsString().contains("FreeDownProgress")) {
+            Matcher matcher = PlugUtils.matcher("<tr><th scope=\"row\" class=\"download-properties-label\">N.zev:</th><td><h2>([^<]+)</h2></td></tr>", content);
             if (matcher.find()) {
                 String fn = matcher.group(matcher.groupCount());
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
             }
-            matcher = PlugUtils.matcher("<td>([0-9.]+ .B)</td>", content);
+            matcher = PlugUtils.matcher("<tr><th scope=\"row\" class=\"download-properties-label\">Velikost:</th><td>([^<]+ .B)</td></tr>", content);
             if (matcher.find()) {
                 Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
                 logger.info("File size " + a);
@@ -89,10 +97,10 @@ class HellshareRunner extends AbstractRunner {
 
     private PostMethod stepCaptcha() throws Exception {
         if ("".equals(getContentAsString())) {
-            throw new YouHaveToWaitException("Neurèité omezení", 120);
+            throw new YouHaveToWaitException("Neurï¿½itï¿½ omezenï¿½", 120);
         }
         Matcher matcher;
-        matcher = getMatcherAgainstContent("<img id=\"captcha-img\" src=\"([^\"]*)\"");
+        matcher = getMatcherAgainstContent("<img src=\"([^\"]*)\" border=\"0\" align=\"antispam\" align=\"middle\" id=\"captcha-img\" ");
         if (!matcher.find()) {
             checkProblems();
             throw new PluginImplementationException();
@@ -111,19 +119,17 @@ class HellshareRunner extends AbstractRunner {
                 img = img + "1";
             } else emptyCaptcha = false;
         } while (emptyCaptcha);
-        matcher = getMatcherAgainstContent("form action=\"([^\"]*)\"");
+        matcher = getMatcherAgainstContent("<form method=\"post\" action=\"([^\"]*)\"");
         if (!matcher.find()) {
             throw new PluginImplementationException();
         }
 
         String finalURL = matcher.group(1);
-        String free_download_uri = PlugUtils.getParameter("free_download_uri", getContentAsString());
 
         final PostMethod method = getPostMethod(finalURL);
-
-        method.addParameter("free_download_uri", free_download_uri);
+        
+        PlugUtils.addParameters(method, getContentAsString(), new String[]{"submit"});
         method.addParameter("captcha", captcha);
-        method.addParameter("free_download_button", "St%E1hnout");
         return method;
     }
 
@@ -135,7 +141,7 @@ class HellshareRunner extends AbstractRunner {
         }
         matcher = getMatcherAgainstContent("Na serveru jsou .* free download");
         if (matcher.find()) {
-            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", 30);
+            throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", 30);
         }
 
 

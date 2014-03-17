@@ -29,6 +29,8 @@ public class ReCaptcha {
     private String lastType="image";
     private String recognized="";
 
+    private static final String RECAPTCHA_URL="http://www.google.com/recaptcha/api";
+
     /**
      * Constructor of ReCaptcha
      * @param publicKey Public API key for recaptcha (Included in every page which uses Recaptcha)
@@ -36,7 +38,7 @@ public class ReCaptcha {
      * @throws Exception When something goes wrong
      */
     public ReCaptcha(String publicKey,HttpDownloadClient client) throws Exception {
-        HttpMethod httpMethod = new MethodBuilder(client).setAction("http://api.recaptcha.net/challenge?k="+publicKey).toGetMethod();
+        HttpMethod httpMethod = new MethodBuilder(client).setAction(RECAPTCHA_URL+"/challenge?k="+publicKey).toGetMethod();
         client.makeRequest(httpMethod, true);
         challenge=PlugUtils.getStringBetween(client.getContentAsString(), "challenge : '", "',");
     }
@@ -51,7 +53,7 @@ public class ReCaptcha {
         if(lastType.equals("audio")){
             reloadImage();
         }
-        return "http://api.recaptcha.net/image?c="+challenge;
+        return RECAPTCHA_URL+"/image?c="+challenge;
     }
 
     /**
@@ -63,11 +65,11 @@ public class ReCaptcha {
         if(lastType.equals("image")){
             reloadAudio();
         }
-        return "http://api.recaptcha.net/image?c="+challenge;
+        return RECAPTCHA_URL+"/image?c="+challenge;
     }
 
     private void reload(String type) throws Exception {
-        HttpMethod httpMethod = new MethodBuilder(client).setAction("http://api.recaptcha.net/reload?c="+challenge+"&k="+publicKey+"&reason=r&type="+type+"&lang=en").toGetMethod();
+        HttpMethod httpMethod = new MethodBuilder(client).setAction(RECAPTCHA_URL+"/reload?c="+challenge+"&k="+publicKey+"&reason=r&type="+type+"&lang=en").toGetMethod();
         client.makeRequest(httpMethod, true);
         challenge=PlugUtils.getStringBetween(client.getContentAsString(), ".finish_reload ('", "', '");
     }

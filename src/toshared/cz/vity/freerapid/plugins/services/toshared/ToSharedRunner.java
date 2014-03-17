@@ -38,7 +38,9 @@ class ToSharedRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            final String url = PlugUtils.getStringBetween(getContentAsString(), "$.get('", "',");
+            final String url = "/pageDownload1/retrieveLink.jsp?id=" + decode(
+                    PlugUtils.getStringBetween(getContentAsString(), "var em='", "';"),
+                    PlugUtils.getStringBetween(getContentAsString(), "var key='", "';"));
             method = getMethodBuilder().setReferer(fileURL).setBaseURL("http://www.2shared.com").setAction(url).toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (makeRedirectedRequest(method)) {
@@ -75,6 +77,18 @@ class ToSharedRunner extends AbstractRunner {
         }
         if (content.contains("User downloading session limit is reached")) {
             throw new ServiceConnectionProblemException("Your IP address is already downloading a file or your session limit is reached! Try again in a few minutes.");
+        }
+    }
+
+    private static String decode(final String em, final String key) throws ErrorDuringDownloadingException {
+        try {
+            final StringBuilder sb = new StringBuilder(key.length());
+            for (final char c : key.toCharArray()) {
+                sb.append(em.charAt(c - 48));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new PluginImplementationException("Error decrypting download link: " + e.getLocalizedMessage());
         }
     }
 

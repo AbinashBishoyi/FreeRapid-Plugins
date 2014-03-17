@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.easyshare;
+package cz.vity.freerapid.plugins.services.crocko;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
@@ -10,19 +10,22 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
+ * Class which contains main code
+ *
+ * @author ntoskrnl
  */
-class EasyShareRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(EasyShareRunner.class.getName());
+class CrockoFileRunner extends AbstractRunner {
+    private final static Logger logger = Logger.getLogger(CrockoFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        addCookie(new Cookie(".easy-share.com", "language", "en", "/", null, false));
+        addCookie(new Cookie(".crocko.com", "language", "en", "/", null, false));
         final HttpMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             checkNameAndSize();
         } else {
@@ -31,34 +34,35 @@ class EasyShareRunner extends AbstractRunner {
         }
     }
 
-    private void checkNameAndSize() throws Exception {
-        PlugUtils.checkName(httpFile, getContentAsString(), "requesting:</span>", "<span");
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), "<span class=\"txtgray\">(", ")</span>");
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("<span class=\"fz24\">Download:</span>\\s*<br />\\s*<strong>(.+?)</strong>\\s*<span class=\"tip1\">\\s*<span class=\"inner\">(.+?)</span>");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name/size not found");
+        }
+        httpFile.setFileName(matcher.group(1));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
-        addCookie(new Cookie(".easy-share.com", "language", "en", "/", null, false));
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".crocko.com", "language", "en", "/", null, false));
         final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
+            fileURL = getMethod.getURI().toString();
             checkProblems();
             checkNameAndSize();
             do {
-                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var wf = ", ";") + 1);
                 while (!getContentAsString().contains("Recaptcha.create(\"")) {
-                    final int w = PlugUtils.getNumberBetween(getContentAsString(), "w='", "'");
-                    if (w != 1200 && w != 1800) {//these even numbers are wrong, refresh the time below
-                        if (w > 120) {
-                            throw new YouHaveToWaitException("Waiting time between downloads", w);
-                        } else {
-                            downloadTask.sleep(w);
-                        }
+                    final int wait = PlugUtils.getNumberBetween(getContentAsString(), "w='", "'");
+                    final HttpMethod method = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("u='", "'").toGetMethod();
+                    if (wait > 120) {
+                        throw new YouHaveToWaitException("Waiting time between downloads", wait);
+                    } else {
+                        downloadTask.sleep(wait);
                     }
-                    final String u = PlugUtils.getStringBetween(getContentAsString(), "u='", "'");
-                    final HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(u).toGetMethod();
                     method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
                     if (!makeRedirectedRequest(method)) {
                         checkProblems();
@@ -72,22 +76,10 @@ class EasyShareRunner extends AbstractRunner {
         }
     }
 
-    private void checkProblems() throws Exception {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("File not found")) {
+        if (content.contains("the page you're looking for")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (content.contains("Requested file is deleted")) {
-            throw new URLNotAvailableAnymoreException("Requested file is deleted");
-        }
-        if (content.contains("Page not found")) {
-            throw new InvalidURLOrServiceProblemException("Page not found");
-        }
-        if (content.contains("You have downloaded ")) {
-            throw new YouHaveToWaitException("You have downloaded to much during last hour. You have to wait", 20 * 60);
-        }
-        if (content.contains("This file will be available soon")) {
-            throw new ServiceConnectionProblemException("This file will be available soon");
         }
         if (content.contains("The requested file is temporarily unavailable")) {
             throw new ServiceConnectionProblemException("The requested file is temporarily unavailable");
@@ -111,11 +103,6 @@ class EasyShareRunner extends AbstractRunner {
         r.setRecognized(captcha);
 
         return r.modifyResponseMethod(getMethodBuilder(content).setReferer(fileURL).setActionFromFormWhereTagContains("recaptcha", true)).toPostMethod();
-    }
-
-    @Override
-    protected String getBaseURL() {
-        return "http://www.easy-share.com";
     }
 
 }

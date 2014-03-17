@@ -1,17 +1,18 @@
-package cz.vity.freerapid.plugins.services.easyshare;
+package cz.vity.freerapid.plugins.services.crocko;
 
 import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
- * @author Ladislav Vitasek
+ * Class that provides basic info about plugin
+ *
+ * @author ntoskrnl
  */
-public class EasyShareServiceImpl extends AbstractFileShareService {
-    private static final String SERVICE_NAME = "easy-share.com";
+public class CrockoServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return SERVICE_NAME;
+        return "crocko.com";
     }
 
     @Override
@@ -21,7 +22,7 @@ public class EasyShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new EasyShareRunner();
+        return new CrockoFileRunner();
     }
 
 }

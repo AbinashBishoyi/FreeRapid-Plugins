@@ -56,11 +56,7 @@ class HotfileFileRunner extends AbstractRunner {
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.isEmpty()) {
-            throw new URLNotAvailableAnymoreException("File was not found");
-        }
-
-        if (contentAsString.contains("404 - Not Found")) {
+        if (contentAsString.isEmpty() || contentAsString.contains("404 - Not Found")) {
             throw new URLNotAvailableAnymoreException("File was not found");
         }
     }

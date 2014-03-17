@@ -6,7 +6,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -19,7 +18,6 @@ class XtrauploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(XtrauploadRunner.class.getName());
     private String initURL;
 
-    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -30,7 +28,6 @@ class XtrauploadRunner extends AbstractRunner {
             throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
 
-    @Override
     public void run() throws Exception {
         super.run();
         initURL = fileURL;
@@ -47,7 +44,7 @@ class XtrauploadRunner extends AbstractRunner {
                 }
                 stepCaptcha(getContentAsString());
             } while (getContentAsString().contains("Captcha number error or expired"));
-            Matcher matcher = PlugUtils.matcher("document.location=\"([^\"]*)\"", getContentAsString());
+            Matcher matcher = getMatcherAgainstContent("document.location=\"([^\"]*)\"");
             if (matcher.find()) {
                 String s = matcher.group(1);
                 logger.info("Found File URL - " + s);
@@ -102,7 +99,6 @@ class XtrauploadRunner extends AbstractRunner {
                     final PostMethod postMethod = getPostMethod(s);
                     postMethod.addParameter("captchacode", captcha);
 
-                    client.getHTTPClient().getParams().setParameter(HttpMethodParams.SINGLE_COOKIE_HEADER, true);
                     if (makeRequest(postMethod)) {
                         return true;
                     }

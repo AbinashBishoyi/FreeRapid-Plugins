@@ -92,12 +92,11 @@ class HuluFileRunner extends AbstractRtmpRunner {
         logger.info("contentSelectUrl = " + contentSelectUrl);
 
         method = getGetMethod(contentSelectUrl);
+        method.getParams().setVirtualHost("s.hulu.com");
         if (makeRedirectedRequest(method)) {
             final String content = decryptContentSelect(getContentAsString());
             logger.info("Content select:\n" + content);
-
             checkProblems(content);
-            geoCheck(content);
 
             final RtmpSession rtmpSession = getStream(content);
             rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
@@ -117,26 +116,6 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
         if (content.contains("we noticed you are trying to access Hulu through")) {
             throw new NotRecoverableDownloadException("Hulu noticed that you are trying to access them through a proxy");
-        }
-    }
-
-    private void geoCheck(final String content) throws Exception {
-        if (!client.getSettings().isProxySet()) {
-            // Do not perform geocheck if using a proxy.
-            // The geocheck server detects proxies better than the stream server,
-            // which may cause issues.
-            if (content.contains("allowInternational=\"false\"")) {
-                logger.info("Performing geocheck");
-                final HttpMethod method = getGetMethod("http://releasegeo.hulu.com/geoCheck");
-                if (makeRedirectedRequest(method)) {
-                    if (getContentAsString().contains("not-valid")) {
-                        throw new NotRecoverableDownloadException("This video can only be streamed in the US");
-                    }
-                } else {
-                    checkProblems(getContentAsString());
-                    throw new ServiceConnectionProblemException();
-                }
-            }
         }
     }
 
@@ -225,7 +204,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 .add("dp_id", "hulu")
                 .add("region", "US")
                 .add("language", "en");
-        final StringBuilder sb = new StringBuilder("http://s.hulu.com/select?");
+        final StringBuilder sb = new StringBuilder("http://64.191.64.132/select?");
         for (final Map.Entry<String, String> e : parameters) {
             sb.append(e.getKey()).append('=').append(e.getValue()).append('&');
         }

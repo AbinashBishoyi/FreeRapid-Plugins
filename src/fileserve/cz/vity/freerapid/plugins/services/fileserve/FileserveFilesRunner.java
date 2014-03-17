@@ -54,7 +54,7 @@ class FileserveFilesRunner extends AbstractRunner {
             String recaptcha = "http://www.google.com/recaptcha/api/challenge?k=" + matcher.group(1) + "&ajax=1&cachestop=0." + System.currentTimeMillis();
 
             List<NameValuePair> extraHiddenParams = new ArrayList<NameValuePair>();
-            matcher = PlugUtils.matcher("<input[^>]+name=\"([^\"]+)\"[^>]+value=\"([^\"]+)\"[^>]*>", getContentAsString().replaceFirst("(?s)^.*?(<input[^>]+id=\"recaptcha_[^\"]+_field\"[^>]*>.*?)<div[^>]+id=\"captchaAreaLabel\"[^>]*>.*$", "$1"));
+            matcher = PlugUtils.matcher("<input[^>]+name=\"([^\"]+)\"[^>]+value=\"([^\"]+)\"[^>]*>", getContentAsString().replaceFirst("(?s)^.*?<div[^>]+id=\"login_area\"[^>]*>(.*?)</table>.*$", "$1"));
             while (matcher.find()) {
                 extraHiddenParams.add(new NameValuePair(matcher.group(1), matcher.group(2)));
             }

@@ -239,10 +239,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
             for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
                 YouTubeMedia ytMedia = ytMediaEntry.getValue();
                 int audioBitrate = ytMedia.getAudioBitrate();
-                String container = ytMedia.getContainer();
-                String audioEncoding = ytMedia.getAudioEncoding();
                 int tempWeight = ((audioBitrate - configAudioBitrate) < 0) ? Math.abs(audioBitrate - configAudioBitrate) : audioBitrate - configAudioBitrate;
-                if (!isVid2AudContainerSupported(container) || !isVid2AudAudioEncodingSupported(audioEncoding)) {
+                if (!isVid2AudSupported(ytMedia)) {
                     tempWeight += NOT_SUPPORTED_PENALTY;
                 }
                 if (tempWeight < weight) {
@@ -254,20 +252,24 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 throw new PluginImplementationException("Cannot select audio bitrate");
             }
 
-            //get all youtube media which audio bitrate == selected audio bitrate
-            List<YouTubeMedia> bitrateYtMediaList = new LinkedList<YouTubeMedia>();
+            //calc (the lowest) video res + penalty to get the fittest itagcode
+            weight = Integer.MAX_VALUE;
             for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
-                YouTubeMedia youTubeMedia = ytMediaEntry.getValue();
-                if (youTubeMedia.getAudioBitrate() == selectedAudioBitrate) {
-                    bitrateYtMediaList.add(youTubeMedia);
+                YouTubeMedia ytMedia = ytMediaEntry.getValue();
+                if (ytMedia.getAudioBitrate() == selectedAudioBitrate) {
+                    int tempWeight = ytMedia.getVideoResolution();
+                    if (!isVid2AudSupported(ytMedia)) {
+                        tempWeight += NOT_SUPPORTED_PENALTY;
+                    }
+                    if (tempWeight < weight) {
+                        weight = tempWeight;
+                        selectedItagCode = ytMediaEntry.getKey();
+                    }
                 }
             }
-            selectedItagCode = Collections.min(bitrateYtMediaList).getItagCode(); //the lowest video res to preserve bandwidth
-            String audioEncoding = ytMediaMap.get(selectedItagCode).getAudioEncoding();
-            if (!isVid2AudAudioEncodingSupported(audioEncoding)) {
-                throw new PluginImplementationException("Only supported MP3 or AAC audio encoding");
+            if (!isVid2AudSupported(ytMediaMap.get(selectedItagCode))) {
+                throw new PluginImplementationException("Only supports MP3 or AAC audio encoding");
             }
-
 
         } else { //not converted to audio
             //select video resolution
@@ -277,8 +279,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
                 selectedItagCode = ytMediaMap.keySet().iterator().next(); //first key
             } else if (configVideoResolution == YouTubeSettingsConfig.MIN_WIDTH) {
                 logger.info("Selecting minimum quality");
-                for (Integer integer : ytMediaMap.keySet()) {
-                    selectedItagCode = integer; //last key
+                for (Integer itagCode : ytMediaMap.keySet()) {
+                    selectedItagCode = itagCode; //last key
                 }
             } else {
                 int nearestGreater = Integer.MAX_VALUE;
@@ -334,15 +336,13 @@ class YouTubeRunner extends AbstractRtmpRunner {
             }
         }
         youTubeMedia = ytMediaMap.get(selectedItagCode);
-        logger.info(String.format("Quality to download: itagCode = %d, video resolution = %dp, audio bitrate = %d", youTubeMedia.getItagCode(), youTubeMedia.getVideoResolution(), youTubeMedia.getAudioBitrate()));
+        logger.info("Media to download : " + youTubeMedia);
     }
 
-    private boolean isVid2AudContainerSupported(String container) {
-        return (container.toUpperCase().equals("MP4") || container.toUpperCase().equals("FLV"));
-    }
-
-    private boolean isVid2AudAudioEncodingSupported(String audioEncoding) {
-        return (audioEncoding.toUpperCase().equals("MP3") || audioEncoding.toUpperCase().equals("AAC"));
+    private boolean isVid2AudSupported(YouTubeMedia ytMedia) {
+        String container = ytMedia.getContainer().toUpperCase();
+        String audioEncoding = ytMedia.getAudioEncoding().toUpperCase();
+        return ((container.equals("MP4") || container.equals("FLV")) && (audioEncoding.equals("MP3") || audioEncoding.equals("AAC")));
     }
 
     //source : http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
@@ -426,6 +426,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
         else
             httpFile.setState(DownloadState.GETTING);
         if (logger.isLoggable(Level.INFO)) {
+            logger.info("Convert to audio..");
             logger.info("Download link URI: " + method.getURI().toString());
             logger.info("Making final request for file");
         }
@@ -438,7 +439,6 @@ class YouTubeRunner extends AbstractRtmpRunner {
             client.getHTTPClient().getParams().setBooleanParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
             final InputStream is = client.makeFinalRequestForFile(method, httpFile, true);
             if (is != null) {
-                logger.info(youTubeMedia.toString());
                 int audioBitrate = youTubeMedia.getAudioBitrate();
                 InputStream v2ais = (youTubeMedia.getFileExtension().toUpperCase().equals(".FLV") ? new FlvToMp3InputStream(is, audioBitrate) : new Mp4ToMp3InputStream(is, audioBitrate));
                 logger.info("Saving to file");

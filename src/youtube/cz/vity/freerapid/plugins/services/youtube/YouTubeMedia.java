@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.youtube;
 
-public class YouTubeMedia implements Comparable<YouTubeMedia> {
+public class YouTubeMedia {
     private int itagCode;
     private String container;
     private String fileExtension;
@@ -39,11 +39,6 @@ public class YouTubeMedia implements Comparable<YouTubeMedia> {
 
     public int getAudioBitrate() {
         return audioBitrate;
-    }
-
-    @Override
-    public int compareTo(YouTubeMedia that) {
-        return Integer.valueOf(this.videoResolution).compareTo(that.videoResolution);
     }
 
     @Override

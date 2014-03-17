@@ -85,21 +85,12 @@ class BitShareFileRunner extends AbstractRunner {
         downloadTask.sleep(Integer.parseInt(typeTimeCaptcha[1])); // waiting
 
         if (Integer.parseInt(typeTimeCaptcha[2]) == 1) { // recognize captcha if is necessary
-            String captchaKey = PlugUtils.getStringBetween(content, "api.recaptcha.net/noscript?k=", "\"");
-            HttpMethod captchaMethod = processCaptcha(captchaKey).modifyResponseMethod(getMethodBuilder(content)
-                    .setAction(action).setParameter(PARAM_REQUEST, "validateCaptcha")
-                    .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL)).toPostMethod();
-            postMethodWithID.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
-            setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
-
-            if (makeRequest(captchaMethod)) {
-                if (!getContentAsString().equals("SUCCESS")) {
+            while (!getContentAsString().equals("SUCCESS")) {
+                checkProblems();
+                if (!makeRequest(stepCaptcha(content, action, ajaxdl))) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-            } else {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
             }
         }
 
@@ -125,15 +116,22 @@ class BitShareFileRunner extends AbstractRunner {
         }
     }
 
-    private ReCaptcha processCaptcha(String key) throws Exception {
+    private HttpMethod stepCaptcha(String content, String action, String ajaxdl) throws Exception {
 
+        String key = PlugUtils.getStringBetween(content, "api.recaptcha.net/noscript?k=", "\"");
         final ReCaptcha reCaptcha = new ReCaptcha(key, client);
         final String captcha = getCaptchaSupport().getCaptcha(reCaptcha.getImageURL());
         if (captcha != null) {
             reCaptcha.setRecognized(captcha);
+        } else {
+            throw new CaptchaEntryInputMismatchException();
         }
+        final HttpMethod postMethod = reCaptcha.modifyResponseMethod(getMethodBuilder(content)
+                .setAction(action).setParameter(PARAM_REQUEST, "validateCaptcha")
+                .setParameter(PARAM_AJAXID, ajaxdl).setReferer(fileURL)).toPostMethod();
+        setFileStreamContentTypes(CONTENT_TYPE_TO, CONTENT_TYPE_FROM); // JSON to plain text
 
-        return reCaptcha;
+        return postMethod;
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -146,11 +144,7 @@ class BitShareFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Cannot download more then 1 files at time");
         }
         if (contentAsString.contains("SESSION ERROR")) {
-            throw new ServiceConnectionProblemException("Connection problem");
-        }
-        if (contentAsString.contains("incorrect-captcha-sol")) {
-            throw new CaptchaEntryInputMismatchException("Captcha recognition failed");
+            throw new ServiceConnectionProblemException("Session expired");
         }
     }
-
 }

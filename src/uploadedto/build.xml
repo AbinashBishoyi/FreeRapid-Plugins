@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="FileFactory Plugin" default="all" basedir=".">
     <property name="application" value="uploadedto"/>
+
+    <buildnumber file="build.txt"/>
+
     <property name="version" value="1.01"/>
     <property name="version.name" value="${application}-${version}"/>
 

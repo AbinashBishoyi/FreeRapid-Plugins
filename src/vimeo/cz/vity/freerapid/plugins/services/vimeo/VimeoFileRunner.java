@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,14 +35,8 @@ class VimeoFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        String fileExtension = PlugUtils.getStringBetween(getContentAsString(), "<div class=\"file_extension\">", "</div>").toLowerCase(Locale.ENGLISH);
-        if (!fileExtension.startsWith(".")) fileExtension = "." + fileExtension;
-
-        PlugUtils.checkName(httpFile, getContentAsString(), "<div class=\"title\">", "</div>");
-        httpFile.setFileName(httpFile.getFileName() + fileExtension);
-
-        PlugUtils.checkFileSize(httpFile, getContentAsString(), ">,\n<strong>", "</strong>");
-
+        PlugUtils.checkName(httpFile, getContentAsString(), "<meta property=\"og:title\" content=\"", "\"");
+        httpFile.setFileName(httpFile.getFileName() + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

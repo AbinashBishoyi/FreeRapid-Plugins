@@ -34,7 +34,7 @@ class FileShareFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "\">\n" + "        <span>", "</span>");
-        PlugUtils.checkFileSize(httpFile, content, "Размер: <b>", "</b>");
+        PlugUtils.checkFileSize(httpFile, content, "\\u0420\\u0430\\u0437\\u043C\\u0435\\u0440: <b>", "</b>");
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -50,7 +50,7 @@ class FileShareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize(getContentAsString());
 
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Скачать файл бесплатно").toGetMethod();
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("\u0421\u043A\u0430\u0447\u0430\u0442\u044C \u0444\u0430\u0439\u043B \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E").toGetMethod();
 
             if (!makeRedirectedRequest(httpMethod)) {
                 throw new ServiceConnectionProblemException();
@@ -81,11 +81,11 @@ class FileShareFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Файл не найден")) {
-            throw new URLNotAvailableAnymoreException("File not found");
+        if (contentAsString.contains("\u0424\u0430\u0439\u043B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D")) {
+            throw new URLNotAvailableAnymoreException("Url is not avaible any more");
         }
 
-        if (contentAsString.contains("Такой страницы на нашем сайте нет")) {
+        if (contentAsString.contains("\u0422\u0430\u043A\u043E\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0430 \u043D\u0430\u0448\u0435\u043C \u0441\u0430\u0439\u0442\u0435 \u043D\u0435\u0442")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
 

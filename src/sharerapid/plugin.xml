@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="share-rapid" version="1.0.5" vendor="Smisek"
+<plugin id="share-rapid" version="1.0.6" vendor="Smisek"
         class="cz.vity.freerapid.plugins.services.sharerapid.ShareRapidServiceImpl">
     <attributes>
         <attribute id="urlRegex"
@@ -10,6 +10,8 @@
         <attribute id="services" value="share-rapid.com"/>
         <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
+        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
+        <attribute id="maxDownloads" value="10"/>
     </attributes>
 
     <runtime>

@@ -89,7 +89,7 @@ class WuploadRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span>Filename: </span> <strong>", "</strong>");
+        PlugUtils.checkName(httpFile, content, "<title>Get", "on Wupload.com</title>");
         final String size = PlugUtils.getStringBetween(content, "class=\"size\">", "</span>");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.replace(",", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);

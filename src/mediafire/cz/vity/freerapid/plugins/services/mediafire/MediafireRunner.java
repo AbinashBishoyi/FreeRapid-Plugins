@@ -169,7 +169,7 @@ public class MediafireRunner extends AbstractRunner {
     }
 
     private HttpMethod findSecondUrl(final List<String> elementsOnPage, final Context context, final Scriptable scope) throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>(?:<!\\-\\-)?(.+?)</script>");
+        Matcher matcher = getMatcherAgainstContent("(?s)<script[^<>]*?>\\s*?(?!</script>)(?:<!\\-\\-)?(.+?)</script>");
         if (!matcher.find()) {
             throw new PluginImplementationException("Second JavaScript not found");
         }

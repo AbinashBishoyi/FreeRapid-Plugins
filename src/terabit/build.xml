@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="F-Bit.ru" default="all" basedir=".">
-    <property name="application" value="fbit"/>
-    <property name="package" value="f-bit"/>
+<project name="Terabit.to" default="all" basedir=".">
+    <property name="application" value="terabit"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="f-bit.jar"/>
+    <property name="mainjar.file" value="terabit.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -76,7 +75,8 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-
+            <sourcepath location="../recaptcha"/>
+            <sourcepath location="../xfilesharing/"/>
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->
@@ -99,7 +99,7 @@
     <target name="clean" description="clean up">
         <delete dir="${build.dir}"/>
         <delete dir="${classes.dir}"/>
-        <delete dir="${dist.dir}/${package}.frp"/>
+        <delete dir="${dist.dir}/${version.name}.frp"/>
     </target>
 
     <target name="all" depends="clean,init,compile, build, dist" description="build all"/>
@@ -108,7 +108,7 @@
 
 
     <target name="dist" depends="build" description="creating release">
-        <zip zipfile="${dist.dir}/${package}.frp">
+        <zip zipfile="${dist.dir}/${version.name}.frp">
             <fileset dir="${build.dir}" includes="**/*">
                 <!--<include name="${build.dir}/${version.name}"/>-->
                 <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->

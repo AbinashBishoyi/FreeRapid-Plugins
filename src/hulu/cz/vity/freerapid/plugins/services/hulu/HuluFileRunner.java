@@ -4,11 +4,11 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import javax.crypto.Mac;
@@ -75,6 +75,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        login();
 
         HttpMethod method = getGetMethod(fileURL);
         makeRedirectedRequest(method);
@@ -98,8 +99,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             checkProblems(content);
             geoCheck(content);
 
-            final Stream stream = getStream(content);
-            final RtmpSession rtmpSession = new RtmpSession(stream.getServer(), 80, stream.getApp(), stream.getPlay(), true);
+            final RtmpSession rtmpSession = getStream(content);
             rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
             //helper.setSwfVerification(rtmpSession, client);
@@ -140,7 +140,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private Stream getStream(final String content) throws ErrorDuringDownloadingException {
+    private RtmpSession getStream(final String content) throws ErrorDuringDownloadingException {
         final Matcher matcher = PlugUtils.matcher("<video server=\"(.+?)\" stream=\"(.+?)\" token=\"(.+?)\" system-bitrate=\"(\\d+?)\"", content);
         final List<Stream> list = new LinkedList<Stream>();
         while (matcher.find()) {
@@ -149,7 +149,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         if (list.isEmpty()) {
             throw new PluginImplementationException("No streams found");
         }
-        return Collections.min(list);
+        return Collections.max(list).getSession();
     }
 
     private class Stream implements Comparable<Stream> {
@@ -169,27 +169,27 @@ class HuluFileRunner extends AbstractRtmpRunner {
             this.play = stream;
             this.app = token;
             this.bitrate = bitrate;
-            logger.info("server = " + this.server);
-            logger.info("play = " + this.play);
-            logger.info("app = " + this.app);
-            logger.info("bitrate = " + this.bitrate);
+            logger.info("Found stream: " + this);
         }
 
-        public String getServer() {
-            return server;
-        }
-
-        public String getPlay() {
-            return play;
-        }
-
-        public String getApp() {
-            return app;
+        public RtmpSession getSession() {
+            logger.info("Downloading stream: " + this);
+            return new RtmpSession(server, 80, app, play, true);
         }
 
         @Override
         public int compareTo(Stream that) {
-            return Integer.valueOf(that.bitrate).compareTo(this.bitrate);
+            return Integer.valueOf(this.bitrate).compareTo(that.bitrate);
+        }
+
+        @Override
+        public String toString() {
+            return "Stream{" +
+                    "server='" + server + '\'' +
+                    ", play='" + play + '\'' +
+                    ", app='" + app + '\'' +
+                    ", bitrate=" + bitrate +
+                    '}';
         }
     }
 
@@ -220,7 +220,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
         }
         final Mac mac = Mac.getInstance("HmacMD5");
         mac.init(new SecretKeySpec(HMAC_KEY.getBytes("UTF-8"), "HmacMD5"));
-        return new String(Hex.encodeHex(mac.doFinal(sb.toString().getBytes("UTF-8"))));
+        return Hex.encodeHexString(mac.doFinal(sb.toString().getBytes("UTF-8")));
     }
 
     private static class Parameters implements Iterable<Map.Entry<String, String>> {
@@ -255,7 +255,9 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private static String getSessionId() {
-        return DigestUtils.md5Hex(String.valueOf(System.nanoTime())).toUpperCase(Locale.ENGLISH);
+        final byte[] bytes = new byte[16];
+        new Random().nextBytes(bytes);
+        return new String(Hex.encodeHex(bytes, false));
     }
 
     private boolean isUserPage() {
@@ -291,6 +293,28 @@ class HuluFileRunner extends AbstractRtmpRunner {
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
         logger.info(set.size() + " videos added");
         httpFile.getProperties().put("removeCompleted", true);
+    }
+
+    private boolean login() throws Exception {
+        final PremiumAccount pa = ((HuluServiceImpl) getPluginService()).getConfig();
+        if (pa == null || !pa.isSet()) {
+            logger.info("No account data set, skipping login");
+            return false;
+        }
+        setFileStreamContentTypes(new String[0], new String[]{"application/x-www-form-urlencoded"});
+        final HttpMethod method = getMethodBuilder()
+                .setAction("https://secure.hulu.com/account/authenticate")
+                .setParameter("login", pa.getUsername())
+                .setParameter("password", pa.getPassword())
+                .setParameter("sli", "1")
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            throw new ServiceConnectionProblemException("Error posting login info");
+        }
+        if (!getContentAsString().contains("ok=1")) {
+            throw new BadLoginException("Invalid Hulu account login information");
+        }
+        return true;
     }
 
 }

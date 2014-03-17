@@ -103,17 +103,16 @@ class FileFactoryRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(final String content) throws ErrorDuringDownloadingException {
-        //PlugUtils.checkName(httpFile, content, "class=\"last\">", "</span"); //truncated
-        String filename = PlugUtils.getStringBetween(content, "redirect\" value=\"", "\"");
-        filename = PlugUtils.unescapeHtml(filename.substring(filename.lastIndexOf("/") + 1).trim());
-        httpFile.setFileName(filename);
+        PlugUtils.checkName(httpFile, content, "<title>", " - download now");
         PlugUtils.checkFileSize(httpFile, content, "<h2>", "file uploaded");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkSeriousProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("Sorry, this file is no longer available") || contentAsString.contains("This file has been deleted")) {
+        if (contentAsString.contains("Sorry, this file is no longer available") ||
+                contentAsString.contains("the file you are requesting is no longer available") ||
+                contentAsString.contains("This file has been deleted")) {
             throw new URLNotAvailableAnymoreException("Sorry, this file is no longer available. It may have been deleted by the uploader, or has expired");
         }
         if (contentAsString.contains("This file is forbidden to be shared")) {
@@ -135,6 +134,9 @@ class FileFactoryRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Your download slot has expired")) {
             throw new ServiceConnectionProblemException("Your download slot has expired. Please try again");
+        }
+        if (contentAsString.contains("<h2>Over Capacity</h2>")) {
+            throw new YouHaveToWaitException("FileFactory is currently experiencing high load and we are unable to service your request at this time", 120);
         }
         if (contentAsString.contains("You are currently downloading too many files at once")) {
             throw new ServiceConnectionProblemException("You are currently downloading too many files at once. Multiple simultaneous downloads are only permitted for Premium Members");

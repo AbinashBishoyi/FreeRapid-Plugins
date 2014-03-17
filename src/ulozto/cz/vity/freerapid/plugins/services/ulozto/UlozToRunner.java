@@ -121,7 +121,7 @@ class UlozToRunner extends AbstractRunner {
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
         } catch (PluginImplementationException ex) {
             //u online videi neni velikost
-            throw new PluginImplementationException("File size not found");
+            //throw new PluginImplementationException("File size not found");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

@@ -33,9 +33,12 @@ class UpafacilFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<h2 class=\"float-left\">", "</h2>\n");
-        final Matcher match = PlugUtils.matcher("Tamanho do arquivo</strong></li>\\s*?<li[^>]*?>(.+?)</li>", content);
-        if (!match.find())
-            throw new PluginImplementationException("File size not found");
+        Matcher match = PlugUtils.matcher("Tamanho do arquivo</strong></li>\\s*?<li[^>]*?>(.+?)</li>", content);
+        if (!match.find()) {
+            match = PlugUtils.matcher("File size</strong></li>\\s*?<li[^>]*?>(.+?)</li>", content);
+            if (!match.find())
+                throw new PluginImplementationException("File size not found");
+        }
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -72,10 +75,11 @@ class UpafacilFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("O arquivo solicitado não foi encontrado")) {
+        if (content.contains("O arquivo solicitado não foi encontrado") || content.contains("Your requested file is not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (content.contains("As sessões de download permitidos atribuídos ao seu IP foi usado totalmente")) {
+        if (content.contains("As sessões de download permitidos atribuídos ao seu IP foi usado totalmente") ||
+                content.contains("The allowed download sessions assigned to your IP is used up")) {
             throw new YouHaveToWaitException("All Free download sessions from your IP are used, try again later", 120);
         }
     }

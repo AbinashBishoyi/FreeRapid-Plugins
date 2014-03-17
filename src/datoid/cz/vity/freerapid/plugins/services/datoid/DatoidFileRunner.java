@@ -56,10 +56,13 @@ class DatoidFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
-            final HttpMethod linkMethod = getMethodBuilder()
-                    .setActionFromAHrefWhereATagContains("hnout pomalu")
-                    .setReferer(fileURL)
-                    .toGetMethod();
+            final Matcher match = PlugUtils.matcher("<a.+?href=\"(.*?/f/.+?)\">st.hnout", getContentAsString());
+            if (!match.find())
+                throw new PluginImplementationException("Download options not found");
+            String linkUrl = match.group(1);
+            if (!linkUrl.contains("request="))
+                linkUrl = linkUrl + "?request=1";
+            final HttpMethod linkMethod = getMethodBuilder().setAction(linkUrl).toHttpMethod();
             if (!makeRedirectedRequest(linkMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();

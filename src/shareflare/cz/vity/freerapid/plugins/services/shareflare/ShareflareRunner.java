@@ -1,24 +1,18 @@
 package cz.vity.freerapid.plugins.services.shareflare;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.logging.Logger;
-
-import org.apache.commons.httpclient.HttpMethod;
-
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.shareflare.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
+
+import java.awt.image.BufferedImage;
+import java.util.logging.Logger;
 
 /**
- * @author RickCL
+ * @author RickCL, ntoskrnl
  */
 class ShareflareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareflareRunner.class.getName());
@@ -29,22 +23,34 @@ class ShareflareRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
 
-        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toGetMethod();
 
-        if (makeRequest(httpMethod)) {
+        if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
-            checkNameAndSize();
+            checkNameAndSize1();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize() throws Exception {
-        final String contentAsString = getContentAsString();
-        PlugUtils.checkName(httpFile, contentAsString, "<p id=\"file-info\">", "<small>");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "<p id=\"file-info\">" + httpFile.getFileName()
-                + " <small>(", ")</small>");
+    private void checkNameAndSize1() throws Exception {
+        final String content = getContentAsString();
+        try {
+            PlugUtils.checkName(httpFile, content, "name=\"name\" value=\"", "\"");
+        } catch (PluginImplementationException e) {
+            logger.warning("File name not found (1)");
+        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private void checkNameAndSize2() throws Exception {
+        final String content = getContentAsString();
+        try {
+            PlugUtils.checkName(httpFile, content, "<strong>", "</strong>");
+        } catch (PluginImplementationException e) {
+            logger.warning("File name not found (2)");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -58,31 +64,28 @@ class ShareflareRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
-        final HttpMethod httpMethod2 = getMethodBuilder().setActionFromFormWhereTagContains("dvifree", true)
-                .toPostMethod();
+        checkNameAndSize1();
+
+        final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dvifree", true).toPostMethod();
         if (!makeRedirectedRequest(httpMethod2)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+        checkNameAndSize2();
 
-        final MethodBuilder methodBuilder = getMethodBuilder().setActionFromFormWhereTagContains("dvifree", true);
+        final MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("dvifree", true);
 
-        String captchaurl = getCaptchaImageURL();
+        final String captchaurl = getCaptchaImageURL();
         do {
-            String captcha = readCaptchaImage( captchaurl );
-
-            methodBuilder.setParameter("cap", captcha);
-            if (!makeRedirectedRequest(methodBuilder.toPostMethod())) {
+            final HttpMethod captchaMethod = methodBuilder.setParameter("cap", readCaptchaImage(captchaurl)).toPostMethod();
+            if (!makeRedirectedRequest(captchaMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             captchatry++;
-        } while( getContentAsString().contains("history.go(-1)") && captchatry < 3 );
-        if( captchatry == 3 )
-            throw new CaptchaEntryInputMismatchException("Captcha Error");
+        } while (getContentAsString().contains("history.go(-1)"));
 
-        final HttpMethod httpMethod3 = getMethodBuilder().setActionFromIFrameSrcWhereTagContains("topFrame")
-                .toGetMethod();
+        final HttpMethod httpMethod3 = getMethodBuilder().setReferer(methodBuilder.getAction()).setActionFromIFrameSrcWhereTagContains("topFrame").toGetMethod();
         if (!makeRedirectedRequest(httpMethod3)) {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -94,60 +97,60 @@ class ShareflareRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
 
-        if (!getContentAsString().contains("Your link to file download"))
-            throw new PluginImplementationException("Some waiting problem");
-
         final HttpMethod httpMethod4 = getMethodBuilder()
-            .setActionFromAHrefWhereATagContains("Your link to file download")
-                .setReferer(methodBuilder.getAction()).toGetMethod();
+                .setActionFromAHrefWhereATagContains("Your link to file download")
+                .setReferer(methodBuilder.getAction())
+                .toGetMethod();
         if (!tryDownloadAndSaveFile(httpMethod4)) {
             checkProblems();
             logger.warning(getContentAsString());
-            throw new IOException("File input stream is empty");
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
-    private String readCaptchaImage(String captchaurl) throws Exception {
+    private String readCaptchaImage(final String captchaurl) throws Exception {
         final BufferedImage captchaImage = getCaptchaSupport().getCaptchaImage(captchaurl);
-        String captcha = null;
-        if (captchatry == 0) {
-            CaptchaReader cr = new CaptchaReader(captchaImage);
-            captcha = cr.getWord();
-            if (captcha != null) {
-                logger.info("Captcha - RickCL Captcha recognized: " + captcha);
-            } else
-                captchatry = 1;
-        }
-        if (captchatry == 1) {
-            final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2,
-                    captchaImage.getHeight() - 2);
-            captcha = PlugUtils.recognize(croppedCaptchaImage, "-C a-z-0-9");
-            if (captcha != null) {
-                logger.info("Captcha - OCR recognized: " + captcha);
-            } else
-                captchatry = 2;
-        }
-        if (captchatry == 2) {
-            captcha = getCaptchaSupport().askForCaptcha(captchaImage);
+        String captcha;
+        switch (captchatry) {
+            case 0:
+                CaptchaReader cr = new CaptchaReader(captchaImage);
+                captcha = cr.getWord();
+                if (captcha != null) {
+                    logger.info("Captcha - RickCL Captcha recognized: " + captcha);
+                    break;
+                }
+            case 1:
+                final BufferedImage croppedCaptchaImage = captchaImage.getSubimage(1, 1, captchaImage.getWidth() - 2, captchaImage.getHeight() - 2);
+                captcha = PlugUtils.recognize(croppedCaptchaImage, "-C a-z-0-9");
+                if (captcha != null) {
+                    logger.info("Captcha - OCR recognized: " + captcha);
+                    break;
+                }
+            default:
+                captcha = getCaptchaSupport().askForCaptcha(captchaImage);
+                if (captcha != null) {
+                    logger.info("Captcha - Manual: " + captcha);
+                }
+                break;
         }
         if (captcha == null)
             throw new CaptchaEntryInputMismatchException();
         return captcha;
     }
 
-    private String getCaptchaImageURL() throws Exception {
-        String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getAction();
-        logger.info("Captcha Image: " + s);
+    private String getCaptchaImageURL() throws ErrorDuringDownloadingException {
+        final String s = getMethodBuilder().setActionFromImgSrcWhereTagContains("cap.php").getAction();
+        logger.info("Captcha image: " + s);
         return s;
     }
 
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException,
-            URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
+        /* May produce false positives, eg. if the filename contains the word "Error".
         if (content.contains("Error")) {
-            throw new YouHaveToWaitException("The page is temporarily unavailable", 60 * 2);
-        }
-        if (content.contains("File not found") || content.contains("deleted for abuse") ) {
+            throw new ServiceConnectionProblemException("The page is temporarily unavailable");
+        }*/
+        if (content.contains("File not found") || content.contains("deleted for abuse") || content.contains("<h1>404 Not Found</h1>")) {
             throw new URLNotAvailableAnymoreException("The requested file was not found");
         }
     }

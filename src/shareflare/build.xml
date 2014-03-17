@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="Shareflare Plugin" default="all" basedir=".">
     <property name="application" value="shareflare"/>
-    <property name="version" value="0.1"/>
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
 
@@ -71,7 +71,7 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-        	<exclude name="**/OCR*.java"/>
+            <exclude name="**/OCR*.java"/>
 
             <sourcepath location="../devapp"/>
         </javac>

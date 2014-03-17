@@ -122,6 +122,13 @@ class ServUpCoIlFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("Wrong captcha, try again...", 5);
         } else if (contentAsString.contains("You have reached the download-limit")) {
             throw new YouHaveToWaitException("Download limit is reached for current day", 60 * 60 * 24);
+        } else if (contentAsString.contains("<p class=\"err\">You can download files up to")) {
+            Matcher matcher = getMatcherAgainstContent("<p class=\"err\">You can download files up to (\\d+?) Mb");
+            if (matcher.find()) {
+                throw new URLNotAvailableAnymoreException("Files above " + matcher.group(1) + " are available for premium users only");
+            } else {
+                throw new URLNotAvailableAnymoreException("This file is available for premium users only");
+            }
         }
     }
 

@@ -88,6 +88,12 @@ class RapidShareRunner extends AbstractRunner {
         if (getContentAsString().contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (getContentAsString().contains("File deleted")) {
+            throw new URLNotAvailableAnymoreException("File has been deleted");
+        }
+        if (getContentAsString().contains("You need RapidPro to download more files from your IP address")) {
+            throw new ServiceConnectionProblemException("You need RapidPro to download more files from your IP address");
+        }
         Matcher matcher = getMatcherAgainstContent("You need to wait (\\d+) seconds[^\"']*");
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)) + 10);

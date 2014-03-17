@@ -118,6 +118,8 @@ class FilebaseToRunner {
             Matcher matcher = PlugUtils.matcher("src=\"([^\"]*captcha[^\"]*)\"", contentAsString);
             if (matcher.find()) {
                 String s = matcher.group(1);
+                if (!s.contains("filebase.to")) s= "http://filebase.to/" +s;
+                logger.info("Captcha URL " + s);
                 String captcha = downloader.getCaptcha(s);
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();

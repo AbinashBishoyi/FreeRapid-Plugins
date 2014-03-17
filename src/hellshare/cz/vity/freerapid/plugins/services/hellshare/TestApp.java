@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Ladislav Vitasek & Tomáš Procházka <to.m.p@atomsoft.cz>
+ * @author Ladislav Vitasek & Tomï¿½ Prochï¿½zka <to.m.p@atomsoft.cz>
  */
 public class TestApp extends PluginDevApplication {
     protected void startup() {
@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
 
-           httpFile.setNewURL(new URL("http://www.hellshare.com/209896/DXTR/dexter.s03e08.hdtv-lol.avi/"));
+           httpFile.setNewURL(new URL("http://download.cz.hellshare.com/starcraft-ii-beta-enus-13891-installer-part02.rar/981200"));
             testRun(new HellshareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

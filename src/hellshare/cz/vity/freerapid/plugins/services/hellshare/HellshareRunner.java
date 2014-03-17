@@ -43,7 +43,7 @@ class HellshareRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
 
             if (getContentAsString().contains("100%,"))
-                throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
+                throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
             final HttpMethod captchaPageMethod = getCaptchaPage();
             if (makeRedirectedRequest(captchaPageMethod)) {
                 client.setReferer("http://www.hellshare.com" + captchaPageMethod.getPath());
@@ -70,8 +70,8 @@ class HellshareRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        PlugUtils.checkName(httpFile, content, "Obsah ", "o velikosti");
-        PlugUtils.checkFileSize(httpFile, content, "o velikosti", "byl nahr");
+        PlugUtils.checkName(httpFile, content, "<strong id=\"FileName_master\">", "</strong>");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "<strong id=\"FileSize_master\">", "</strong>").replace("&nbsp;", " ")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -115,7 +115,7 @@ class HellshareRunner extends AbstractRunner {
             if (getContentAsString().contains("img id=\"captcha-img\""))
                 stepCaptcha();
 
-            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
         }
 
         return true;
@@ -123,7 +123,7 @@ class HellshareRunner extends AbstractRunner {
 
     private HttpMethod stepCaptcha() throws Exception {
         if (!getContentAsString().contains("captcha")) {
-            throw new YouHaveToWaitException("Neurèité omezení", 4 * WAIT_TIME);
+            throw new YouHaveToWaitException("Neurï¿½itï¿½ omezenï¿½", 4 * WAIT_TIME);
         }
         String img = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getAction();
         boolean emptyCaptcha;
@@ -164,10 +164,10 @@ class HellshareRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException(String.format("<b>Soubor nenalezen</b><br>"));
         }
         if (content.contains(" free download|Na serveri")) {
-            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
         }
         if (content.contains("Stahujete soub")) {
-            throw new YouHaveToWaitException("Na serveru jsou využity všechny free download sloty", WAIT_TIME);
+            throw new YouHaveToWaitException("Na serveru jsou vyuï¿½ity vï¿½echny free download sloty", WAIT_TIME);
         }
     }
 }

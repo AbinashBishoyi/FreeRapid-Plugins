@@ -82,10 +82,11 @@ class File2BoxFileRunner extends AbstractRunner {
             if (makeRedirectedRequest(methodBuilder.toPostMethod())) {
                 //here is the download link extraction
                 final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download file").toHttpMethod();
-                client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
+                //client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
+                client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain; charset=utf-8");
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
+                    //logger.warning(getContentAsString());//log the info
                     throw new PluginImplementationException();//some unknown problem
                 }
             } else throw new PluginImplementationException();

@@ -3,6 +3,7 @@ package cz.vity.freerapid.plugins.services.recaptcha;
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
+import cz.vity.freerapid.plugins.webclient.interfaces.ShareDownloadService;
 import org.jdesktop.application.Application;
 
 import java.net.URL;
@@ -23,7 +24,7 @@ public class TestApp extends PluginDevApplication {
             //then we tries to download
             final ReCaptchaServiceImpl service = new ReCaptchaServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
-            testRun(service, httpFile, connectionSettings);//download file with service and its Runner
+            testRun((ShareDownloadService) service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception
             e.printStackTrace(); //writes error output - stack trace to console

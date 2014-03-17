@@ -50,62 +50,68 @@ class LetitbitRunner extends AbstractRunner {
         if (makeRedirectedRequest(httpMethod)) {
             checkProblems();
             checkNameAndSize();
+            final String content = getContentAsString();
+            String pageUrl = fileURL;
 
-            httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setActionFromFormByName("ifree_form", true)
-                    .toPostMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            String pageUrl = httpMethod.getURI().toString();
+            String url = getUrlFromApi();
 
-            httpMethod = getMethodBuilder()
-                    .setReferer(pageUrl)
-                    .setActionFromFormByName("d3_form", true)
-                    .toPostMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            pageUrl = httpMethod.getURI().toString();
-
-            // Russian IPs may see this different page here, handle it
-            if (PlugUtils.find("action=\"http://s\\d+\\.letitbit\\.net/download3\\.php\"", getContentAsString())) {
-                httpMethod = getMethodBuilder()
+            if (url == null) {
+                httpMethod = getMethodBuilder(content)
                         .setReferer(pageUrl)
-                        .setActionFromFormWhereActionContains(".letitbit.net/download3.php", true)
+                        .setActionFromFormByName("ifree_form", true)
                         .toPostMethod();
                 if (!makeRedirectedRequest(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
                 pageUrl = httpMethod.getURI().toString();
-            }
 
-            downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
+                httpMethod = getMethodBuilder()
+                        .setReferer(pageUrl)
+                        .setActionFromFormByName("d3_form", true)
+                        .toPostMethod();
+                if (!makeRedirectedRequest(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                pageUrl = httpMethod.getURI().toString();
 
-            String url = handleCaptcha(pageUrl);
-
-            logger.info("Ajax response : " + url);
-
-            if (url.contains("[\"")) {
-                url = PlugUtils.getStringBetween(url, "[", "]").replaceAll("\\\\", "");
-                final StringTokenizer st = new StringTokenizer(url, ",");
-                while (st.hasMoreTokens()) {
-                    String testUrl = st.nextToken().replaceAll("\"", "");
-                    logger.info("Url match : " + testUrl);
-                    httpMethod = getGetMethod(testUrl + "&check=1");
-                    logger.info("Url to be checked : " + httpMethod.getURI().toString());
-                    httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
-                    if (!makeRequest(httpMethod)) {
+                // Russian IPs may see this different page here, handle it
+                if (PlugUtils.find("action=\"http://s\\d+\\.letitbit\\.net/download3\\.php\"", getContentAsString())) {
+                    httpMethod = getMethodBuilder()
+                            .setReferer(pageUrl)
+                            .setActionFromFormWhereActionContains(".letitbit.net/download3.php", true)
+                            .toPostMethod();
+                    if (!makeRedirectedRequest(httpMethod)) {
                         checkProblems();
-                        throw new PluginImplementationException();
+                        throw new ServiceConnectionProblemException();
                     }
-                    if (httpMethod.getStatusCode() == HttpStatus.SC_OK) {
-                        url = testUrl;
-                        break;
+                    pageUrl = httpMethod.getURI().toString();
+                }
+
+                downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "seconds =", ";") + 1);
+
+                url = handleCaptcha(pageUrl);
+
+                logger.info("Ajax response : " + url);
+
+                if (url.contains("[\"")) {
+                    url = PlugUtils.getStringBetween(url, "[", "]").replaceAll("\\\\", "");
+                    final StringTokenizer st = new StringTokenizer(url, ",");
+                    while (st.hasMoreTokens()) {
+                        String testUrl = st.nextToken().replaceAll("\"", "");
+                        logger.info("Url match : " + testUrl);
+                        httpMethod = getGetMethod(testUrl + "&check=1");
+                        logger.info("Url to be checked : " + httpMethod.getURI().toString());
+                        httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                        if (!makeRequest(httpMethod)) {
+                            checkProblems();
+                            throw new PluginImplementationException();
+                        }
+                        if (httpMethod.getStatusCode() == HttpStatus.SC_OK) {
+                            url = testUrl;
+                            break;
+                        }
                     }
                 }
             }
@@ -175,6 +181,27 @@ class LetitbitRunner extends AbstractRunner {
             throw new CaptchaEntryInputMismatchException();
         }
         return captcha;
+    }
+
+    private String getUrlFromApi() throws Exception {
+        final HttpMethod method = getMethodBuilder()
+                .setAction("http://api.letitbit.net/internal/")
+                .setParameter("action", "LINK_GET_DIRECT")
+                .setParameter("link", fileURL)
+                .setParameter("free_link", "1")
+                .setParameter("appid", "3abae470733e41cba46177c450f69616")
+                .setParameter("version", "1.63")
+                .toPostMethod();
+        if (makeRedirectedRequest(method)) {
+            for (final String line : getContentAsString().split("[\r\n]")) {
+                if (line.startsWith("http")) {
+                    logger.info("API download success");
+                    return line;
+                }
+            }
+        }
+        logger.info("API download failed");
+        return null;
     }
 
 }

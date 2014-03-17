@@ -11,7 +11,8 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class iPrimaServiceImpl extends AbstractFileShareService {
     private static final String CONFIG_FILE = "iPrimaSettings.xml";
-    private volatile iPrimaSettingsConfig config;
+    private iPrimaSettingsConfig config;
+
     @Override
     public String getName() {
         return "iprima.cz";
@@ -26,7 +27,7 @@ public class iPrimaServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new iPrimaFileRunner();
     }
-    
+
     @Override
     public void showOptions() throws Exception {
         super.showOptions();
@@ -35,20 +36,20 @@ public class iPrimaServiceImpl extends AbstractFileShareService {
             getPluginContext().getConfigurationStorageSupport().storeConfigToFile(config, CONFIG_FILE);
         }
     }
-    
-    public iPrimaSettingsConfig getConfig() throws Exception {
-        final ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
 
-        if (config == null) {
-            if (!storage.configFileExists(CONFIG_FILE)) {
-                config = new iPrimaSettingsConfig();
-                config.setQualitySetting(1);
-            } else {
-                config = storage.loadConfigFromFile(CONFIG_FILE, iPrimaSettingsConfig.class);
+    iPrimaSettingsConfig getConfig() throws Exception {
+        synchronized (iPrimaServiceImpl.class) {
+            final ConfigurationStorageSupport storage = getPluginContext().getConfigurationStorageSupport();
+            if (config == null) {
+                if (!storage.configFileExists(CONFIG_FILE)) {
+                    config = new iPrimaSettingsConfig();
+                    config.setQualitySetting(1);
+                } else {
+                    config = storage.loadConfigFromFile(CONFIG_FILE, iPrimaSettingsConfig.class);
+                }
             }
+            return config;
         }
-
-        return config;
     }
 
 }

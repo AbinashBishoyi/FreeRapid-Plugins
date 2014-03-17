@@ -18,7 +18,7 @@ public class iPrimaSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"LQ","HQ"};
+        final String[] qualityStrings = {"LQ", "HQ"};
 
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);

@@ -27,7 +27,7 @@ class ZShareRunner extends AbstractRunner {
         super.runCheck();
         fileURL = processURL(fileURL);
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else {
             throw new PluginImplementationException();
@@ -36,14 +36,15 @@ class ZShareRunner extends AbstractRunner {
 
     private void checkNameandSize(String contentAsString) throws Exception {
 
+        if (contentAsString.toLowerCase().contains("file not found")) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
+        }
+        
         if (!contentAsString.contains("form name=\"form1\" method=\"post\" action=")) {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
 
-        if (contentAsString.contains("File not found")) {
-            throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-        }
 
         if (contentAsString.contains("File Name")) {
             Matcher matcher = PlugUtils.matcher("\\-\\s*([^-]+)</title>", contentAsString);
@@ -98,7 +99,7 @@ class ZShareRunner extends AbstractRunner {
                 if (matcher.find()) {
                     String link = matcher.group(1);
                     link = this.processDownloadLink(link);
-                    if (link != null) {//link found write down data to the specified file.
+                    if (!link.equals("")) {//link found write down data to the specified file.
                         logger.info("Download URL: " + link);
                         //zShare allows users to download unlimited downloads (isn't it?)
                         final PostMethod method = getPostMethod(link);
@@ -106,9 +107,9 @@ class ZShareRunner extends AbstractRunner {
                             checkProblems();
                             throw new IOException("File input stream is empty.");
                         }
-                    }
+                    } else throw new PluginImplementationException();
                 } else {
-                    throw new PluginImplementationException("Cannot find requested page content");
+                    throw new PluginImplementationException();
                 }
             } else {
                 throw new PluginImplementationException();
@@ -144,7 +145,7 @@ class ZShareRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
-        if (getContentAsString().contains("File not found")) {
+        if (getContentAsString().toLowerCase().contains("file not found")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
         }
     }

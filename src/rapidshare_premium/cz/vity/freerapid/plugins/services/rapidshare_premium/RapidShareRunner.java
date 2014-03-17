@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 3315 2011-11-18 11:53:49Z ntoskrnl $
+ * $Id: RapidShareRunner.java 3730 2012-06-22 18:33:42Z ntoskrnl $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -27,6 +27,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -34,7 +35,7 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -99,12 +100,14 @@ class RapidShareRunner extends AbstractRunner {
             throw new PluginImplementationException("Error parsing file URL");
         }
         final String fileId = matcher.group(1);
-        final String fileName = matcher.group(2);
+        final String fileName = URLDecoder.decode(matcher.group(2), "UTF-8");
 
-        PostMethod method = getPostMethod("http://api.rapidshare.com/cgi-bin/rsapi.cgi");
-        method.addParameter("sub", "checkfiles");
-        method.addParameter("files", fileId);
-        method.addParameter("filenames", URLEncoder.encode(fileName, "UTF-8"));
+        HttpMethod method = getMethodBuilder()
+                .setAction("http://api.rapidshare.com/cgi-bin/rsapi.cgi")
+                .setParameter("sub", "checkfiles")
+                .setParameter("files", fileId)
+                .setParameter("filenames", fileName)
+                .toGetMethod();
 
         int status = 0;
         String responseString = "";

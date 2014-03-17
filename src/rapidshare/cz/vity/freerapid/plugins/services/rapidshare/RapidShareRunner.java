@@ -36,9 +36,9 @@ class RapidShareRunner extends AbstractRunner {
                 .setParameter("cbid", "1")
                 .toGetMethod();
         if (makeRedirectedRequest(method)) {
-            checkProblems();
+            checkFileProblems();
         } else {
-            checkProblems();
+            checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
     }
@@ -48,6 +48,7 @@ class RapidShareRunner extends AbstractRunner {
         super.run();
         context = getPluginService().getPluginContext();
         runCheck();
+        checkProblems();
         final Matcher matcher = getMatcherAgainstContent("DL:(.+?),(.+?),(\\d+)");
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing API response");
@@ -85,12 +86,7 @@ class RapidShareRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("File not found")) {
-            throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (getContentAsString().contains("File deleted")) {
-            throw new URLNotAvailableAnymoreException("File has been deleted");
-        }
+        checkFileProblems();
         if (getContentAsString().contains("You need RapidPro to download more files from your IP address")) {
             throw new ServiceConnectionProblemException("You need RapidPro to download more files from your IP address");
         }
@@ -98,7 +94,16 @@ class RapidShareRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new YouHaveToWaitException(matcher.group(), Integer.parseInt(matcher.group(1)) + 10);
         }
-        matcher = getMatcherAgainstContent("ERROR:([^\"']+)");
+    }
+
+    private void checkFileProblems() throws ErrorDuringDownloadingException {
+        if (getContentAsString().contains("File not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("File deleted")) {
+            throw new URLNotAvailableAnymoreException("File has been deleted");
+        }
+        Matcher matcher = getMatcherAgainstContent("ERROR:([^\"']+)");
         if (matcher.find()) {
             throw new NotRecoverableDownloadException("RapidShare error: " + matcher.group(1));
         }

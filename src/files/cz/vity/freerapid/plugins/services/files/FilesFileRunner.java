@@ -62,10 +62,11 @@ class FilesFileRunner extends AbstractRunner {
             logger.info("Captha OK!");
             //downloadTask.sleep(60);
                contentAsString=getContentAsString();
+                checkProblems();
 
            String finURL = "http://files.fm/getfile" + PlugUtils.getStringBetween(contentAsString, "http://files.fm/getfile","\";") ;
             logger.info("FIN URL : " + finURL);
-            
+
 
           httpMethod = getMethodBuilder().setAction(finURL).toGetMethod();
 
@@ -90,6 +91,10 @@ class FilesFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("captcha error")) {//TODO
             throw new YouHaveToWaitException("Retry",5); //let to know user in FRD
+
+        }
+         if (contentAsString.contains("You have got max allowed bandwidth size per hour")) {//TODO
+            throw new YouHaveToWaitException("Maxium bandwidth limit reach",3600); //let to know user in FRD
 
         }
 

@@ -249,6 +249,7 @@ class MediafireRunner extends AbstractRunner {
                 }
                 final String captchaKey = matcher.group(1);
                 final SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport());
+                solveMediaCaptcha.askForCaptcha();
                 builder = solveMediaCaptcha.modifyResponseMethod(builder);
             } else {  // ReCaptcha
                 final Matcher matcher = getMatcherAgainstContent("challenge\\?k=([^\"]+)");

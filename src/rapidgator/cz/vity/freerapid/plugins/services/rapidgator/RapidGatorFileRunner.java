@@ -28,7 +28,6 @@ class RapidGatorFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Opera/9.80 (Windows NT 6.1; WOW64; U; pt) Presto/2.10.229 Version/11.62");
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -65,7 +64,6 @@ class RapidGatorFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        setClientParameter(DownloadClientConsts.USER_AGENT, "Opera/9.80 (Windows NT 6.1; WOW64; U; pt) Presto/2.10.229 Version/11.62");
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
@@ -190,6 +188,7 @@ class RapidGatorFileRunner extends AbstractRunner {
             final String captchaKey = captchaKeyMatcher.group(1);
             final long captchaStartTime = System.currentTimeMillis();
             SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport());
+            solveMediaCaptcha.askForCaptcha();
             if (((System.currentTimeMillis() - captchaStartTime) / 1000) > CAPTCHA_TIMEOUT)
                 throw new YouHaveToWaitException("Retry request to avoid captcha expired", 5);
             final MethodBuilder methodBuilder = getMethodBuilder()

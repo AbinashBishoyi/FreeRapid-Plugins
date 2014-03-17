@@ -16,8 +16,13 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.rdio.com/artist/Armin_van_Buuren/album/A_State_Of_Trance_Year_Mix_2012_(Mixed_By_Armin_van_Buuren)/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Armin_van_Buuren/album/A_State_Of_Trance_Year_Mix_2012_(Mixed_By_Armin_van_Buuren)/"));
             //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Armin_van_Buuren/album/A_State_Of_Trance_Year_Mix_2012_(Mixed_By_Armin_van_Buuren)/track/The_Year_Of_Two_(Mix_Cut)_(A_State_Of_Trance_Year_Mix_2012_Intro)/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Miriam_Makeba/album/Makeba!/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Miriam_Makeba/album/Makeba!/track/Emavungwini_[Down_In_The_Dumps]/"));
+            httpFile.setNewURL(new URL("http://www.rdio.com/artist/Miriam_Makeba/album/Makeba!/track/Emavungwini_%5BDown_In_The_Dumps%5D/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Les_Mis%C3%A9rables_Cast/album/Les_Mis%C3%A9rables_The_Motion_Picture_Soundtrack_Deluxe_%28Deluxe_Edition%29/"));
+            //httpFile.setNewURL(new URL("http://www.rdio.com/artist/Les_Mis%C3%A9rables_Cast/album/Les_Mis%C3%A9rables_The_Motion_Picture_Soundtrack_Deluxe_(Deluxe_Edition)/track/Look_Down/"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

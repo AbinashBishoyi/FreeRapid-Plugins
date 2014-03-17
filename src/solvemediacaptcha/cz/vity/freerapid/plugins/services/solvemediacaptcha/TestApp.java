@@ -28,6 +28,7 @@ public class TestApp extends PluginDevApplication {
             /*
             // see http://solvemedia.com/publishers/captcha-type-in
             final SolveMediaCaptcha captcha = new SolveMediaCaptcha("5rpD0bf9RBZ.lyWs.lIKdv8bohgdaCBW", client, captchaSupport);
+            captcha.askForCaptcha();
             final MethodBuilder methodBuilder = new MethodBuilder(client).setAction("https://portal.solvemedia.com/portal/public/demo-1?fmt=jsonp&callback=human_update&demo_type=secure");
             captcha.modifyResponseMethod(methodBuilder);
             client.makeRequest(methodBuilder.toGetMethod(), true);
@@ -37,6 +38,7 @@ public class TestApp extends PluginDevApplication {
             final SolveMediaCaptcha captcha = new SolveMediaCaptcha("a9P0IXFCBW4I3MBD6jhOqaI2-tG7KEKl", client, captchaSupport, false, "red");
             //final SolveMediaCaptcha captcha = new SolveMediaCaptcha("hfwE8LDc6hPLdz4l4YEntxhGqF.XDx7B", client, captchaSupport, true, "custom");
             //final SolveMediaCaptcha captcha = new SolveMediaCaptcha("oy3wKTaFP368dkJiGUqOVjBR2rOOR7GR", client, captchaSupport);
+            captcha.askForCaptcha();
         } catch (final Exception e) {
             e.printStackTrace();
         }

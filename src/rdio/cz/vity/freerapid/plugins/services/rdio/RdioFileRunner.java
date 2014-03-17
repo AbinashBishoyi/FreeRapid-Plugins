@@ -8,6 +8,7 @@ import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,12 +35,11 @@ class RdioFileRunner extends AbstractRunner {
         HttpMethod method = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction("http://www.rdio.com/api/1/")
-                .setParameter("url", new URI(fileURL).getPath())
+                .setParameter("url", new org.apache.commons.httpclient.URI(URIUtil.decode(fileURL), false, "UTF-8").getEscapedPath())  //java.net.URI messes up some chars, use apache version instead
                 .setParameter("extras", "tracks")
                 .setParameter("method", "getObjectFromUrl")
                 .setParameter("_authorization_key", authorizationKey)
-                        //httpclient-3 messes up non-ascii characters in the url parameter without this
-                .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8") //httpclient-3 messes up non-ascii characters in the url parameter without this
                 .toPostMethod();
         if (!makeRedirectedRequest(method)) {
             checkProblems();

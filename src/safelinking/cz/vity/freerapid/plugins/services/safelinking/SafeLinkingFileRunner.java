@@ -154,6 +154,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
         if (!m.find()) throw new PluginImplementationException("Captcha key not found");
         final String captchaKey = m.group(1);
         final SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport(), true);
+        solveMediaCaptcha.askForCaptcha();
         solveMediaCaptcha.modifyResponseMethod(method);
         method.setParameter("solvemedia_response", solveMediaCaptcha.getResponse());
     }

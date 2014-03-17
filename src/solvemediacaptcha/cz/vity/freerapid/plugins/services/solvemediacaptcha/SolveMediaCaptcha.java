@@ -10,6 +10,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import java.awt.*;
 import java.awt.geom.QuadCurve2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,30 +20,67 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Class which contains main code
+ * Class for manipulating SolveMediaCaptcha.<p/>
+ * Example Usage:
+ * <pre>
+ *      SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, getCaptchaSupport());
+ *      solveMediaCaptcha.askForCaptcha();
+ *      HttpMethod method = solveMediaCaptcha.modifyResponseMethod(getMethodBuilder()).toHttpMethod();
+ *     ...
+ * </pre>
  *
  * @author tong2shot
  */
 public class SolveMediaCaptcha {
     public final static String THEME_UNDEFINED = "solvemedia_theme_undefined";
-    private final static Logger logger = Logger.getLogger(SolveMediaCaptcha.class.getName());
-    private final static String SOLVEMEDIA_CAPTCHA_URL = "http://api.solvemedia.com/papi";
-    private final static String SOLVEMEDIA_CAPTCHA_SECURE_URL = "https://api-secure.solvemedia.com/papi";
 
+    private final static Logger logger = Logger.getLogger(SolveMediaCaptcha.class.getName());
+    private final static String SOLVEMEDIA_CAPTCHA_URL = "http://api.solvemedia.com/papi/";
+    private final static String SOLVEMEDIA_CAPTCHA_SECURE_URL = "https://api-secure.solvemedia.com/papi/";
+    private final static String C_FORMAT = "js,swf11,swf11.6,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox17,os/nt,os/nt5.1,%s,jslib/jquery";
+
+    private final String publicKey;
     private final HttpDownloadClient client;
     private final CaptchaSupport captchaSupport;
-    private final String baseUrl;
     private final Random random = new Random();
+    private boolean secure;
+    private String theme;
     private String challenge;
     private String response;
-    private String mediaType;
 
+    /**
+     * Constructor of SolveMediaCaptcha
+     *
+     * @param publicKey      Solve media captcha public key
+     * @param client         Client to do request with
+     * @param captchaSupport Captcha support instance, to show captcha dialog
+     * @param secure         Flag to construct solve media captcha base URL, whether uses the secure URL one or the plain URL one
+     * @param theme          Theme of solve media captcha, for example : white, red, custom
+     * @throws Exception
+     */
     public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport, boolean secure, String theme) throws Exception {
+        this.publicKey = publicKey;
         this.client = client;
         this.captchaSupport = captchaSupport;
-        baseUrl = secure ? SOLVEMEDIA_CAPTCHA_SECURE_URL : SOLVEMEDIA_CAPTCHA_URL;
+        this.secure = secure;
+        this.theme = theme;
+    }
 
-        Matcher matcher;
+    public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport, boolean secure) throws Exception {
+        this(publicKey, client, captchaSupport, secure, THEME_UNDEFINED);
+    }
+
+    public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport) throws Exception {
+        this(publicKey, client, captchaSupport, false);
+    }
+
+    /**
+     * Show captcha dialog, or solve the captcha if captcha type is cryptic HTML captcha
+     *
+     * @throws Exception
+     */
+    public void askForCaptcha() throws Exception {
+        final Matcher matcher;
         if (theme.equals(THEME_UNDEFINED)) {
             theme = "white";
             try {
@@ -55,98 +93,14 @@ public class SolveMediaCaptcha {
             }
         }
 
-        //challange.script can be challange.ajax
-        HttpMethod httpMethod = getSolveMediaGetMethod(baseUrl + "/challenge.script?k=" + publicKey);
-        client.makeRequest(httpMethod, true);
+        final String chScriptContent = getChScriptContent(); //challenge.script content
+        final Map<String, String> chJsParams = new LinkedHashMap<String, String>();
+        constructChJsParams(chJsParams, chScriptContent);
+        final String mediaType = getMediaType(chJsParams); //request _challenge.js to get media type
+        final String chJsContent = client.getContentAsString(); //_challenge.js content
+        challenge = getChallenge(chJsContent);
 
-        final String magic = findString("magic:\\s*'(.+?)',", "Magic", client.getContentAsString());
-        final String chalApi = findString("chalapi:\\s*'(.+?)',", "Challenge API", client.getContentAsString());
-        final String chalStamp = findString("chalstamp:\\s*(\\d+),", "Challenge Stamp", client.getContentAsString());
-        final String size = findString("size:\\s*'(.+?)',", "Size", client.getContentAsString());
-
-        /* The actual method is requesting _puzzle.js to construct fwv and ts params, but we construct them manually instead.
-        httpMethod = getSolveMediaGetMethod(baseUrl + "/_puzzle.js");
-        client.makeRequest(httpMethod, true);
-
-        final String puzzleJsContent = client.getContentAsString();
-        */
-        final Map<String, String> chJsParams = new LinkedHashMap<String, String>(); //_challenge.js params, retain elements order
-        final String cFormat = "js,swf11,swf11.6,swf,h5c,h5ct,svg,h5v,v/ogg,v/webm,h5a,a/ogg,ua/firefox,ua/firefox17,os/nt,os/nt5.1,%s,jslib/jquery";
-        chJsParams.put("k", publicKey);
-        chJsParams.put("f", "_ACPuzzleUtil.callbacks%5B0%5D");
-        chJsParams.put("l", "en");
-        chJsParams.put("t", "img");
-        chJsParams.put("s", size);
-        chJsParams.put("c", String.format(cFormat, getFwv()));
-        chJsParams.put("am", magic);
-        chJsParams.put("ca", chalApi);
-        //chJsParams.put("ts", findString("ts=(\\d+)'", "ts", puzzleJsContent));
-        chJsParams.put("ts", String.valueOf(System.currentTimeMillis() / 1000));
-        chJsParams.put("ct", chalStamp);
-        chJsParams.put("th", theme);
-        chJsParams.put("r", String.valueOf(Math.random()));
-        int mediaTypeCounter = 0;
-        do {
-            httpMethod = getSolveMediaGetMethod(baseUrl + "/_challenge.js?" + chJsParamsToString(chJsParams));
-            client.makeRequest(httpMethod, true);
-            matcher = PlugUtils.matcher("\"mediatype\"\\s*:\\s*\"(.+?)\",", client.getContentAsString());
-            if (!matcher.find()) {
-                logger.warning(client.getContentAsString());
-                throw new PluginImplementationException("Captcha media type not found");
-            }
-            mediaType = matcher.group(1);
-            logger.info("ATTEMPT " + mediaTypeCounter + ", mediaType = " + mediaType);
-
-            chJsParams.put("c", String.format(cFormat, getFwv()));
-            chJsParams.put("r", String.valueOf(Math.random()));
-        }
-        while (!mediaType.equals("img") && !mediaType.equals("html") && !mediaType.equals("imgmap") && (mediaTypeCounter++ < 10)); //anticipate mediaType!=(img|html)
-
-        matcher = PlugUtils.matcher("\"chid\"\\s*:\\s*\"(.+?)\",", client.getContentAsString());
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Captcha challenge ID not found");
-        }
-        challenge = matcher.group(1);
-        askForCaptcha();
-    }
-
-    public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport, boolean secure) throws Exception {
-        this(publicKey, client, captchaSupport, secure, THEME_UNDEFINED);
-    }
-
-    public SolveMediaCaptcha(String publicKey, HttpDownloadClient client, CaptchaSupport captchaSupport) throws Exception {
-        this(publicKey, client, captchaSupport, false);
-    }
-
-    private String chJsParamsToString(Map<String, String> chJsParams) {
-        final StringBuilder chJsParamsBuilder = new StringBuilder();
-        for (Map.Entry entry : chJsParams.entrySet()) {
-            chJsParamsBuilder.append(entry.getKey());
-            chJsParamsBuilder.append("=");
-            chJsParamsBuilder.append(entry.getValue());
-            chJsParamsBuilder.append(";");
-        }
-        chJsParamsBuilder.deleteCharAt(chJsParamsBuilder.length() - 1);  //remove last ";"
-        return chJsParamsBuilder.toString();
-    }
-
-    private String getFwv() {
-        final StringBuilder fwv = new StringBuilder(18);
-        fwv.append("fwv/");
-        for (int i = 0; i < 6; i++) {
-            fwv.append(Character.toChars(Math.random() > 0.2 ? random.nextInt(26) + 65 : random.nextInt(26) + 97));
-        }
-        //fwv.append(findString("fwv/(.+?)'", "FWV", content));
-        fwv.append(".");
-        for (int i = 0; i < 4; i++) {
-            fwv.append(Character.toChars(random.nextInt(26) + 97));
-        }
-        fwv.append(random.nextInt(80) + 10);
-        return fwv.toString();
-    }
-
-    private void askForCaptcha() throws Exception {
-        final String imgUrl = baseUrl + "/media?c=" + challenge + ";w=300;h=150;fg=000000;bg=f8f8f8";
+        final String imgUrl = "media?c=" + challenge + ";w=300;h=150;fg=000000;bg=f8f8f8";
         final HttpMethod httpMethod = getSolveMediaGetMethod(imgUrl);
         try {
             if (mediaType.equals("img") || mediaType.equals("imgmap")) {
@@ -184,8 +138,143 @@ public class SolveMediaCaptcha {
         }
     }
 
+    /**
+     * Modifies the method of sending form with captcha parameters
+     *
+     * @param methodBuilder MethodBuilder to modify
+     * @return Modified MethodBuilder
+     */
     public MethodBuilder modifyResponseMethod(MethodBuilder methodBuilder) {
         return methodBuilder.setParameter("adcopy_challenge", challenge).setParameter("adcopy_response", response);
+    }
+
+    /**
+     * Get challenge.script content
+     *
+     * @return challenge.script content
+     * @throws BuildMethodException
+     * @throws IOException
+     */
+    private String getChScriptContent() throws BuildMethodException, IOException {
+        //challange.script can be challange.ajax
+        final HttpMethod httpMethod = getSolveMediaGetMethod("challenge.script?k=" + publicKey);
+        client.makeRequest(httpMethod, true);
+        return client.getContentAsString();
+    }
+
+    /**
+     * Construct initial _challenge.js parameters
+     *
+     * @param chJsParams      Data structure to store _challenge.js parameters
+     * @param chScriptContent challenge.script content
+     * @throws IOException
+     * @throws ErrorDuringDownloadingException
+     *
+     */
+    private void constructChJsParams(Map<String, String> chJsParams, String chScriptContent) throws IOException, ErrorDuringDownloadingException {
+        final String magic = findString("magic:\\s*'(.+?)',", "Magic", chScriptContent);
+        final String chalApi = findString("chalapi:\\s*'(.+?)',", "Challenge API", chScriptContent);
+        final String chalStamp = findString("chalstamp:\\s*(\\d+),", "Challenge Stamp", chScriptContent);
+        final String size = findString("size:\\s*'(.+?)',", "Size", chScriptContent);
+
+        /* The actual method is requesting _puzzle.js to construct fwv and ts params, but we construct them manually instead.
+        httpMethod = getSolveMediaGetMethod(baseUrl + "/_puzzle.js");
+        client.makeRequest(httpMethod, true);
+
+        final String puzzleJsContent = client.getContentAsString();
+        */
+        chJsParams.put("k", publicKey);
+        chJsParams.put("f", "_ACPuzzleUtil.callbacks%5B0%5D");
+        chJsParams.put("l", "en");
+        chJsParams.put("t", "img");
+        chJsParams.put("s", size);
+        chJsParams.put("c", String.format(C_FORMAT, getFwv()));
+        chJsParams.put("am", magic);
+        chJsParams.put("ca", chalApi);
+        //chJsParams.put("ts", findString("ts=(\\d+)'", "ts", puzzleJsContent));
+        chJsParams.put("ts", String.valueOf(System.currentTimeMillis() / 1000));
+        chJsParams.put("ct", chalStamp);
+        chJsParams.put("th", theme);
+        chJsParams.put("r", String.valueOf(Math.random()));
+    }
+
+    /**
+     * Construct string version of _challenge.js parameters.
+     *
+     * @param chJsParams _challenge.js parameters
+     * @return String version of _challenge.js parameters
+     */
+    private String chJsParamsToString(Map<String, String> chJsParams) {
+        final StringBuilder chJsParamsBuilder = new StringBuilder();
+        for (Map.Entry entry : chJsParams.entrySet()) {
+            chJsParamsBuilder.append(entry.getKey());
+            chJsParamsBuilder.append("=");
+            chJsParamsBuilder.append(entry.getValue());
+            chJsParamsBuilder.append(";");
+        }
+        chJsParamsBuilder.deleteCharAt(chJsParamsBuilder.length() - 1);  //remove last ";"
+        return chJsParamsBuilder.toString();
+    }
+
+    /**
+     * Get media type by requesting _challenge.js
+     *
+     * @param chJsParams _challenge.js parameters
+     * @return Media type
+     * @throws IOException
+     * @throws PluginImplementationException
+     */
+    private String getMediaType(Map<String, String> chJsParams) throws IOException, PluginImplementationException {
+        HttpMethod httpMethod;
+        Matcher matcher;
+        String mediaType;
+        int mediaTypeCounter = 0;
+        do {
+            httpMethod = getSolveMediaGetMethod("_challenge.js?" + chJsParamsToString(chJsParams));
+            this.client.makeRequest(httpMethod, true);
+            matcher = PlugUtils.matcher("\"mediatype\"\\s*:\\s*\"(.+?)\",", this.client.getContentAsString());
+            if (!matcher.find()) {
+                logger.warning(this.client.getContentAsString());
+                throw new PluginImplementationException("Captcha media type not found");
+            }
+            mediaType = matcher.group(1);
+            logger.info("ATTEMPT " + mediaTypeCounter + ", mediaType = " + mediaType);
+
+            chJsParams.put("c", String.format(C_FORMAT, getFwv()));
+            chJsParams.put("r", String.valueOf(Math.random()));
+        }
+        while (!mediaType.equals("img") && !mediaType.equals("html") && !mediaType.equals("imgmap") && (mediaTypeCounter++ < 10)); //anticipate mediaType!=(img|html)
+        return mediaType;
+    }
+
+    /**
+     * Get challenge from _challenge.js content
+     *
+     * @param chJsContent _challenge.js content
+     * @return challenge
+     * @throws PluginImplementationException
+     */
+    private String getChallenge(String chJsContent) throws PluginImplementationException {
+        final Matcher matcher = PlugUtils.matcher("\"chid\"\\s*:\\s*\"(.+?)\",", chJsContent);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Captcha challenge ID not found");
+        }
+        return matcher.group(1);
+    }
+
+    private String getFwv() {
+        final StringBuilder fwv = new StringBuilder(18);
+        fwv.append("fwv/");
+        for (int i = 0; i < 6; i++) {
+            fwv.append(Character.toChars(Math.random() > 0.2 ? random.nextInt(26) + 65 : random.nextInt(26) + 97));
+        }
+        //fwv.append(findString("fwv/(.+?)'", "FWV", content));
+        fwv.append(".");
+        for (int i = 0; i < 4; i++) {
+            fwv.append(Character.toChars(random.nextInt(26) + 97));
+        }
+        fwv.append(random.nextInt(80) + 10);
+        return fwv.toString();
     }
 
     private BufferedImage drawHTMLCaptcha(final String content, final int width, final int height, final Color color) {
@@ -228,8 +317,17 @@ public class SolveMediaCaptcha {
         return matcher.group(1);
     }
 
+    /**
+     * Get HttpMethod with default header
+     *
+     * @param action Request URL minus base URL. Base URL is set according to secure flag.
+     * @return HttpMethod with default header
+     * @throws BuildMethodException
+     */
     private HttpMethod getSolveMediaGetMethod(String action) throws BuildMethodException {
+        final String baseUrl = secure ? SOLVEMEDIA_CAPTCHA_SECURE_URL : SOLVEMEDIA_CAPTCHA_URL;
         final HttpMethod method = new MethodBuilder(client)
+                .setBaseURL(baseUrl)
                 .setAction(action)
                 .toGetMethod();
         method.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20100101 Firefox/17.0");
@@ -240,6 +338,14 @@ public class SolveMediaCaptcha {
         method.removeRequestHeader("Keep-Alive");
         method.removeRequestHeader("Referer");
         return method;
+    }
+
+    public void setSecure(boolean secure) {
+        this.secure = secure;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
     }
 
     public String getChallenge() {

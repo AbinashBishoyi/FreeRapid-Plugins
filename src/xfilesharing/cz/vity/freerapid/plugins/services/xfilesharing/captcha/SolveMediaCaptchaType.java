@@ -31,6 +31,7 @@ public class SolveMediaCaptchaType implements CaptchaType {
         }
         final String captchaKey = captchaKeyMatcher.group(1);
         final SolveMediaCaptcha solveMediaCaptcha = new SolveMediaCaptcha(captchaKey, client, captchaSupport);
+        solveMediaCaptcha.askForCaptcha();
         solveMediaCaptcha.modifyResponseMethod(methodBuilder);
     }
 

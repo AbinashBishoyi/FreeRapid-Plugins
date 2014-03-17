@@ -1,11 +1,13 @@
 package cz.vity.freerapid.plugins.services.freefolder;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
@@ -36,8 +38,8 @@ class FreeFolderFileRunner extends AbstractRunner {
         //">LUH_199_midres.zip</a> | 70.67 Mb            <
         String smallNameContent = PlugUtils.getStringBetween(content, fileURL, "/td>");
 
-        PlugUtils.checkName(httpFile, smallNameContent, "\">", "</a>");//TODO
-        PlugUtils.checkFileSize(httpFile, content, " | ", "<");//TODO
+        PlugUtils.checkName(httpFile, smallNameContent, "\">", "</a>");
+        PlugUtils.checkFileSize(httpFile, content, " | ", "<");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -66,11 +68,9 @@ class FreeFolderFileRunner extends AbstractRunner {
             throw new PluginImplementationException();//some unknown problem
         }
 
-
         //get Wait Time
         //timeleft = 61
-        String waitString = PlugUtils.getStringBetween(getContentAsString(), "timeleft =", ";");
-        int waitTime = new Integer(waitString);
+        final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "timeleft =", ";");
         downloadTask.sleep(waitTime);
 
         //logger.info(getContentAsString());
@@ -118,7 +118,7 @@ class FreeFolderFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {//TODO
+        if (contentAsString.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

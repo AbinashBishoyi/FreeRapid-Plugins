@@ -19,10 +19,15 @@ import java.util.regex.Matcher;
  */
 class MegaVideoFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(MegaVideoFileRunner.class.getName());
+    private String HTTP_SITE = "megavideo.com";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+
+        if (fileURL.contains("megaporn"))
+            HTTP_SITE = "megaporn.com/video";
+
         final GetMethod method = getGetMethod(getXmlUrl(fileURL));
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -37,6 +42,10 @@ class MegaVideoFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+
+        if (fileURL.contains("megaporn"))
+            HTTP_SITE = "megaporn.com/video";
+
         final GetMethod method = getGetMethod(getXmlUrl(fileURL));
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -51,7 +60,7 @@ class MegaVideoFileRunner extends AbstractRunner {
 
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction("http://www" + s + ".megavideo.com/files/" + decrypt(un, k1, k2) + "/")
+                    .setAction("http://www" + s + "." + HTTP_SITE + "/files/" + decrypt(un, k1, k2) + "/")
                     .toGetMethod();
 
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -81,7 +90,7 @@ class MegaVideoFileRunner extends AbstractRunner {
     }
 
     private String getXmlUrl(final String url) {
-        return "http://www.megavideo.com/xml/videolink.php?" + url.substring(url.lastIndexOf("v="));
+        return "http://www." + HTTP_SITE + "/xml/videolink.php?" + url.substring(url.lastIndexOf("v="));
     }
 
     /**

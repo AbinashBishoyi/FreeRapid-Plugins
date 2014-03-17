@@ -26,6 +26,13 @@ class RockDizFileFileRunner extends XFileSharingRunner {
                 PlugUtils.checkName(httpFile, content, "<b>Filename:</b>", "<br>");
             }
         });
+
+        fileNameHandlers.add(0, new FileNameHandler() {
+            @Override
+            public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
+                PlugUtils.checkName(httpFile, content, "downloadtitle\"><h1>", "</h1>");
+            }
+        });
         return fileNameHandlers;
     }
 

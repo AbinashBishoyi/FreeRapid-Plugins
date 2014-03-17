@@ -5,7 +5,7 @@
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?ziddu\.com/download.*"/>
         <attribute id="minver" value="0.8"/>
-        <attribute id="maxver" value="0.809"/>
+        <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="ziddu.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

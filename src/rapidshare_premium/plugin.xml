@@ -5,7 +5,7 @@
     <attributes>
         <attribute id="urlRegex" value="http://((www\.)|(rs[0-9]+\.))?rapidshare\.com/files/[0-9]+/.*"/>
         <attribute id="minver" value="0.8"/>
-        <attribute id="maxver" value="0.809"/>
+        <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="rapidshare.com"/>
         <!-- ID pluginu, pro ktere je to premium -->
         <attribute id="premium" value="true"/>

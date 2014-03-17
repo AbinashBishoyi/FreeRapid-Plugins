@@ -33,10 +33,10 @@ class UltraMegabitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("<h4><[^>]+>\\s*(.+?)\\s*<[^>]+>(.+?)</span>", content);
+        final Matcher match = PlugUtils.matcher("<h4><[^>]+>\\s*(.+?)\\s*\\((.+?)\\)<", content);
         if (!match.find())
             throw new PluginImplementationException("File Name/Size not found");
-        httpFile.setFileName(match.group(1));
+        httpFile.setFileName(match.group(1).trim());
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -52,7 +52,7 @@ class UltraMegabitFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setActionFromFormWhereActionContains("file/download", true)
+                    .setActionFromFormWhereTagContains("download_recaptcha", true)
                     .toPostMethod();
 
             //here is the download link extraction

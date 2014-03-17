@@ -18,7 +18,9 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.indowebster.com/download/files/lm_indofiles_org_tuneuputilities2012_with_key"));
+            //httpFile.setNewURL(new URL("http://www.indowebster.com/download/files/lm_indofiles_org_tuneuputilities2012_with_key"));
+            //httpFile.setNewURL(new URL("http://www.indowebster.com/idfl_us_bluecrush_bm72_nitro_part1.html"));
+            httpFile.setNewURL(new URL("http://www.indowebster.com/download/files/tendres_cousines1980_avi_001")); //pass : Tangerine
 
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

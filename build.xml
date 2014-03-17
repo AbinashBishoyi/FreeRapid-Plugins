@@ -67,6 +67,7 @@
         <ant dir="${src.dir}/xtraupload/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/iskladka/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/ulozto/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/loadto/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

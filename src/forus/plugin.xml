@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin id="4us.to" version="1.0.0" vendor="Javi"
-        class="cz.vity.freerapid.plugins.services.forus.forusServiceImpl">
+        class="cz.vity.freerapid.plugins.services.forus.ForusServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?4us\.to/download.php.+"/>
         <attribute id="minver" value="0.83"/>

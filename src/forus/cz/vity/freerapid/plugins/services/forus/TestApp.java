@@ -21,7 +21,7 @@ public class TestApp extends PluginDevApplication {
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final forusServiceImpl service = new forusServiceImpl(); //instance of service - of our plugin
+            final ForusServiceImpl service = new ForusServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

@@ -39,12 +39,15 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         final List<FileNameHandler> fileNameHandlers = new LinkedList<FileNameHandler>();
         fileNameHandlers.add(new FileNameHandlerA());
         fileNameHandlers.add(new FileNameHandlerB());
+        fileNameHandlers.add(new FileNameHandlerC());
         return fileNameHandlers;
     }
 
     protected List<FileSizeHandler> getFileSizeHandlers() {
         final List<FileSizeHandler> fileSizeHandlers = new LinkedList<FileSizeHandler>();
         fileSizeHandlers.add(new FileSizeHandlerA());
+        fileSizeHandlers.add(new FileSizeHandlerB());
+        fileSizeHandlers.add(new FileSizeHandlerC());
         return fileSizeHandlers;
     }
 

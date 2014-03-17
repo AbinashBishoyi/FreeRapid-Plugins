@@ -45,10 +45,10 @@ class EasyShareRunner {
         getMethod.setFollowRedirects(true);
         if (client.makeRequest(getMethod) == HttpStatus.SC_OK) {
 
-            if(!(client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))) {
-                  checkProblems();
-                  logger.warning(client.getContentAsString());
-                  throw new PluginImplementationException("Plugin implementation problem");
+            if (!(client.getContentAsString().contains("Please enter") || client.getContentAsString().contains("w="))) {
+                checkProblems();
+                logger.warning(client.getContentAsString());
+                throw new PluginImplementationException("Plugin implementation problem");
 
             }
 
@@ -61,7 +61,7 @@ class EasyShareRunner {
                 } else logger.warning("File name was not found" + client.getContentAsString());
 
                 if (client.getContentAsString().contains("w=")) {
-                    matcher = PlugUtils.matcher("w='([0-9]*?)';", client.getContentAsString());
+                    matcher = PlugUtils.matcher("w='([0-9]+?)';", client.getContentAsString());
                     if (matcher.find()) {
                         downloader.sleep(Integer.parseInt(matcher.group(1)));
                     } else {

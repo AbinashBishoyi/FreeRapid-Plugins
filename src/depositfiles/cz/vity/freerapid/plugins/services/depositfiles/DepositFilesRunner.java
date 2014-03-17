@@ -74,7 +74,7 @@ class DepositFilesRunner {
 
             }
             //        <span id="download_waiter_remain">60</span>
-            matcher = Pattern.compile("download_waiter_remain\">([0-9]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
+            matcher = Pattern.compile("download_waiter_remain\">([0-9]+)", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (!matcher.find()) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
@@ -131,7 +131,7 @@ class DepositFilesRunner {
         if (matcher.find()) {
             throw new ServiceConnectionProblemException(String.format("<b>Your IP is already downloading a file from our system.</b><br>You cannot download more than one file in parallel."));
         }
-        matcher = Pattern.compile("Please try in\\s*([0-9]*) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(client.getContentAsString());
+        matcher = Pattern.compile("Please try in\\s*([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(client.getContentAsString());
         if (matcher.find()) {
             throw new YouHaveToWaitException("You used up your limit for file downloading!", Integer.parseInt(matcher.group(1)) * 60 + 20);
         }

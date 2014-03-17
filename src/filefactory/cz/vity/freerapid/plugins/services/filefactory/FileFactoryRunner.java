@@ -213,11 +213,11 @@ class FileFactoryRunner {
 
     private boolean checkLimit(String contentAsString) throws YouHaveToWaitException {
         if (contentAsString.contains("for free users.  Please wait")) {
-            Matcher matcher = Pattern.compile("for free users.  Please wait ([0-9]*?) minutes", Pattern.MULTILINE).matcher(contentAsString);
+            Matcher matcher = Pattern.compile("for free users.  Please wait ([0-9]+?) minutes", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Limit for free users reached", Integer.parseInt(matcher.group(1)) * 60);
             }
-            matcher = Pattern.compile("for free users.  Please wait ([0-9]*?) seconds", Pattern.MULTILINE).matcher(contentAsString);
+            matcher = Pattern.compile("for free users.  Please wait ([0-9]+?) seconds", Pattern.MULTILINE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Limit for free users reached", Integer.parseInt(matcher.group(1)) + 1);
             }

@@ -33,7 +33,8 @@ class MegauploadRunner {
         client = downloader.getClient();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         final String fileURL = httpFile.getFileUrl().toString();
-        if(httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader") ) HTTP_SITE = "http://www.megarotic.com";
+        if (httpFile.getFileUrl().getHost().contains("megarotic") || httpFile.getFileUrl().getHost().contains("sexuploader"))
+            HTTP_SITE = "http://www.megarotic.com";
         logger.info("Starting download in TASK " + fileURL);
 
         final GetMethod getMethod = client.getGetMethod(fileURL);
@@ -49,7 +50,7 @@ class MegauploadRunner {
             }
             matcher = Pattern.compile("Filename:(</font>)?</b> ([^<]*)", Pattern.MULTILINE).matcher(client.getContentAsString());
             if (matcher.find()) {
-                final String fn =   PlugUtils.unescapeHtml(matcher.group(2));
+                final String fn = PlugUtils.unescapeHtml(matcher.group(2));
                 logger.info("File name " + fn);
                 httpFile.setFileName(fn);
             } else logger.warning("File name was not found" + client.getContentAsString());
@@ -58,7 +59,7 @@ class MegauploadRunner {
             }
 
             if (client.getContentAsString().contains("Click here to download")) {
-                matcher = Pattern.compile("=([0-9]*);[^/w]*function countdown", Pattern.MULTILINE).matcher(client.getContentAsString());
+                matcher = Pattern.compile("=([0-9]+);[^/w]*function countdown", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (!matcher.find()) {
                     throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
                 }

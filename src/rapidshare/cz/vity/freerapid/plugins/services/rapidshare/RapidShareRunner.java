@@ -64,7 +64,7 @@ class RapidShareRunner {
             final PostMethod postMethod = client.getPostMethod(s);
             postMethod.addParameter("dl.start", "Free");
             if (client.makeRequest(postMethod) == HttpStatus.SC_OK) {
-                matcher = Pattern.compile("var c=([0-9]*);", Pattern.MULTILINE).matcher(client.getContentAsString());
+                matcher = Pattern.compile("var c=([0-9]+);", Pattern.MULTILINE).matcher(client.getContentAsString());
                 if (!matcher.find()) {
                     checkProblems();
                     logger.log(Level.WARNING, client.getContentAsString());
@@ -108,24 +108,24 @@ class RapidShareRunner {
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException {
         Matcher matcher;//Your IP address XXXXXX is already downloading a file.  Please wait until the download is completed.
         final String contentAsString = client.getContentAsString();
+        if (contentAsString.contains("You have reached the")) {
+            matcher = Pattern.compile("try again in about ([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
+            if (matcher.find()) {
+                throw new YouHaveToWaitException("You have reached the download-limit for free-users.", Integer.parseInt(matcher.group(1)) * 60 + 10);
+            }
+            throw new ServiceConnectionProblemException("<b>RapidShare error:</b><br>You have reached the download-limit for free-users.");
+        }
         matcher = Pattern.compile("IP address (.*?) is already", Pattern.MULTILINE).matcher(contentAsString);
         if (matcher.find()) {
             final String ip = matcher.group(1);
             throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Your IP address %s is already downloading a file. <br>Please wait until the download is completed.", ip));
         }
         if (contentAsString.contains("Currently a lot of users")) {
-            matcher = Pattern.compile("Please try again in ([0-9]*) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
+            matcher = Pattern.compile("Please try again in ([0-9]+) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
             if (matcher.find()) {
                 throw new YouHaveToWaitException("Currently a lot of users are downloading files.", Integer.parseInt(matcher.group(1)) * 60 + 20);
             }
-            throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>Currently a lot of users are downloading files."));
-        }
-        if (contentAsString.contains("You have reached the")) {
-            matcher = Pattern.compile("try again in about ([0-9]*) minute", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher(contentAsString);
-            if (matcher.find()) {
-                throw new YouHaveToWaitException("You have reached the download-limit for free-users.", Integer.parseInt(matcher.group(1)) * 60 + 10);
-            }
-            throw new ServiceConnectionProblemException(String.format("<b>RapidShare error:</b><br>You have reached the download-limit for free-users."));
+            throw new ServiceConnectionProblemException("<b>RapidShare error:</b><br>Currently a lot of users are downloading files.");
         }
     }
 

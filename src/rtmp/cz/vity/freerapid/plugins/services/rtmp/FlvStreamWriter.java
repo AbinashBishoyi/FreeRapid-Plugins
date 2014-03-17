@@ -84,7 +84,7 @@ class FlvStreamWriter implements OutputWriter {
             Packet.Type packetType = Packet.Type.parseByte(data.get());
             int size = Utils.readInt24(data);
             int timestamp = Utils.readInt24(data);
-            status.updateVideoChannelTime(timestamp);
+            status.updateChannelTime(timestamp);
             data.getInt(); // 4 bytes of zeros (reserved)
             byte[] bytes = new byte[size];
             data.get(bytes);

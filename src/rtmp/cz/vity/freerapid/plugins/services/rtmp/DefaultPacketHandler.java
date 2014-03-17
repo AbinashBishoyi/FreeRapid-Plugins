@@ -46,9 +46,10 @@ class DefaultPacketHandler implements PacketHandler {
                         session.send(pong);
                     }
                 } else if (type == 31) {
-                    logger.info("Server sent BufferEmpty, sending pause");
+                    logger.fine("Server sent BufferEmpty");
                     if (session.getPauseMode() == PauseMode.PLAYING) {
-                        final int time = session.getOutputWriter().getStatus().getVideoChannelTime();
+                        logger.info("Sending pause");
+                        final int time = session.getOutputWriter().getStatus().getChannelTime();
                         session.setPauseTimestamp(time);
                         session.send(new Invoke("pause", 8, null, true, time));
                         session.setPauseMode(PauseMode.PAUSING);
@@ -58,7 +59,7 @@ class DefaultPacketHandler implements PacketHandler {
                         session.setPauseMode(PauseMode.RESUMING);
                     }
                 } else if (type == 32) {
-                    logger.info("Server sent BufferReady");
+                    logger.fine("Server sent BufferReady");
                 } else if (type == 1) {
                     logger.info("Server sent Stream EOF");
                     if (session.getPauseMode() == PauseMode.PAUSING) {

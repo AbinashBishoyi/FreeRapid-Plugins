@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+import static cz.vity.freerapid.plugins.services.rtmp.Packet.Type.AUDIO_DATA;
 import static cz.vity.freerapid.plugins.services.rtmp.Packet.Type.VIDEO_DATA;
 
 /**
@@ -15,7 +16,7 @@ class WriterStatus {
     private static final Logger logger = Logger.getLogger(WriterStatus.class.getName());
 
     private Map<Integer, Integer> channelTimeMap = new ConcurrentHashMap<Integer, Integer>();
-    private int videoChannel = -1;
+    private int mediaChannel;
     private int seekTime;
     private long lastUpdateTime;
     private RtmpSession session;
@@ -26,7 +27,7 @@ class WriterStatus {
     }
 
     public void logFinalVideoDuration() {
-        Integer time = channelTimeMap.get(videoChannel);
+        Integer time = channelTimeMap.get(mediaChannel);
         if (time == null) {
             logger.warning("video duration is null");
             return;
@@ -41,9 +42,9 @@ class WriterStatus {
             logger.fine("first packet!");
             channelTime = seekTime;
         }
-        if (videoChannel == -1 && header.getPacketType() == VIDEO_DATA) {
-            videoChannel = channelId;
-            logger.info("video channel id is: " + videoChannel);
+        if (mediaChannel == 0 && (header.getPacketType() == VIDEO_DATA || header.getPacketType() == AUDIO_DATA)) {
+            mediaChannel = channelId;
+            logger.info("media channel id is: " + mediaChannel);
         }
         if (header.isRelative()) {
             channelTime = channelTime + header.getTime();
@@ -52,25 +53,25 @@ class WriterStatus {
         }
         channelTimeMap.put(channelId, channelTime);
         if (header.getPacketType() == VIDEO_DATA) {
-            logVideoProgress(channelTime);
+            logProgress(channelTime);
         }
         return channelTime;
     }
 
-    public void updateVideoChannelTime(int time) {
-        if (videoChannel == -1) {
-            //throw new RuntimeException("video channel id not initialized!");  //commented, so audio-only RTMP stream can get through
+    public void updateChannelTime(int time) {
+        if (mediaChannel == 0) {
+            throw new RuntimeException("media channel id not initialized!");
         }
-        channelTimeMap.put(videoChannel, time); // absolute
-        logVideoProgress(time);
+        channelTimeMap.put(mediaChannel, time); // absolute
+        logProgress(time);
     }
 
-    public int getVideoChannelTime() {
-        Integer time = channelTimeMap.get(videoChannel);
+    public int getChannelTime() {
+        Integer time = channelTimeMap.get(mediaChannel);
         return time == null ? 0 : time;
     }
 
-    private void logVideoProgress(int time) {
+    private void logProgress(int time) {
         logger.fine("time: " + time + ", seek: " + seekTime);
         long currentTime = System.currentTimeMillis();
         if (session.getHttpFile() != null && currentTime >= lastUpdateTime + 1000) {

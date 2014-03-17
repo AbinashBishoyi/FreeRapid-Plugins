@@ -83,9 +83,9 @@ class ForSharedRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws Exception {
         if (fileURL.contains("/dir/")) {
-            PlugUtils.checkName(httpFile, getContentAsString(), "<b style=\"font-size:larger;\">\n", "\n</b>");
+            PlugUtils.checkName(httpFile, getContentAsString(), "<b style=\"font-size:larger;\">", "</b>");
         } else {
-            PlugUtils.checkName(httpFile, getContentAsString(), "download ", "</title>");
+            PlugUtils.checkName(httpFile, getContentAsString(), "<title> ", " - 4shared");
 
             final Matcher size = getMatcherAgainstContent("Size:</b></td>\\s+?<td class=\"finforight\">([^<>]+?)</td>");
             if (!size.find()) throw new PluginImplementationException("File size not found");

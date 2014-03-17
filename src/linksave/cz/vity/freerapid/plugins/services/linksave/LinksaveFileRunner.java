@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.awt.image.BufferedImage;
 import java.net.URI;
@@ -33,7 +32,7 @@ class LinksaveFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".linksave.in", "Linksave_Language", "english", "/", 86400, false));
-        final GetMethod method = getGetMethod(fileURL);
+        final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
 
@@ -112,7 +111,7 @@ class LinksaveFileRunner extends AbstractRunner {
                 httpFile.setDownloaded(size);
                 getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
             } else {
-                //this might happen eg. if only containers are available
+                //this might happen e.g. if only containers are available
                 throw new NotRecoverableDownloadException("No download links found");
             }
         } else {
@@ -148,12 +147,16 @@ class LinksaveFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(method)) throw new ServiceConnectionProblemException();
         }
 
-        final String src = PlugUtils.getStringBetween(getContentAsString(), "<iframe src=\"", "\"");
+        final String redirect = method.getURI().toString();
+        if (!redirect.matches("http://(?:www\\.)?linksave\\.in/.+")) {
+            return redirect;
+        }
 
+        final String src = PlugUtils.getStringBetween(getContentAsString(), "<iframe src=\"", "\"");
         return PlugUtils.unescapeHtml(src);
     }
 
-    private String decrypt(String m) {
+    private static String decrypt(String m) {
         String c = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
         String b = "";
         int i = 0;

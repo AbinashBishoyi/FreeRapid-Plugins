@@ -10,10 +10,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class LinksaveServiceImpl extends AbstractFileShareService {
 
+    @Override
     public String getName() {
         return "linksave.in";
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 9;
     }

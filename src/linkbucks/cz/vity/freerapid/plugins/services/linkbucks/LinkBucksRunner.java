@@ -28,10 +28,10 @@ class LinkBucksRunner extends AbstractRunner {
             final String content = getContentAsString();
 
             final String s;
-            if (content.contains("Skip This Page")) {
-                s = getMethodBuilder().setActionFromAHrefWhereATagContains("Skip This Page").getAction();
-            } else if (content.contains("frame id=\"frame2\"")) {
-                s = getMethodBuilder().setActionFromIFrameSrcWhereTagContains("frame2").getAction();
+            if (content.contains("TargetUrl = '")) {
+                s = getMethodBuilder().setActionFromTextBetween("TargetUrl = '", "'").getAction();
+            } else if (content.contains("frame id=\"content\"")) {
+                s = getMethodBuilder().setActionFromIFrameSrcWhereTagContains("id=\"content\"").getAction();
             } else {
                 throw new PluginImplementationException("Redirect URL not found");
             }
@@ -49,7 +49,7 @@ class LinkBucksRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Unable to find site")) {
-            throw new URLNotAvailableAnymoreException("Unable to find site's URL to redirect to.");
+            throw new URLNotAvailableAnymoreException("Unable to find site's URL to redirect to");
         }
     }
 

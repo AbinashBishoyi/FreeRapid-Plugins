@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.letitbit;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
 import cz.vity.freerapid.plugins.services.letitbit.captcha.CaptchaReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -11,7 +14,6 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
@@ -56,9 +58,7 @@ class LetitbitRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
 
-            final Matcher matcher = getMatcherAgainstContent("(?is)<div[^<>]*?id=\"(?:dvifree|content_ifree)\"[^<>]*?>.+?</form>");
-            if (!matcher.find()) throw new PluginImplementationException("Free download form not found");
-            final HttpMethod httpMethod2 = getMethodBuilder(matcher.group()).setReferer(fileURL).setActionFromFormByIndex(1, true).toPostMethod();
+            final HttpMethod httpMethod2 = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("ifree_form", true).toPostMethod();
             if (!makeRedirectedRequest(httpMethod2)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();

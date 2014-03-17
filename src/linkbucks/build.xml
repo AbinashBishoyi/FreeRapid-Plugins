@@ -2,7 +2,7 @@
 <project name="LinkBucks Plugin" default="all" basedir=".">
     <property name="application" value="linkbucks"/>
 
-    <property name="version" value="1.00"/>
+    <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="linkbucks.jar"/>

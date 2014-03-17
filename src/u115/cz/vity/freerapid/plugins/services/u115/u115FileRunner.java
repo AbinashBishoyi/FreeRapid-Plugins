@@ -21,21 +21,21 @@ import java.util.regex.Matcher;
 class u115FileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(u115FileRunner.class.getName());
 
-
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
-        } else
-            throw new PluginImplementationException();
+            checkNameAndSize(getContentAsString());
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        //Matcher matcher=PlugUtils.matcher("<h2 class=\"nowrap file-name.+?>\\s*(.+?)\\s*<",content);
-        PlugUtils.checkName(httpFile, content, "<title>", " - 115\u7F51\u7EDCU\u76D8");//TODO
+        PlugUtils.checkName(httpFile, content, "<title>", " - 115\u7F51\u7EDCU\u76D8");
         PlugUtils.checkFileSize(httpFile, content, "\">\u6587\u4EF6\u5927\u5C0F\uFF1A", "</td>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -44,28 +44,22 @@ class u115FileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            Matcher matcher=PlugUtils.matcher("^<a href=\"([^\"]+?)\" onclick=\"sendMnvdToServer\\(\\);",contentAsString);
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            final String contentAsString = getContentAsString();
+            checkProblems();
+            checkNameAndSize(contentAsString);
 
-
-            if(matcher.find()){
-                logger.warning(matcher.group(1).trim());
-                final HttpMethod httpMethod = getGetMethod(matcher.group(1).trim());
-                //here is the download link extraction
+            final Matcher matcher = getMatcherAgainstContent("href=\"(http://.+?)\" onclick=\"sendMnvdToServer\\(\\);\"");
+            if (matcher.find()) {
+                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1)).toGetMethod();
                 if (!tryDownloadAndSaveFile(httpMethod)) {
-                    checkProblems();//if downloading failed
-                    logger.warning(getContentAsString());//log the info
-                    throw new PluginImplementationException();//some unknown problem
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
                 }
-            }else{
-                throw new PluginImplementationException();    
+            } else {
+                throw new PluginImplementationException("Download link not found");
             }
-
-
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -74,8 +68,8 @@ class u115FileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {//TODO
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (contentAsString.contains("id=\"error_message\"") || contentAsString.contains("\u8BBF\u95EE\u7684\u9875\u9762\u4E0D\u5B58\u5728")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 

@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
  * @author Kajda
  */
 class HotfileFileRunner extends AbstractRunner {
-    private static final Logger LOGGER = Logger.getLogger(HotfileFileRunner.class.getName());
+    private static final Logger logger = Logger.getLogger(HotfileFileRunner.class.getName());
     private static final String SERVICE_WEB = "http://hotfile.com";
 
     @Override
@@ -35,7 +35,7 @@ class HotfileFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        LOGGER.info("Starting download in TASK " + fileURL);
+        logger.info("Starting download in TASK " + fileURL);
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
@@ -84,21 +84,21 @@ class HotfileFileRunner extends AbstractRunner {
 
         if (matcher.find()) {
             final String fileName = matcher.group(1).trim();
-            LOGGER.info("File name " + fileName);
+            logger.info("File name " + fileName);
             httpFile.setFileName(fileName);
 
             matcher = getMatcherAgainstContent("\\((.+?)\\)</h2><(?:h3|script)");
 
             if (matcher.find()) {
                 final long fileSize = PlugUtils.getFileSizeFromString(matcher.group(1));
-                LOGGER.info("File size " + fileSize);
+                logger.info("File size " + fileSize);
                 httpFile.setFileSize(fileSize);
             } else {
-                LOGGER.warning("File size was not found");
+                logger.warning("File size was not found");
                 throw new PluginImplementationException();
             }
         } else {
-            LOGGER.warning("File name was not found");
+            logger.warning("File name was not found");
             throw new PluginImplementationException();
         }
 
@@ -124,7 +124,7 @@ class HotfileFileRunner extends AbstractRunner {
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
             checkAllProblems();
-            LOGGER.warning(getContentAsString());
+            logger.warning(getContentAsString());
             throw new IOException("File input stream is empty");
         }
     }

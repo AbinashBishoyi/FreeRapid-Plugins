@@ -6,11 +6,13 @@
         <attribute id="urlRegex" value="http://((www\.)|(rs[0-9]+\.))?rapidshare\.com/files/[0-9]+/.*"/>
         <attribute id="minver" value="0.7"/>
         <attribute id="maxver" value="0.799"/>
-        <attribute id="services" value="rapidshare.com"/> 
+        <attribute id="services" value="rapidshare.com"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
 
     <runtime>
         <library id="rapidshare.com" path="/" type="code"/>
+        <library id="res" path="/resources" type="resources"/>
     </runtime>
 </plugin>

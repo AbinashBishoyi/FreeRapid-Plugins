@@ -26,6 +26,6 @@ public class RapidShareServiceImpl extends AbstractFileShareService {
 
     @Override
     protected PluginRunner getPluginRunnerInstance() {
-        return new RapidShareRunner(this);
+        return new RapidShareRunner();
     }
 }

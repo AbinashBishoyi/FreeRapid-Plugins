@@ -1,9 +1,9 @@
 package cz.vity.freerapid.plugins.services.forshared;
 
 import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Alex, ntoskrnl
@@ -58,7 +59,7 @@ class ForSharedRunner extends AbstractRunner {
                 parseWebsite();
                 httpFile.getProperties().put("removeCompleted", true);
             } else {
-                method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download Now").toGetMethod();
+                method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
                 if (makeRedirectedRequest(method)) {
                     checkProblems();
                     method = getMethodBuilder().setReferer(method.getURI().toString()).setActionFromAHrefWhereATagContains("Download file").toGetMethod();
@@ -83,9 +84,11 @@ class ForSharedRunner extends AbstractRunner {
             PlugUtils.checkName(httpFile, getContentAsString(), "<b style=\"font-size:larger;\">", "</b>");
         } else {
             PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- 4shared");
-            final Matcher size = getMatcherAgainstContent("<span title=\"Size[^\"]*?\"><b>([^<>]+?)</b></span>");
-            if (!size.find()) throw new PluginImplementationException("File size not found");
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1).replace(",", "")));
+            final Matcher matcher = Pattern.compile("\"fileInfo.+?([\\d,\\.]+ (?:KB|MB|GB))", Pattern.DOTALL).matcher(getContentAsString());
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File size not found");
+            }
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).replace(",","")));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

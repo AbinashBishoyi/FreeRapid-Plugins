@@ -25,13 +25,23 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=ZiH6CDl5kII")); //age verification
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=giHIJgJS2sE")); //age & controversy verification
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=UUv3nmgyia2M2FU2TAIRXSLw&feature=plcp")); //user uploaded video
-            httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=PLE963AD215F0C4BE5"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=PLE963AD215F0C4BE5")); //playlist
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=FL2pmfLm7iq6Ov1UwYrWYkZA"));// favorite list
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=Phl57XmsPQ8"));
+            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=PM4kLnRr0ZI"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final YouTubeServiceImpl service = new YouTubeServiceImpl(); //instance of service - of our plugin
+
+            YouTubeSettingsConfig config = new YouTubeSettingsConfig();
+            config.setQualitySetting(4);
+            config.setContainer(1);
+            config.setReversePlaylistOrder(false);
+            config.setDownloadSubtitles(false);
+            service.setConfig(config);
+
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

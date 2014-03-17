@@ -77,12 +77,20 @@ public class YouTubeServiceImpl extends AbstractFileShareService {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new YouTubeSettingsConfig();
                 config.setQualitySetting(1);
+                config.setContainer(0); //any container
                 config.setReversePlaylistOrder(false);
+                config.setDownloadSubtitles(false);
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, YouTubeSettingsConfig.class);
             }
         }
 
         return config;
+    }
+
+    public void setConfig(final YouTubeSettingsConfig config) {
+        synchronized (YouTubeServiceImpl.class) {
+            this.config = config;
+        }
     }
 }

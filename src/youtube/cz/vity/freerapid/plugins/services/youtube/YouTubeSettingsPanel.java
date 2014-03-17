@@ -20,13 +20,18 @@ public class YouTubeSettingsPanel extends JPanel {
     private void initPanel() {
         final String[] qualityStrings = {"Highest available", "1080p (HD)", "720p (HD)", "480p", "360p", "240p", "Lowest available"};
         final int[] qualityIndexMap = {4, 6, 5, 3, 2, 1, 0}; //Due to quality settings in older versions, 4 is Highest available
+        final String[] containerStrings = {"Any container", "MP4", "FLV", "WebM", "3GP"};
 
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
         final JComboBox qualityList = new JComboBox(qualityStrings);
+        final JLabel containerLabel = new JLabel("Preferred container:");
+        final JComboBox containerList = new JComboBox(containerStrings);
         final JCheckBox orderCheckBox = new JCheckBox("Sort by newest first when adding links from user pages");
         final JCheckBox subtitlesCheckBox = new JCheckBox("Download subtitles whenever available");
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
+        containerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        containerList.setAlignmentX(Component.LEFT_ALIGNMENT);
         orderCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         subtitlesCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         int qs = config.getQualitySetting();
@@ -36,7 +41,7 @@ public class YouTubeSettingsPanel extends JPanel {
                 break;
             }
         }
-
+        containerList.setSelectedIndex(config.getContainer());
         orderCheckBox.setSelected(config.isReversePlaylistOrder());
         subtitlesCheckBox.setSelected(config.isDownloadSubtitles());
 
@@ -44,6 +49,12 @@ public class YouTubeSettingsPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 config.setQualitySetting(qualityIndexMap[qualityList.getSelectedIndex()]);
+            }
+        });
+        containerList.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setContainer(containerList.getSelectedIndex());
             }
         });
         orderCheckBox.addActionListener(new ActionListener() {
@@ -61,6 +72,8 @@ public class YouTubeSettingsPanel extends JPanel {
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(qualityLabel);
         add(qualityList);
+        add(containerLabel);
+        add(containerList);
         add(Box.createRigidArea(new Dimension(0, 15)));
         add(orderCheckBox);
         add(subtitlesCheckBox);

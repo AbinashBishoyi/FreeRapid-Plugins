@@ -176,6 +176,9 @@ class YouTubeRunner extends AbstractRtmpRunner {
         config = service.getConfig();
     }
 
+    //deprecated per http://en.wikipedia.org/wiki/YouTube#ref_media_type_table_note_1 :
+    //itag is an undocumented parameter used internally by YouTube to differentiate between quality profiles.
+    //Until December 2010, there was also a URL parameter known as fmt that allowed a user to force a profile using itag codes.
     private void checkFmtParameter() throws ErrorDuringDownloadingException {
         final Matcher matcher = PlugUtils.matcher("fmt=(\\d+)", fileURL.toLowerCase(Locale.ENGLISH));
 
@@ -184,7 +187,7 @@ class YouTubeRunner extends AbstractRtmpRunner {
 
             if (fmtCode.length() <= 2) {
                 fmt = Integer.parseInt(fmtCode);
-                setFileExtension(fmt);
+                fileExtension = getFileExtension(fmt);
             }
         } else {
             processConfig();
@@ -194,8 +197,8 @@ class YouTubeRunner extends AbstractRtmpRunner {
     private void processConfig() throws ErrorDuringDownloadingException {
         String fmt_map = PlugUtils.getStringBetween(getContentAsString(), "\"fmt_list\": \"", "\"").replace("\\/", "/");
         //Example: 37/1920x1080/9/0/115,22/1280x720/9/0/115,35/854x480/9/0/115,34/640x360/9/0/115,5/320x240/7/0/0
-        String[] formats = fmt_map.split(",");
-        String[][] formatParts = new String[formats.length][];
+        final String[] formats = fmt_map.split(",");
+        final String[][] formatParts = new String[formats.length][];
         for (int f = 0; f < formats.length; f++) {
             //Example: 37/1920x1080/9/0/115
             formatParts[f] = formats[f].split("/");
@@ -242,26 +245,53 @@ class YouTubeRunner extends AbstractRtmpRunner {
         }
 
         if (qualityIndex == -1) throw new PluginImplementationException("Cannot select quality");
+
+        final int selectedWidth = Integer.parseInt(formatParts[qualityIndex][1].split("x")[1]); //the concrete one, not just "Highest" (-1)..."Lowest" (-2)
+        final int container = config.getContainer();
+        if (container != 0) { //the preferred container is not "Any container"
+            final List<YouTubeContainer> ytcSet = new LinkedList<YouTubeContainer>();
+            for (int f = 0; f < formatParts.length; f++) {
+                String[] wh = formatParts[f][1].split("x");
+                int h = Integer.parseInt(wh[1]);
+                if (h == selectedWidth) {
+                    final YouTubeContainer ytc = new YouTubeContainer(Integer.parseInt(formatParts[f][0]), f);
+                    ytc.countWeight();
+                    ytcSet.add(ytc);
+                }
+            }
+            qualityIndex = Collections.max(ytcSet).getQualityIndex();
+        }
         logger.info("Quality to download: fmt" + formatParts[qualityIndex][0] + " " + formatParts[qualityIndex][1]);
         fmt = Integer.parseInt(formatParts[qualityIndex][0]);
-        setFileExtension(fmt);
+        fileExtension = getFileExtension(fmt);
     }
 
-    private void setFileExtension(int fmtCode) {
+    //source : http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
+    private String getFileExtension(int fmtCode) {
         switch (fmtCode) {
             case 13:
             case 17:
-                fileExtension = ".3gp";
-                break;
+            case 36:
+                return ".3gp";
             case 18:
             case 22:
             case 37:
             case 38:
-                fileExtension = ".mp4";
-                break;
+            case 82:
+            case 83:
+            case 84:
+            case 85:
+                return ".mp4";
             case 43:
-                fileExtension = ".webm";
-                break;
+            case 44:
+            case 45:
+            case 46:
+            case 100:
+            case 101:
+            case 102:
+                return ".webm";
+            default:
+                return ".flv";
         }
     }
 
@@ -464,4 +494,44 @@ class YouTubeRunner extends AbstractRtmpRunner {
         }
     }
 
+    private class YouTubeContainer implements Comparable<YouTubeContainer> {
+        private int fmt;
+        private int qualityIndex;
+        private int weight;
+
+        public YouTubeContainer(final int fmt, final int qualityIndex) {
+            this.fmt = fmt;
+            this.qualityIndex = qualityIndex;
+        }
+
+        public int getFmt() {
+            return fmt;
+        }
+
+        public int getQualityIndex() {
+            return qualityIndex;
+        }
+
+        public void countWeight() {
+            weight = 0;
+            final String fmtFileExtension = getFileExtension(fmt).toLowerCase();
+            if (config.getContainerExtension().toLowerCase().equals(fmtFileExtension)) {
+                weight = 100;
+            //mp4 > flv > webm > 3gp
+            } else if (fmtFileExtension.equals(".mp4")) {
+                weight = 50;
+            } else if (fmtFileExtension.equals(".flv")) {
+                weight = 49;
+            } else if (fmtFileExtension.equals(".webm")) {
+                weight = 48;
+            } else if (fmtFileExtension.equals(".3gp")) {
+                weight = 47;
+            }
+        }
+
+        @Override
+        public int compareTo(final YouTubeContainer that) {
+            return Integer.valueOf(this.weight).compareTo(that.weight);
+        }
+    }
 }

@@ -18,7 +18,7 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             httpFile.setNewURL(new URL("Insert your test URL Here"));//TODO
             //the way we connect to the internet
-            //final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
+            final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final #fullWithoutDot#ServiceImpl service = new #fullWithoutDot#ServiceImpl(); //instance of service - of our plugin

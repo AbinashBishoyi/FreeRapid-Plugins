@@ -212,6 +212,9 @@ class NetloadInRunner extends AbstractRunner {
         if (getContentAsString().contains("Sorry, we don't host the requested file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>Requested file isn't hosted. Probably was deleted.</b>"));
         }
+        if (getContentAsString().contains("unknown_file_data")) {
+            throw new URLNotAvailableAnymoreException("Unknown file data");
+        }
         if (getContentAsString().contains("currently in maintenance work")) {
             throw new ServiceConnectionProblemException("This Server is currently in maintenance work. Please try it in a few hours again.");
         }

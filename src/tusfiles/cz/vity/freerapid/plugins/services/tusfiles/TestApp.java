@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.tusfiles;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
@@ -16,12 +17,13 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.tusfiles.net/lwdamznocyro"));
+            //  httpFile.setNewURL(new URL("http://www.tusfiles.net/lwdamznocyro"));
+            httpFile.setNewURL(new URL("https://www.tusfiles.net/hq9ggbkbosc2/easysup.rar"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final TusFilesServiceImpl service = new TusFilesServiceImpl(); //instance of service - of our plugin
-            /*
+            //*
             //we set premium account details
             final PremiumAccount config = new PremiumAccount();
             config.setUsername("****");

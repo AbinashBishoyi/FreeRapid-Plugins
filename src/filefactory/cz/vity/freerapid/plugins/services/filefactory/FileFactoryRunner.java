@@ -147,14 +147,11 @@ class FileFactoryRunner extends AbstractRunner {
             throw new YouHaveToWaitException(String.format("You (%s) have exceeded the download limit for free users", userIP), waitSeconds);
         }
         if (contentAsString.contains("You have recently started a download")) {
-            Matcher match = getMatcherAgainstContent("Please wait (.+?) (.+?) to download more files");
+            Matcher match = getMatcherAgainstContent("Please try again in <span>(.+?), (.+?).</span>");
             int waitSeconds = 2 * 60;
             if (match.find()) {
-                match = getMatcherAgainstContent("Please try again in <span>(.+?), (.+?).</span>");
-                if (match.find()) {
-                    waitSeconds = 60 * Integer.parseInt(match.group(1).split(" ")[0]);
-                    waitSeconds += Integer.parseInt(match.group(2).split(" ")[0]);
-                }
+                waitSeconds = 60 * Integer.parseInt(match.group(1).split(" ")[0]);
+                waitSeconds += Integer.parseInt(match.group(2).split(" ")[0]);
             }
             throw new YouHaveToWaitException(String.format("You have exceeded the download limit for free users"), waitSeconds);
         }

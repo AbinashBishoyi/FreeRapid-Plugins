@@ -188,8 +188,16 @@ class HuluFileRunner extends AbstractRtmpRunner {
         public int compareTo(Stream that) {
             final int i = Integer.valueOf(this.bitrate).compareTo(that.bitrate);
             //Prefer akamai streams as they are often faster and allow non-US IPs
-            if (i == 0 && "akamai".equals(this.cdn) && !"akamai".equals(that.cdn)) {
-                return 1;
+            if (i == 0) {
+                final boolean thisAkamai = "akamai".equals(this.cdn);
+                final boolean thatAkamai = "akamai".equals(that.cdn);
+                if (thisAkamai == thatAkamai) {
+                    return 0;
+                } else if (thisAkamai) {
+                    return 1;
+                } else {
+                    return -1;
+                }
             }
             return i;
         }

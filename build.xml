@@ -90,6 +90,7 @@
         <ant dir="${src.dir}/zippyshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/zshare/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/leteckaposta/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/bagruj/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

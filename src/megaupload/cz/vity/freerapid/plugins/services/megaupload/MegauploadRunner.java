@@ -12,6 +12,8 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,7 +78,7 @@ class MegauploadRunner {
                     throw new InterruptedException();
 
                 httpFile.setState(DownloadState.GETTING);
-                final GetMethod method = client.getGetMethod(s);
+                final GetMethod method = client.getGetMethod(encodeURL(s));
 
                 try {
                     final InputStream inputStream = client.makeFinalRequestForFile(method, httpFile);
@@ -169,6 +171,13 @@ class MegauploadRunner {
         return s;
     }
 
+    private String encodeURL(String s) throws UnsupportedEncodingException {
+        Matcher matcher = Pattern.compile("(.*/)([^/]*)$", Pattern.MULTILINE).matcher(s);
+        if (matcher.find()) {
+            return matcher.group(1) + URLEncoder.encode(matcher.group(2), "UTF-8");
+        }
+        return s;
+    }
 
     private String getParameter(String s, String contentAsString) throws PluginImplementationException {
         Matcher matcher = Pattern.compile("name=\"" + s + "\" value=\"([^\"]*)\"", Pattern.MULTILINE).matcher(contentAsString);

@@ -19,7 +19,8 @@ import java.util.regex.Pattern;
  */
 class UploadComUaFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadComUaFileRunner.class.getName());
-    private final static int captchaMax = 3;
+    private final static String SERVICE_WEB = "http://www.upload.com.ua/";
+    private final int captchaMax = 0;
     private int captchaCounter = 1;
 
     @Override
@@ -63,29 +64,43 @@ class UploadComUaFileRunner extends AbstractRunner {
             if (!makeRedirectedRequest(httpMethod)) throw new ServiceConnectionProblemException();
 
             //solve captcha and go to waiting page
-            if (getContentAsString().contains("/confirm.php")) {
-                while (getContentAsString().contains("/confirm.php")) {
-                    if (!makeRedirectedRequest(stepCaptcha())) throw new ServiceConnectionProblemException();
-                }
-            } else throw new PluginImplementationException("Captcha not found");
+            while (getContentAsString().contains("/confirm.php")) {
+                downloadTask.sleep(4);//slow down a bit, otherwise captcha may not be accepted
+                if (!makeRedirectedRequest(stepCaptcha())) throw new ServiceConnectionProblemException();
+            }
             logger.info("Captcha OK");
 
-            //find and decrypt download link
+            //find and parse download link
             Matcher matcher = Pattern.compile("new Array\\((.+?)\\);", Pattern.DOTALL).matcher(getContentAsString());
             if (!matcher.find()) throw new PluginImplementationException("Download link not found");
-            final String action = matcher.group(1).replace("\r\n", "").replace("\"", "").replace(",", "").replace(" ", "");
-            logger.info("Extracted download link " + action);
+            String action = matcher.group(1).replaceAll("(?:\\s|\"|'|,)", "");
+            if (!action.contains("|")) throw new PluginImplementationException("Problem parsing download link");
+            final String[] s = action.split("\\|");
+            if (s.length != 2) throw new PluginImplementationException("Problem parsing download link");
+            final String server = s[0];
+            action = s[1] + "/" + PlugUtils.getStringBetween(getContentAsString(), "id=\"os_filename\" value=\"", "\">");
+            action = "http://dl" + server + ".upload.com.ua/" + action;
 
+            logger.info("Extracted download link " + action);
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
 
-            //find waiting time and wait
-            matcher = getMatcherAgainstContent("var .*?timer.*? = (\\d+?);");
+            //find waiting time, parse it and wait
+            matcher = getMatcherAgainstContent("var .*?timer.*? =((?: \\d+?(?: \\+)?)+?);");
             if (!matcher.find()) throw new PluginImplementationException("Waiting time not found");
-            downloadTask.sleep(new Integer(matcher.group(1)) + 1);
+            final String waitString = matcher.group(1);
+            logger.info("Waiting time string to parse " + waitString);
+            final String[] waitTimes = waitString.replace(" ", "").split("\\+");
+            int finalWaitTime = 0;
+            for (final String waitTime : waitTimes) {
+                finalWaitTime += Integer.parseInt(waitTime);
+            }
+            logger.info("Parsed waiting time " + finalWaitTime);
+            downloadTask.sleep(finalWaitTime + 1);
 
             //download
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();
+                logger.warning(getContentAsString());
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
@@ -108,7 +123,7 @@ class UploadComUaFileRunner extends AbstractRunner {
 
     private HttpMethod stepCaptcha() throws ErrorDuringDownloadingException {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
-        final String captchaSrc = "http://www.upload.com.ua/confirm.php";
+        final String captchaSrc = SERVICE_WEB + "confirm.php";
         //logger.info("Captcha URL " + captchaSrc);
 
         String captcha;

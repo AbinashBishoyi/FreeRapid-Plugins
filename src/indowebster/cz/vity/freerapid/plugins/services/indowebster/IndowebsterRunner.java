@@ -26,7 +26,7 @@ class IndowebsterRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
     //<div id="buttonz" align="center"> <a href="http://www4.indowebster.com/f8a03b1118fc754d82a8fe7d3be43278.rar" onclick="return poppop('addd.php')" class="hintanchor" onmouseover="showhint('Download link for Indonesia only.', this, event, '200px')">Download from IDWS</a> </div><center>
 
@@ -74,7 +74,7 @@ class IndowebsterRunner extends AbstractRunner {
 
         } else logger.warning("File size was not found" + content);
 
-        xmatcher = PlugUtils.matcher("<div>Original name : &quot;<!--INFOLINKS_ON--> (.+?)<!--INFOLINKS_OFF-->&quot; <br><br />" , content);
+        xmatcher = PlugUtils.matcher("<div>Original name : &quot;<!--INFOLINKS_ON--> (.+?)<!--INFOLINKS_OFF-->&quot; <br><br />", content);
         if (xmatcher.find()) {
             final String fileName = xmatcher.group(1).trim(); //method trim removes white characters from both sides of string
             logger.info("File name :" + fileName);

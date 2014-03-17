@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 1022 2008-12-09 20:10:51Z ATom $
+ * $Id: RapidShareRunner.java 1401 2009-02-21 01:21:18Z Vity $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -74,7 +74,7 @@ class RapidShareRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             chechFile();
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 
@@ -143,7 +143,7 @@ class RapidShareRunner extends AbstractRunner {
     }
 
     private void failed() throws PluginImplementationException {
-        throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        throw new PluginImplementationException();
     }
 
     private void chechFile() throws URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException, BadLoginException, YouHaveToWaitException {

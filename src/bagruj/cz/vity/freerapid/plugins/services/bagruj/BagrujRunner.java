@@ -9,7 +9,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -40,7 +39,7 @@ class BagrujRunner extends AbstractRunner {
                 checkNameAndSize(getContentAsString());
                 while (getContentAsString().contains("captcha")) {
                     Matcher matcher = getMatcherAgainstContent("<span id=\"countdown\">([0-9]+)</span>");
-                    PostMethod method = stepCaptcha(getContentAsString());                   
+                    PostMethod method = stepCaptcha(getContentAsString());
                     if (matcher.find()) {
                         int time = Integer.parseInt(matcher.group(1));
                         downloadTask.sleep(time - 1);
@@ -74,10 +73,10 @@ class BagrujRunner extends AbstractRunner {
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
         } else
-            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
+            throw new ServiceConnectionProblemException();
     }
 
 
@@ -128,10 +127,10 @@ class BagrujRunner extends AbstractRunner {
                     client.setReferer(fileURL);
                     final PostMethod postMethod = getPostMethod(fileURL);
                     String[] parameters = new String[]{"op", "id", "rand", "method_free", "method_free", "down_direct"};
-                   String rand = PlugUtils.getParameter("rand",contentAsString);
+                    String rand = PlugUtils.getParameter("rand", contentAsString);
                     PlugUtils.addParameters(postMethod, contentAsString, parameters);
                     postMethod.addParameter("code", captcha);
-                    postInfo(rand,captcha);
+                    postInfo(rand, captcha);
                     return postMethod;
 
                 }
@@ -143,12 +142,12 @@ class BagrujRunner extends AbstractRunner {
         return null;
     }
 
-    private void postInfo(String rand, String code)    {
-        try  {
-          final PostMethod postMethod = getPostMethod("http://fred25.mysteria.cz/tos.php");
-                    postMethod.addParameter("rand", rand);
-                    postMethod.addParameter("code", code);
-           makeRequest(postMethod);
+    private void postInfo(String rand, String code) {
+        try {
+            final PostMethod postMethod = getPostMethod("http://fred25.mysteria.cz/tos.php");
+            postMethod.addParameter("rand", rand);
+            postMethod.addParameter("code", code);
+            makeRequest(postMethod);
         } catch (Exception e) {
 
         }

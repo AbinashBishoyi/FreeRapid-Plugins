@@ -40,7 +40,7 @@ class NetloadInRunner extends AbstractRunner {
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 
@@ -92,11 +92,11 @@ class NetloadInRunner extends AbstractRunner {
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
 
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private boolean stepEnterPage(String contentAsString) throws Exception {
@@ -120,7 +120,7 @@ class NetloadInRunner extends AbstractRunner {
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
 
         if (!makeRedirectedRequest(method1)) {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
 
         return true;
@@ -187,7 +187,7 @@ class NetloadInRunner extends AbstractRunner {
             post1.addParameter("password", getPassword());
 
             if (!makeRedirectedRequest(post1)) {
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
 
         }

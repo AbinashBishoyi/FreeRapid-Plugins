@@ -50,7 +50,7 @@ class IskladkaRunner extends AbstractRunner {
                 }
             }
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private String checkURL(String fileURL) {
@@ -105,7 +105,7 @@ class IskladkaRunner extends AbstractRunner {
         } else {
             logger.info("Not found target URL");
             logger.info(getContentAsString());
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
 
         String finallink = target + "?file=" + link + "&ticket=" + ticket;

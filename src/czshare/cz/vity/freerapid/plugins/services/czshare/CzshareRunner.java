@@ -113,13 +113,11 @@ class CzshareRunner extends AbstractRunner {
             Matcher matcher = PlugUtils.matcher("<span class=\"text-darkred\"><strong>([^<]*)</strong></span>", content);
             if (matcher.find()) {
                 String fn = matcher.group(1);
-                logger.info("File name " + fn);
                 httpFile.setFileName(fn);
             }
             matcher = PlugUtils.matcher("<td class=\"text-left\">([0-9.]+ .B)</td>", content);
             if (matcher.find()) {
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + a);
+                long a = PlugUtils.getFileSizeFromString(matcher.group(1));
                 httpFile.setFileSize(a);
             }
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -190,16 +188,8 @@ class CzshareRunner extends AbstractRunner {
         }
         String finalURL = matcher.group(1);
 
-        //nelze pridat pomoci PlugUtils.addParameters, ponevadz v 0.81 si neporadi s tim DISABLED
-        matcher = getMatcherAgainstContent("<input type=\"submit\" name=\"submit_btn\" DISABLED value=\"([^\"]*)\" />");
-        if (!matcher.find()) {
-            throw new PluginImplementationException();
-        }
-        String finalSubmit = matcher.group(1);
-
         PostMethod method = getPostMethod(finalURL);
-        PlugUtils.addParameters(method, getContentAsString(), new String[]{"fname", "id", "ticket"});
-        method.addParameter("submit_btn", finalSubmit);
+        PlugUtils.addParameters(method, getContentAsString(), new String[]{"id", "ticket", "submit_btn"});
 
         methodsMap.put(fileURL, method);
 

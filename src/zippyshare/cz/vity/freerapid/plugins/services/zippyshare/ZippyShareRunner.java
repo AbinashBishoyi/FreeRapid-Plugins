@@ -28,7 +28,7 @@ class ZippyShareRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 
@@ -43,7 +43,7 @@ class ZippyShareRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();
             checkNameandSize(contentAsString);
             client.setReferer(mLink);
-            
+
             final GetMethod getMethod = getGetMethod(mLink);
             if (!tryDownloadAndSaveFile(getMethod)) {
                 checkProblems();

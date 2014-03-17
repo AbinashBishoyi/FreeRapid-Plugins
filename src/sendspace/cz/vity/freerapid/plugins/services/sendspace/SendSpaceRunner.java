@@ -7,8 +7,8 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.codec.net.BCodec;
+import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -28,7 +28,7 @@ class SendSpaceRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 
@@ -47,12 +47,11 @@ class SendSpaceRunner extends AbstractRunner {
 //            var link_updated = 0;
 
 
-
             Matcher matcher = PlugUtils.matcher("var link_dec =[^']+'([^']+)", contentAsString);
             if (matcher.find()) {
-                String mCode =  matcher.group(1);
-                logger.info("Code :"+mCode);
-                
+                String mCode = matcher.group(1);
+                logger.info("Code :" + mCode);
+
                 mLink = new BCodec().decode(matcher.group(1));
                 logger.info("Final Link :" + mLink);
                 getMethod = getGetMethod(mLink);

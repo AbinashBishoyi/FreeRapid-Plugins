@@ -29,7 +29,7 @@ class EdiskRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     public void run() throws Exception {
@@ -57,10 +57,10 @@ class EdiskRunner extends AbstractRunner {
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private String sicherName(String s) throws UnsupportedEncodingException {
@@ -121,7 +121,7 @@ class EdiskRunner extends AbstractRunner {
                   matcher = PlugUtils.matcher("form method=\"post\" action=\"([^\"]*)\"", contentAsString);
                   if (!matcher.find()) {
                       logger.info(getContentAsString());
-                      throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                      throw new PluginImplementationException();
                   }
                   String postTargetURL;
                   postTargetURL = matcher.group(1);
@@ -148,7 +148,7 @@ class EdiskRunner extends AbstractRunner {
             Matcher matcher = PlugUtils.matcher("form method=\"post\"\\s*action=\"([^\"]*)\"", contentAsString);
             if (!matcher.find()) {
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
             String postTargetURL;
             postTargetURL = matcher.group(1);

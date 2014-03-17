@@ -27,7 +27,7 @@ class LetitbitRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private void checkNameAndSize(String contentAsString) throws Exception {
@@ -81,7 +81,7 @@ class LetitbitRunner extends AbstractRunner {
 
                 if (!makeRequest(postMethod)) {
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
                 matcher = PlugUtils.matcher("src=\"([^?]*)\\?link=([^\"]*)\"", getContentAsString());
                 if (matcher.find()) {
@@ -108,11 +108,11 @@ class LetitbitRunner extends AbstractRunner {
                     }
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
             }
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private String readCaptchaImage() throws Exception {

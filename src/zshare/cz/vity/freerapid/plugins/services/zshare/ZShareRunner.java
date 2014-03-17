@@ -30,7 +30,7 @@ class ZShareRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 
@@ -86,7 +86,7 @@ class ZShareRunner extends AbstractRunner {
 //            checkNameandSize(contentAsString);
             Matcher matcher = getMatcherAgainstContent("form name=\"form1\" method=\"post\" action=");
             if (!matcher.find()) {
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
             String s = matcher.group(0);
             logger.info("Found Download button - " + s);
@@ -111,10 +111,10 @@ class ZShareRunner extends AbstractRunner {
                     throw new PluginImplementationException("Cannot find requested page content");
                 }
             } else {
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 

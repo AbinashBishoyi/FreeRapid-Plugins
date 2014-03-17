@@ -34,7 +34,7 @@ class EnteruploadRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private void checkNameandSize(String contentAsString) throws Exception {
@@ -121,7 +121,7 @@ class EnteruploadRunner extends AbstractRunner {
 
 
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private String stepCaptcha(String contentAsString) throws Exception {

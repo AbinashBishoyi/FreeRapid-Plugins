@@ -45,7 +45,7 @@ class FileFactoryRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
 
@@ -140,7 +140,7 @@ class FileFactoryRunner extends AbstractRunner {
             } else throw new PluginImplementationException("Basic link not found found");
 
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private void checkSize(String contentAsString) throws URLNotAvailableAnymoreException, YouHaveToWaitException, InvalidURLOrServiceProblemException {

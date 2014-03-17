@@ -53,7 +53,7 @@ class RapidShareRunner extends AbstractRunner {
                 if (!matcher.find()) {
                     checkProblems();
                     logger.warning(getContentAsString());
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
                 s = matcher.group(1);
 
@@ -74,7 +74,7 @@ class RapidShareRunner extends AbstractRunner {
                 } else {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
             } else
                 throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");

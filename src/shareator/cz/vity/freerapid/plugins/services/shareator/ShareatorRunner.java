@@ -25,7 +25,7 @@ class ShareatorRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     @Override
@@ -55,7 +55,7 @@ class ShareatorRunner extends AbstractRunner {
                     Matcher matcher = getMatcherAgainstContent("((<[^>]*>)|\\s)+(http://shareator.com[^<]+)<");
                     if (!matcher.find()) {
                         checkProblems();
-                        throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                        throw new PluginImplementationException();
                     }
                     final String fn = encodeURL(matcher.group(matcher.groupCount()));
                     logger.info("Found file URL " + fn);
@@ -68,15 +68,15 @@ class ShareatorRunner extends AbstractRunner {
                 } else {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private void checkNameAndSize(String content) throws Exception {

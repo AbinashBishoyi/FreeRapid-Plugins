@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
+
 import java.net.URL;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -18,7 +19,7 @@ import java.util.regex.Matcher;
 class ZidduRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ZidduRunner.class.getName());
     //private String httpSite;
-   
+
 
     private String baseURL;
     public String actionURL;
@@ -35,11 +36,11 @@ class ZidduRunner extends AbstractRunner {
         //http://www.ziddu.com/downloadlink/1750286/Video_Php_And_Mysql01.txt
         //http://www.ziddu.com/download/1750286/Video_Php_And_Mysql01.txt.html
         //http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html
-        logger.info("Starting..."+ fileURL);
-        
+        logger.info("Starting..." + fileURL);
+
         fileURL = processURL(fileURL);
-        actionURL=fileURL.replace(".html","");
-        
+        actionURL = fileURL.replace(".html", "");
+
         httpFile.setNewURL(new URL(fileURL));
         baseURL = fileURL;
         logger.info("New URL : " + fileURL);
@@ -48,17 +49,18 @@ class ZidduRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
-           // getCaptcha(getContentAsString());
+            // getCaptcha(getContentAsString());
 
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 //private void getCaptcha(String contentAsString) throws Exception {
 //               Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
 //        if (matcher.find()) {
 //
 //        }
-//}
+
+    //}
     private void checkNameandSize(String contentAsString) throws Exception {
 
         if (!contentAsString.contains("downloadfilelinkicon")) {
@@ -80,15 +82,15 @@ class ZidduRunner extends AbstractRunner {
 //            logger.info("File name " + fn);
 //            httpFile.setFileName(fn);
 
-            Matcher matcher = PlugUtils.matcher("12black\">([0-9.]* .B)", contentAsString);
-            if (matcher.find()) {
-                logger.info("Founded : " + matcher.group(1));
-                
-                Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
-                logger.info("File size " + a);
-                httpFile.setFileSize(a);
-                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-            } else logger.warning("File size was not found" + contentAsString);
+        Matcher matcher = PlugUtils.matcher("12black\">([0-9.]* .B)", contentAsString);
+        if (matcher.find()) {
+            logger.info("Founded : " + matcher.group(1));
+
+            Long a = PlugUtils.getFileSizeFromString(matcher.group(1));
+            logger.info("File size " + a);
+            httpFile.setFileSize(a);
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+        } else logger.warning("File size was not found" + contentAsString);
 
         //} else logger.warning("File name was not found" + contentAsString);
 
@@ -100,13 +102,14 @@ class ZidduRunner extends AbstractRunner {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         if (!fileURL.contains("downloadfile")) {
-        fileURL = processURL(fileURL);
-        if (!httpFile.getFileUrl().toString().contains(fileURL)) {
-            logger.info("Set again : " + fileURL);
-            httpFile.setNewURL(new URL(fileURL));
+            fileURL = processURL(fileURL);
+            if (!httpFile.getFileUrl().toString().contains(fileURL)) {
+                logger.info("Set again : " + fileURL);
+                httpFile.setNewURL(new URL(fileURL));
 
-        }}
-        
+            }
+        }
+
         baseURL = fileURL;
         logger.info("Starting download in TASK!!! " + fileURL);
 
@@ -117,33 +120,30 @@ class ZidduRunner extends AbstractRunner {
             //find action
 
             Matcher mAction = PlugUtils.matcher("action=\"([^\"]+)", contentAsString);
-            if (mAction.find()){
-                logger.info("Action found " + mAction.group(1) );
+            if (mAction.find()) {
+                logger.info("Action found " + mAction.group(1));
                 client.setReferer(mAction.group(1));
-                
+
                 PostMethod pMethod = getPostMethod(mAction.group(1));
-                pMethod.addParameter("mmemid","0");
-                pMethod.addParameter("mname","");
-                pMethod.addParameter("lang","english");
+                pMethod.addParameter("mmemid", "0");
+                pMethod.addParameter("mname", "");
+                pMethod.addParameter("lang", "english");
                 pMethod.addParameter("Submit", "");
-                pMethod.addParameter("Submit2"," Share ");
+                pMethod.addParameter("Submit2", " Share ");
                 pMethod.addParameter("Submit3", "Link");
-                if(makeRequest(pMethod)) {
+                if (makeRequest(pMethod)) {
                     logger.info("Success requested");
-                    
+
 
                 }
             }
 
             contentAsString = getContentAsString();
-            
-
-
 
 
             checkNameandSize(contentAsString);       //<img src="/CaptchaSecurityImages.php?width=100&amp;height=38&amp;characters=5"
             logger.info("Looking for captcha..");
-            
+
             Matcher matcher = PlugUtils.matcher("img src=\"(/Cap[^\"]*)", contentAsString);
             if (matcher.find()) {
                 result = false;
@@ -157,7 +157,7 @@ class ZidduRunner extends AbstractRunner {
                     count++;
                 }
             } else throw new PluginImplementationException("Cant find captcha image");
-        } else throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+        } else throw new PluginImplementationException();
     }
 
     private String processURL(String mURL) throws Exception {
@@ -221,7 +221,7 @@ class ZidduRunner extends AbstractRunner {
                     logger.info(s);
                     final PostMethod method = getPostMethod(s);
 
-                    String[] parameters = new String[]{"fid", "tid", "fname",  "submit"}; //array of parameter names for parsing
+                    String[] parameters = new String[]{"fid", "tid", "fname", "submit"}; //array of parameter names for parsing
                     PlugUtils.addParameters(method, contentAsString, parameters);
                     method.addParameter("Keyword", "Keyword"); //it always sends 'Ok'
                     method.addParameter("securitycode", securitycode); //it does not work without captcha

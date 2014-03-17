@@ -23,7 +23,7 @@ class QuickshareRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     @Override
@@ -59,10 +59,10 @@ class QuickshareRunner extends AbstractRunner {
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private void checkNameAndSize(String content) throws Exception {

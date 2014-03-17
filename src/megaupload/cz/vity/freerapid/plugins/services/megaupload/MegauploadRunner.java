@@ -64,7 +64,7 @@ class MegauploadRunner extends AbstractRunner {
                 final int i = downloadURL.lastIndexOf('/');
                 if (i > 0) {
                     final String toEncode = downloadURL.substring(i + 1);
-                    httpFile.setFileName(toEncode);
+                    httpFile.setFileName(PlugUtils.unescapeHtml(toEncode));
                 }
                 downloadURL = encodeURL(downloadURL);
                 final GetMethod method = getGetMethod(downloadURL);

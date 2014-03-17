@@ -26,7 +26,7 @@ class SaveFileRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameandSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     @Override
@@ -102,10 +102,10 @@ class SaveFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ServiceConnectionProblemException {
         if (getContentAsString().contains("already downloading")) {
-            throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed."));
+            throw new ServiceConnectionProblemException("<b>SaveFile Error:</b><br>Your IP address is already downloading a file. <br>Please wait until the download is completed.");
         }
         if (getContentAsString().contains("Currently a lot of users")) {
-            throw new ServiceConnectionProblemException(String.format("<b>SaveFile Error:</b><br>Currently a lot of users are downloading files."));
+            throw new ServiceConnectionProblemException("<b>SaveFile Error:</b><br>Currently a lot of users are downloading files.");
         }
     }
 

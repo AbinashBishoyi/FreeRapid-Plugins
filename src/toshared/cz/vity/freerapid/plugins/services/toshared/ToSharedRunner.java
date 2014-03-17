@@ -29,7 +29,7 @@ class ToSharedRunner extends AbstractRunner {
             this.checkNameAndSize(getContentAsString());
             this.checkForProblems(getContentAsString());
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 
@@ -58,10 +58,10 @@ class ToSharedRunner extends AbstractRunner {
                 }
             } else {
                 this.logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 

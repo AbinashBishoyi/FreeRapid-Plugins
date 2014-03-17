@@ -30,7 +30,7 @@ class DepositFilesRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     @Override
@@ -61,7 +61,7 @@ class DepositFilesRunner extends AbstractRunner {
 
                 if (!makeRequest(postMethod)) {
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
 
             }
@@ -89,11 +89,11 @@ class DepositFilesRunner extends AbstractRunner {
             } else {
                 checkProblems();
                 logger.info(getContentAsString());
-                throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                throw new PluginImplementationException();
             }
 
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     private String CheckURL(String URL) {

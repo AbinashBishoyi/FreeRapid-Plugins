@@ -25,7 +25,7 @@ class MediafireRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
     public void run() throws Exception {
@@ -34,12 +34,12 @@ class MediafireRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
         if (makeRedirectedRequest(getMethod)) {
-               checkNameAndSize(getContentAsString());
+            checkNameAndSize(getContentAsString());
             if (getContentAsString().contains("cu(")) {
                 Matcher matcher = getMatcherAgainstContent("cu\\('([^']+)','([^']+)','([^']+)'\\)");
 
                 if (!matcher.find()) {
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
                 String qk = matcher.group(1);
                 String pk = matcher.group(2);
@@ -53,7 +53,7 @@ class MediafireRunner extends AbstractRunner {
                     matcher = getMatcherAgainstContent("href=.\"http://\"([^\"]*)\"");
 
                     if (!matcher.find()) {
-                        throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                        throw new PluginImplementationException();
                     }
                     String finalLink = "http://" + parseLink(matcher.group(1));
                     logger.info("Final URL " + finalLink);
@@ -63,20 +63,20 @@ class MediafireRunner extends AbstractRunner {
                     if (!tryDownloadAndSaveFile(method2)) {
                         checkProblems();
                         logger.info(getContentAsString());
-                        throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                        throw new PluginImplementationException();
                     }
 
 
                 } else {
                     checkProblems();
                     logger.info(getContentAsString());
-                    throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+                    throw new PluginImplementationException();
                 }
 
 
             }
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
     }
 
 
@@ -86,11 +86,11 @@ class MediafireRunner extends AbstractRunner {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-        if (content.contains("The key you provided for file download was invalid") || content.contains("How can MediaFire help you?")  ) {
+        if (content.contains("The key you provided for file download was invalid") || content.contains("How can MediaFire help you?")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>The file was removed.</b><br>"));
         }
 
-       Matcher matcher = PlugUtils.matcher("You requested: ([^ ]+) \\(([0-9.]+ .B)\\)", content);
+        Matcher matcher = PlugUtils.matcher("You requested: ([^ ]+) \\(([0-9.]+ .B)\\)", content);
         // odebiram jmeno
         String fn;
         if (matcher.find()) {
@@ -153,7 +153,7 @@ class MediafireRunner extends AbstractRunner {
         if (matcher.find()) {
             throw new URLNotAvailableAnymoreException(String.format("<b>The file was removed</b><br>"));
         }
-       
+
     }
 
 }

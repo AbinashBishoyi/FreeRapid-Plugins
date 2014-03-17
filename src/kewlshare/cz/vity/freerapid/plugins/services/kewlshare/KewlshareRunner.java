@@ -27,7 +27,7 @@ class KewlshareRunner extends AbstractRunner {
             String checkcontent = getContentAsString();
             checkNameandSize(checkcontent);
         } else {
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new PluginImplementationException();
         }
     }
 

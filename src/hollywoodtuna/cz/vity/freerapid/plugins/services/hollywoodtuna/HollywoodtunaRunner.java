@@ -3,9 +3,7 @@ package cz.vity.freerapid.plugins.services.hollywoodtuna;
 import cz.vity.freerapid.plugins.exceptions.InvalidURLOrServiceProblemException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
-import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -26,7 +24,7 @@ class HollywoodtunaRunner extends AbstractRunner {
 //        if (makeRequest(getMethod)) {
 //            checkNameandSize(getContentAsString());
 //        } else
-//            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+//            throw new PluginImplementationException();
 //    }
 //    //<div id="buttonz" align="center"> <a href="http://www4.indowebster.com/f8a03b1118fc754d82a8fe7d3be43278.rar" onclick="return poppop('addd.php')" class="hintanchor" onmouseover="showhint('Download link for Indonesia only.', this, event, '200px')">Download from IDWS</a> </div><center>
 

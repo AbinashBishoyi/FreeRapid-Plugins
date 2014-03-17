@@ -17,6 +17,7 @@ class FragmentRequester {
     private final HttpDownloadClient client;
     private final HdsMedia media;
     private int currentFragment = 1;
+    private long totalFragmentsSize;
 
     public FragmentRequester(final HttpFile httpFile, final HttpDownloadClient client, final HdsMedia media) {
         this.httpFile = httpFile;
@@ -34,12 +35,11 @@ class FragmentRequester {
         if (in == null) {
             throw new IOException("Failed to request fragment " + currentFragment);
         }
-        if (httpFile.getFileSize() <= 0) {
-            final Header header = method.getResponseHeader("Content-Length");
-            if (header != null) {
-                final long fragmentSize = Long.parseLong(header.getValue());
-                httpFile.setFileSize(fragmentSize * media.getFragmentCount());//estimate
-            }
+        final Header header = method.getResponseHeader("Content-Length");
+        if (header != null) {
+            final long fragmentSize = Long.parseLong(header.getValue());
+            totalFragmentsSize += fragmentSize;
+            httpFile.setFileSize((totalFragmentsSize / currentFragment) * media.getFragmentCount());//estimate
         }
         currentFragment++;
         return new FragmentInputStream(method, in);

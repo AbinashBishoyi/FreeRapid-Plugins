@@ -102,6 +102,7 @@
         <ant dir="${src.dir}/czshare_profi/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/nahraj/" antfile="build.xml" inheritall="false"/>
         <ant dir="${src.dir}/uppit/" antfile="build.xml" inheritall="false"/>
+        <ant dir="${src.dir}/fileflyer/" antfile="build.xml" inheritall="false"/>
     </target>
 
 

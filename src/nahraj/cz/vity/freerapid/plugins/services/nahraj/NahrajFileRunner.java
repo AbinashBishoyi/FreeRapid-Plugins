@@ -42,7 +42,7 @@ class NahrajFileRunner extends AbstractRunner {
             Matcher matcher = getMatcherAgainstContent("enctype=\"multipart/form-data\" action=\"(.+?)\"");
             
             if (matcher.find()) {
-                String finalURL = matcher.group(1);
+                final String finalURL = matcher.group(1);
                 client.setReferer(finalURL);
                 //client.getHTTPClient().getParams().setParameter("considerAsStream", "text/plain");
                 getMethod = getGetMethod(finalURL);

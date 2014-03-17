@@ -45,7 +45,7 @@ class UltraShareFileRunner extends AbstractRunner {
             Matcher matcher = getMatcherAgainstContent("href=\"(.+?)\">Download This File");
 
             if (matcher.find()) {
-                String URL = matcher.group(1);
+                final String URL = matcher.group(1);
                 client.setReferer(URL);
                 getMethod = getGetMethod(encodeURL(matcher.group(1)));
 
@@ -58,7 +58,7 @@ class UltraShareFileRunner extends AbstractRunner {
                 matcher = getMatcherAgainstContent("href=\"(.+?)\" class=\"download_url\">click here");
 
                 if (matcher.find()) {
-                    String finalURL = matcher.group(1);
+                    final String finalURL = matcher.group(1);
                     client.setReferer(finalURL);
                     getMethod = getGetMethod(finalURL);
                     
@@ -76,6 +76,18 @@ class UltraShareFileRunner extends AbstractRunner {
             }
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        final String contentAsString = getContentAsString();
+
+        if (contentAsString.contains("This file doesn't exist or has been removed")) {
+            throw new URLNotAvailableAnymoreException("This file doesn't exist or has been removed");
+        }
+
+        if (contentAsString.contains("All downloading slots are currently filled")) {
+            throw new YouHaveToWaitException("All downloading slots are currently filled", 60);
         }
     }
 
@@ -106,19 +118,7 @@ class UltraShareFileRunner extends AbstractRunner {
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("This file doesn't exist or has been removed")) {
-            throw new URLNotAvailableAnymoreException("This file doesn't exist or has been removed");
-        }
-        
-        if (contentAsString.contains("All downloading slots are currently filled")) {
-            throw new YouHaveToWaitException("All downloading slots are currently filled", 60);
-        }
-    }
-
+    
     private String encodeURL(String string) throws UnsupportedEncodingException {
         Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", string);
 

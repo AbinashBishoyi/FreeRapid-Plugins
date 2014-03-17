@@ -21,7 +21,7 @@ class UppITFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(encodeURL(fileURL));
+        final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -34,7 +34,6 @@ class UppITFileRunner extends AbstractRunner {
    @Override
     public void run() throws Exception {
         super.run();
-        fileURL = encodeURL(fileURL);
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
 
@@ -45,7 +44,7 @@ class UppITFileRunner extends AbstractRunner {
             final Matcher matcher = getMatcherAgainstContent("href=\\\\'(.+?)\\\\'\"><h1>Download File");
 
             if (matcher.find()) {
-                String finalURL = encodeURL(matcher.group(1));
+                final String finalURL = encodeURL(matcher.group(1));
                 client.setReferer(finalURL);
                 getMethod = getGetMethod(finalURL);
 
@@ -60,6 +59,14 @@ class UppITFileRunner extends AbstractRunner {
             }
         } else {
             throw new InvalidURLOrServiceProblemException("Invalid URL or service problem");
+        }
+    }
+
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        final String contentAsString = getContentAsString();
+
+        if (contentAsString.contains("Invalid download link")) {
+            throw new URLNotAvailableAnymoreException("Invalid download link");
         }
     }
 
@@ -90,15 +97,7 @@ class UppITFileRunner extends AbstractRunner {
 
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-
-    private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-
-        if (contentAsString.contains("Invalid download link")) {
-            throw new URLNotAvailableAnymoreException("Invalid download link");
-        }
-    }
-
+    
     private String encodeURL(String string) throws UnsupportedEncodingException {
         Matcher matcher = PlugUtils.matcher("(.*/)([^/]*)$", string);
 

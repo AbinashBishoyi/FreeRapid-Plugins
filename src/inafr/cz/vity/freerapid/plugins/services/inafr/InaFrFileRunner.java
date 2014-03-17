@@ -33,7 +33,7 @@ class InaFrFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h2 class=\"titre-propre\">", "</h2>");
+        PlugUtils.checkName(httpFile, content, "<h1>", "</h1>");
         httpFile.setFileName(httpFile.getFileName() + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -46,20 +46,19 @@ class InaFrFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
-            final String idNotice = PlugUtils.getStringBetween(getContentAsString(), "idNotice\":\"", "\"");
-            final String swfUrl = "http://www.ina.fr" + PlugUtils.getStringBetween(getContentAsString(), "movieUrl\":\"", "\"").replace("\\/", "/");
+            final String videoId = PlugUtils.getStringBetween(fileURL, "/video/", "/");
             HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(swfUrl)
-                    .setAction(String.format("http://www.ina.fr/player/infovideo/id_notice/%s/module_request/notice", idNotice))
+                    .setReferer(fileURL)
+                    .setAction(String.format("http://player.ina.fr/notices/%s.mrss?site=visio", videoId))
                     .toGetMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
-            final String mediaUrl = PlugUtils.getStringBetween(getContentAsString(), "<Media>", "</Media>");
+            final String mediaUrl = PlugUtils.getStringBetween(getContentAsString(), "media:player url=\"", "\"");
             httpMethod = getMethodBuilder()
-                    .setReferer(swfUrl)
+                    .setReferer(fileURL)
                     .setAction(mediaUrl)
                     .toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {

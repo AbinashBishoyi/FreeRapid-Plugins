@@ -54,9 +54,6 @@ class CtdiskRunner extends AbstractRunner {
                 }
                 checkProblems();
             }
-            if (getContentAsString().contains("You have reached")) {
-                throw new ServiceConnectionProblemException("Free download limit reached");
-            }
             final String downloadLinkBase64 = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"local\" href=\"", "\"");
             final String downloadLink = new String(Base64.decodeBase64(downloadLinkBase64), "UTF-8");
             logger.info(String.format("Download link: %s\nDecoded link: %s", downloadLinkBase64, downloadLink));
@@ -80,10 +77,15 @@ class CtdiskRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("对不起，这个文件已到期或被删除。") || getContentAsString().contains("404 Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        } else if (getContentAsString().contains("<li>1.") && getContentAsString().contains("<li>3.") && getContentAsString().contains("<li>4.")) {
+        }
+        if (getContentAsString().contains("<li>1.") && getContentAsString().contains("<li>3.") && getContentAsString().contains("<li>4.")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        } else if (getContentAsString().contains("<br />1.") && getContentAsString().contains("<br />2.")) {
+        }
+        if (getContentAsString().contains("<br />1.") && getContentAsString().contains("<br />2.")) {
             throw new ErrorDuringDownloadingException("Your IP is downloading.");
+        }
+        if (getContentAsString().contains("You have reached")) {
+            throw new ServiceConnectionProblemException("Free download limit reached");
         }
     }
 
@@ -138,7 +140,12 @@ class CtdiskRunner extends AbstractRunner {
             return "http://www.ctdisk.com/";
         else if (fileURL.contains("400gb"))
             return "http://www.400gb.com/";
-        else
+        else if (fileURL.contains("t00y"))
             return "http://www.t00y.com/";
+        else if (fileURL.contains("bego.cc"))
+            return "http://www.bego.cc/";
+        else
+            return "http://www.pipipan.com/";
+
     }
 }

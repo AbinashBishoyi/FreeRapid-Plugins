@@ -44,6 +44,9 @@ class YunFileFileRunner extends AbstractRunner {
     }
 
     @Override
+    /*
+    Actual browser test note : turn browser's referer setting on for this domain, otherwise it won't download.
+     */
     public void run() throws Exception {
         super.run();
         checkFileURL();
@@ -111,7 +114,7 @@ class YunFileFileRunner extends AbstractRunner {
                 final String vid = PlugUtils.getStringBetween(getContentAsString(), "vid.value = \"", "\"");
                 httpMethod = getMethodBuilder()
                         .setReferer(downloadPageUrl)
-                        .setActionFromFormWhereTagContains("d_down_from", true)
+                        .setActionFromFormWhereTagContains("fileId", true)
                         .setParameter("fileId", fileId)
                         .setParameter("vid", vid)
                         .toPostMethod();
@@ -135,9 +138,7 @@ class YunFileFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("down_interval")) {
             throw new YouHaveToWaitException("Waiting for next file.",
-                    PlugUtils.getWaitTimeBetween(contentAsString,
-                            "down_interval_tag\" style=\" color: green; font-size: 28px; \">", "</span>",
-                            TimeUnit.MINUTES));
+                    PlugUtils.getWaitTimeBetween(contentAsString, "down_interval_tag\" style=\" color: green; font-size: 28px; \">", "</span>", TimeUnit.MINUTES));
         }
         if (contentAsString.contains("Web Server may be down")) {
             throw new ServiceConnectionProblemException("A communication error occurred: \"Operation timed out\"");

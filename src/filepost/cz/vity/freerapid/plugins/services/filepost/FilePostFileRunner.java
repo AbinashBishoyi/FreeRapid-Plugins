@@ -11,20 +11,25 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
  * @author CrazyCoder
+ * @author ntoskrnl
  */
 class FilePostFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FilePostFileRunner.class.getName());
+    private final static Lock LOCK = new ReentrantLock(true);
+    private static volatile long lastRequest;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
+        if (makeRequestWithSleep(getMethod)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
         } else {
@@ -44,7 +49,7 @@ class FilePostFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        if (makeRequestWithSleep(method)) {
             final String contentAsString = getContentAsString();
             checkProblems();
             checkNameAndSize(contentAsString);
@@ -71,7 +76,7 @@ class FilePostFileRunner extends AbstractRunner {
             while (true) {
                 if (ajax == null) ajax = ajaxBuilder(sid, code, true).toPostMethod();
 
-                if (!makeRedirectedRequest(ajax)) {
+                if (!makeRequestWithSleep(ajax)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
@@ -153,8 +158,28 @@ class FilePostFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("Your IP address is already downloading a file at the moment", 60);
         } else if (contentAsString.contains("{\"error\":\"")) {
             final String error = unescape(PlugUtils.getStringBetween(contentAsString, "{\"error\":\"", "\"},"));
-            logger.severe(error);
-            throw new ServiceConnectionProblemException(error);
+            logger.warning(error);
+            if (error.contains("You entered a wrong CAPTCHA code")) {
+                throw new YouHaveToWaitException(error, 4);
+            } else {
+                throw new ServiceConnectionProblemException(error);
+            }
         }
     }
+
+    private boolean makeRequestWithSleep(final HttpMethod method) throws Exception {
+        LOCK.lockInterruptibly();
+        try {
+            final long interval = 500L;
+            if (lastRequest > System.currentTimeMillis() - interval) {
+                Thread.sleep(interval);
+            }
+            final boolean b = makeRedirectedRequest(method);
+            lastRequest = System.currentTimeMillis();
+            return b;
+        } finally {
+            LOCK.unlock();
+        }
+    }
+
 }

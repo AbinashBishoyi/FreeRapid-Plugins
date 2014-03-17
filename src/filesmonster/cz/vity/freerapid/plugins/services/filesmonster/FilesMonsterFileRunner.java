@@ -94,6 +94,8 @@ class FilesMonsterFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("You can wait for the start of downloading"))
             throw new YouHaveToWaitException("You have got max allowed download sessions from the same IP", PlugUtils.getWaitTimeBetween(contentAsString, " start of downloading", " minute", TimeUnit.MINUTES));
+        if (contentAsString.contains("There are no free download slots available"))
+            throw new ServiceConnectionProblemException("No more download slots");
 
     }
 

@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.binary.Hex;
@@ -11,7 +12,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 
-import java.util.Locale;
 import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -39,6 +39,9 @@ class ItvFileRunner extends AbstractRtmpRunner {
                 .toPostMethod();
         method.setRequestHeader("SOAPAction", "\"http://tempuri.org/PlaylistService/GetPlaylist\"");//double quotes on purpose
         ((PostMethod) method).setRequestEntity(new StringRequestEntity(getPlaylistRequestContent(), "text/xml", "utf-8"));
+        if (!client.getSettings().isProxySet()) {
+            Tunlr.setupMethod(method);
+        }
         makeRedirectedRequest(method);
         checkProblems();
         //getContentAsString() is set to something else in checkName(),
@@ -128,12 +131,12 @@ class ItvFileRunner extends AbstractRtmpRunner {
         //returns a string like this: 6D3D963A-B6C7-0A3E-D1E0-A0A1611A2B86
         final byte[] b = new byte[18];
         new Random().nextBytes(b);
-        final char[] c = Hex.encodeHex(b);
+        final char[] c = Hex.encodeHex(b, false);
         c[8] = '-';
         c[13] = '-';
         c[18] = '-';
         c[23] = '-';
-        return new String(c).toUpperCase(Locale.ENGLISH);
+        return new String(c);
     }
 
     private final static String PLAYLIST_REQUEST_BASE =

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.itv.ItvServiceImpl"
-        id="itv.com" vendor="ntoskrnl" version="1.0.5">
+        id="itv.com" vendor="ntoskrnl" version="1.0.6">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?itv\.com/itvplayer/video/\?Filter=\d+"/>
-        <attribute id="minver" value="0.85"/>
+        <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="itv.com"/>
         <attribute id="maxDownloads" value="10"/>
@@ -12,6 +12,8 @@
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.1.1"
+                reverse-lookup="false"/>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="tunlr.net" plugin-version="1.0.0"
                 reverse-lookup="false"/>
     </requires>
     <runtime>

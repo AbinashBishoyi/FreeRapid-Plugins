@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
@@ -97,6 +98,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 pid = matcher.group(1);
             }
             method = getGetMethod("http://www.bbc.co.uk/mediaselector/4/mtis/stream/" + pid + "?cb=" + new Random().nextInt(100000));
+            if (!client.getSettings().isProxySet()) {
+                Tunlr.setupMethod(method);
+            }
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }

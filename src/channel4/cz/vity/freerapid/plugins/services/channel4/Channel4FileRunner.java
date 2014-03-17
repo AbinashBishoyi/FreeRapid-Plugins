@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
+import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.crypto.Cipher;
@@ -96,6 +97,9 @@ class Channel4FileRunner extends AbstractRtmpRunner {
             checkNameAndSize();
             final SwfVerificationHelper helper = getSwfvHelper();
             method = getGetMethod("http://ais.channel4.com/asset/" + id);
+            if (!client.getSettings().isProxySet()) {
+                Tunlr.setupMethod(method);
+            }
             makeRedirectedRequest(method);
             if (getContentAsString().contains("status=\"ERROR\"")) {
                 if (getContentAsString().contains("ip tested positive for anonymous activity")) {

@@ -31,7 +31,6 @@ class ZidduRunner extends AbstractRunner {
         //http://www.ziddu.com/downloadfile/1750286/Video_Php_And_Mysql01.txt.html
 
         fileURL = processURL(fileURL);
-
         baseURL = fileURL;
 
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -50,15 +49,14 @@ class ZidduRunner extends AbstractRunner {
 
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-
         }
+
         if (contentAsString.contains("fname")) {
 
             String fn = PlugUtils.getParameter("fname", contentAsString);
             fn = fn.replace(".html", "");//why did you removed it? it's OK with it
             fn = fn.replace("\"", "");
             fn = fn.replace(";", "");
-
 
             logger.info("File name " + fn);
             httpFile.setFileName(fn);
@@ -97,20 +95,15 @@ class ZidduRunner extends AbstractRunner {
                 int count = 0;
                 while ((!result) && count < 3) {
                     result = stepCaptcha(contentAsString);
-
                     if (result) count = 4;
                     if (cancel) throw new CaptchaEntryInputMismatchException();
-
-
                     makeRequest(getMethod);
                     contentAsString = getContentAsString();
                     count++;
                 }
-            }
-        } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            } else throw new PluginImplementationException("Cant find captcha image");
+        } else throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
     }
-
 
     private String processURL(String mURL) throws Exception {
         String tURL = mURL;

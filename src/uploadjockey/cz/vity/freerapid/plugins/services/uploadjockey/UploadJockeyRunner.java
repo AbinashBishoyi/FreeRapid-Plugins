@@ -81,15 +81,14 @@ class UploadJockeyRunner extends AbstractRunner {
 
                     if (ffOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(ffURL));
-                            this.httpFile.setPluginID("filefactory.com");
                     }  else
 
                     if (dpOK.equals("ok")) {
                             this.httpFile.setNewURL(new URL(dpURL));
-                            this.httpFile.setPluginID("depositfiles.com");
+                            
                     }
 
-                    
+                    this.httpFile.setPluginID("");
                     this.httpFile.setState(DownloadState.QUEUED);
 
                     

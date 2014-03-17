@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.fileim;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -144,6 +141,9 @@ class FileIMFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("the file or folder does not exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("$('.d3').show();")) {
+            throw new YouHaveToWaitException("Another download is started, 1 download at the same time limited", 5 * 60);
         }
         if (contentAsString.contains("Illegal access")) {
             throw new PluginImplementationException("Plugin is broken - Illegal access");

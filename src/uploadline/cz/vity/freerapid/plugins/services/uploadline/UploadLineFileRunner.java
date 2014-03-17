@@ -71,7 +71,8 @@ class UploadLineFileRunner extends AbstractRunner {
                 checkProblems();//check problems
                 PlugUtils.checkFileSize(httpFile, getContentAsString(), "<small>(", ")</small>");
 
-                //       final int sleep = PlugUtils.getNumberBetween(getContentAsString(), "countdown\">", "</span>");
+                final int sleep = PlugUtils.getNumberBetween(getContentAsString(), "countdown\">", "</span>");
+                downloadTask.sleep(sleep);
 
                 final Matcher matcher = getMatcherAgainstContent("padding-left: ?(\\d+)px; ?padding-top: ?\\d+px;'>(\\d)</span>");
                 int start = 0;

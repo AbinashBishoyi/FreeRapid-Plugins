@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.nova.NovaServiceImpl" id="nova.cz" vendor="JPEXS" version="1.0.5">
+<plugin class="cz.vity.freerapid.plugins.services.nova.NovaServiceImpl" id="nova.cz" vendor="JPEXS" version="1.0.6">
     <attributes>
         <attribute id="urlRegex" value="http://archiv\.nova\.cz//?multimedia/.+"/>
         <attribute id="minver" value="0.85"/>

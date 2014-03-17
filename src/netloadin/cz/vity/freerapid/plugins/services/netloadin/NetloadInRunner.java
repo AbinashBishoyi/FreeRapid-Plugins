@@ -73,11 +73,10 @@ class NetloadInRunner extends AbstractRunner {
             matcher = getMatcherAgainstContent(">countdown\\(([0-9]+)");
             if (matcher.find()) {
                 int time = Integer.parseInt(matcher.group(1)) / 100;
-                matcher = getMatcherAgainstContent("Download:");
-                if (matcher.find()) {
+                if (time <= 60) {
                     downloadTask.sleep(time + 1);
                 } else {
-                    throw new YouHaveToWaitException(String.format("You could download your next file in %s minutes", (time / 60)), time + 1);
+                    throw new YouHaveToWaitException(String.format("You could download your next file in %s minutes", (time / 60)), time + 5);
                 }
             }
             matcher = PlugUtils.matcher("href=\"([^\"]*)\">Or click here.</a></b><br/>", getContentAsString());
@@ -126,7 +125,7 @@ class NetloadInRunner extends AbstractRunner {
 
 
     private boolean stepCaptcha(String contentAsString) throws Exception {
-        if (contentAsString.contains("Please enter the Securitycode")) {
+        if (contentAsString.contains("Please enter the security code")) {
 
             Matcher matcher = PlugUtils.matcher("src=\"(share/includes/captcha.*?)\"", contentAsString);
             if (matcher.find()) {

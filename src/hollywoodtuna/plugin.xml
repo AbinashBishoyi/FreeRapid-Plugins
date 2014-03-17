@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="hollywoodtuna.com" version="0.1" vendor="Alex"
+        class="cz.vity.freerapid.plugins.services.hollywoodtuna.HollywoodtunaServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?hollywoodtuna\.com/photo(_gallery)?\.php.+"/>
+        <attribute id="minver" value="0.8"/>
+        <attribute id="maxver" value="0.809"/>
+        <attribute id="services" value="hollywoodtuna.com"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="hollywoodtuna.com" path="/" type="code"/>
+    </runtime>
+</plugin>

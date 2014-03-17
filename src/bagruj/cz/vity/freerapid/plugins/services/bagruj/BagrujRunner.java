@@ -240,7 +240,7 @@ class BagrujRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
-        if (getContentAsString().contains("No such file with this filename")) {
+        if (getContentAsString().contains("No such file")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>No such file with this filename.</b><br>"));
         }
         if (getContentAsString().contains("The page you are looking for is temporarily unavailable")) {

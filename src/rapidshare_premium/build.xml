@@ -2,7 +2,7 @@
 <project name="RapidSharePremium Plugin" default="all" basedir=".">
     <dirname property="imported.basedir" file="${ant.file.RapidSharePremium Plugin}"/>
     <property name="application" value="rapidshare_premium"/>
-    <property name="version" value="1.2.0"/>
+    <property name="version" value="1.2.2"/>
     <property name="version.name" value="${application}"/>
 
     <property name="mainjar.file" value="rapidshare_premium.jar"/>
@@ -107,7 +107,9 @@
                 <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->
             </fileset>
         </zip>
-        <!--<copy file="${dist.dir}/${version.name}.frp" todir="../../../freerapid/plugins/" overwrite="true" /> -->
+        <!--<copy file="${dist.dir}/${version.name}.frp" todir="../../../freerapid/plugins/" overwrite="true" />-->
+        <!--<copy file="${dist.dir}/${version.name}.frp" todir="../../../freerapid/FreeRapid-0.85alpha3/plugins/" overwrite="true" />-->
+
         <!--<zip destfile="${dist.dir}/${version.name}-src.frp">-->
         <!--<fileset dir=".">-->
         <!--<include name="${lib.dir}/"/>-->

@@ -1,5 +1,5 @@
 /*
- * $Id: RapidShareRunner.java 2588 2010-08-02 21:29:50Z ATom $
+ * $Id: RapidShareRunner.java 2638 2010-08-14 09:33:50Z ATom $
  *
  * Copyright (C) 2007  Tomáš Procházka & Ladislav Vitásek
  *
@@ -61,7 +61,7 @@ class RapidShareRunner extends AbstractRunner {
                 break;
             } catch (BadLoginException ex) {
                 setBadConfig();
-                logger.log(Level.WARNING, "Bad password or login!");
+                logger.log(Level.WARNING, "Login failed: " + ex.getMessage());
                 if (i > 4) {
                     throw new BadLoginException("No RS Premium account login information!");
                 }
@@ -103,7 +103,7 @@ class RapidShareRunner extends AbstractRunner {
             throw new PluginImplementationException("Parse URL failed");
         }
         final String fileId = matcher.group(1);
-        final String fileName = matcher.group(2).replace(".html", "").replace(".htm", "");
+        final String fileName = matcher.group(2); //.replace(".html", "").replace(".htm", "");
 
         PostMethod method = getPostMethod("http://api.rapidshare.com/cgi-bin/rsapi.cgi");
         method.addParameter("sub", "checkfiles_v1");
@@ -213,8 +213,8 @@ class RapidShareRunner extends AbstractRunner {
         pm.addParameter("sub", "getaccountdetails_v1");
         pm.addParameter("withcookie", "1");
         pm.addParameter("type", "prem");
-        pm.addParameter("login", URLEncoder.encode(login, "UTF-8"));
-        pm.addParameter("password", URLEncoder.encode(password, "UTF-8"));
+        pm.addParameter("login", login);
+        pm.addParameter("password", password);
 
         logger.info("Logging to RS...");
         try {
@@ -245,6 +245,4 @@ class RapidShareRunner extends AbstractRunner {
     }
     private boolean badConfig = false;
     private static String cookie = null;
-
-    ;
 }

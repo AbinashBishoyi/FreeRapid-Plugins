@@ -16,10 +16,11 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://duckload.com/download/781233/logovq.zip"));
+            httpFile.setNewURL(new URL("http://www.duckload.com/download/891450/logovq.zip"));//file
+            //httpFile.setNewURL(new URL("http://www.duckload.com/play/82F043FD0A69AE41"));//video
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8888); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final DuckLoadServiceImpl service = new DuckLoadServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation

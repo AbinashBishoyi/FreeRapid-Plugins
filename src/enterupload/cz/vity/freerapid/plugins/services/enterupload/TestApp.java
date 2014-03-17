@@ -16,7 +16,7 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://www.enterupload.com/69gx6il0oz7v/battlefield_1942_incremental_patch_v1.6_to_v1.61b.exe.html"));
+            httpFile.setNewURL(new URL("http://www.enterupload.com/f8u5ugpem8k2/logovq.zip.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //then we tries to download

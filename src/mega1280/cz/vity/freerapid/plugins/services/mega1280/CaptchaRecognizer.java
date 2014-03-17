@@ -16,7 +16,7 @@ final class CaptchaRecognizer {
     private final Collection<Template> trainedSet = new ArrayList<Template>(LETTERS.length);
 
     public CaptchaRecognizer() throws IOException {
-        //final BufferedImage image = ImageIO.read(new File("E:\\projects\\captchatest\\letters\\letters.png"));
+        //final BufferedImage image = ImageIO.read(new File("E:\\projects\\captchatest\\letters.png"));
         final BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream("/resources/letters.png"));
         int pos = 0;
         for (final char c : LETTERS) {
@@ -30,11 +30,11 @@ final class CaptchaRecognizer {
         if (image.getType() != BufferedImage.TYPE_BYTE_BINARY)
             throw new IllegalArgumentException("Image must be of type TYPE_BYTE_BINARY");
 
-        final StringBuilder builder = new StringBuilder(4);
+        final StringBuilder builder = new StringBuilder(5);
 
         for (int i = 0, x = 9; i < 5; i++, x += 28) {
             final BufferedImage subimage = prepareSubimage(image.getSubimage(x, 0, 20, 30));
-            builder.append(findResult(subimage).ch);
+            builder.append(findResult(subimage).getCh());
         }
 
         return builder.toString();
@@ -48,7 +48,7 @@ final class CaptchaRecognizer {
         return Collections.min(trainedSet);
     }
 
-    private class Template implements Comparable<Template> {
+    private static class Template implements Comparable<Template> {
         private char ch;
         private short[] data;
         private long distance;

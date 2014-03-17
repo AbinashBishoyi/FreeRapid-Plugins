@@ -9,21 +9,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  */
 public class EnteruploadServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "enterupload.com";
-    //private ServicePluginContext context = new ServicePluginContext();
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }
-    /*
-    public void run() throws Exception {
-        super.run();
-        new EnteruploadRunner().run(downloadTask, context);
-    }
-    */
 
     @Override
     public boolean supportsRunCheck() {

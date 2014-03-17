@@ -9,7 +9,6 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -25,25 +24,25 @@ import java.util.logging.Logger;
 class Mega1280FileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(Mega1280FileRunner.class.getName());
     private final static int COLOR_LIMIT = 200;
-    private final int captchaMax = 6;
+    private final static int CAPTCHA_MAX = 6;
     private int captchaCounter = 0;
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final HttpMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize();
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span class=\"clr05\"><b>", "</b></span><br />");
-        PlugUtils.checkFileSize(httpFile, content, "<strong>", "</strong>\n</td>");
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        PlugUtils.checkName(httpFile, getContentAsString(), "file: <span class=\"color_red\">", "</span>");
+        PlugUtils.checkFileSize(httpFile, getContentAsString(), "Dung l\u01B0\u1EE3ng: </b><span>", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -51,30 +50,23 @@ class Mega1280FileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
             final String firstPage = "name=\"code_security\" id=\"code_security\"";
             while (getContentAsString().contains(firstPage)) {
                 final HttpMethod httpMethod = stepCaptcha();
-                if (!makeRedirectedRequest(httpMethod)) //reload captcha page or move to another page
+                if (!makeRedirectedRequest(httpMethod))
                     throw new ServiceConnectionProblemException();
             }
-            if (!getContentAsString().contains("hddomainname"))
-                throw new ServiceConnectionProblemException("Invalid page content");
-            final String hddomainname = PlugUtils.getStringBetween(getContentAsString(), "hddomainname\" style=\"display:none\">", "</div>");
-            final String hdfolder = PlugUtils.getStringBetween(getContentAsString(), "hdfolder\" style=\"display:none\">", "</div>");
-            final String hdcode = PlugUtils.getStringBetween(getContentAsString(), "hdcode\" style=\"display:none\">", "</div>");
-            final String hdfilename = PlugUtils.getStringBetween(getContentAsString(), "hdfilename\" style=\"display:none\">", "</div>");
-            downloadTask.sleep(2);
-            final HttpMethod httpMethod = getMethodBuilder().setAction(hddomainname + hdfolder + hdcode + "/" + hdfilename).toGetMethod();
-
+            final HttpMethod httpMethod = getMethodBuilder().setActionFromTextBetween("onclick=\"window.location='", "'\"").toGetMethod();
+            //waiting is not necessary
+            //downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "var count =", ";") + 1);
+            setClientParameter("considerAsStream", "text/plain; charset=UTF-8");
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                logger.warning(getContentAsString());//log the info
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -87,8 +79,9 @@ class Mega1280FileRunner extends AbstractRunner {
         if (contentAsString.contains("File Not Found")
                 || contentAsString.contains("File not found")
                 || contentAsString.contains("Li\u00EAn k\u1EBFt b\u1EA1n v\u1EEBa ch\u1ECDn kh\u00F4ng t\u1ED3n t\u1EA1i tr\u00EAn h\u1EC7 th\u1ED1ng")
-                || contentAsString.contains("Y\u00EAu c\u1EA7u kh\u00F4ng \u0111\u01B0\u1EE3c t\u00ECm th\u1EA5y")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let user know in FRD
+                || contentAsString.contains("Y\u00EAu c\u1EA7u kh\u00F4ng \u0111\u01B0\u1EE3c t\u00ECm th\u1EA5y")
+                || contentAsString.contains("Li\u00EAn k\u1EBFt b\u1EA1n ch\u1ECDn kh\u00F4ng t\u1ED3n")) {
+            throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("Vui l\u00F2ng ch\u1EDD cho l\u01B0\u1EE3t download k\u1EBF ti\u1EBFp"))
             throw new ServiceConnectionProblemException("Please wait for your previous download to finish");
@@ -101,12 +94,12 @@ class Mega1280FileRunner extends AbstractRunner {
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaURL = "http://mega.1280.com/security_code.php";
         final String captcha;
-        if (captchaCounter < captchaMax) {
+        if (captchaCounter < CAPTCHA_MAX) {
             ++captchaCounter;
             final BufferedImage captchaImage = prepareCaptchaImage(captchaSupport.getCaptchaImage(captchaURL));
             //captcha = PlugUtils.recognize(captchaImage, "-d -1 -C a-z-0-9");
             captcha = new CaptchaRecognizer().recognize(captchaImage);
-            logger.info("Attempt " + captchaCounter + " of " + captchaMax + ", OCR recognized " + captcha);
+            logger.info("Attempt " + captchaCounter + " of " + CAPTCHA_MAX + ", OCR recognized " + captcha);
         } else {
             captcha = captchaSupport.getCaptcha(captchaURL);
             if (captcha == null) throw new CaptchaEntryInputMismatchException();

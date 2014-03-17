@@ -1,13 +1,12 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="mega.1280.com" version="1.1.3" vendor="Vity+ntoskrnl"
+<plugin id="mega.1280.com" version="1.1.4" vendor="Vity+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.mega1280.Mega1280ServiceImpl">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?mega\.1280\.com/file/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
         <attribute id="services" value="mega.1280.com"/>
-        <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

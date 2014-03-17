@@ -86,7 +86,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             return;
         }
 
-        final String cid = PlugUtils.getStringBetween(getContentAsString(), "\"content_id\", ", ")");
+        final String cid = PlugUtils.getStringBetween(getContentAsString(), "content_id =", ";");
         final String contentSelectUrl = getContentSelectUrl(cid);
         logger.info("contentSelectUrl = " + contentSelectUrl);
 

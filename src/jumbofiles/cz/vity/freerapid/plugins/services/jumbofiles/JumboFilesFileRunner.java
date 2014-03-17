@@ -39,8 +39,8 @@ class JumboFilesFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h2>Download File", "</h2>");
-        PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
+        PlugUtils.checkName(httpFile, content, "<TR><TD>", " <small>");
+        PlugUtils.checkFileSize(httpFile, content, "<small>(", ")</small>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -106,19 +106,6 @@ class JumboFilesFileRunner extends AbstractRunner {
         }
         checkDownloadProblems();
 
-        httpMethod = getMethodBuilder()
-                .setReferer(fileURL)
-                .setBaseURL(fileURL)
-                .setActionFromFormWhereTagContains("method_free", true)
-                .removeParameter("method_premium")
-                .toPostMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();
-            logger.warning(getContentAsString());
-            throw new ServiceConnectionProblemException();
-        }
-        checkDownloadProblems();
-
         MethodBuilder methodBuilder;
         try {
             methodBuilder = getMethodBuilder()
@@ -137,7 +124,7 @@ class JumboFilesFileRunner extends AbstractRunner {
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed") || contentAsString.contains("File is deleted or not found")) {
+        if (contentAsString.contains("Not Found or Deleted") || contentAsString.contains("file was removed") || contentAsString.contains("File is deleted or not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("server is in maintenance mode") || contentAsString.contains("we are performing maintenance on this server")) {

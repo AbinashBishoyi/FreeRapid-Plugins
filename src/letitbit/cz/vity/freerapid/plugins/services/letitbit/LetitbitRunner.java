@@ -208,7 +208,7 @@ class LetitbitRunner extends AbstractRunner {
     }
 
     private String getRandomAppId() {
-        final byte[] bytes = new byte[32];
+        final byte[] bytes = new byte[16];
         new Random().nextBytes(bytes);
         return Hex.encodeHexString(bytes);
     }

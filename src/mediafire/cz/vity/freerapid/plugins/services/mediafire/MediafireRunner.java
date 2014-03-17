@@ -47,7 +47,7 @@ class MediafireRunner extends AbstractRunner {
         final HttpMethod getMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-          
+
             if (getContentAsString().contains("dh('');")) { //if passworded
                 while (getContentAsString().contains("dh('');")) {
                     HttpMethod postPwd = getMethodBuilder()
@@ -91,7 +91,7 @@ class MediafireRunner extends AbstractRunner {
                     String rec = processUnescapeSection(getContentAsString());
 
                     if (!rec.contains("'download")) {
-                      throw new ServiceConnectionProblemException();   
+                      throw new ServiceConnectionProblemException();
                     }
                     String rawlink =  PlugUtils.getStringBetween(rec, posID + "').innerHTML = 'Your download is starting..';\" href=\"h", "\"> Click");
                     logger.info("raw URL " + rawlink);
@@ -126,7 +126,7 @@ class MediafireRunner extends AbstractRunner {
     }
 
     private String processUnescapeSection(String cont) throws UnsupportedEncodingException, PluginImplementationException {
-        String regx = "var [a-zA-Z0-9]+=unescape\\('([^']*)'\\);for\\(.=.;.<([a-zA-Z0-9]+);.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
+        String regx = "var [a-zA-Z0-9]+=unescape\\('([^']*)'\\);var [a-zA-Z0-9]+=([a-zA-Z0-9]+);for\\(.=.;.<[a-zA-Z0-9]+;.\\+\\+\\)[a-zA-Z0-9]+=[a-zA-Z0-9]+\\+\\(String.fromCharCode\\([a-zA-Z0-9]+.charCodeAt\\(.\\)\\^([0-9^]+)";
         Boolean loop = true;
         String globalCont = cont;
         String tuReturn = "";

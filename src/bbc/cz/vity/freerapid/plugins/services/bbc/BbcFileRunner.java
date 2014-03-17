@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
-import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
+import cz.vity.freerapid.plugins.services.tor.TorProxyClient;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -128,10 +128,8 @@ class BbcFileRunner extends AbstractRtmpRunner {
             }
             String mediaSelector = "http://www.bbc.co.uk/mediaselector/4/mtis/stream/" + pid + "?cb=" + new Random().nextInt(100000);
             method = getGetMethod(mediaSelector);
-            if (!client.getSettings().isProxySet()) {
-                Tunlr.setupMethod(method);
-            }
-            if (!makeRedirectedRequest(method)) {
+            final TorProxyClient torClient = TorProxyClient.forCountry("gb", client, getPluginService().getPluginContext().getConfigurationStorageSupport());
+            if (!torClient.makeRequest(method)) {
                 throw new ServiceConnectionProblemException();
             }
             matcher = getMatcherAgainstContent("<error id=\"(.+?)\"");
@@ -158,7 +156,8 @@ class BbcFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("this programme is not available")) {
+        if (getContentAsString().contains("this programme is not available")
+                || getContentAsString().contains("Not currently available on BBC iPlayer")) {
             throw new URLNotAvailableAnymoreException("This programme is not available anymore");
         }
         if (getContentAsString().contains("Page not found") || getContentAsString().contains("page was not found")) {

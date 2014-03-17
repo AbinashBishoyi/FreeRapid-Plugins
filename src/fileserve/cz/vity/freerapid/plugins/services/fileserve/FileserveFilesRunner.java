@@ -115,7 +115,7 @@ class FileserveFilesRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<h1>", "<");
-        final Matcher size = getMatcherAgainstContent("<strong>\\s*(\\d).+?\\s*</strong>");
+        final Matcher size = getMatcherAgainstContent("<strong>\\s*(\\d.+?)\\s*</strong>");
         if (!size.find()) {
             throw new PluginImplementationException("File size not found");
         }

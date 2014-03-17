@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="FreakShare" version="1.0.1" vendor="Thumb"
+<plugin id="FreakShare" version="1.0.3" vendor="Thumb+ntoskrnl"
         class="cz.vity.freerapid.plugins.services.freakshare.FreakShareServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?freakshare\.net/.+"/>
+        <attribute id="urlRegex" value="http://(www\.)?freakshare\.(com|net)/.+"/>
         <attribute id="minver" value="0.83"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="freakshare.net"/>
+        <attribute id="services" value="freakshare.com"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 

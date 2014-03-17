@@ -6,109 +6,117 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.IOException;
 import java.util.Calendar;
-import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
- * @author Ladislav Vitasek, Ludek Zika
+ * @author Ladislav Vitasek, Ludek Zika, ntoskrnl
  */
 class UploadingRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadingRunner.class.getName());
 
-    public UploadingRunner() {
-        super();
-    }
-
+    @Override
     public void runCheck() throws Exception {
         super.runCheck();
         addCookie(new Cookie(".uploading.com", "setlang", "en", "/", 86400, false));
         addCookie(new Cookie(".uploading.com", "_lang", "en", "/", 86400, false));
         addCookie(new Cookie(".uploading.com", "lang", "1", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRedirectedRequest(getMethod)) {
-            checkNameAndSize(getContentAsString());
-        } else
-            throw new PluginImplementationException();
+        checkUrl();
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
+    @Override
     public void run() throws Exception {
         super.run();
         addCookie(new Cookie(".uploading.com", "setlang", "en", "/", 86400, false));
         addCookie(new Cookie(".uploading.com", "_lang", "en", "/", 86400, false));
         addCookie(new Cookie(".uploading.com", "lang", "1", "/", 86400, false));
-        final GetMethod getMethod = getGetMethod(fileURL);
-        getMethod.setFollowRedirects(true);
-        if (makeRedirectedRequest(getMethod)) {
+        checkUrl();
+        HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());
-            client.setReferer(fileURL);
-            HttpMethod method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("downloadform", true).toHttpMethod();
+            checkNameAndSize();
+            method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("downloadform", true).toPostMethod();
+            downloadTask.sleep(2);
             if (makeRedirectedRequest(method)) {
                 checkProblems();
-                String fileId;
-                int wait;
-                try {
-                    fileId = PlugUtils.getStringBetween(getContentAsString(), "file_id: ", ", ");
-                } catch(PluginImplementationException e) {
-                    Matcher matcher = getMatcherAgainstContent("file_id[^\\d]*(\\d*)");
-                    if( !matcher.find() )
-                        throw e;
-                    fileId = matcher.group(1);
+                final String fileId = PlugUtils.getParameter("file_id", getContentAsString());
+                if (getContentAsString().contains("timeadform")) {
+                    method = getMethodBuilder().setReferer(fileURL).setActionFromFormByName("timeadform", true).toPostMethod();
+                    int wait;
+                    try {
+                        wait = PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")");
+                    } catch (PluginImplementationException e) {
+                        wait = PlugUtils.getNumberBetween(getContentAsString(), "timead_counter\">", "<");
+                    }
+                    downloadTask.sleep(wait + 1);
+                    if (!makeRedirectedRequest(method)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
                 }
-                method = getMethodBuilder().setAction("http://uploading.com/files/get/?JsHttpRequest=" + new Random().nextInt(5000000)).setParameter("file_id", fileId).setParameter("pass", "").setParameter("code", PlugUtils.getStringBetween(fileURL, "files/", "/")).setParameter("action", "get_link").toHttpMethod();
                 try {
-                    wait = PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")");
-                } catch(PluginImplementationException e) {
-                    wait = PlugUtils.getNumberBetween(getContentAsString(), "timead_counter\">", "</span>");
+                    downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "start_timer(", ")") + 1);
+                } catch (PluginImplementationException e) {
+                    //no waiting time
                 }
-                this.downloadTask.sleep(wait + 1);
+                method = getMethodBuilder()
+                        .setReferer(fileURL)
+                        .setAction("http://uploading.com/files/get/?JsHttpRequest=" + System.currentTimeMillis() + "-xml")
+                        .setParameter("file_id", fileId)
+                        .setParameter("pass", "")
+                        .setParameter("code", PlugUtils.getStringBetween(fileURL, "get/", "/"))
+                        .setParameter("action", "get_link")
+                        .toGetMethod();
                 if (makeRedirectedRequest(method)) {
                     checkProblems();
-                    logger.info("Ajax response:" + getContentAsString());
-                    if (!getContentAsString().contains("\"link\""))
+                    final Matcher matcher = getMatcherAgainstContent("\"link\"\\s*?:\\s*?\"(http.+?)\"");
+                    if (!matcher.find()) {
                         throw new PluginImplementationException("Download link not found");
-                    final String link = "http:" + PlugUtils.getStringBetween(getContentAsString(), "\"link\": \"http:", "\" } }").replaceAll("\\\\/", "/");
-                    logger.info("Link:" + link);
-                    method = getMethodBuilder().setAction(link).toHttpMethod();
+                    }
+                    method = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1).replace("\\/", "/")).toGetMethod();
                     if (!tryDownloadAndSaveFile(method)) {
                         checkProblems();
-                        logger.warning(getContentAsString());
-                        throw new IOException("File input stream is empty.");
+                        throw new ServiceConnectionProblemException("Error starting download");
                     }
                 } else {
-                    logger.info(getContentAsString());
-                    throw new PluginImplementationException();
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
                 }
             } else {
-                logger.info(getContentAsString());
-                throw new PluginImplementationException();
+                checkProblems();
+                throw new ServiceConnectionProblemException();
             }
-        } else
-            throw new PluginImplementationException();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
-    private void checkNameAndSize(String content) throws Exception {
-
-        if (!content.contains("uploading.com")) {
-            logger.warning(content);
-            throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
+    private void checkUrl() {
+        if (!fileURL.contains("/get")) {
+            fileURL = fileURL.replaceFirst("/files", "/files/get");
         }
-        checkProblems();
+    }
 
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkFileSize(httpFile, getContentAsString(), "File size: <b>", "</b> <br/>");
         PlugUtils.checkName(httpFile, getContentAsString(), "<h2>", "</h2><br/>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-
-    private void checkProblems() throws ServiceConnectionProblemException, YouHaveToWaitException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ErrorDuringDownloadingException {
         if (getContentAsString().contains("Your IP address is currently downloading")) {
-            throw new ServiceConnectionProblemException("Your IP address is currently downloading a file.\n" + "Please wait until the downloading process has been completed.");
+            throw new ServiceConnectionProblemException("Your IP address is currently downloading a file.\nPlease wait until the downloading process has been completed.");
         }
         if (getContentAsString().contains("You still need to wait for the start of your download")) {
             throw new YouHaveToWaitException("You still need to wait for the start of your download", 65);
@@ -132,15 +140,14 @@ class UploadingRunner extends AbstractRunner {
         if (getContentAsString().contains("Download Limit")) {
             Matcher matcher = getMatcherAgainstContent("Sorry[\\D]*(\\d)* minutes");
             int pause = 5;
-            if( matcher.find() ) {
-                pause = Integer.parseInt( matcher.group(1) );
+            if (matcher.find()) {
+                pause = Integer.parseInt(matcher.group(1));
             }
-            throw new YouHaveToWaitException("Download Limit", 60 * pause );
+            throw new YouHaveToWaitException("Download Limit", 60 * pause);
         }
-
     }
 
-    public static int getSecondToMidnight() {
+    private static int getSecondToMidnight() {
         Calendar now = Calendar.getInstance();
         Calendar midnight = Calendar.getInstance();
         midnight.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH) + 1, 0, 0, 1);

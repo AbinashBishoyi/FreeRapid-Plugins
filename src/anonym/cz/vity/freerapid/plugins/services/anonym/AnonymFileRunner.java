@@ -17,7 +17,7 @@ class AnonymFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        String url = URLDecoder.decode(fileURL.substring(fileURL.indexOf("?") + 1));
+        String url = URLDecoder.decode(fileURL.substring(fileURL.indexOf("?") + 1), "UTF-8");
 
         logger.info("New URL: " + url);
 

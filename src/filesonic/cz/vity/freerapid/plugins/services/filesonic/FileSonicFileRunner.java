@@ -111,6 +111,9 @@ class FileSonicFileRunner extends AbstractRunner {
         if (content.contains("File not found") || content.contains("This file was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (content.contains("The file that you're trying to download is larger than")) {
+            throw new NotRecoverableDownloadException("Only premium users can download large files");
+        }
     }
 
 }

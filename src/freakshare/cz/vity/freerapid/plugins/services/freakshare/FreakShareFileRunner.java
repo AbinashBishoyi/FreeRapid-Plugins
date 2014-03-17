@@ -1,20 +1,10 @@
 package cz.vity.freerapid.plugins.services.freakshare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-
-import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.cookie.CookiePolicy;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpClientParams;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -22,25 +12,22 @@ import java.util.regex.Matcher;
 /**
  * Class which contains main code
  *
- * @author Thumb
+ * @author Thumb, ntoskrnl
  */
 class FreakShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FreakShareFileRunner.class.getName());
 
-
     @Override
-    public void runCheck() throws Exception { //this method validates file
-    	super.runCheck();
-    	final GetMethod getMethod = getGetMethod(fileURL);//make first request
-    	if (makeRedirectedRequest(getMethod)) {
-    		checkProblems();
-    		Matcher m=PlugUtils.matcher("/([^/]*)$", fileURL);
-    		if(!m.find())
-    			unimplemented(String.format("Error getting filename from URL: %s", fileURL));
-    		httpFile.setFileName(m.group(1));
-    		httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-    	} else
-    		throw new ServiceConnectionProblemException();
+    public void runCheck() throws Exception {
+        super.runCheck();
+        final HttpMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            checkProblems();
+            checkNameAndSize();
+        } else {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
     }
 
     @Override
@@ -50,67 +37,54 @@ class FreakShareFileRunner extends AbstractRunner {
         runCheck();
 
         waitForTime();
-        final HttpMethod httpMethod = getMethodBuilder()
-        	.setActionFromFormWhereActionContains("http://freakshare.net/files", true)
-        	.toHttpMethod();
-            
+        HttpMethod httpMethod = getMethodBuilder()
+                .setActionFromFormWhereActionContains("http://freakshare.net/files", true)
+                .toHttpMethod();
 
-        if(!makeRequest(httpMethod))
-        	throw new ServiceConnectionProblemException();
+        if (!makeRedirectedRequest(httpMethod))
+            throw new ServiceConnectionProblemException();
         checkProblems();
         waitForTime();
 
-        final HttpMethod httpMethod2 = getMethodBuilder()
-        	.setActionFromFormWhereActionContains("http://freakshare.net/files", true)
-        	.toHttpMethod();
-        
-        /* The last request is redirected. However, we cannot use
-         * normal redirection infrastructure, as the server sends
-         * binary data as text/plain, and on top of that, with gzip
-         * content-encoding. This would cause OOM while decoding
-         * the gzip, therefore, we need to reject that encoding
-         * with the http header, which cannot be done for
-         * automatically redirected request.
-         */
-        makeRequest(httpMethod2);
-        checkProblems();
-
-        if(httpMethod2.getStatusCode() / 100 != 3)
-        	unimplemented(String.format("Unexpected status line: %s", httpMethod2.getStatusLine()));
-        
-        final HttpMethod httpMethod3=getGetMethod(httpMethod2.getResponseHeader("Location").getValue());
-        	
-       	httpMethod3.setRequestHeader("Accept-Encoding", "");
-        client.getHTTPClient().getParams().setParameter("considerAsStream", "");
-
-        //here is the download link extraction
-        if (!tryDownloadAndSaveFile(httpMethod3)) {
-        	checkProblems();
-        	unimplemented("Failed to get the file");
+        httpMethod = getMethodBuilder()
+                .setActionFromFormWhereActionContains("http://freakshare.net/files", true)
+                .toHttpMethod();
+        if (!tryDownloadAndSaveFile(httpMethod)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
-    private final void waitForTime() throws InterruptedException {
-    	Matcher m=PlugUtils.matcher("var +time *= *([0-9]+(\\.[0-9]*)?)", getContentAsString());
-    	if(!m.find()) return;
-    	downloadTask.sleep((int)(double)Double.valueOf(m.group(1)));
+    private void waitForTime() throws Exception {
+        final Matcher matcher = getMatcherAgainstContent("var\\s+?time\\s*?=\\s*?(\\d+(\\.\\d+)?)");
+        if (matcher.find()) {
+            final int wait = Double.valueOf(matcher.group(1)).intValue();
+            if (wait > 0) {
+                downloadTask.sleep(wait + 1);
+            }
+        }
     }
+
+    private void checkNameAndSize() throws ErrorDuringDownloadingException {
+        final Matcher matcher = getMatcherAgainstContent("<h1 class=\"box_heading\"[^<>]+?>(.+?) - (.+?)</");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name/size not found");
+        }
+        httpFile.setFileName(matcher.group(1));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        Matcher matcher=PlugUtils.matcher("<h1[^<>]*>[^<>]*Error[^<>]*</h1>[^<>]*<div[^<>]*>([^<>]*)", contentAsString);
-        if(matcher.find()) {
-        	String detail=matcher.group(1);
-        	if(PlugUtils.matcher("doesn.?t\\s+exist", detail).find())
-        		throw new URLNotAvailableAnymoreException(String.format("Error: %s", detail)); //let to know user in FRD
-        	if(PlugUtils.matcher("can.?t\\s+download\\s+more\\s+th.n", detail).find())
-        		throw new YouHaveToWaitException(String.format("You have to wait: %s", detail), 1800); // wait 30 minutes (as we have no way to tell how long)
-        	unimplemented(String.format("Unknown error: %s", detail));
+        Matcher matcher = getMatcherAgainstContent("<h1[^<>]*>[^<>]*Error[^<>]*</h1>[^<>]*<div[^<>]*>([^<>]*)");
+        if (matcher.find()) {
+            String detail = matcher.group(1);
+            if (PlugUtils.find("does.?n.?t\\s+exist", detail))
+                throw new URLNotAvailableAnymoreException(detail);
+            if (PlugUtils.find("can.?t\\s+download\\s+more\\s+th.n", detail))
+                throw new YouHaveToWaitException(detail, 1800); // wait 30 minutes (as we have no way to tell how long)
+            throw new NotRecoverableDownloadException(detail);
         }
-    }
-    
-    private final void unimplemented(String detail) throws PluginImplementationException {
-    	logger.warning(getContentAsString());//log the info
-    	throw new PluginImplementationException(detail);//some unknown problem
     }
 
 }

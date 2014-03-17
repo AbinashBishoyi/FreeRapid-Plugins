@@ -9,10 +9,12 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 public class UploadingServiceImpl extends AbstractFileShareService {
     private static final String SERVICE_NAME = "uploading.com";
 
+    @Override
     public String getName() {
         return SERVICE_NAME;
     }
 
+    @Override
     public int getMaxDownloadsFromOneIP() {
         return 1;
     }
@@ -26,6 +28,5 @@ public class UploadingServiceImpl extends AbstractFileShareService {
     protected PluginRunner getPluginRunnerInstance() {
         return new UploadingRunner();
     }
-
 
 }

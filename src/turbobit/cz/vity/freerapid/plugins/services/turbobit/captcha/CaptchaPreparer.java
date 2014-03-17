@@ -87,7 +87,7 @@ public class CaptchaPreparer {
 
         @Override
         public int compareTo(MyImage that) {
-            return Double.valueOf(that.similarity).compareTo(this.similarity);
+            return Double.compare(that.similarity, this.similarity);
         }
     }
 

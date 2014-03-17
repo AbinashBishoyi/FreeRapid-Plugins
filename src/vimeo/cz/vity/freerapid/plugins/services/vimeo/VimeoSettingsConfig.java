@@ -13,4 +13,11 @@ public class VimeoSettingsConfig {
     public void setVideoQuality(final VideoQuality videoQuality) {
         this.videoQuality = videoQuality;
     }
+
+    @Override
+    public String toString() {
+        return "VimeoSettingsConfig{" +
+                "videoQuality=" + videoQuality +
+                '}';
+    }
 }

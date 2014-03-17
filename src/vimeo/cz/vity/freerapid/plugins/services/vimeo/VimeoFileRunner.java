@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,10 +48,15 @@ class VimeoFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String name;
+        Matcher matcher;
         if (getContentAsString().contains("<meta property=\"og:title\" content=\"")) {
-            name = PlugUtils.getStringBetween(getContentAsString(), "<meta property=\"og:title\" content=\"", "\"");
+            name = PlugUtils.getStringBetween(getContentAsString(), "<meta property=\"og:title\" content=\"", "\"").trim();
         } else {
-            name = PlugUtils.getStringBetween(getContentAsString(), "<h1 itemprop=\"name\">", "</h1>");
+            matcher = getMatcherAgainstContent("<h1 itemprop=\"name\"[^<>]*?>(.+?)</h1>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File name not found");
+            }
+            name = matcher.group(1).trim();
         }
         httpFile.setFileName(PlugUtils.unescapeHtml(name) + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -74,7 +80,10 @@ class VimeoFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             setConfig();
-            if (!tryDownloadAndSaveFile(getPlayMethod())) {
+            VimeoVideo vimeoVideo = getSelectedVideo();
+            logger.info("Config settings : " + config);
+            logger.info("Downloading video : " + vimeoVideo);
+            if (!tryDownloadAndSaveFile(getGetMethod(vimeoVideo.url))) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
             }
@@ -84,48 +93,43 @@ class VimeoFileRunner extends AbstractRunner {
         }
     }
 
-    private HttpMethod getPlayMethod() throws ErrorDuringDownloadingException {
-        final String strQualities;
-        if (getContentAsString().contains("\"qualities\":[")) {
-            strQualities = PlugUtils.getStringBetween(getContentAsString(), "\"qualities\":[", "]").replace("\"", "");
-        } else if (getContentAsString().contains("\"h264\":[")) {
-            strQualities = PlugUtils.getStringBetween(getContentAsString(), "\"h264\":[", "]").replace("\"", "");
+    private VimeoVideo getSelectedVideo() throws ErrorDuringDownloadingException, IOException {
+        if (getContentAsString().contains("data-config-url=\"")) {
+            HttpMethod method = getMethodBuilder()
+                    .setReferer(fileURL)
+                    .setAction(PlugUtils.replaceEntities(PlugUtils.getStringBetween(getContentAsString(), "data-config-url=\"", "\"")))
+                    .toGetMethod();
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+
         } else {
-            throw new PluginImplementationException("Error getting qualities token");
+            throw new PluginImplementationException("Data config URL not found");
         }
-        logger.info("Available qualities : " + strQualities);
-        //Example : hd,sd,mobile
-        final String[] qualityTokens = strQualities.split(",");
+
+        Matcher matcher = getMatcherAgainstContent("\"(?:qualities|h264|vp6)\":\\{(.+?)\\},\"(?:codecs|hls)\"");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Error getting video streams");
+        }
+        String qualitiesContent = matcher.group(1);
+        matcher = PlugUtils.matcher("\"(.+?)\":\\{(.+?)}", qualitiesContent);
+
         final List<VimeoVideo> videoList = new LinkedList<VimeoVideo>();
-        for (final VideoQuality videoQuality : VideoQuality.values()) {
-            for (final String qualityToken : qualityTokens) {
-                if (videoQuality.name().toLowerCase(Locale.ENGLISH).equals(qualityToken.trim())) {
-                    final VimeoVideo video = new VimeoVideo(videoQuality);
+        while (matcher.find()) {
+            for (final VideoQuality videoQuality : VideoQuality.values()) {
+                if (videoQuality.name().toLowerCase(Locale.ENGLISH).equals(matcher.group(1))) {
+                    final JSON json = new JSON(matcher.group(2));
+                    final VimeoVideo video = new VimeoVideo(videoQuality, json.getStringVar("url"));
                     videoList.add(video);
-                    break;
                 }
             }
         }
         if (videoList.isEmpty()) {
             throw new PluginImplementationException("Quality list is empty");
         }
-        final String qualityToken = Collections.min(videoList).getQualityToken();
-
-        final Matcher matcher = getMatcherAgainstContent("\\{config:\\{([^\r\n]+\\s*[^\r\n]+)");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Player config not found");
-        }
-        final JSON json = new JSON(matcher.group(1));
-        return getGetMethod(String.format("http://%s/play_redirect?clip_id=%s&sig=%s&time=%s&quality=%s&codecs=%s&type=%s&embed_location=%s",
-                json.getStringVar("player_url"),
-                json.getNumVar("id"),
-                json.getStringVar("signature"),
-                json.getNumVar("timestamp"),
-                qualityToken,
-                "H264,VP8,VP6",
-                "moogaloop_local",
-                ""
-        ));
+        return Collections.min(videoList);
     }
 
     private boolean isPasswordProtected() {
@@ -175,26 +179,27 @@ class VimeoFileRunner extends AbstractRunner {
     }
 
     private class VimeoVideo implements Comparable<VimeoVideo> {
-        private final static int NEAREST_LOWER_PENALTY = 10;
+        private final static int LOWER_PENALTY_PENALTY = 10;
         private final VideoQuality videoQuality;
-        private int weight;
+        private final String url;
+        private final int weight;
 
-        public VimeoVideo(final VideoQuality videoQuality) {
+        public VimeoVideo(final VideoQuality videoQuality, final String url) {
             this.videoQuality = videoQuality;
-            calcWeight();
+            this.url = url;
+            this.weight = calcWeight();
             logger.info("Found video: " + this);
         }
 
-        private void calcWeight() {
+        private int calcWeight() {
             final VideoQuality configQuality = config.getVideoQuality();
             //prefer nearest better if the same quality doesn't exist
-            weight = videoQuality.compareTo(configQuality) < 0
-                    ? Math.abs(videoQuality.ordinal() - configQuality.ordinal()) + NEAREST_LOWER_PENALTY
+            return videoQuality.compareTo(configQuality) < 0
+                    ? Math.abs(videoQuality.ordinal() - configQuality.ordinal()) + LOWER_PENALTY_PENALTY
                     : videoQuality.ordinal() - configQuality.ordinal();
         }
 
-        public String getQualityToken() {
-            logger.info("Downloading video: " + this);
+        public String getQualityLabel() {
             return videoQuality.name().toLowerCase(Locale.ENGLISH);
         }
 
@@ -207,6 +212,7 @@ class VimeoFileRunner extends AbstractRunner {
         public String toString() {
             return "VimeoVideo{" +
                     "videoQuality=" + videoQuality +
+                    ", url='" + url + '\'' +
                     ", weight=" + weight +
                     '}';
         }

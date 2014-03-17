@@ -19,7 +19,7 @@ class VimeoSettingsPanel extends JPanel {
 
     private void initPanel() {
         final JLabel qualityLabel = new JLabel("Preferred video quality:");
-        final JComboBox qualityList = new JComboBox(VideoQuality.getItems());
+        final JComboBox<VideoQuality> qualityList = new JComboBox<VideoQuality>(VideoQuality.getItems());
         qualityLabel.setLabelFor(qualityList);
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);

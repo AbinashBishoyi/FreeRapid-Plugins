@@ -34,8 +34,8 @@ class LuckyShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<span style=\"font-weight: bold; font-size: 18px;\">", "</span>");
-        PlugUtils.checkFileSize(httpFile, content, "<p>Filesize: ", "</p>");
+        PlugUtils.checkName(httpFile, content, "<h1 class='file_name'>", "</h1>");
+        PlugUtils.checkFileSize(httpFile, content, "<span class='file_size'>Filesize: ", "</span></td>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

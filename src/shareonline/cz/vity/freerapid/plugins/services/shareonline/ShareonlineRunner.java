@@ -1,17 +1,17 @@
 package cz.vity.freerapid.plugins.services.shareonline;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.io.InputStream;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -81,17 +81,17 @@ class ShareonlineRunner extends AbstractRunner {
                     .setParameter("dl_free", "1")
                     .setParameter("choice", "free")
                     .toPostMethod();
-            final HttpMethod imgMethod = getMethodBuilder()
-                    .setAction("http://www.share-online.biz/template/images/corp/uploadking.php?show=last")
-                    .toGetMethod();
-            makeRedirectedRequest(imgMethod);
+            requestImage("http://www.share-online.biz/template/images/corp/uploadking.php?show=last");
             if (makeRedirectedRequest(method)) {
                 checkProblems();
-                final int wait = PlugUtils.getNumberBetween(getContentAsString(), "var wait=", ";");
-                final String dl = new String(Base64.decodeBase64(
+                final int wait = PlugUtils.getNumberBetween(getContentAsString(), "var wait=", ";") + 1;
+                String dl = new String(Base64.decodeBase64(
                         PlugUtils.getStringBetween(getContentAsString(), "var dl=\"", "\";")), "UTF-8");
+                if (dl.contains("chk||")) {
+                    dl = stepCaptcha(dl, wait);
+                }
                 method = getMethodBuilder().setAction(dl).toGetMethod();
-                downloadTask.sleep(wait + 1);
+                downloadTask.sleep(wait);
                 if (!tryDownloadAndSaveFile(method)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
@@ -116,6 +116,50 @@ class ShareonlineRunner extends AbstractRunner {
         if (getContentAsString().contains("No other download thread possible")) {
             throw new ServiceConnectionProblemException("No other download thread possible");
         }
+    }
+
+    private void requestImage(final String url) throws Exception {
+        final HttpMethod method = getMethodBuilder().setAction(url).toGetMethod();
+        final InputStream is = client.makeRequestForFile(method);
+        if (is != null) {
+            try {
+                is.close();
+            } catch (final Exception e) {
+                LogUtils.processException(logger, e);
+            }
+        }
+    }
+
+    private String stepCaptcha(String dl, final int wait) throws Exception {
+        final long startTime = System.currentTimeMillis();
+        final String url = PlugUtils.getStringBetween(getContentAsString(), "var url='", "';")
+                .replace("///", "/free/captcha/");
+        dl = dl.substring(dl.indexOf("chk||") + "chk||".length());
+        String content;
+        do {
+            final ReCaptcha rc = new ReCaptcha("6LdatrsSAAAAAHZrB70txiV5p-8Iv8BtVxlTtjKX", client);
+            final String captcha = getCaptchaSupport().getCaptcha(rc.getImageURL());
+            if (captcha == null) {
+                throw new CaptchaEntryInputMismatchException();
+            }
+            rc.setRecognized(captcha);
+            final HttpMethod method = rc.modifyResponseMethod(getMethodBuilder()
+                    .setAction(url)
+                    .setParameter("dl_free", "1")
+                    .setParameter("captcha", dl))
+                    .toPostMethod();
+            method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+            final long toWait = startTime + (wait * 1000) - System.currentTimeMillis();
+            if (toWait > 0) {
+                downloadTask.sleep((int) Math.ceil(toWait / 1000d));
+            }
+            if (!makeRedirectedRequest(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            content = getContentAsString().trim();
+        } while (content.equals("0"));
+        return new String(Base64.decodeBase64(content), "UTF-8");
     }
 
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.shareonline.ShareonlineShareServiceImpl"
-        id="shareonline.biz" vendor="Lukiz+ntoskrnl" version="2.0.0">
+        id="shareonline.biz" vendor="Lukiz+ntoskrnl" version="2.1.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?share\-online\.biz/dl/.+"/>
         <attribute id="minver" value="0.852"/>
@@ -10,7 +10,10 @@
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
+                plugin-version="1.0" reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="shareonline.biz" path="/" type="code"/>
     </runtime>

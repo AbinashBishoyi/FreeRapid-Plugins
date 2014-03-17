@@ -59,15 +59,15 @@ class UploadedToRunner extends AbstractRunner {
                     }
                     if (!getMatcherAgainstContent("err\"?:\"?captcha").find()) {
                         /**
-                         * Abinash Bishoyi: Updated the error message string
+                         * Abinash Bishoyi: Updated the error message
                          */
-                        if (getContentAsString().contains("You've reached")) {
+                        if (getContentAsString().contains("You have reached")) {
                             throw new ServiceConnectionProblemException("Free download limit reached");
                         }
-                        if (getContentAsString().contains("You're already")) {
+                        if (getContentAsString().contains("You are already")) {
                             throw new ServiceConnectionProblemException("You are already downloading a file");
                         }
-                        if (getContentAsString().contains("Only Premiumusers") || getContentAsString().contains("In order to download files bigger")) {
+                        if (getContentAsString().contains("Only premium users") || getContentAsString().contains("In order to download files bigger")) {
                             throw new NotRecoverableDownloadException("Only premium users may download files larger than 1 GB");
                         }
                         if (getContentAsString().contains("The free download") || getContentAsString().contains("In order to download files bigger")) {

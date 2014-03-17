@@ -41,7 +41,9 @@ class MegaSharesFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<h1 class=\"black xxl\" style=\"letter-spacing: -1px\">", "</h1>");
+        final Matcher matcher = getMatcherAgainstContent("<h1 class=\".+?\" style=\".+?\" title=\".+?\">(.+?)</h1>");
+        if (!matcher.find()) throw new PluginImplementationException("File name not found");
+        httpFile.setFileName(matcher.group(1));
         PlugUtils.checkFileSize(httpFile, content, "Filesize:</span></strong>", "<br");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

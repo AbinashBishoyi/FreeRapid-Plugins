@@ -4,8 +4,8 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpMethod;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -21,7 +21,8 @@ class LetitbitRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        addCookie(new Cookie(".letitbit.net","lang", "en", "/", null, false));
+        addCookie(new Cookie(".letitbit.net", "lang", "en", "/", null, false));
+        setPageEncoding("Windows-1251");
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRequest(httpMethod)) {
@@ -35,10 +36,12 @@ class LetitbitRunner extends AbstractRunner {
             logger.warning(getContentAsString());
             throw new InvalidURLOrServiceProblemException("Invalid URL or unindentified service");
         }
-        if (contentAsString.contains("file was not found")) {
+
+        if (contentAsString.contains("file was not found") || contentAsString.contains("\u043D\u0430\u0439\u0434\u0435\u043D") ) {
             throw new URLNotAvailableAnymoreException(String.format("The requested file was not found"));
 
-        }
+        }             
+    
         PlugUtils.checkFileSize(httpFile, contentAsString, "File size::</span>", "</h1>");
         PlugUtils.checkName(httpFile, contentAsString, "File::</span>", "</h1>");
 
@@ -48,11 +51,19 @@ class LetitbitRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".letitbit.net","lang", "en", "/", null, false));
+        addCookie(new Cookie(".letitbit.net", "lang", "en", "/", null, false));
         client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
         final HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
         if (makeRedirectedRequest(httpMethod)) {
             checkNameAndSize(getContentAsString());
+
+            final HttpMethod httpMethod2 = getMethodBuilder().setActionFromFormByName("dvifree", true).toHttpMethod();
+            if (!makeRedirectedRequest(httpMethod2)) {
+                checkProblems();
+                throw new InvalidURLOrServiceProblemException("Free download link not found");
+
+            }
+
             boolean useOCR = true;
             while (true) {
                 stepCaptcha(useOCR);
@@ -80,7 +91,7 @@ class LetitbitRunner extends AbstractRunner {
                     if (getContentAsString().contains("javascript:history.go(-1);")) {
                         logger.info("Wrong captcha");
                         if (useOCR) useOCR = false;
-                        makeRedirectedRequest(httpMethod);
+                        makeRedirectedRequest(httpMethod2);
                         continue;
                     }
                     checkProblems();

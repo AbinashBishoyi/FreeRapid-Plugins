@@ -46,8 +46,8 @@ class MediafireRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
 
-            if (getContentAsString().contains("- Password Protected File -")) {
-                while (getContentAsString().contains("- Password Protected File -")) {
+            if (getContentAsString().contains("dh('');")) {
+                while (getContentAsString().contains("dh('');")) {
                     //this doesn't work
                     HttpMethod postPwd = getMethodBuilder()
                             .setReferer(fileURL)

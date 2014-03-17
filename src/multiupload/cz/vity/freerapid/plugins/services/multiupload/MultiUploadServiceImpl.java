@@ -34,8 +34,9 @@ public class MultiUploadServiceImpl extends AbstractFileShareService {
     @Override
     public void showOptions() throws Exception {
         super.showOptions();
-        getPluginContext().getDialogSupport().showOKDialog(new MultiUploadSettingsPanel(this), "MultiUpload settings");
-        getPluginContext().getConfigurationStorageSupport().storeConfigToFile(config, CONFIG_FILE);
+        if (getPluginContext().getDialogSupport().showOKCancelDialog(new MultiUploadSettingsPanel(this), "MultiUpload settings")) {
+            getPluginContext().getConfigurationStorageSupport().storeConfigToFile(config, CONFIG_FILE);
+        }
     }
 
     public MultiUploadSettingsConfig getConfig() throws Exception {
@@ -44,7 +45,6 @@ public class MultiUploadServiceImpl extends AbstractFileShareService {
         if (config == null) {
             if (!storage.configFileExists(CONFIG_FILE)) {
                 config = new MultiUploadSettingsConfig();
-                config.setDefault();
             } else {
                 config = storage.loadConfigFromFile(CONFIG_FILE, MultiUploadSettingsConfig.class);
             }

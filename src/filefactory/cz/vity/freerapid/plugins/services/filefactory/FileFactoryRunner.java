@@ -114,7 +114,7 @@ class FileFactoryFileRunner extends AbstractRunner {
             throw new YouHaveToWaitException("You are currently downloading too many files at once. Multiple simultaneous downloads are only permitted for Premium Members", 60);
         }
 
-        Matcher matcher = getMatcherAgainstContent("Your IP \\((.+?)\\) has exceeded the download limit for free users");
+        Matcher matcher = getMatcherAgainstContent("You(?:r IP)? \\((.+?)\\) (?:has|have) exceeded the download limit for free users");
 
         if (matcher.find()) {
             final String userIP = matcher.group(1);
@@ -131,7 +131,7 @@ class FileFactoryFileRunner extends AbstractRunner {
                 }
             }
 
-            throw new YouHaveToWaitException(String.format("Your IP %s has exceeded the download limit for free users", userIP), waitSeconds);
+            throw new YouHaveToWaitException(String.format("You (%s) have exceeded the download limit for free users", userIP), waitSeconds);
         }
     }
 

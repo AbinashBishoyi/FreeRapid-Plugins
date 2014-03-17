@@ -5,10 +5,11 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import cz.vity.freerapid.utilities.Utils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -136,6 +137,8 @@ class MicrosoftDownloadsFileRunner extends AbstractRunner {
                     getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
                     httpFile.getProperties().put("removeCompleted", true);
                 } else {
+                    if (isValidationRequired()) validate();
+
                     final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromTextBetween("window.open('", "'").toGetMethod();
                     if (!tryDownloadAndSaveFile(httpMethod)) {
                         checkProblems();
@@ -151,14 +154,119 @@ class MicrosoftDownloadsFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("Redirecting in 5 seconds") || content.contains("the page you requested cannot be found")) {
+        if (content.contains("Redirecting in 5 seconds")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (content.contains("id=\"genuineNotValidated\"")) {
-            throw new NotRecoverableDownloadException("Download needs WGA validation \u2013 not supported");
         }
         if (content.contains("<BODY><P></BODY>")) {
             throw new YouHaveToWaitException("Some server error, retrying", 10);
+        }
+    }
+
+    private boolean isValidationRequired() {
+        return getContentAsString().contains("id=\"genuineNotValidated\"");
+    }
+
+    private boolean isValidationSuccessful() {
+        return getContentAsString().contains("id=\"genuineValidated\"");
+    }
+
+    private void validate() throws Exception {
+        if (!Utils.isWindows()) {
+            throw new NotRecoverableDownloadException("Download requires WGA validation, which is only supported on Windows");
+        }
+        askUserForValidation();
+
+        //this parameter needs to be added manually, as the BASE64 padding characters need to be forcibly URLEncoded
+        final String hash = PlugUtils.getParameter("hash", getContentAsString());
+        HttpMethod httpMethod = getMethodBuilder()
+                .setReferer(fileURL)
+                .setBaseURL("http://www.microsoft.com/downloads/")
+                .setActionFromFormByName("quickCheck", true)
+                .setParameter("hash", hash.replace("+", "%2B").replace("=", "%3D"))
+                .toGetMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        final String validationPage = httpMethod.getURI().toString();
+        final Matcher matcher = getMatcherAgainstContent("<a .*?id=\"btnDownload\".*?href=\"(.+?)\"");
+        if (!matcher.find()) throw new PluginImplementationException("WGA Tool download link not found");
+        final HttpMethod wgaToolMethod = getMethodBuilder()
+                .setReferer(validationPage)
+                .setBaseURL("http://www.microsoft.com/downloads/")
+                .setAction(matcher.group(1))
+                .toGetMethod();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final File file = downloadWGATool(wgaToolMethod);
+                    final Process process = Runtime.getRuntime().exec(file.getAbsolutePath());
+                    try {
+                        process.waitFor();
+                    } catch (InterruptedException e) {
+                        //ignore
+                    }
+                    if (!file.delete()) logger.severe("Temporary file could not be deleted");
+                } catch (Exception e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+        }).start();
+
+        httpMethod = getMethodBuilder()
+                .setReferer(validationPage)
+                .setBaseURL("http://www.microsoft.com/downloads/")
+                .setActionFromFormByName("aspnetForm", true)
+                .setParameter("hashInput", getValidationCode())
+                .toPostMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+
+        if (!isValidationSuccessful()) {
+            throw new NotRecoverableDownloadException("WGA validation failed");
+        }
+    }
+
+    private void askUserForValidation() throws Exception {
+        MicrosoftDownloadsWGAConfirmUI ui = new MicrosoftDownloadsWGAConfirmUI();
+        if (!getDialogSupport().showOKCancelDialog(ui, "WGA Validation")) {
+            throw new NotRecoverableDownloadException("Download requires WGA validation");
+        }
+    }
+
+    private File downloadWGATool(final HttpMethod httpMethod) throws Exception {
+        logger.info("Downloading Genuine Check tool...");
+        final File file = File.createTempFile("GenuineCheck", ".exe");
+        file.deleteOnExit();
+        httpMethod.setFollowRedirects(true);
+        client.getHTTPClient().executeMethod(httpMethod);
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+            in = httpMethod.getResponseBodyAsStream();
+            out = new FileOutputStream(file);
+            byte[] b = new byte[1024];
+            int i;
+            while ((i = in.read(b)) > -1) {
+                out.write(b, 0, i);
+            }
+        } finally {
+            if (out != null) out.close();
+            if (in != null) in.close();
+        }
+        return file;
+    }
+
+    private String getValidationCode() throws Exception {
+        MicrosoftDownloadsWGAInputUI ui = new MicrosoftDownloadsWGAInputUI();
+        if (getDialogSupport().showOKCancelDialog(ui, "WGA Validation")) {
+            return ui.getText();
+        } else {
+            throw new NotRecoverableDownloadException("Download requires WGA validation");
         }
     }
 

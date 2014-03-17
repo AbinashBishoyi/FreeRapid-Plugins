@@ -12,10 +12,10 @@ import java.util.logging.Logger;
 
 /**
  * @author Coloss
- *      I've used the filesonic and the fileserve plugins as a skeleton because wupload at this point in time is quite similar to them
- *      Thanks to the authors of these plugins:
- *              JPEXS, ntoskrnl (filesonic)
- *              RickCL (fileserve)
+ *         I've used the filesonic and the fileserve plugins as a skeleton because wupload at this point in time is quite similar to them
+ *         Thanks to the authors of these plugins:
+ *         JPEXS, ntoskrnl (filesonic)
+ *         RickCL (fileserve)
  */
 class WuploadRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(WuploadRunner.class.getName());
@@ -90,12 +90,13 @@ class WuploadRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<span>Filename: </span> <strong>", "</strong>");
-        PlugUtils.checkFileSize(httpFile, content, "class=\"size\">", "</span>");
+        final String size = PlugUtils.getStringBetween(content, "class=\"size\">", "</span>");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.replace(",", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if ( getContentAsString().contains("Page Not Found")) {               //getContentAsString().contains("The file could not be found") || getContentAsString().contains("Page Not Found") || getContentAsString().contains("File not available"))
+        if (getContentAsString().contains("Page Not Found")) {               //getContentAsString().contains("The file could not be found") || getContentAsString().contains("Page Not Found") || getContentAsString().contains("File not available"))
             throw new URLNotAvailableAnymoreException("File not found");
         }
 /*

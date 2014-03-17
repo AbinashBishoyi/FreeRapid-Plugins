@@ -139,7 +139,7 @@ class FileserveFilesRunner extends AbstractRunner {
         if (!size.find()) {
             throw new PluginImplementationException("File size not found");
         }
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1)));
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size.group(1).replace(",", "")));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

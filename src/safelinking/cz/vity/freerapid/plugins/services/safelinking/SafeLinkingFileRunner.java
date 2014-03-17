@@ -65,6 +65,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
 
         final String HEADER_LINK_TYPE_1 = "<strong>Direct links</strong>";
         final String HEADER_LINK_TYPE_2 = "<strong>Live links</strong>";
+        final int MAX_CAPTCHA_ATTEMPTS = 5;
 
         List<URI> list = new LinkedList<URI>();
 
@@ -73,14 +74,14 @@ class SafeLinkingFileRunner extends AbstractRunner {
         } else if (fileURL.contains("/p/")) {
             if (!makeRedirectedRequest(getGetMethod(fileURL))) { //we make the main request
                 checkProblems();//check problems
-                throw new ServiceConnectionProblemException();
+                throw new PluginImplementationException();
             }
             int count = 0;
             MethodBuilder builder;
             String content;
             while (!getContentAsString().contains(HEADER_LINK_TYPE_1) &&
                     !getContentAsString().contains(HEADER_LINK_TYPE_2) &&
-                    (count++ < 3)) {
+                    (count++ < MAX_CAPTCHA_ATTEMPTS)) {
                 builder = getMethodBuilder()
                         .setActionFromFormWhereTagContains("Protected link", true)
                         .setReferer(fileURL).setAction(fileURL);
@@ -94,7 +95,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
                 if (content.contains("Link password")) {
                     final String password = getDialogSupport().askForPassword("SafeLinking");
                     if (password == null) {
-                        throw new ServiceConnectionProblemException("This file is secured with a password");
+                        throw new PluginImplementationException("This file is secured with a password");
                     }
                     builder.setParameter("link-password", password);
                 }
@@ -108,6 +109,8 @@ class SafeLinkingFileRunner extends AbstractRunner {
                 content = PlugUtils.getStringBetween(getContentAsString(), HEADER_LINK_TYPE_1, "</fieldset>");
             } else if (getContentAsString().contains(HEADER_LINK_TYPE_2)) {
                 content = PlugUtils.getStringBetween(getContentAsString(), HEADER_LINK_TYPE_2, "</fieldset>");
+            } else if (count >= MAX_CAPTCHA_ATTEMPTS) {
+                throw new PluginImplementationException("Excessive Incorrect Captcha Entries");
             } else {
                 throw new PluginImplementationException("Captcha Text Error : SafeLinking site changed : SafeLinking feature not supported yet");
             }
@@ -123,7 +126,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
 
         } else {
             checkProblems();
-            throw new ServiceConnectionProblemException("Invalid link");
+            throw new PluginImplementationException("Invalid link");
         }
         if (list.isEmpty()) throw new PluginImplementationException("No links found");
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
@@ -142,17 +145,34 @@ class SafeLinkingFileRunner extends AbstractRunner {
         }
     }
 
+    String captchaKey, startUrl;
+
     private void stepCaptcha(MethodBuilder method) throws Exception {
         Matcher m = getMatcherAgainstContent("var solvemediaApiKey = '(.+?)';");
-        if (!m.find()) throw new PluginImplementationException("Captcha key not found");
-        final String captchaKey = m.group(1);
+        if (m.find())
+            captchaKey = m.group(1);
+        m = getMatcherAgainstContent("var startUrl = '(.+?)';}");
+        if (m.find())
+            startUrl = m.group(1);
 
         String mediaType;
         HttpMethod httpMethod;
         do {
             httpMethod = getMethodBuilder()
-                    .setReferer(fileURL).setAction("http://api.solvemedia.com/papi/_challenge.js")
-                    .setParameter("k", captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/h264,v/ogg,v/webm,h5a,a/mp3,a/ogg,ua/chrome,ua/chrome18,os/nt,os/nt6.0,fwv/htyg64,jslib/jquery,jslib/jqueryui;ts=1339103245;th=custom;r=" + Math.random())
+                    .setReferer(fileURL).setAction(startUrl + "papi/challenge.script")
+                    .setParameter("k", captchaKey)
+                    .toGetMethod();
+            if (!makeRedirectedRequest(httpMethod)) {
+                throw new ServiceConnectionProblemException();
+            }
+            m = getMatcherAgainstContent("magic\\s*:\\s*'(.+?)',");
+            if (!m.find()) {
+                throw new PluginImplementationException("Magic key not found");
+            }
+            final String magic = m.group(1);
+            httpMethod = getMethodBuilder()
+                    .setReferer(fileURL).setAction(startUrl + "papi/_challenge.js")
+                    .setParameter("k", captchaKey + ";f=_ACPuzzleUtil.callbacks%5B0%5D;l=en;t=img;s=standard;c=js,swf11,swf11.2,swf,h5c,h5ct,svg,h5v,v/h264,v/ogg,v/webm,h5a,a/mp3,a/ogg,ua/chrome,ua/chrome18,os/nt,os/nt6.0,fwv/NNlHHA.miih79,jslib/jquery,jslib/jqueryui;am=" + magic + ";ca=script;ts=1353464281;th=custom;r=" + Math.random())
                     .toGetMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 throw new ServiceConnectionProblemException();
@@ -163,12 +183,12 @@ class SafeLinkingFileRunner extends AbstractRunner {
             }
             httpMethod.releaseConnection();
             mediaType = m.group(1);
-        } while (!mediaType.equals("img"));
+        } while (!mediaType.contains("img"));
 
         m = getMatcherAgainstContent("\"chid\"\\s*:\\s*\"(.+?)\",");
         if (!m.find()) throw new PluginImplementationException("Captcha ID not found");
         final String captchaChID = m.group(1);
-        final String captchaImg = "http://api.solvemedia.com/papi/media?c=" + captchaChID + ";w=300;h=150;fg=333333;bg=ffffff";
+        final String captchaImg = startUrl + "papi/media?c=" + captchaChID + ";w=300;h=150;fg=333333;bg=ffffff";
 
         final CaptchaSupport captchaSupport = getCaptchaSupport();
         final String captchaTxt = captchaSupport.getCaptcha(captchaImg);
@@ -176,6 +196,7 @@ class SafeLinkingFileRunner extends AbstractRunner {
 
         method.setParameter("adcopy_challenge", captchaChID);
         method.setParameter("solvemedia_response", captchaTxt);
+        method.setParameter("adcopy_response", captchaTxt);
     }
 
 }

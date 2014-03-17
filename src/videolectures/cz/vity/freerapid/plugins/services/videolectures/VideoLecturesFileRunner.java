@@ -34,7 +34,7 @@ class VideoLecturesFileRunner extends AbstractRtmpRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, getContentAsString(), "<h2>", "</h2>");
-        httpFile.setFileName(httpFile.getFileName() + ".flv");
+        httpFile.setFileName(httpFile.getFileName().replace(": ", " - ") + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -43,10 +43,9 @@ class VideoLecturesFileRunner extends AbstractRtmpRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         runCheck();
-
-        final String file = PlugUtils.getStringBetween(getContentAsString(), "file: \"", ".flv\"");
-        final RtmpSession rtmpSession = new RtmpSession("oxy.videolectures.net", 1935, "video", file);
-
+        final String url = PlugUtils.getStringBetween(getContentAsString(), "clip.netConnectionUrl = \"", "\";");
+        final String playName = PlugUtils.getStringBetween(getContentAsString(), "clip.url = \"", "\";");
+        final RtmpSession rtmpSession = new RtmpSession(url, playName);
         tryDownloadAndSaveFile(rtmpSession);
     }
 

@@ -28,7 +28,12 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=PLE963AD215F0C4BE5")); //playlist
             //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?list=FL2pmfLm7iq6Ov1UwYrWYkZA"));// favorite list
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=Phl57XmsPQ8"));
-            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=PM4kLnRr0ZI"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=PM4kLnRr0ZI"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=Wlrys8HvBSc"));  //possible bug in quality
+            //httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECA89DCFA6ADACE599")); //course list
+            //httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECB24BC7956EE040CD"));
+            httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECD9DDFBDC338226CA"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/course?list=ECBD4C7FD29B0C6D0C")); //course list
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
@@ -37,7 +42,7 @@ public class TestApp extends PluginDevApplication {
 
             YouTubeSettingsConfig config = new YouTubeSettingsConfig();
             config.setQualitySetting(4);
-            config.setContainer(1);
+            config.setContainer(0);
             config.setReversePlaylistOrder(false);
             config.setDownloadSubtitles(false);
             service.setConfig(config);

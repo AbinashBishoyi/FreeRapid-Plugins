@@ -15,6 +15,12 @@ public class DevDialogSupport implements DialogSupport {
     private final static Object captchaLock = new Object();
 
 
+    /**
+     * result from the user's input for password
+     */
+    private volatile String passwordResult;
+
+
     public DevDialogSupport(final ApplicationContext context) {
 
     }
@@ -90,6 +96,32 @@ public class DevDialogSupport implements DialogSupport {
             objects[i] = s;
         }
         return JOptionPane.showOptionDialog(null, inputObject, title, JOptionPane.NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, objects, objects[0]);
+    }
+
+    @Override
+    public String askForPassword(final String name) throws Exception {
+        synchronized (captchaLock) {
+            passwordResult = "";
+            if (!EventQueue.isDispatchThread()) {
+                SwingUtilities.invokeAndWait(new Runnable() {
+                    @Override
+                    public void run() {
+                        askPassword(name);
+                    }
+                });
+            } else askPassword(name);
+            return passwordResult;
+        }
+    }
+
+
+    private void askPassword(final String name) {
+        /*
+        if (AppPrefs.getProperty(UserProp.BLIND_MODE, UserProp.BLIND_MODE_DEFAULT)) {
+            Sound.playSound(context.getResourceMap().getString("captchaWav"));
+        }
+        */
+        passwordResult = (String) JOptionPane.showInputDialog(null, "Password protected", "Insert Password", JOptionPane.PLAIN_MESSAGE, null, null, null);
     }
 
 //    private static Frame getActiveFrame() {

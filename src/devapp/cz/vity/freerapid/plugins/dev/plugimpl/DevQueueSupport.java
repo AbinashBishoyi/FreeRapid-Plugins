@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.interfaces.MaintainQueueSupport;
 
 import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -21,5 +22,27 @@ public class DevQueueSupport implements MaintainQueueSupport {
         }
         logger.info(builder.toString());
         return false;
+    }
+
+    public boolean addLinksToQueue(HttpFile parentFile, String data) {
+        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n").append(data);
+        logger.info(builder.toString());
+        return false;
+    }
+
+    public boolean addLinkToQueueUsingPriority(HttpFile parentFile, String data) throws Exception {
+        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n").append(data);
+        logger.info(builder.toString());
+        return false;
+    }
+
+    public boolean addLinkToQueueUsingPriority(HttpFile parentFile, List<URL> urlList) throws Exception {
+        StringBuilder builder = new StringBuilder().append("The following files were added into the queue:\n");
+        for (URL uri : urlList) {
+            builder.append(String.format("%s%n", uri));
+        }
+        logger.info(builder.toString());
+        return false;
+
     }
 }

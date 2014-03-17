@@ -49,7 +49,9 @@ public class CaptchaReader {
 
     private static List<List<Point>> split_block(BufferedImage image,List<Point> block) {
         int histogram[] = new int[image.getWidth()];
-
+        for(int h=0;h<histogram.length;h++){
+            histogram[h]=-1;
+        }
         int start = block.get(0).x + 5;
         int end = block.get(block.size() - 1).x - 5;
 
@@ -61,6 +63,7 @@ public class CaptchaReader {
 
         int low = start;
         for (int i = 0; i < histogram.length; i++) {
+            if(histogram[i]!=-1)
             if (histogram[i] < histogram[low]) {
                 low = i;
             }

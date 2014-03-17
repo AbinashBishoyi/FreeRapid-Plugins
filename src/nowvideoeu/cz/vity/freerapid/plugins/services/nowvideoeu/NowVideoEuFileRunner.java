@@ -20,9 +20,16 @@ import java.util.regex.Matcher;
 class NowVideoEuFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NowVideoEuFileRunner.class.getName());
 
+    private void checkUrl() {
+        if (fileURL.contains("embed.php?v=")) {
+            fileURL = fileURL.replaceFirst("http://embed\\.nowvideo\\.(.{2})/embed\\.php\\?v=([a-z0-9]+)", "http://www.nowvideo.$1/video/$2");
+        }
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -47,6 +54,7 @@ class NowVideoEuFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {

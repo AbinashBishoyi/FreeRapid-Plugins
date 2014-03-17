@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.iprima;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
@@ -41,7 +42,7 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        final String name = PlugUtils.getStringBetween(getContentAsString(), "<meta name=\"title\" content=\"", "\"");
+        final String name = PlugUtils.getStringBetween(getContentAsString(), "<meta property=\"og:title\" content=\"", "\"");
         httpFile.setFileName(name + ".flv");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -89,10 +90,18 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
 
     private String getPlayName() throws ErrorDuringDownloadingException {
         String playName;
-        if (config.getQualitySetting() == 0) {
-            playName = PlugUtils.getStringBetween(getContentAsString(), "'lq_id':'", "'");
-        } else {
-            playName = PlugUtils.getStringBetween(getContentAsString(), "'hq_id':'", "'");
+        switch (config.getVideoQuality()) {
+            case HD:
+                playName = PlugUtils.getStringBetween(getContentAsString(), "\"hd_id\":\"", "\"");
+                break;
+            case High:
+                playName = PlugUtils.getStringBetween(getContentAsString(), "\"hq_id\":\"", "\"");
+                break;
+            case Low:
+                playName = PlugUtils.getStringBetween(getContentAsString(), "\"lq_id\":\"", "\"");
+                break;
+            default:
+                throw new PluginImplementationException("Unknown video quality: " + config.getVideoQuality());
         }
         if (playName.contains(".mp4") && !playName.startsWith("mp4:")) {
             playName = "mp4:" + playName;
@@ -101,7 +110,8 @@ class iPrimaFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("Video bylo odstraněno")) {
+        if (getContentAsString().contains("Video bylo odstraněno")
+                || getContentAsString().contains("Požadovaná stránka nebyla nalezena")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

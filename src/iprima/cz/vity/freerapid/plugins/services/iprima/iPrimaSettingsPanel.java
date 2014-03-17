@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 
 /**
  * @author JPEXS
+ * @author ntoskrnl
  */
 public class iPrimaSettingsPanel extends JPanel {
     private iPrimaSettingsConfig config;
@@ -18,18 +19,15 @@ public class iPrimaSettingsPanel extends JPanel {
     }
 
     private void initPanel() {
-        final String[] qualityStrings = {"LQ", "HQ"};
-
         final JLabel qualityLabel = new JLabel("Preferred quality level:");
-        final JComboBox qualityList = new JComboBox(qualityStrings);
+        final JComboBox<VideoQuality> qualityList = new JComboBox<VideoQuality>(VideoQuality.values());
         qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
-        int qs = config.getQualitySetting();
-        qualityList.setSelectedIndex(qs);
+        qualityList.setSelectedItem(config.getVideoQuality());
         qualityList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                config.setQualitySetting(qualityList.getSelectedIndex());
+                config.setVideoQuality((VideoQuality) qualityList.getSelectedItem());
             }
         });
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));

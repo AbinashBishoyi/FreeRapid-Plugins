@@ -43,7 +43,6 @@ public class iPrimaServiceImpl extends AbstractFileShareService {
             if (config == null) {
                 if (!storage.configFileExists(CONFIG_FILE)) {
                     config = new iPrimaSettingsConfig();
-                    config.setQualitySetting(1);
                 } else {
                     config = storage.loadConfigFromFile(CONFIG_FILE, iPrimaSettingsConfig.class);
                 }

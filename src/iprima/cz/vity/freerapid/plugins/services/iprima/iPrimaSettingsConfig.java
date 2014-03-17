@@ -2,20 +2,18 @@ package cz.vity.freerapid.plugins.services.iprima;
 
 /**
  * @author JPEXS
+ * @author ntoskrnl
  */
 public class iPrimaSettingsConfig {
-    private int qualitySetting;
 
-    /**
-     * This maps qualityIndex to resolution
-     */
+    private VideoQuality videoQuality = VideoQuality.HD;
 
-    public void setQualitySetting(int qualitySetting) {
-        this.qualitySetting = qualitySetting;
+    public VideoQuality getVideoQuality() {
+        return videoQuality;
     }
 
-    public int getQualitySetting() {
-        return qualitySetting;
+    public void setVideoQuality(final VideoQuality videoQuality) {
+        this.videoQuality = videoQuality;
     }
 
 }

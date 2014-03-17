@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.iprima.iPrimaServiceImpl"
-        id="iprima.cz" vendor="JPEXS+ntoskrnl" version="1.1.2">
+        id="iprima.cz" vendor="JPEXS+ntoskrnl" version="1.2.0">
     <attributes>
         <attribute id="urlRegex" value="http://play\.iprima\.cz/.+"/>
-        <attribute id="minver" value="0.853"/>
+        <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="iprima.cz"/>
         <attribute id="hasOptions" value="true"/>

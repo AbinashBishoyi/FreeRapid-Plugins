@@ -10,8 +10,8 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -20,14 +20,18 @@ import java.util.logging.Logger;
  */
 class JumboFilesFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(JumboFilesFileRunner.class.getName());
+    private final static String SERVICE_TITLE = "JumboFiles";
+    private final static String SERVICE_COOKIE_DOMAIN = ".jumbofiles.com";
+    private final static String SERVICE_LOGIN_REFERER = "http://jumbofiles.com/login.html";
+    private final static String SERVICE_LOGIN_ACTION = "http://jumbofiles.com";
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkFileProblems();
             throw new ServiceConnectionProblemException();
@@ -35,9 +39,8 @@ class JumboFilesFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final String filename = PlugUtils.unescapeHtml(PlugUtils.getStringBetween(content, "<TR><TD>", "<small>")).trim();
-        httpFile.setFileName(filename);
-        PlugUtils.checkFileSize(httpFile, content, "<small>(", ")</small></TD></TR>");
+        PlugUtils.checkName(httpFile, content, "<h2>Download File", "</h2>");
+        PlugUtils.checkFileSize(httpFile, content, "</font> (", ")</font>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -56,19 +59,20 @@ class JumboFilesFileRunner extends AbstractRunner {
             }
 
             final HttpMethod httpMethod = getMethodBuilder()
-                    .setAction("http://jumbofiles.com/login.html")
+                    .setReferer(SERVICE_LOGIN_REFERER)
+                    .setAction(SERVICE_LOGIN_ACTION)
                     .setParameter("op", "login")
                     .setParameter("redirect", "")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
                     .setParameter("submit", "")
                     .toPostMethod();
-            addCookie(new Cookie(".jumbofiles.com", "login", pa.getUsername(), "/", null, false));
-            addCookie(new Cookie(".jumbofiles.com", "xfss", "", "/", null, false));
+            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "login", pa.getUsername(), "/", null, false));
+            addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "xfss", "", "/", null, false));
             if (!makeRedirectedRequest(httpMethod))
                 throw new ServiceConnectionProblemException("Error posting login info");
             if (getContentAsString().contains("Incorrect Login or Password"))
-                throw new NotRecoverableDownloadException("Invalid JumboFiles registered account login information!");
+                throw new NotRecoverableDownloadException("Invalid " + SERVICE_TITLE + " registered account login information!");
 
             return true;
         }
@@ -78,19 +82,16 @@ class JumboFilesFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-
         login();
-
         logger.info("Starting download in TASK " + fileURL);
-        GetMethod method = getGetMethod(fileURL); //create GET request
-        if (!makeRedirectedRequest(method)) { //we make the main request
+        GetMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
             logger.warning(getContentAsString());
             checkFileProblems();
             throw new ServiceConnectionProblemException();
         }
-
-        checkFileProblems();//check problems
-        checkNameAndSize(getContentAsString());//extract file name and size from the page
+        checkFileProblems();
+        checkNameAndSize(getContentAsString());
 
         HttpMethod httpMethod = getMethodBuilder()
                 .setReferer(fileURL)
@@ -98,47 +99,88 @@ class JumboFilesFileRunner extends AbstractRunner {
                 .setActionFromFormWhereTagContains("method_free", true)
                 .removeParameter("method_premium")
                 .toPostMethod();
-
         if (!makeRedirectedRequest(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            logger.warning(getContentAsString());//log the info
-            throw new PluginImplementationException();//some unknown problem
+            checkDownloadProblems();
+            logger.warning(getContentAsString());
+            throw new ServiceConnectionProblemException();
         }
-
         checkDownloadProblems();
 
-        final MethodBuilder methodBuilder = getMethodBuilder()
-                .setActionFromFormWhereActionContains(httpFile.getFileName(), true);
+        httpMethod = getMethodBuilder()
+                .setReferer(fileURL)
+                .setBaseURL(fileURL)
+                .setActionFromFormWhereTagContains("method_free", true)
+                .removeParameter("method_premium")
+                .toPostMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkDownloadProblems();
+            logger.warning(getContentAsString());
+            throw new ServiceConnectionProblemException();
+        }
+        checkDownloadProblems();
 
+        MethodBuilder methodBuilder;
+        try {
+            methodBuilder = getMethodBuilder()
+                    .setActionFromFormWhereActionContains(httpFile.getFileName(), true);
+        } catch (BuildMethodException bme) {
+            methodBuilder = getMethodBuilder()
+                    .setActionFromAHrefWhereATagContains(httpFile.getFileName());
+        }
         httpMethod = methodBuilder.toGetMethod();
-
-        //logger.info("Download file URL : "+httpMethod.getURI().toString());
-
-        //here is the download link extraction
+        setFileStreamContentTypes("text/plain");
         if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkDownloadProblems();//if downloading failed
-            throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException("Error starting download");
         }
     }
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File is deleted or not found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        if (contentAsString.contains("File Not Found") || contentAsString.contains("file was removed") || contentAsString.contains("File is deleted or not found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (contentAsString.contains("server is in maintenance mode") || contentAsString.contains("we are performing maintenance on this server")) {
+            throw new PluginImplementationException("This server is in maintenance mode. Please try again later.");
         }
     }
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("seconds till next download")) {
-            final int waitTime = PlugUtils.getWaitTimeBetween(contentAsString, "You have to wait ", " seconds till next download", TimeUnit.SECONDS);
-            throw new YouHaveToWaitException("Wait between download", waitTime);
+        if (contentAsString.contains("till next download")) {
+            String regexRule = "(?:([0-9]+) hours?, )?(?:([0-9]+) minutes?, )?(?:([0-9]+) seconds?) till next download";
+            Matcher matcher = PlugUtils.matcher(regexRule, contentAsString);
+            int waitHours = 0, waitMinutes = 0, waitSeconds = 0, waitTime;
+            if (matcher.find()) {
+                if (matcher.group(1) != null)
+                    waitHours = Integer.parseInt(matcher.group(1));
+                if (matcher.group(2) != null)
+                    waitMinutes = Integer.parseInt(matcher.group(2));
+                waitSeconds = Integer.parseInt(matcher.group(3));
+            }
+            waitTime = (waitHours * 60 * 60) + (waitMinutes * 60) + waitSeconds;
+            throw new YouHaveToWaitException("You have to wait " + waitTime + " seconds", waitTime);
         }
         if (contentAsString.contains("Undefined subroutine")) {
-            throw new PluginImplementationException("Server problem");
+            throw new PluginImplementationException("Plugin is broken - Undefined subroutine");
+        }
+        if (contentAsString.contains("file reached max downloads limit")) {
+            throw new PluginImplementationException("This file reached max downloads limit");
+        }
+        if (contentAsString.contains("You can download files up to")) {
+            throw new PluginImplementationException(PlugUtils.getStringBetween(contentAsString, "<div class=\"err\">", "<br>"));
+        }
+        if (contentAsString.contains("have reached the download-limit")) {
+            throw new YouHaveToWaitException("You have reached the download-limit", 10 * 60);
         }
         if (contentAsString.contains("Error happened when generating Download Link")) {
-            throw new PluginImplementationException("Server Problem : Error happened when generating Download Link");
+            throw new YouHaveToWaitException("Error happened when generating Download Link", 60);
+        }
+        if (contentAsString.contains("file is available to premium users only")) {
+            throw new PluginImplementationException("This file is available to premium users only");
+        }
+        if (contentAsString.contains("this file requires premium to download")) {
+            throw new PluginImplementationException("This file is available to premium users only");
         }
     }
 

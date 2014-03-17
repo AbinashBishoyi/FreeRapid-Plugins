@@ -15,6 +15,8 @@ import org.apache.commons.httpclient.HttpMethod;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -39,9 +41,12 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
     private final String sessionId = getSessionId();
 
+    private String contentId;
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
         final HttpMethod method = getGetMethod(fileURL);
         //Server sometimes sends a 404 response
         makeRedirectedRequest(method);
@@ -50,31 +55,41 @@ class HuluFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        Matcher matcher = getMatcherAgainstContent("<title>Hulu \\- (.+?)(?: \\- Watch|</title>)");
+        if (isUserPage()) {
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+            return;
+        }
+        Matcher matcher = getMatcherAgainstContent("new Hulu\\.Models\\.Video\\((.+?)\\);");
         if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
+            throw new PluginImplementationException("File name content not found");
         }
-        String name = matcher.group(1).replace(": ", " - ");
-        if (!isUserPage()) {
-            matcher = getMatcherAgainstContent("Season (\\d+) &nbsp; Episode (\\d+)");
-            if (matcher.find()) {
-                final String[] s = name.split(" \\- ", 2);
-                if (s.length >= 2) {
-                    final int season = Integer.parseInt(matcher.group(1));
-                    final int episode = Integer.parseInt(matcher.group(2));
-                    name = String.format("%s - S%02dE%02d - %s", s[0], season, episode, s[1]);
-                }
+        try {
+            final ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
+            if (engine == null) {
+                throw new RuntimeException("JavaScript engine not found");
             }
+            engine.eval("var data = " + matcher.group(1));
+
+            final String show = engine.eval("data[\"show\"][\"name\"]").toString();
+            final String title = engine.eval("data[\"title\"]").toString();
+            final int season = Integer.parseInt(engine.eval("data[\"season_number\"].toString()").toString());
+            final int episode = Integer.parseInt(engine.eval("data[\"episode_number\"].toString()").toString());
+
+            final String name = String.format("%s - S%02dE%02d - %s", show, season, episode, title);
             httpFile.setFileName(name + ".flv");
-        } else {
-            httpFile.setFileName(name);
+            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+
+            contentId = engine.eval("data[\"content_id\"]").toString();
+        } catch (final Exception e) {
+            logger.warning("data = " + matcher.group(1));
+            throw new PluginImplementationException("Error getting file name", e);
         }
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
+        fileURL = fileURL.replaceFirst("//(www\\.)?hulu\\.com", "//new.hulu.com");
         logger.info("Starting download in TASK " + fileURL);
         login();
 
@@ -88,8 +103,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             return;
         }
 
-        final String cid = PlugUtils.getStringBetween(getContentAsString(), "content_id =", ";");
-        final String contentSelectUrl = getContentSelectUrl(cid);
+        final String contentSelectUrl = getContentSelectUrl(contentId);
         logger.info("contentSelectUrl = " + contentSelectUrl);
 
         method = getGetMethod(contentSelectUrl);

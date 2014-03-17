@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.hulu.HuluServiceImpl"
-        id="hulu.com" vendor="ntoskrnl" version="1.1.10">
+        id="hulu.com" vendor="ntoskrnl" version="1.2.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?hulu\.com/(watch/.+|profiles/.+?/public_queue)"/>
+        <attribute id="urlRegex" value="http://(www\.|new\.)?hulu\.com/(watch/.+|profiles/.+?/public_queue)"/>
         <attribute id="minver" value="0.852"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="hulu.com"/>

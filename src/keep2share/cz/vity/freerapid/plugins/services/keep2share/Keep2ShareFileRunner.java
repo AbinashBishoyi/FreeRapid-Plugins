@@ -42,8 +42,8 @@ class Keep2ShareFileRunner extends AbstractRunner {
             httpFile.setFileName(match.group(1).trim());
             PlugUtils.checkFileSize(httpFile, content, "File size", "</div>");
         } else {
-            PlugUtils.checkName(httpFile, content, "<div class=\"name\">File: <span>", "</span></div>");
-            PlugUtils.checkFileSize(httpFile, content, "<div class=\"size\">Size:", "</div>");
+            PlugUtils.checkName(httpFile, content, "File: <span>", "<");
+            PlugUtils.checkFileSize(httpFile, content, "Size:", "<");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -58,7 +58,7 @@ class Keep2ShareFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            if (!contentAsString.contains("If you want downloading file on slow speed")) {
+            if (!contentAsString.contains("This link will be available for")) {
                 final MethodBuilder aMethod = getMethodBuilder().setReferer(fileURL)
                         .setActionFromFormWhereTagContains("slow_id", true);
                 if (!makeRedirectedRequest(aMethod.toPostMethod())) {
@@ -66,6 +66,17 @@ class Keep2ShareFileRunner extends AbstractRunner {
                     throw new ServiceConnectionProblemException();
                 }
                 checkProblems();
+                if (getContentAsString().contains("window.location.href")) {
+                    HttpMethod hMethod = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setAction(PlugUtils.getStringBetween(getContentAsString(), "window.location.href = '", "';"))
+                            .toGetMethod();
+                    if (!tryDownloadAndSaveFile(hMethod)) {
+                        checkProblems();//if downloading failed
+                        throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                    }
+                    return;
+                }
                 boolean loopCaptcha = true;
                 while (loopCaptcha) {
                     loopCaptcha = false;

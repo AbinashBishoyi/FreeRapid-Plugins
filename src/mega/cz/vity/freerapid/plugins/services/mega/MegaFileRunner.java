@@ -80,8 +80,16 @@ class MegaFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(final String content) throws Exception {
         try {
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "\"s\":", ",")));
-            httpFile.setFileName(PlugUtils.getStringBetween(content, "\"n\":\"", "\""));
+            Matcher matcher = PlugUtils.matcher("\"s\"\\s*:\\s*(\\d+)", content);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File size not found");
+            }
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+            matcher = PlugUtils.matcher("\"n\"\\s*:\\s*\"(.+?)\"", content);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File name not found");
+            }
+            httpFile.setFileName(matcher.group(1));
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } catch (final Exception e) {
             logger.warning("Content from API request:\n" + content);
@@ -102,13 +110,12 @@ class MegaFileRunner extends AbstractRunner {
         }
         final String content = api.request("[{\"a\":\"g\",\"g\":1,\"ssl\":1,\"" + type.parameter() + "\":\"" + id + "\"}]");
         checkNameAndSize(content);
-        final String url;
-        try {
-            url = PlugUtils.getStringBetween(content, "\"g\":\"", "\"");
-        } catch (final Exception e) {
+        final Matcher matcher = PlugUtils.matcher("\"g\"\\s*:\\s*\"(.+?)\"", content);
+        if (!matcher.find()) {
             logger.warning("Content from API request:\n" + content);
-            throw e;
+            throw new PluginImplementationException("Download URL not found");
         }
+        final String url = matcher.group(1);
         //the server doesn't send Accept-Ranges, but supports resume
         setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
         final HttpMethod method = getMethodBuilder()

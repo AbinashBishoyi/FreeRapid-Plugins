@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.mega;
 
-import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.DownloadClient;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
@@ -21,11 +18,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author ntoskrnl
  */
 class MegaApi {
+
+    private static final Logger logger = Logger.getLogger(MegaApi.class.getName());
 
     private final HttpDownloadClient client;
     private final byte[] key;
@@ -56,8 +57,12 @@ class MegaApi {
             throw new ServiceConnectionProblemException();
         }
         checkProblems(client.getContentAsString());
-        final String data = PlugUtils.getStringBetween(client.getContentAsString(), "\"at\":\"", "\"");
-        return client.getContentAsString() + "\n" + decryptData(data);
+        final Matcher matcher = PlugUtils.matcher("\"at\"\\s*:\\s*\"(.+?)\"", client.getContentAsString());
+        if (!matcher.find()) {
+            logger.warning("Content from API request:\n" + client.getContentAsString());
+            throw new PluginImplementationException("Error parsing server response");
+        }
+        return client.getContentAsString() + "\n" + decryptData(matcher.group(1));
     }
 
     private String decryptData(final String data) throws Exception {

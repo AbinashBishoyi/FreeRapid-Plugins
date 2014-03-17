@@ -27,7 +27,7 @@ class EasyShareRunner extends AbstractRunner {
         if (makeRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     private void checkNameAndSize(String contentAsString) throws Exception {
@@ -61,7 +61,8 @@ class EasyShareRunner extends AbstractRunner {
         super.run();
         client.getHTTPClient().getParams().setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS, true);
         baseURL = fileURL;
-        httpSite = fileURL.substring(0, fileURL.lastIndexOf('/'));
+        httpSite = fileURL.substring(0, fileURL.indexOf('/', 10));
+        logger.info("httpSite set to " + httpSite);
         logger.info("Starting download in TASK " + fileURL);
         GetMethod getMethod = getGetMethod(fileURL);
         getMethod.setFollowRedirects(true);
@@ -105,7 +106,7 @@ class EasyShareRunner extends AbstractRunner {
 
 
         } else
-            throw new PluginImplementationException("Problem with a connection to service.\nCannot find requested page content");
+            throw new ServiceConnectionProblemException("Problem with a connection to service.\nCannot find requested page content");
     }
 
     private String skipEnterPageUrl() throws PluginImplementationException {
@@ -121,12 +122,16 @@ class EasyShareRunner extends AbstractRunner {
     }
 
 
-    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException {
+    private void checkProblems() throws ServiceConnectionProblemException, URLNotAvailableAnymoreException, InvalidURLOrServiceProblemException {
         if (getContentAsString().contains("File not found")) {
             throw new URLNotAvailableAnymoreException(String.format("<b>File not found</b><br>"));
-
         }
-
+        if (getContentAsString().contains("Requested file is deleted")) {
+            throw new URLNotAvailableAnymoreException(String.format("<b>Requested file is deleted</b><br>"));
+        }
+        if (getContentAsString().contains("Error 404: Page not found")) {
+            throw new InvalidURLOrServiceProblemException(String.format("<b>Error 404: Page not found</b><br>"));
+        }
     }
 
     private boolean stepCaptcha(final String contentAsString) throws Exception {
@@ -142,18 +147,18 @@ class EasyShareRunner extends AbstractRunner {
             Matcher matcher = PlugUtils.matcher("src=\"(/kaptchacluster[^\"]*)\"", contentAsString);
             if (matcher.find()) {
                 String s = matcher.group(1);
-                logger.info(httpSite + s);
+                logger.info("Captcha image url: " + httpSite + s);
                 client.setReferer(baseURL);
                 String captcha = getCaptchaSupport().getCaptcha(httpSite + s);
 
                 if (captcha == null) {
                     throw new CaptchaEntryInputMismatchException();
                 } else {
+                    logger.info("Entered captcha: " + captcha);
                     matcher = PlugUtils.matcher("<form action=\"([^\"]*file_contents[^\"]*)\"", contentAsString);
                     if (matcher.find()) {
                         s = matcher.group(1);
-                        logger.info(s);
-
+                        logger.info("Captcha action from form: " + s);
                         final PostMethod method = getPostMethod(s);
                         method.addParameter("id", id);
                         method.addParameter("captcha", captcha);

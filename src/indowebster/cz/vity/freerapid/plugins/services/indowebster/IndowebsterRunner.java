@@ -8,6 +8,8 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.InvalidRedirectLocationException;
+
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -78,22 +80,26 @@ class IndowebsterRunner extends AbstractRunner {
                         // handle cross redirect
                         try
                         {
-                        tryDownloadAndSaveFile(method3);
-                        }
-                        catch (Exception ex)
-                        {
-                        }
-                        Header locationHeader = method3.getResponseHeader("location");
-                        if (locationHeader != null)
-                        {
-                            //logger.warning(locationHeader.getValue());
-                            final HttpMethod method4 = getMethodBuilder().setAction(locationHeader.getValue()).toGetMethod();
-                            if (!tryDownloadAndSaveFile(method4)) {
+                            if (!tryDownloadAndSaveFile(method3)) {
                                 checkProblems();
                                 logger.warning(getContentAsString());
                                 throw new IOException("Download failed");
                             }
-                        } else throw new InvalidURLOrServiceProblemException("Final link not found");
+                        }
+                        catch (InvalidRedirectLocationException ex)
+                        {
+                            Header locationHeader = method3.getResponseHeader("location");
+                            if (locationHeader != null)
+                            {
+                                //logger.warning(locationHeader.getValue());
+                                final HttpMethod method4 = getMethodBuilder().setAction(locationHeader.getValue()).toGetMethod();
+                                if (!tryDownloadAndSaveFile(method4)) {
+                                    checkProblems();
+                                    logger.warning(getContentAsString());
+                                    throw new IOException("Download failed");
+                                }
+                            } else throw new InvalidURLOrServiceProblemException("Final link not found");
+                        }
                     } else throw new InvalidURLOrServiceProblemException("Can't get third url");
                 } else throw new InvalidURLOrServiceProblemException("Can't get second url");
             } else throw new InvalidURLOrServiceProblemException("Can't find download link");

@@ -20,7 +20,8 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             //httpFile.setNewURL(new URL("http://v5.indowebster.com//marumo_no_okite_ep01_704x396x264_mp4_005_.html"));
             //httpFile.setNewURL(new URL("http://indowebster.com/ogon_no_buta_ep03__704x396_xvid_.avi.001_.html"));
-            httpFile.setNewURL(new URL("http://www.indowebster.com/download/video/godofstudye08hdtvx264450pdokgodieavi001"));
+            //httpFile.setNewURL(new URL("http://www.indowebster.com/download/video/godofstudye08hdtvx264450pdokgodieavi001"));
+            httpFile.setNewURL(new URL("http://www.indowebster.com/guilty_woman_who_make_a_pact_with_devil_01_part1.html"));
             //httpFile.setNewURL(new URL("http://www.indowebster.com/download/video/ogon_no_buta_ep02__704x396_xvid_.avi.001"));
 
             //the way we connect to the internet

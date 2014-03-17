@@ -116,7 +116,7 @@ class RapidGatorFileRunner extends AbstractRunner {
                 }
             }
             checkProblems();
-            Matcher match = PlugUtils.matcher("location.href = '(.+?)';", getContentAsString());  //skip download manager
+            Matcher match = PlugUtils.matcher("return '(.+?)';", getContentAsString());  //skip download manager
             do {
                 if (!match.find())
                     throw new PluginImplementationException("Download link not found");

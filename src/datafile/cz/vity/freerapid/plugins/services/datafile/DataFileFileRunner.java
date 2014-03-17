@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.datafile;
 
-import cz.vity.freerapid.plugins.exceptions.CaptchaEntryInputMismatchException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -98,6 +95,9 @@ class DataFileFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File not found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("This file can be downloaded only users with<br />Premium account")) {
+            throw new NotRecoverableDownloadException("This file can be downloaded by premium users"); //let to know user in FRD
         }
     }
 

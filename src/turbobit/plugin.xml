@@ -6,7 +6,7 @@
         <attribute id="urlRegex" value="http://(www\.)?turbobit\.net/.+"/>
         <attribute id="minver" value="0.82"/>
         <attribute id="maxver" value="0.849"/>
-        <attribute id="services" value="tubobit.net"/>
+        <attribute id="services" value="turbobit.net"/>
         <!-- max count of parallel downloads, has to be set in ServiceImpl too -->
         <attribute id="maxDownloads" value="2"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>

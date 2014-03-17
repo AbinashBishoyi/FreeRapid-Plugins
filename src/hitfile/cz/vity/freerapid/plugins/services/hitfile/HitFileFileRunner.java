@@ -140,7 +140,7 @@ class HitFileFileRunner extends AbstractRunner {
         if (contentAsString.contains("Unable to Complete Request")) {
             throw new ServiceConnectionProblemException("Unable to Complete Request");
         }
-        if (contentAsString.contains("You have reached the limit")) {
+        if (contentAsString.contains("limit of connections is reached")) {
             final int waitTime = PlugUtils.getNumberBetween(contentAsString, "<span id='timeout'>", "</span>");
             throw new YouHaveToWaitException("Download limit reached", waitTime);
         }

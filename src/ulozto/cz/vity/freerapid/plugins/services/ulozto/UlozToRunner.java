@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.ulozto;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.ulozto.captcha.SoundReader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -14,7 +13,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import java.util.Random;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Ladislav Vitasek, Ludek Zika, JPEXS (captcha)
@@ -132,43 +130,48 @@ class UlozToRunner extends AbstractRunner {
             return getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Please click here to continue").toGetMethod();
         }
         CaptchaSupport captchaSupport = getCaptchaSupport();
-        MethodBuilder captchaMethod = getMethodBuilder().setActionFromImgSrcWhereTagContains("class=\"captcha\"");
+        MethodBuilder sendForm = getMethodBuilder()
+                .setBaseURL(SERVICE_BASE_URL).setReferer(fileURL)
+                .setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true);
 
-        Matcher captchaIdMatcher = PlugUtils.matcher("/([^/]+)\\.\\w+$", captchaMethod.getAction());
-        if (!captchaIdMatcher.find()) {
-            throw new PluginImplementationException("Captcha id not found");
+        final HttpMethod getNewCaptcha = getGetMethod("http://uloz.to/reloadCaptcha.php");
+        if (!makeRedirectedRequest(getNewCaptcha)) {
+            throw new PluginImplementationException("Error loading captcha");
         }
-        final String captchaId = captchaIdMatcher.group(1);
+        Matcher captchaIdKeyMatcher = PlugUtils.matcher("id\":(\\d+),\"key\":\"(\\w+)\"}", getContentAsString());
+        if (!captchaIdKeyMatcher.find()) {
+            throw new PluginImplementationException("Captcha id-key not found");
+        }
+        final String captchaId = captchaIdKeyMatcher.group(1);
+        final String captchaKey = captchaIdKeyMatcher.group(2);
+        final String captchaImg = "http://img.uloz.to/captcha/" + captchaId + ".png";
+        //   final String captchaSnd = "http://img.uloz.to/captcha/sound/" + captchaId + ".mp3";
+        //   //  DIABLED SOUND RECOGNITION OF CAPTCHA
+        //
+        //    String captchaTxt = "";
+        //   //precteni
+        //   //captchaCount = 9; //for test purpose
+        //   if (captchaCount++ < 6) {
+        //       logger.warning("captcha url:" + captchaImg);
+        //       SoundReader captchaReader = new SoundReader();
+        //       HttpMethod methodSound = getMethodBuilder()
+        //               .setReferer(fileURL)
+        //               .setAction(captchaSnd)
+        //               .toGetMethod();
+        //       captchaTxt = captchaReader.parse(client.makeRequestForFile(methodSound));
+        //       methodSound.releaseConnection();
+        //   } else {
+        //        captchaTxt = captchaSupport.getCaptcha(captchaImg);
+        //   }
 
-        String captcha = "";
-        //precteni
-        //captchaCount = 9; //for test purpose
-        if (captchaCount++ < 6) {
-            logger.warning("captcha url:" + captchaMethod.getAction());
-            Matcher m = Pattern.compile("uloz\\.to/captcha/([0-9]+)\\.png").matcher(captchaMethod.getAction());
-            if (m.find()) {
-                String number = m.group(1);
-                SoundReader captchaReader = new SoundReader();
-                HttpMethod methodSound = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setAction("http://img.uloz.to/captcha/sound/" + number + ".mp3")
-                        .toGetMethod();
-                captcha = captchaReader.parse(client.makeRequestForFile(methodSound));
-                methodSound.releaseConnection();
-            }
-        } else {
-            captcha = captchaSupport.getCaptcha(captchaMethod.getAction());
-        }
-        if (captcha == null) {
+        final String captchaTxt = captchaSupport.getCaptcha(captchaImg);
+
+        if (captchaTxt == null) {
             throw new CaptchaEntryInputMismatchException();
         } else {
-            MethodBuilder sendForm = getMethodBuilder()
-                    .setBaseURL(SERVICE_BASE_URL)
-                    .setReferer(fileURL)
-                    .setActionFromFormWhereActionContains("do=downloadDialog-freeDownloadForm-submit", true)
-                    .setParameter("captcha[text]", captcha)
-                    .setParameter("captcha[id]", captchaId);
-
+            sendForm.setParameter("captcha_value", captchaTxt)
+                    .setParameter("captcha_id", captchaId)
+                    .setParameter("captcha_key", captchaKey);
             return sendForm.toPostMethod();
         }
     }

@@ -26,6 +26,7 @@ class UptoBoxFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        addCookie(new Cookie(".uptobox.com", "lang", "english", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkFileProblems();
@@ -82,10 +83,9 @@ class UptoBoxFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
-
         login();
-
         logger.info("Starting download in TASK " + fileURL);
+        addCookie(new Cookie(".uptobox.com", "lang", "english", "/", 86400, false));
         GetMethod method = getGetMethod(fileURL);
         if (!makeRedirectedRequest(method)) {
             checkFileProblems();
@@ -131,7 +131,18 @@ class UptoBoxFileRunner extends AbstractRunner {
             methodBuilder = stepCaptcha(methodBuilder);
         }
 
-        if (!tryDownloadAndSaveFile(methodBuilder.toPostMethod())) {
+        httpMethod = methodBuilder.toPostMethod();
+        if (!makeRedirectedRequest(httpMethod)) {
+            checkDownloadProblems();
+            throw new ServiceConnectionProblemException();
+        }
+
+        httpMethod = getMethodBuilder()
+                .setReferer(fileURL)
+                .setActionFromAHrefWhereATagContains("start your download")
+                .toGetMethod();
+
+        if (!tryDownloadAndSaveFile(httpMethod)) {
             checkDownloadProblems();
             throw new ServiceConnectionProblemException("Error starting download");
         }
@@ -146,23 +157,19 @@ class UptoBoxFileRunner extends AbstractRunner {
 
     private void checkDownloadProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("seconds till next download")) {
-            int xMinutes = 0;
-            int xSeconds = 0;
-            int waittime;
-
-            if (contentAsString.contains("minute")) {
-                Matcher matcher = PlugUtils.matcher("You have to wait ([0-9]+) minute(?:s)?, ([0-9]+) seconds", contentAsString);
-                if (matcher.find()) {
-                    xMinutes = new Integer(matcher.group(1));
-                    xSeconds = new Integer(matcher.group(2));
-                }
-            } else {
-                Matcher matcher = PlugUtils.matcher("You have to wait ([0-9]+) seconds", contentAsString);
-                if (matcher.find()) xSeconds = new Integer(matcher.group(1));
+        if (contentAsString.contains("till next download")) {
+            String regexRule = "(?:([0-9]+) hours?, )?(?:([0-9]+) minutes?, )?(?:([0-9]+) seconds?) till next download";
+            Matcher matcher = PlugUtils.matcher(regexRule, contentAsString);
+            int waitHours = 0, waitMinutes = 0, waitSeconds = 0, waitTime;
+            if (matcher.find()) {
+                if (matcher.group(1) != null)
+                    waitHours = Integer.parseInt(matcher.group(1));
+                if (matcher.group(2) != null)
+                    waitMinutes = Integer.parseInt(matcher.group(2));
+                waitSeconds = Integer.parseInt(matcher.group(3));
             }
-            waittime = xMinutes * 60 + xSeconds;
-            throw new YouHaveToWaitException("You have to wait " + waittime + " seconds", waittime);
+            waitTime = (waitHours * 60 * 60) + (waitMinutes * 60) + waitSeconds;
+            throw new YouHaveToWaitException("You have to wait " + waitTime + " seconds", waitTime);
         }
         if (contentAsString.contains("Undefined subroutine")) {
             throw new PluginImplementationException("Server problem");

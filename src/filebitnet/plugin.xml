@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="file-bit.net" version="0.1" vendor="RickCL"
+        class="cz.vity.freerapid.plugins.services.filebitnet.FilebitNetFilesShareServiceImpl">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?file-bit\.net/.+"/>
+        <attribute id="minver" value="0.83"/>
+        <attribute id="maxver" value="0.849"/>
+        <attribute id="services" value="file-bit.net"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <runtime>
+        <library id="file-bit.net" path="/" type="code"/>
+    </runtime>
+</plugin>

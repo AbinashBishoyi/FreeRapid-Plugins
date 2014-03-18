@@ -50,8 +50,8 @@ class ZippyShareFileRunner extends AbstractRunner {
             final String url;
             Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*[^<>]+?)</script>");
             if (matcher.find()) {
-                final String function = PlugUtils.getStringBetween(matcher.group(1), "function", "{");
-                final String script = matcher.group(1) + ";\n" + function + ";\ndocument.getElementById('dlbutton').href";
+                final String function = PlugUtils.getStringBetween(matcher.group(1), "var", "= function").trim();
+                final String script = matcher.group(1) + ";\n" + function + "();\ndocument.getElementById('dlbutton').href";
                 logger.info("Evaluating script:\n" + script);
                 final Context context = Context.enter();
                 try {

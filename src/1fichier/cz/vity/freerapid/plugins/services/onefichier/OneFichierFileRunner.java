@@ -28,14 +28,19 @@ class OneFichierFileRunner extends AbstractRunner {
         setEnglishURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
-            final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
-            if (match.find()) {
-                String name = match.group(1);
-                if (match.group(3).length() > 0)
-                    name = URLDecoder.decode(match.group(3), "UTF-8");
-                httpFile.setFileName(name);
+            checkProblems();
+            try {
+                checkNameAndSize(getContentAsString());
+            } catch (Exception e) {
+                final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
+                if (match.find()) {
+                    String name = match.group(1);
+                    if (match.group(3).length() > 0)
+                        name = URLDecoder.decode(match.group(3), "UTF-8");
+                    httpFile.setFileName(name);
+                }
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
             }
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -63,31 +68,23 @@ class OneFichierFileRunner extends AbstractRunner {
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
-            final HttpMethod hMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Free Download", true).toPostMethod();
-            if (makeRedirectedRequest(hMethod)) {
-                final String contentAsString = getContentAsString();//check for response
+            while (true) {
                 checkProblems();//check problems
-                checkNameAndSize(contentAsString);//extract file name and size from the page
-                //      downloadTask.sleep(1 + PlugUtils.getNumberBetween(contentAsString, "var count =", ";"));
-                final HttpMethod h2Method = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Show the download link", true).toPostMethod();
-                if (!makeRedirectedRequest(h2Method)) {
+                try {
+                    checkNameAndSize(getContentAsString());//extract file name and size from the page
+                } catch (Exception e) {/**/}
+                final HttpMethod hMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("ownload", true).toPostMethod();
+                final int status = client.makeRequest(hMethod, false);
+                if (status / 100 == 3) {
+                    if (!tryDownloadAndSaveFile(getGetMethod(hMethod.getResponseHeader("Location").getValue()))) {
+                        checkProblems();//if downloading failed
+                        throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                    }
+                    return;
+                } else if (status != 200) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-                checkProblems();//check problems
-                HttpMethod httpMethod;
-                try {
-                    httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("Download the file", true).toPostMethod();
-                } catch (Exception e) {
-                    httpMethod = getGetMethod(PlugUtils.getStringBetween(getContentAsString(), "window.location = '", "'"));
-                }
-                if (!tryDownloadAndSaveFile(httpMethod)) {
-                    checkProblems();//if downloading failed
-                    throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
-                }
-            } else {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
             }
         } else {
             checkProblems();
@@ -101,8 +98,11 @@ class OneFichierFileRunner extends AbstractRunner {
                 contentAsString.contains("The requested file has been deleted")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-        if (contentAsString.contains("you can download only one file at a time")) {
-            final int delay = PlugUtils.getNumberBetween(contentAsString, "wait up to", "minute");
+        if (contentAsString.contains("you can download only one file at a timeg")) {
+            int delay = 15;
+            try {
+                delay = PlugUtils.getNumberBetween(contentAsString, "wait up to", "minute");
+            } catch (Exception e) {/**/}
             throw new YouHaveToWaitException("You can download only one file at a time and you must wait up to " + delay + " minutes between each downloads", delay * 60);
         }
     }

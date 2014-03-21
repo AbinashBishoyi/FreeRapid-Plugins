@@ -27,14 +27,19 @@ class OneFichierFileRunner extends AbstractRunner {
         setEnglishURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
-            final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
-            if (match.find()) {
-                String name = match.group(1);
-                if (match.group(3).length() > 0)
-                    name = URLDecoder.decode(match.group(3), "UTF-8");
-                httpFile.setFileName(name);
+            checkProblems();
+            try {
+                checkNameAndSize(getContentAsString());
+            } catch (Exception e) {
+                final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
+                if (match.find()) {
+                    String name = match.group(1);
+                    if (match.group(3).length() > 0)
+                        name = URLDecoder.decode(match.group(3), "UTF-8");
+                    httpFile.setFileName(name);
+                }
+                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
             }
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

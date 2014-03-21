@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.therapide.TheRapideServiceImpl"
+        id="therapide.com" vendor="birchie" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?therapide\.com/.+"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="therapide.com"/>
+        <attribute id="maxDownloads" value="1"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="therapide.com" path="/" type="code"/>
+    </runtime>
+</plugin>

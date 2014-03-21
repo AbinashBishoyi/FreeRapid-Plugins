@@ -10,6 +10,10 @@ import java.util.regex.Matcher;
 public class TusFilesFileSizeHandler implements FileSizeHandler {
     @Override
     public void checkFileSize(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
+        if (content.contains("<b>Files of</b>")) {
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "<small>(", "total)</small>")));
+            return;
+        }
         final Matcher match = PlugUtils.matcher(" - ([\\d\\.,]+?\\s*?\\w+?)\\[/URL\\]'", content);
         if (match.find())
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));

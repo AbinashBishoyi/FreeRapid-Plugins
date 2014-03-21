@@ -1,12 +1,9 @@
 package cz.vity.freerapid.plugins.services.shareneo;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
@@ -56,28 +53,10 @@ class ShareNeoFileRunner extends AbstractRunner {
             if (!matchWait.find()) throw new PluginImplementationException("Wait time not found");
             downloadTask.sleep(Integer.parseInt(matchWait.group(1).trim()) + 1);
             final String nextPage = PlugUtils.getStringBetween(contentAsString, ".download-timer').html(\"<a href='", "'>download now</a>\");");
-            if (!makeRedirectedRequest(getGetMethod(nextPage))) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
+            if (!tryDownloadAndSaveFile(getGetMethod(nextPage))) {
+                checkProblems();//if downloading failed
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
-            checkProblems();
-            boolean incorrectCaptcha;
-            do {
-                incorrectCaptcha = false;
-                final HttpMethod httpMethod = doCaptcha(getMethodBuilder()
-                        .setActionFromFormWhereTagContains(httpFile.getFileName(), true)
-                        .setReferer(fileURL)
-                ).toPostMethod();
-
-                if (!tryDownloadAndSaveFile(httpMethod)) {
-                    if (getContentAsString().contains(">Captcha confirmation text is invalid.<"))
-                        incorrectCaptcha = true;
-                    else {
-                        checkProblems();//if downloading failed
-                        throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
-                    }
-                }
-            } while (incorrectCaptcha);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -94,15 +73,4 @@ class ShareNeoFileRunner extends AbstractRunner {
         }
     }
 
-    private MethodBuilder doCaptcha(MethodBuilder methodBuilder) throws Exception {
-        final String reCaptchaKey = PlugUtils.getStringBetween(getContentAsString(), "recaptcha/api/challenge?k=", "\"");
-        final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
-        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-        if (captcha == null) {
-            throw new CaptchaEntryInputMismatchException();
-        }
-        r.setRecognized(captcha);
-        r.modifyResponseMethod(methodBuilder);
-        return methodBuilder;
-    }
 }

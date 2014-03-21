@@ -7,12 +7,15 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
-import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URI;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -24,27 +27,53 @@ class TusFilesFileRunner extends XFileSharingRunner {
     @Override
     protected List<FileNameHandler> getFileNameHandlers() {
         final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
-        fileNameHandlers.add(0, new FileNameHandler() {
-            @Override
-            public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-                PlugUtils.checkName(httpFile, content, "/?q=", "\" ");
-            }
-        });
-        fileNameHandlers.add(0, new FileNameHandler() {
-            @Override
-            public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-                PlugUtils.checkName(httpFile, content, "globalFileName = '", "';");
-            }
-        });
-        fileNameHandlers.add(new TusFilesFileNameHandler());
+        fileNameHandlers.add(0, new TusFilesFileNameHandler());
         return fileNameHandlers;
     }
 
     @Override
     protected List<FileSizeHandler> getFileSizeHandlers() {
         final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
-        fileSizeHandlers.add(new TusFilesFileSizeHandler());
+        fileSizeHandlers.add(0, new TusFilesFileSizeHandler());
         return fileSizeHandlers;
+    }
+
+    @Override
+    public void run() throws Exception {
+        runCheck();
+        if (httpFile.getFileName().startsWith("Folder >")) {
+            getAllFilesInFolder();
+        } else {
+            super.run();
+        }
+    }
+
+    private void getAllFilesInFolder() throws Exception {
+        checkDownloadProblems();
+        List<URI> list = new LinkedList<URI>();
+        boolean morePages;
+        do {
+            morePages = false;
+            final Matcher match = PlugUtils.matcher("<TD align=left><a href=\"(https?://(www\\.)?tusfiles\\.net/[^\"]+?)\">", getContentAsString());
+            while (match.find()) {
+                list.add(new URI(match.group(1)));
+            }
+            if (getContentAsString().contains(">Next")) {
+                morePages = true;
+                final HttpMethod nextMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Next").toGetMethod();
+                if (!makeRedirectedRequest(nextMethod)) {
+                    checkFileProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkFileProblems();
+                checkDownloadProblems();
+            }
+        } while (morePages);
+
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        httpFile.setFileName("Link(s) Extracted !");
+        httpFile.setState(DownloadState.COMPLETED);
+        httpFile.getProperties().put("removeCompleted", true);
     }
 
     @Override

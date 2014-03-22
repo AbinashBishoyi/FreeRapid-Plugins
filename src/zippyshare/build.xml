@@ -39,6 +39,7 @@
         <include name="**/?*.tld"/>
         <include name="**/?*.mid"/>
         <include name="**/?*.wav"/>
+        <include name="**/?*.js"/>
 
         <exclude name="**/plugin.xml"/>
     </patternset>
@@ -75,7 +76,6 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" debug="off" target="1.6">
-            <compilerarg value="-XDignore.symbol.file"/>
             <sourcepath location="../recaptcha"/>
             <sourcepath location="../devapp"/>
         </javac>

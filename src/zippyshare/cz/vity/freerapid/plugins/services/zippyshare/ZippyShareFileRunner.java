@@ -2,18 +2,19 @@ package cz.vity.freerapid.plugins.services.zippyshare;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
-import cz.vity.freerapid.plugins.services.zippyshare.js.JsDocument;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
-import sun.org.mozilla.javascript.internal.Context;
-import sun.org.mozilla.javascript.internal.Scriptable;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URLDecoder;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -50,21 +51,14 @@ class ZippyShareFileRunner extends AbstractRunner {
             final String url;
             Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*[^<>]+?)</script>");
             if (matcher.find()) {
-                final String function = PlugUtils.getStringBetween(matcher.group(1), "var", "= function").trim();
-                final String script = matcher.group(1) + ";\n" + function + "();\ndocument.getElementById('dlbutton').href";
+                final String script = matcher.group(1);
                 logger.info("Evaluating script:\n" + script);
-                final Context context = Context.enter();
+                final ScriptEngine engine = initScriptEngine();
                 try {
-                    final Scriptable scope = context.initStandardObjects();
-                    final JsDocument d = new JsDocument(getContentAsString());
-                    scope.put("document", scope, d);
-                    try {
-                        url = (String) context.evaluateString(scope, script, "<script>", 1, null);
-                    } catch (Exception e) {
-                        throw new PluginImplementationException("Script execution failed", e);
-                    }
-                } finally {
-                    Context.exit();
+                    engine.eval(script);
+                    url = (String) engine.eval("document.getElementById('dlbutton').href");
+                } catch (final Exception e) {
+                    throw new PluginImplementationException("Script execution failed", e);
                 }
             } else if (getContentAsString().contains("Recaptcha.create(")) {
                 url = PlugUtils.getStringBetween(getContentAsString(), "document.location = '", "';");
@@ -127,6 +121,20 @@ class ZippyShareFileRunner extends AbstractRunner {
             logger.info("File size not found");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+    }
+
+    private ScriptEngine initScriptEngine() throws Exception {
+        final ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
+        if (engine == null) {
+            throw new RuntimeException("JavaScript engine not found");
+        }
+        final Reader reader = new InputStreamReader(ZippyShareFileRunner.class.getResourceAsStream("zippy.js"), "UTF-8");
+        try {
+            engine.eval(reader);
+        } finally {
+            reader.close();
+        }
+        return engine;
     }
 
     private HttpMethod stepCaptcha(final String rcKey, final String shortencode) throws Exception {

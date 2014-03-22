@@ -14,7 +14,7 @@ public class TusFilesFileSizeHandler implements FileSizeHandler {
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "<small>(", "total)</small>")));
             return;
         }
-        final Matcher match = PlugUtils.matcher(" - (.+?\\s*?\\w+?)\\[/URL\\]", content);
+        final Matcher match = PlugUtils.matcher(" - ([\\d\\.,]+?\\s*?\\w+?)[\\[<]/", content);
         if (match.find())
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
         else

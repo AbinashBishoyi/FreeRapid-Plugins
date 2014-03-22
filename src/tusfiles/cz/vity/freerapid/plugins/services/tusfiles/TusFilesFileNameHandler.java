@@ -11,8 +11,8 @@ public class TusFilesFileNameHandler implements FileNameHandler {
 
     @Override
     public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-        if (content.contains("<b>Files of</b>")) {
-            httpFile.setFileName("Folder > " + PlugUtils.getStringBetween(content, "Files of</b> <small>", "</small>"));
+        if (content.contains("<Title>Files of")) {
+            httpFile.setFileName("Folder > " + PlugUtils.getStringBetween(content, "Files of", "</").trim());
             return;
         }
         final Matcher match = PlugUtils.matcher("</a>\\s+?</li>\\s+?<li>(.+?)</li>\\s+?<li><b>Size", content);

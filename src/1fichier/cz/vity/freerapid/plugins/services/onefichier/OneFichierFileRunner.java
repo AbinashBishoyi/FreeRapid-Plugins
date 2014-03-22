@@ -27,24 +27,31 @@ class OneFichierFileRunner extends AbstractRunner {
         super.runCheck();
         setEnglishURL();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
-        if (makeRedirectedRequest(getMethod)) {
+        final int status = client.makeRequest(getMethod, false);
+        if (status / 100 == 3) {
+            getAltTempFileName();
+        } else if (status == 200) {
             checkProblems();
             try {
                 checkNameAndSize(getContentAsString());
             } catch (Exception e) {
-                final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
-                if (match.find()) {
-                    String name = match.group(1);
-                    if (match.group(3).length() > 0)
-                        name = URLDecoder.decode(match.group(3), "UTF-8");
-                    httpFile.setFileName(name);
-                }
-                httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
+                getAltTempFileName();
             }
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void getAltTempFileName() throws Exception {
+        final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
+        if (match.find()) {
+            String name = match.group(1);
+            if (URLDecoder.decode(match.group(3), "UTF-8").replace("\"", "").trim().length() > 0)
+                name = URLDecoder.decode(match.group(3), "UTF-8").replace("\"", "").trim();
+            httpFile.setFileName(name);
+        }
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void setEnglishURL() {
@@ -67,7 +74,15 @@ class OneFichierFileRunner extends AbstractRunner {
         setEnglishURL();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
+        final int status1 = client.makeRequest(method, false);
+        if (status1 / 100 == 3) {
+            final String dlLink = method.getResponseHeader("Location").getValue();
+            httpFile.setFileName(URLDecoder.decode(dlLink.substring(1 + dlLink.lastIndexOf("/")), "UTF-8"));
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();//if downloading failed
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            }
+        } else if (status1 == 200) {
             while (true) {
                 checkProblems();//check problems
                 try {

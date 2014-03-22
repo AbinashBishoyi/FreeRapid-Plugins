@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.tusfiles;
 
-import cz.vity.freerapid.plugins.exceptions.BadLoginException;
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
@@ -15,6 +12,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
 /**
@@ -54,7 +52,7 @@ class TusFilesFileRunner extends XFileSharingRunner {
         boolean morePages;
         do {
             morePages = false;
-            final Matcher match = PlugUtils.matcher("<TD align=left><a href=\"(https?://(www\\.)?tusfiles\\.net/[^\"]+?)\">", getContentAsString());
+            final Matcher match = PlugUtils.matcher("<a href=\"(https?://(www\\.)?tusfiles\\.net/[^\"]+?)\"><img", getContentAsString());
             while (match.find()) {
                 list.add(new URI(match.group(1)));
             }
@@ -68,8 +66,10 @@ class TusFilesFileRunner extends XFileSharingRunner {
                 checkFileProblems();
                 checkDownloadProblems();
             }
+            Logger.getLogger(TusFilesFileRunner.class.getName()).info(list.size() + " Links found");
         } while (morePages);
 
+        if (list.isEmpty()) throw new PluginImplementationException("No links found");
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
         httpFile.setFileName("Link(s) Extracted !");
         httpFile.setState(DownloadState.COMPLETED);

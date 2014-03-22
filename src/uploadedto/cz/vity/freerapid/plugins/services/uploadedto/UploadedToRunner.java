@@ -135,6 +135,9 @@ class UploadedToRunner extends AbstractRunner {
         if (getContentAsString().contains("can only be queried by premium users")) {
             throw new ServiceConnectionProblemException("The file status can only be queried by premium users");
         }
+        if (getContentAsString().contains("Uploaded is in maintenance mode")) {
+            throw new ServiceConnectionProblemException("Uploaded is in maintenance mode");
+        }
     }
 
     private String getFileId() throws ErrorDuringDownloadingException {

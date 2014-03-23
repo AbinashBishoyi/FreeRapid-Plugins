@@ -15,14 +15,14 @@ public class TusFilesFileNameHandler implements FileNameHandler {
             httpFile.setFileName("Folder > " + PlugUtils.getStringBetween(content, "Files of", "</").trim());
             return;
         }
-        final Matcher match = PlugUtils.matcher("</a>\\s+?</li>\\s+?<li>(.+?)</li>\\s+?<li><b>Size", content);
+        final Matcher match = PlugUtils.matcher("[\\]>]([^\\]>]+?) - [\\d\\.,]+?\\s*?\\w+?[\\[<]/", content);
         if (match.find())
             httpFile.setFileName(match.group(1).trim());
         else {
             try {
                 PlugUtils.checkName(httpFile, content, "globalFileName = '", "';");
             } catch (Exception e) {
-                PlugUtils.checkName(httpFile, content, "/?q=", "\" ");
+                PlugUtils.checkName(httpFile, content, "?q=", "\"");
             }
         }
     }

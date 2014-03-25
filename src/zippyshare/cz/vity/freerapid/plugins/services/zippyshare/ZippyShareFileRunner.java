@@ -49,18 +49,22 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             final String url;
-            Matcher matcher = getMatcherAgainstContent("<script[^<>]*?>([^<>]*?document\\.getElementById\\('dlbutton'\\)\\.href\\s*=\\s*[^<>]+?)</script>(?:\\s*<script[^<>]*?>([^<>]+?)</script>)?");
+            Matcher matcher = getMatcherAgainstContent("(?s)<body>(.+?)</body>");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Script not found (1)");
+            }
+            matcher = PlugUtils.matcher("<script[^<>]*?>([^<>]+?)</script>", matcher.group(1));
             if (matcher.find()) {
-                final String script = matcher.group(1);
-                final String script2 = matcher.group(2);
                 final ScriptEngine engine = initScriptEngine();
                 try {
-                    logger.info("Evaluating script:\n" + script);
-                    engine.eval(script);
-                    if (script2 != null) {
-                        logger.info("Evaluating script 2:\n" + script2);
-                        engine.eval(script2);
-                    }
+                    do {
+                        final String script = matcher.group(1);
+                        if (script.contains("tumblr")) {
+                            continue;
+                        }
+                        logger.info("Evaluating script:\n" + script);
+                        engine.eval(script);
+                    } while (matcher.find());
                     url = (String) engine.eval("document.getElementById('dlbutton').href");
                 } catch (final Exception e) {
                     throw new PluginImplementationException("Script execution failed", e);

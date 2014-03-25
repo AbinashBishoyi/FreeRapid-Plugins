@@ -5,9 +5,15 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandl
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
+import java.util.regex.Matcher;
+
 public class CloudyVideosFileNameHandler implements FileNameHandler {
     @Override
     public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<h3>", "&nbsp;");
+        final Matcher match = PlugUtils.matcher("[\\]>]([^\\]>]+?) - [\\d\\.,]+?\\s*?\\w+?[\\[<]/", content);
+        if (match.find())
+            httpFile.setFileName(match.group(1).trim());
+        else
+            PlugUtils.checkName(httpFile, content, "<h3>Watch &nbsp;", "&nbsp;");
     }
 }

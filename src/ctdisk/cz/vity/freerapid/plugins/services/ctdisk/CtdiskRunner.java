@@ -137,6 +137,7 @@ class CtdiskRunner extends AbstractRunner {
                 .setActionFromFormByName("user_form", true)
                 .setAction(String.format("%sguest_loginV2.php", urlRoot))
                 .setParameter("randcode", captcha_result)
+                .setParameter("hash_key", new String(Base64.decodeBase64(PlugUtils.getStringBetween(pageContentWithCaptcha, "hash_info\" value=\"", "\""))))
                 .toPostMethod();
     }
 

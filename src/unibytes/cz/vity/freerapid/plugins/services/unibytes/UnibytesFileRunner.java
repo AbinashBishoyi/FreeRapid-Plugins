@@ -4,11 +4,9 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.util.URIUtil;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -38,9 +36,11 @@ class UnibytesFileRunner extends AbstractRunner {
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        PlugUtils.checkName(httpFile, content, "<span title=\"", "\"");
-        final long fileSize = PlugUtils.getFileSizeFromString(PlugUtils.getStringBetween(content, "(", ")</h3>").replace(",", "").trim());
-        httpFile.setFileSize(fileSize);
+        final Matcher match = PlugUtils.matcher("Download file:<.+?>\\s+?(.+?)\\s+?<.+?>\\((.+?)\\)<", content);
+        if (!match.find())
+            throw new PluginImplementationException("File name/size not found");
+        httpFile.setFileName(match.group(1).trim());
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -56,25 +56,7 @@ class UnibytesFileRunner extends AbstractRunner {
         }
         checkProblems();
         checkNameAndSize();
-        final Matcher match = PlugUtils.matcher("<a href=\"([^\"]+?)\"[^>]*?btn_red[^>]*?>Free", getContentAsString());
-        if (!match.find())
-            throw new PluginImplementationException("Free download page not found");
-        MethodBuilder methodBuilder = getMethodBuilder().setReferer(fileURL).setAction(match.group(1));
-        methodBuilder.setAction(URIUtil.encodeQuery(methodBuilder.getAction()));
-        method = methodBuilder.toHttpMethod();
-        if (!makeRedirectedRequest(method)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkProblems();
-        final String timerURL = method.getURI().toString();
-        /* skipped waitTime as in browser
-        int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var timerRest = ", ";", TimeUnit.SECONDS);
-        downloadTask.sleep(waitTime);
-        */
-        methodBuilder = getMethodBuilder().setReferer(timerURL).setActionFromAHrefWhereATagContains("Download");
-        methodBuilder.setAction(URIUtil.decode(methodBuilder.getAction()));
-        method = methodBuilder.toGetMethod();
+        method = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Download").toGetMethod();
         setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true); //they trim filename
         if (!tryDownloadAndSaveFile(method)) {
             checkProblems();

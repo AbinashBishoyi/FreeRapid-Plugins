@@ -59,7 +59,7 @@ class ZippyShareFileRunner extends AbstractRunner {
                 try {
                     do {
                         final String script = matcher.group(1);
-                        if (script.contains("tumblr")) {
+                        if (script.contains("tumblr") || script.contains("swfobject")) {
                             continue;
                         }
                         logger.info("Evaluating script:\n" + script);

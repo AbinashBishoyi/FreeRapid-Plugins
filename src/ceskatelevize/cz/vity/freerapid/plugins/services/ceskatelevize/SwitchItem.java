@@ -7,14 +7,20 @@ import java.util.List;
  * @author JPEXS
  * @author tong2shot
  */
-public class SwitchItem implements Comparable<SwitchItem> {
+public class SwitchItem {
+    private final String id;
     private final String base;
     private final double duration;
     private final List<Video> videos = new ArrayList<Video>();
 
-    public SwitchItem(String base, double duration) {
+    public SwitchItem(String id, String base, double duration) {
+        this.id = id;
         this.base = base;
         this.duration = duration;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getBase() {
@@ -36,15 +42,10 @@ public class SwitchItem implements Comparable<SwitchItem> {
     @Override
     public String toString() {
         return "SwitchItem{" +
-                "base='" + base + '\'' +
+                "id='" + id + '\'' +
+                ", base='" + base + '\'' +
                 ", duration=" + duration +
                 ", videos=" + videos +
                 '}';
     }
-
-    @Override
-    public int compareTo(SwitchItem that) {
-        return Double.compare(this.duration, that.duration);
-    }
-
 }

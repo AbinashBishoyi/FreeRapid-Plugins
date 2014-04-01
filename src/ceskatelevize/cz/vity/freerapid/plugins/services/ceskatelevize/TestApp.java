@@ -30,7 +30,9 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://decko.ceskatelevize.cz/mazalove"));
             //httpFile.setNewURL(new URL("http://decko.ceskatelevize.cz/player?width=560&IDEC=211+513+13003%2F0010&fname=Mazalov%C3%A9+-+Je%C5%BE%C3%AD%C5%A1ek%3F+Existuje%21"));
             //httpFile.setNewURL(new URL("http://decko.ceskatelevize.cz/bludiste"));
-            httpFile.setNewURL(new URL("http://decko.ceskatelevize.cz/player?width=560&IDEC=409+234+10001%2F1007&fname=Bludi%C5%A1t%C4%9B+-+19.+2.+2009"));
+            //httpFile.setNewURL(new URL("http://decko.ceskatelevize.cz/player?width=560&IDEC=409+234+10001%2F1007&fname=Bludi%C5%A1t%C4%9B+-+19.+2.+2009"));
+            //httpFile.setNewURL(new URL("http://www.ceskatelevize.cz/ivysilani/10213448544-evropska-liga-ve-fotbalu/214471291124205-fc-viktoria-plzen-olympique-lyon"));
+            httpFile.setNewURL(new URL("http://www.ceskatelevize.cz/ivysilani/10213448544-evropska-liga-ve-fotbalu/214471291124205-fc-viktoria-plzen-olympique-lyon/?switchitemid=2-214+471+29112%2F4205"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("195.122.213.61", 3128); //eg we can use local proxy to sniff HTTP communication
             final CeskaTelevizeServiceImpl service = new CeskaTelevizeServiceImpl();

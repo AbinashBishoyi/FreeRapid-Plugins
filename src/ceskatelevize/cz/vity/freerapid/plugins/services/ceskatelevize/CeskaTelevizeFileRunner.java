@@ -31,8 +31,9 @@ import java.util.regex.Pattern;
  */
 class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(CeskaTelevizeFileRunner.class.getName());
-    private CeskaTelevizeSettingsConfig config;
     private final static String FNAME = "fname";
+    private final static String SWITCH_ITEM_ID = "switchitemid";
+    private CeskaTelevizeSettingsConfig config;
 
     private void setConfig() throws Exception {
         CeskaTelevizeServiceImpl service = (CeskaTelevizeServiceImpl) getPluginService();
@@ -143,7 +144,6 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException("");
             }
-
             checkProblems();
             if (isArchiveProgramme(fileURL)) {
                 parseArchiveProgramme(getContentAsString());
@@ -222,7 +222,6 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         if (!makeRedirectedRequest(httpMethod)) {
             checkProblems();
             throw new ServiceConnectionProblemException("Cannot load playlist URL");
-
         }
         checkProblems();
 
@@ -238,12 +237,17 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         }
         checkProblems();
         setConfig();
-        SwitchItem selectedSwitchItem = getSelectedSwitchItem(getContentAsString());
-        Video selectedVideo = getSelectedVideo(selectedSwitchItem);
-        RtmpSession rtmpSession = new RtmpSession(selectedSwitchItem.getBase(), selectedVideo.getSrc());
-        rtmpSession.disablePauseWorkaround();
-        tryDownloadAndSaveFile(rtmpSession);
-
+        List<SwitchItem> switchItems = getSwitchItems(getContentAsString());
+        if (switchItems.size() == 1) {
+            SwitchItem selectedSwitchItem = switchItems.get(0);
+            logger.info("Selected switch item : " + selectedSwitchItem);
+            Video selectedVideo = getSelectedVideo(selectedSwitchItem);
+            RtmpSession rtmpSession = new RtmpSession(selectedSwitchItem.getBase(), selectedVideo.getSrc());
+            rtmpSession.disablePauseWorkaround();
+            tryDownloadAndSaveFile(rtmpSession);
+        } else {
+            queueSwitchItems(switchItems);
+        }
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -260,15 +264,25 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private SwitchItem getSelectedSwitchItem(String playlistContent) throws PluginImplementationException {
+    private List<SwitchItem> getSwitchItems(String playlistContent) throws PluginImplementationException {
+        String swItemIdFromUrl = null;
+        try {
+            swItemIdFromUrl = URLUtil.getQueryParams(fileURL, "UTF-8").get(SWITCH_ITEM_ID);
+        } catch (Exception e) {
+            //
+        }
         final Matcher switchMatcher = Pattern.compile("<switchItem id=\"([^\"]+)\" base=\"([^\"]+)\" begin=\"([^\"]+)\" duration=\"([^\"]+)\" clipBegin=\"([^\"]+)\".*?>\\s*(<video[^>]*>\\s*)*</switchItem>", Pattern.MULTILINE + Pattern.DOTALL).matcher(playlistContent);
         logger.info("Available switch items : ");
         List<SwitchItem> switchItems = new ArrayList<SwitchItem>();
         while (switchMatcher.find()) {
+            String swItemId = switchMatcher.group(1);
+            if ((swItemIdFromUrl != null) && (!swItemId.equals(swItemIdFromUrl))) {
+                continue;
+            }
             String swItemText = switchMatcher.group(0);
             String base = PlugUtils.replaceEntities(switchMatcher.group(2));
             double duration = Double.parseDouble(switchMatcher.group(4));
-            SwitchItem newItem = new SwitchItem(base, duration);
+            SwitchItem newItem = new SwitchItem(swItemId, base, duration);
             Matcher videoMatcher = Pattern.compile("<video src=\"([^\"]+)\" system-bitrate=\"([0-9]+)\" label=\"([0-9]+)p\" enabled=\"true\" */>").matcher(swItemText);
             while (videoMatcher.find()) {
                 newItem.addVideo(new Video(videoMatcher.group(1), Integer.parseInt(videoMatcher.group(3))));
@@ -276,12 +290,20 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             switchItems.add(newItem);
             logger.info(newItem.toString());
         }
-        if (switchItems.isEmpty()) {
-            throw new PluginImplementationException("No stream found.");
+        if (switchItems.size() > 1) {
+            for (int i = 0; i < switchItems.size(); ) {
+                SwitchItem switchItem = switchItems.get(i);
+                if (switchItem.getDuration() <= 60) {  //assumption: advertisement<=60s, content>60s
+                    switchItems.remove(i); //remove advertisement
+                } else {
+                    i++;
+                }
+            }
         }
-        SwitchItem selectedSwitchItem = Collections.max(switchItems); //switch item with the longest duration
-        logger.info("Selected switch item : " + selectedSwitchItem);
-        return selectedSwitchItem;
+        if (switchItems.isEmpty()) {
+            throw new PluginImplementationException("No stream found");
+        }
+        return switchItems;
     }
 
     private Video getSelectedVideo(SwitchItem switchItem) throws PluginImplementationException {
@@ -308,6 +330,23 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         }
         logger.info("Video to be downloaded : " + selectedVideo);
         return selectedVideo;
+    }
+
+    private void queueSwitchItems(List<SwitchItem> switchItems) throws Exception {
+        List<URI> list = new LinkedList<URI>();
+        for (SwitchItem switchItem : switchItems) {
+            String switchIdParam = SWITCH_ITEM_ID + "=" + URLEncoder.encode(switchItem.getId(), "UTF-8");
+            try {
+                list.add(new URI(fileURL + (fileURL.endsWith("/") ? "?" : "/?") + switchIdParam));
+            } catch (final URISyntaxException e) {
+                LogUtils.processException(logger, e);
+            }
+        }
+        if (list.isEmpty()) {
+            throw new PluginImplementationException("No switch items available");
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        logger.info(list.size() + " switch items added");
     }
 
     private boolean isArchiveEpisode(String fileUrl) {

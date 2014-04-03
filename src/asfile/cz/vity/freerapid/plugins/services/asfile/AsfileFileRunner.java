@@ -35,8 +35,8 @@ class AsfileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Download:</div><div class=\"div_variable\"><strong>", "</strong>");
-        PlugUtils.checkFileSize(httpFile, content, "File size:</div><div class=\"div_variable\">", "</");
+        PlugUtils.checkName(httpFile, content, "name: '", "'");
+        PlugUtils.checkFileSize(httpFile, content, "size:", "</");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

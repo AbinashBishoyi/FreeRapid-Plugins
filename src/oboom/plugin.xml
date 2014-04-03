@@ -1,12 +1,12 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="asfile.com" version="1.0.3" vendor="RickCL"
-        class="cz.vity.freerapid.plugins.services.asfile.AsfileServiceImpl">
+<plugin class="cz.vity.freerapid.plugins.services.oboom.OBoomServiceImpl"
+        id="oboom.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?asfile\.com/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?oboom\.com/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="asfile.com"/>
+        <attribute id="services" value="oboom.com"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
@@ -15,6 +15,6 @@
                 plugin-version="1.0" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="asfile.com" path="/" type="code"/>
+        <library id="oboom.com" path="/" type="code"/>
     </runtime>
 </plugin>

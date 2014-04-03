@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.asfile;
+package cz.vity.freerapid.plugins.services.oboom;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Arthur Gunawan
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,12 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://asfile.com/file/u6R9W9d"));
+            httpFile.setNewURL(new URL("https://www.oboom.com/T7LMKZ4C"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("173.193.200.199", 8080); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
-            final AsfileServiceImpl service = new AsfileServiceImpl(); //instance of service - of our plugin
+            final OBoomServiceImpl service = new OBoomServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

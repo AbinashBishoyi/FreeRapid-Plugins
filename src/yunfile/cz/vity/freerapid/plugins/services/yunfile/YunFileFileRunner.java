@@ -22,13 +22,11 @@ import java.util.regex.Matcher;
  */
 class YunFileFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(YunFileFileRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         checkFileURL();
-        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".yunfile.com", "language", "en_us", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
@@ -53,7 +51,6 @@ class YunFileFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         checkFileURL();
-        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".yunfile.com", "language", "en_us", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
@@ -67,8 +64,12 @@ class YunFileFileRunner extends AbstractRunner {
             do {
                 Matcher matcher = getMatcherAgainstContent("Please wait <span.+?>(.+?)</span>");
                 final int waitTime = !matcher.find() ? 30 : Integer.parseInt(matcher.group(1));
-                downloadTask.sleep(waitTime + 1); //skip wait time
-                String downloadPageLink = PlugUtils.getStringBetween(getContentAsString(), "downpage_link\" href=\"", "\"");
+                downloadTask.sleep(waitTime + 1);
+                matcher = getMatcherAgainstContent("id=\"downpage_link\"[^<>]+? href=\"([^\"]+?)\"");
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Download page link not found");
+                }
+                String downloadPageLink = matcher.group(1).trim();
                 if (getContentAsString().contains("vcode")) {
                     final String captcha;
                     captcha = getCaptchaSupport().getCaptcha(baseURL + "/verifyimg/getPcv.html");
@@ -160,7 +161,7 @@ class YunFileFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("down_interval")) {
             throw new YouHaveToWaitException("Waiting for next file.",
-                    PlugUtils.getWaitTimeBetween(contentAsString, "down_interval_tag\" style=\" color: green; font-size: 28px; \">", "</span>", TimeUnit.MINUTES));
+                    PlugUtils.getWaitTimeBetween(contentAsString, "down_interval_tag\" style=\"font-size: 28px;  color: #000800; \">", "</span>", TimeUnit.MINUTES));
         }
         if (contentAsString.contains("Web Server may be down")) {
             throw new ServiceConnectionProblemException("A communication error occurred: \"Operation timed out\"");

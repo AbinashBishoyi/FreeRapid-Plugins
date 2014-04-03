@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -33,6 +34,8 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(CeskaTelevizeFileRunner.class.getName());
     private final static String FNAME = "fname";
     private final static String SWITCH_ITEM_ID = "switchitemid";
+    public final static String DEFAULT_EXT = ".flv";
+    private String switchItemIdFromUrl = null;
     private CeskaTelevizeSettingsConfig config;
 
     private void setConfig() throws Exception {
@@ -43,7 +46,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        if (isArchiveEpisode(fileURL) || isArchiveProgramme(fileURL)) {
+        if (isArchiveEpisode(fileURL) || isArchiveProgramme(fileURL) || isMultiparts(fileURL)) {
             return;
         }
         final GetMethod method = getGetMethod(fileURL);
@@ -62,7 +65,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
 
         matcher = getMatcherAgainstContent("(?i)charset\\s*=\\s*windows-1250");
         if (matcher.find()) {
-            setPageEncoding("Windows-1250"); //sometimes they use "windows-1250" charset
+            setPageEncoding("Windows-1250"); //usually they use "UTF-8" charset, but sometimes they use "windows-1250" charset
             GetMethod method = getGetMethod(fileURL);
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
@@ -126,7 +129,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         }
 
         filename = filename.replaceAll("[\\t\\n]", "");
-        filename += ".flv";
+        filename += DEFAULT_EXT;
         httpFile.setFileName(filename);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -138,6 +141,8 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
 
         if (isArchiveEpisode(fileURL)) {
             processArchiveEpisode();
+        } else if (isMultiparts(fileURL)) {
+            processMultiparts();
         } else {
             final GetMethod method = getGetMethod(fileURL);
             if (!makeRedirectedRequest(method)) {
@@ -265,18 +270,12 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     }
 
     private List<SwitchItem> getSwitchItems(String playlistContent) throws PluginImplementationException {
-        String swItemIdFromUrl = null;
-        try {
-            swItemIdFromUrl = URLUtil.getQueryParams(fileURL, "UTF-8").get(SWITCH_ITEM_ID);
-        } catch (Exception e) {
-            //
-        }
         final Matcher switchMatcher = Pattern.compile("<switchItem id=\"([^\"]+)\" base=\"([^\"]+)\" begin=\"([^\"]+)\" duration=\"([^\"]+)\" clipBegin=\"([^\"]+)\".*?>\\s*(<video[^>]*>\\s*)*</switchItem>", Pattern.MULTILINE + Pattern.DOTALL).matcher(playlistContent);
         logger.info("Available switch items : ");
         List<SwitchItem> switchItems = new ArrayList<SwitchItem>();
         while (switchMatcher.find()) {
             String swItemId = switchMatcher.group(1);
-            if ((swItemIdFromUrl != null) && (!swItemId.equals(swItemIdFromUrl))) {
+            if ((switchItemIdFromUrl != null) && (!swItemId.equals(switchItemIdFromUrl))) {
                 continue;
             }
             String swItemText = switchMatcher.group(0);
@@ -334,10 +333,12 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
 
     private void queueSwitchItems(List<SwitchItem> switchItems) throws Exception {
         List<URI> list = new LinkedList<URI>();
-        for (SwitchItem switchItem : switchItems) {
+        for (int i = 0; i < switchItems.size(); i++) {
+            SwitchItem switchItem = switchItems.get(i);
             String switchIdParam = SWITCH_ITEM_ID + "=" + URLEncoder.encode(switchItem.getId(), "UTF-8");
+            String fnameParam = "&" + FNAME + "=" + URLEncoder.encode(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_EXT) + "$", "-" + (i + 1)), "UTF-8");
             try {
-                list.add(new URI(fileURL + (fileURL.endsWith("/") ? "?" : "/?") + switchIdParam));
+                list.add(new URI(fileURL + (fileURL.endsWith("/") ? "?" : "/?") + switchIdParam + fnameParam));
             } catch (final URISyntaxException e) {
                 LogUtils.processException(logger, e);
             }
@@ -346,6 +347,8 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("No switch items available");
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        httpFile.setState(DownloadState.COMPLETED);
+        httpFile.getProperties().put("removeCompleted", true);
         logger.info(list.size() + " switch items added");
     }
 
@@ -364,7 +367,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         if (filename == null) {
             throw new PluginImplementationException("File name not found");
         }
-        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + ".flv", "_"));
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + DEFAULT_EXT, "_"));
         fileURL = fileURL.replaceFirst("&" + FNAME + "=.+", "");
 
         HttpMethod method = getGetMethod(fileURL);
@@ -416,5 +419,41 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
         logger.info(list.size() + " episodes added");
+    }
+
+    private boolean isMultiparts(String fileUrl) {
+        return fileUrl.contains("?" + SWITCH_ITEM_ID + "=");
+    }
+
+    private void processMultiparts() throws Exception {
+        URL url = new URL(fileURL);
+        String filename = null;
+        try {
+            filename = URLUtil.getQueryParams(url.toString(), "UTF-8").get(FNAME);
+        } catch (Exception e) {
+            //
+        }
+        if (filename == null) {
+            throw new PluginImplementationException("File name not found");
+        }
+        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + DEFAULT_EXT, "_"));
+
+        switchItemIdFromUrl = null;
+        try {
+            switchItemIdFromUrl = URLUtil.getQueryParams(fileURL, "UTF-8").get(SWITCH_ITEM_ID);
+        } catch (Exception e) {
+            //
+        }
+        if (switchItemIdFromUrl == null) {
+            throw new PluginImplementationException("Switch item ID param not found");
+        }
+
+        fileURL = fileURL.replaceFirst("\\?" + SWITCH_ITEM_ID + "=.+", "");
+        HttpMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
     }
 }

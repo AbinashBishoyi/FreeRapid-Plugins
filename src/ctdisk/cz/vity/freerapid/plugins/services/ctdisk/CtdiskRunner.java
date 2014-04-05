@@ -47,18 +47,20 @@ class CtdiskRunner extends AbstractRunner {
             fileURL = method.getURI().toString();
             final String fileId = getFileId();
             pageContentWithCaptcha = getContentAsString();
-            while (!getContentAsString().contains("downlink=")) {
+            while (!(getContentAsString().contains("downlink=") || getContentAsString().contains("<a class=\"local\""))) {
                 if (!makeRedirectedRequest(stepCaptcha(fileId))) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
                 checkProblems();
             }
-            if (!makeRedirectedRequest(getGetMethod(getUrlRoot() + PlugUtils.getStringBetween(getContentAsString(), "downlink=/", "\";")))) {
+            if (getContentAsString().contains("downlink=")) {
+                if (!makeRedirectedRequest(getGetMethod(getUrlRoot() + PlugUtils.getStringBetween(getContentAsString(), "downlink=/", "\";")))) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
                 checkProblems();
-                throw new ServiceConnectionProblemException();
             }
-            checkProblems();
             final String downloadLinkBase64 = PlugUtils.getStringBetween(getContentAsString(), "<a class=\"local\" href=\"", "\"");
             final String downloadLink = new String(Base64.decodeBase64(downloadLinkBase64), "UTF-8");
             logger.info(String.format("Download link: %s\nDecoded link: %s", downloadLinkBase64, downloadLink));

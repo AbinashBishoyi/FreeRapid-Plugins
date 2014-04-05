@@ -53,7 +53,7 @@ class ShareRapidRunner extends AbstractRunner {
 
             String serverURL = "http://" + getMethod.getURI().getHost();
 
-            Matcher matcher = PlugUtils.matcher("<strong>Stahov.n. je p..stupn. pouze p.ihl..en.m u.ivatel.m</strong>", getContentAsString());
+            Matcher matcher = PlugUtils.matcher("(Stahování je povoleno pouze pro přihlášené uživatele|<strong>Stahov.n. je p..stupn. pouze p.ihl..en.m u.ivatel.m</strong>)", getContentAsString());
             if (matcher.find()) {
                 Login(serverURL);
             }
@@ -97,14 +97,14 @@ class ShareRapidRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws Exception {
-        Matcher matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\">(.+?)<br", content);
+        Matcher matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\">(.+?)<", content);
         if (!matcher.find())
             throw new PluginImplementationException("Filename not found");
         httpFile.setFileName(matcher.group(1).trim());
 
-        matcher = PlugUtils.matcher("<td class=\"i\">Velikost:</td>[^<]+<td class=\"h\"><strong>[^0-9]+([0-9.]+ .B)</strong></td>", content);
+        matcher = PlugUtils.matcher("<td class=\"i\">Velikost:</td>\\s*?<td class=\"h\"><strong>\\s*?([0-9].+?B)</strong></td>", content);
         if (matcher.find()) {
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1).trim().replace("iB", "B")));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -135,8 +135,8 @@ class ShareRapidRunner extends AbstractRunner {
             postmethod.addParameter("pass1", pa.getPassword());
 
             if (makeRedirectedRequest(postmethod)) {
-                matcher = getMatcherAgainstContent("<title>P.ehled ..tu - Share-Rapid</title>");
-                if (!matcher.find()) {
+                matcher = getMatcherAgainstContent("<title>Přihlášení - Share-Rapid</title>");
+                if (matcher.find()) {
                     badConfig = true;
                     throw new NotRecoverableDownloadException("Bad ShareRapid account login information!");
                 }
@@ -156,6 +156,8 @@ class ShareRapidRunner extends AbstractRunner {
         //    throw new ErrorDuringDownloadingException("Stahování je přístupné pouze přihlášeným uživatelům");
         if (content.contains("Stahování zdarma je možné jen přes náš"))
             throw new NotRecoverableDownloadException("Stahování zdarma je možné jen přes náš download manager");
+        if (content.contains("Soubor nelze stáhnout, aktuálně nemáte aktivní žádné předplacené služby."))
+            throw new NotRecoverableDownloadException("Soubor nelze stáhnout, aktuálně nemáte aktivní žádné předplacené služby.");
 
         Matcher matcher;
         matcher = getMatcherAgainstContent("<h1>Po.adovan. str.nka nebyla nalezena</h1>");

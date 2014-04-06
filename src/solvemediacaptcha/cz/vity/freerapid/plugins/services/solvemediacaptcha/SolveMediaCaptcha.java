@@ -86,7 +86,7 @@ public class SolveMediaCaptcha {
         if (theme.equals(THEME_UNDEFINED)) {
             theme = "white";
             try {
-                matcher = Pattern.compile("var ACPuzzleOptions = \\{.*?theme:\\s*'(.+?)'", Pattern.DOTALL).matcher(client.getContentAsString());
+                matcher = Pattern.compile("var ACPuzzleOptions\\s*?=\\s*?\\{.*?[\"']?theme[\"']?\\s*?:\\s*?[\"'](.+?)[\"']", Pattern.DOTALL).matcher(client.getContentAsString());
                 if (matcher.find()) {
                     theme = matcher.group(1);
                 }
@@ -180,7 +180,6 @@ public class SolveMediaCaptcha {
      * @param chScriptContent challenge.script content
      * @throws IOException
      * @throws ErrorDuringDownloadingException
-     *
      */
     private void constructChJsParams(Map<String, String> chJsParams, String chScriptContent) throws IOException, ErrorDuringDownloadingException {
         final String magic = findString("magic:\\s*'(.+?)',", "Magic", chScriptContent);

@@ -24,8 +24,10 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/245224")); // non episode
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/280815")); //has subtitle
             //httpFile.setNewURL(new URL("http://www.hulu.com/captions.xml?content_id=40039219/Jewel in the Palace - S01E01 - Episode 1")); //subtitle
-            httpFile.setNewURL(new URL("http://www.hulu.com/watch/592818"));
+            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/592818"));
             //httpFile.setNewURL(new URL("http://www.hulu.com/watch/552660")); //only level3
+            //httpFile.setNewURL(new URL("http://www.hulu.com/watch/604145"));
+            httpFile.setNewURL(new URL("http://www.hulu.com/watch/608882"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication

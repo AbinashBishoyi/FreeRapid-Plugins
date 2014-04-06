@@ -46,7 +46,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
     private final static String SUBTITLE_DECRYPT_KEY = "4878b22e76379b55c962b18ddbc188d82299f8f52e3e698d0faf29a40ed64b21";
     private final static String SUBTITLE_DECRYPT_IV = "WA7hap7AGUkevuth";
     private final static Map<Class<?>, LoginData> LOGIN_CACHE = new WeakHashMap<Class<?>, LoginData>(2);
-    private final static String SWF_URL = "http://download.hulu.com/huludesktop.swf";
+    //private final static String SWF_URL = "http://download.hulu.com/huludesktop.swf";
     //private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
 
     private final String sessionId = getSessionId();
@@ -134,6 +134,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
             parseUserPage();
             return;
         }
+        String mainPageContent = getContentAsString();
 
         if (config.isDownloadSubtitles() && hasSubtitle) {
             //add filename to URL's tail so we can extract the filename later
@@ -166,9 +167,11 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
             final Stream stream = getStream(getStreamList(content));
             final RtmpSession rtmpSession = getSession(stream);
-            final SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
-            rtmpSession.getConnectParams().put("pageUrl", SWF_URL);
-            rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
+            final String swfUrl = getSwfUrl(mainPageContent);
+            logger.info("SWF URL : " + swfUrl);
+            final SwfVerificationHelper helper = new SwfVerificationHelper(swfUrl);
+            rtmpSession.getConnectParams().put("pageUrl", swfUrl);
+            rtmpSession.getConnectParams().put("swfUrl", swfUrl);
             helper.setSwfVerification(rtmpSession, client);
             tryDownloadAndSaveFile(rtmpSession);
         } else {
@@ -193,6 +196,27 @@ class HuluFileRunner extends AbstractRtmpRunner {
                 throw new YouHaveToWaitException("Hulu noticed that you are trying to access them through a proxy", 4);
             }
         }
+    }
+
+    private String getSwfUrl(String content) throws Exception {
+        Matcher matcher = PlugUtils.matcher("(/site-player/load_player[^\"\\\\]+\\.js)", content);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("Player loader JS URL not found");
+        }
+        String jsURL = matcher.group(1);
+        HttpMethod method = getMethodBuilder().setReferer(fileURL).setAction(jsURL).toGetMethod();
+        if (!makeRedirectedRequest(method)) {
+            checkProblems(getContentAsString());
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems(getContentAsString());
+
+        matcher = getMatcherAgainstContent("return (\\d{3,});");
+        if (!matcher.find()) {
+            throw new PluginImplementationException("SWF URL id not found");
+        }
+        String swfUrlId = matcher.group(1);
+        return String.format("http://www.hulu.com/site-player/%s/player.swf?cb=%s", swfUrlId, swfUrlId);
     }
 
     private RtmpSession getSession(final Stream stream) {
@@ -321,6 +345,7 @@ class HuluFileRunner extends AbstractRtmpRunner {
 
     private static String getContentSelectUrl(final String cid) throws Exception {
         final Map<String, String> parameters = new LinkedHashMap<String, String>(); //preserve ordering
+        parameters.put("cdnprefs", "darwin-edgecast");
         parameters.put("video_id", cid);
         parameters.put("v", V_PARAM);
         parameters.put("ts", String.valueOf(System.currentTimeMillis()));

@@ -44,8 +44,10 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=ShVRP09NCO4"));
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=MwpMEbgC7DA")); //sig decipher
             //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=oRS5p60yX_E"));
-            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=zoKj7TdJk98")); //1080 - not solved yet
-            httpFile.setNewURL(new URL("http://www.youtube.com/playlist?annotation_id=annotation_442536&feature=iv&list=PL4FCB61165E3892A7&src_vid=PgMUphc-80Y"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=zoKj7TdJk98")); //1080
+            //httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=zoKj7TdJk98&dashaudioitag=140"));
+            //httpFile.setNewURL(new URL("http://www.youtube.com/playlist?annotation_id=annotation_442536&feature=iv&list=PL4FCB61165E3892A7&src_vid=PgMUphc-80Y"));
+            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=5iobEYR487Q")); //DASH url sig decipher
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
@@ -53,7 +55,8 @@ public class TestApp extends PluginDevApplication {
             final YouTubeServiceImpl service = new YouTubeServiceImpl(); //instance of service - of our plugin
 
             YouTubeSettingsConfig config = new YouTubeSettingsConfig();
-            config.setVideoQuality(VideoQuality._480);
+            config.setEnableDash(true);
+            config.setVideoQuality(VideoQuality.Highest);
             config.setContainer(Container.flv);
             config.setReversePlaylistOrder(false);
             config.setDownloadSubtitles(true);

@@ -33,6 +33,7 @@ public class YouTubeSettingsPanel extends JPanel {
         final JPanel audioPanel = new JPanel();
         final JCheckBox orderCheckBox = new JCheckBox("Sort by newest first when adding links from user pages");
         final JCheckBox subtitlesCheckBox = new JCheckBox("Download subtitles whenever available");
+        final JCheckBox enableDashCheckBox = new JCheckBox("Enable DASH streams");
         videoQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         containerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -41,6 +42,7 @@ public class YouTubeSettingsPanel extends JPanel {
         audioQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         orderCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         subtitlesCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        enableDashCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoRb.setActionCommand(videoStr);
         audioRb.setActionCommand(audioStr);
         buttonGroup.add(videoRb);
@@ -50,6 +52,7 @@ public class YouTubeSettingsPanel extends JPanel {
         containerList.setSelectedItem(config.getContainer());
         orderCheckBox.setSelected(config.isReversePlaylistOrder());
         subtitlesCheckBox.setSelected(config.isDownloadSubtitles());
+        enableDashCheckBox.setSelected(config.isEnableDash());
         videoRb.setSelected(!config.isConvertToAudio());
         audioRb.setSelected(config.isConvertToAudio());
         if (videoRb.isSelected()) {
@@ -111,6 +114,12 @@ public class YouTubeSettingsPanel extends JPanel {
                 config.setDownloadSubtitles(subtitlesCheckBox.isSelected());
             }
         });
+        enableDashCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setEnableDash(enableDashCheckBox.isSelected());
+            }
+        });
         videoPanel.setLayout(new BoxLayout(videoPanel, BoxLayout.Y_AXIS));
         videoPanel.add(videoQualityLabel);
         videoPanel.add(videoQualityList);
@@ -128,6 +137,7 @@ public class YouTubeSettingsPanel extends JPanel {
         add(Box.createRigidArea(new Dimension(0, 15)));
         add(orderCheckBox);
         add(subtitlesCheckBox);
+        add(enableDashCheckBox);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }
 

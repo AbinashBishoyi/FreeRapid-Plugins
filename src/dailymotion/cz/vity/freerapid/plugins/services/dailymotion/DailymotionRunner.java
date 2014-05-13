@@ -45,7 +45,9 @@ class DailymotionRunner extends AbstractRunner {
     }
 
     private void checkURL() {
-        fileURL = fileURL.replace("/embed/video/", "/video/").replace("/swf/", "/video/");
+        fileURL = fileURL.replace("/embed/video/", "/video/")
+                .replace("/swf/video/", "/video/")
+                .replace("/swf/", "/video/");
     }
 
     @Override

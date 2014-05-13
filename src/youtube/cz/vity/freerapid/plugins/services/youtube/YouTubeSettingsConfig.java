@@ -12,6 +12,7 @@ public class YouTubeSettingsConfig {
     private AudioQuality audioQuality = AudioQuality._192;
     private boolean reversePlaylistOrder = false;
     private boolean downloadSubtitles = false;
+    private boolean enableDash = false;
 
     public void setVideoQuality(VideoQuality videoQuality) {
         this.videoQuality = videoQuality;
@@ -61,13 +62,22 @@ public class YouTubeSettingsConfig {
         return downloadSubtitles;
     }
 
+    public boolean isEnableDash() {
+        return enableDash;
+    }
+
+    public void setEnableDash(boolean enableDash) {
+        this.enableDash = enableDash;
+    }
+
     @Override
     public String toString() {
         return "YouTubeSettingsConfig{" +
                 "convertToAudio=" + convertToAudio + (convertToAudio ?
                 ", audioQuality=" + audioQuality :
                 ", videoQuality=" + videoQuality +
-                        ", container='" + container + '\'') +
+                        ", container='" + container + '\'' +
+                        ", enableDash=" + enableDash) +
                 '}';
     }
 }

@@ -15,8 +15,12 @@ import jlibs.core.net.URLUtil;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -35,10 +39,12 @@ import java.util.regex.Pattern;
  */
 class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0";
     private static final String DEFAULT_FILE_EXT = ".flv";
+    private static final String DASH_AUDIO_ITAG = "dashaudioitag";
 
     private YouTubeSettingsConfig config;
+    private int dashAudioItag = -1;
 
     @Override
     public void runCheck() throws Exception {
@@ -47,6 +53,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         if (isVideo()) {
             checkFileProblems();
+        }
+        if (isDashAudio()) {
+            normalizeDashAudioUrl();
         }
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -74,6 +83,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         if (isVideo()) {
             checkFileProblems();
         }
+        if (isDashAudio()) {
+            normalizeDashAudioUrl();
+        }
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             bypassAgeVerification(method);
@@ -96,22 +108,70 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
             String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
             String fmtStreamMapContent = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
+            String dashStreamMapContent = null;
+            YouTubeSigDecipher ytSigDecipher = null;
             logger.info("Swf URL : " + swfUrl);
-            logger.info("fmtStreamMap : " + fmtStreamMapContent);
-            Map<Integer, YouTubeMedia> fmtStreamMap = getFmtStreamMap(fmtStreamMapContent);
-            YouTubeMedia youTubeMedia = getSelectedYouTubeMedia(fmtStreamMap);
-            httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", youTubeMedia.getContainer().getFileExt()));
+            if (getContentAsString().contains("\"dashmpd\": \"")) {
+                String dashUrl;
+                dashUrl = PlugUtils.getStringBetween(getContentAsString(), "\"dashmpd\": \"", "\"").replace("\\/", "/");
+                logger.info("DASH url : " + dashUrl);
+                if (!(dashUrl.contains("/sig/") || dashUrl.contains("/signature/"))) {  //cipher signature
+                    Matcher matcher = PlugUtils.matcher("/s/([^/]+)", dashUrl);
+                    if (!matcher.find()) {
+                        throw new PluginImplementationException("Cipher signature not found");
+                    }
+                    String signature = matcher.group(1);
+                    ytSigDecipher = getYouTubeSigDecipher(swfUrl);
+                    signature = ytSigDecipher.decipher(signature); //deciphered signature
+                    dashUrl = dashUrl.replaceFirst("/s/[^/]+", "/signature/" + signature);
+                    logger.info("DASH url (deciphered) : " + dashUrl);
+                }
+                method = getMethodBuilder().setReferer(fileURL).setAction(dashUrl).toGetMethod();
+                setTextContentTypes("video/vnd.mpeg.dash.mpd");
+                if (!makeRedirectedRequest(method)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                checkProblems();
+                dashStreamMapContent = getContentAsString();
+            }
 
+            YouTubeMedia youTubeMedia;
+            Map<Integer, YouTubeMedia> dashStreamMap = getDashStreamMap(dashStreamMapContent);
+            if (dashAudioItag == -1) { //not dash audio
+                Map<Integer, YouTubeMedia> fmtStreamMap = getFmtStreamMap(fmtStreamMapContent);
+                Map<Integer, YouTubeMedia> ytStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
+                ytStreamMap.putAll(fmtStreamMap); //put fmtStreamMap at the top of the map
+                if (config.isEnableDash() && !config.isConvertToAudio()) {  //DASH streams are skipped for audio conversion
+                    ytStreamMap.putAll(dashStreamMap);
+                }
+                youTubeMedia = getSelectedYouTubeMedia(ytStreamMap);
+                if (youTubeMedia.getContainer() == Container.dash_v) {
+                    queueDashAudio(dashStreamMap);
+                }
+            } else { //dash audio
+                youTubeMedia = dashStreamMap.get(dashAudioItag);
+                if (youTubeMedia == null) {
+                    throw new PluginImplementationException("DASH audio stream with itag='" + dashAudioItag + "' not found");
+                }
+            }
+
+            httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", youTubeMedia.getContainer().getFileExt()));
             String videoURL = youTubeMedia.getUrl();
-            if (URLUtil.getQueryParams(videoURL, "UTF-8").get("signature") == null) { //if there is no "signature" param in url
+            String signatureInUrl = null;
+            try {
+                signatureInUrl = URLUtil.getQueryParams(videoURL, "UTF-8").get("signature");
+            } catch (Exception e) {
+                //
+            }
+            if (signatureInUrl == null) { //if there is no "signature" param in url
                 String signature;
                 if (youTubeMedia.isCipherSignature()) { //signature is encrypted
                     logger.info("Cipher signature : " + youTubeMedia.getSignature());
-                    InputStream is = client.makeRequestForFile(getGetMethod(swfUrl));
-                    if (is == null) {
-                        throw new ServiceConnectionProblemException("Error downloading SWF");
+                    if (ytSigDecipher == null) {
+                        ytSigDecipher = getYouTubeSigDecipher(swfUrl);
                     }
-                    signature = new YouTubeSigDecipher(is).decipher(youTubeMedia.getSignature());
+                    signature = ytSigDecipher.decipher(youTubeMedia.getSignature());
                     logger.info("Deciphered signature : " + signature);
                 } else {
                     signature = youTubeMedia.getSignature();
@@ -120,7 +180,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
 
             logger.info("Config setting : " + config);
-            logger.info("Downloading video : " + youTubeMedia);
+            logger.info("Downloading media : " + youTubeMedia);
             method = getGetMethod(videoURL);
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             if (config.isConvertToAudio()) {
@@ -141,6 +201,14 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private YouTubeSigDecipher getYouTubeSigDecipher(String swfUrl) throws IOException, ServiceConnectionProblemException {
+        InputStream is = client.makeRequestForFile(getGetMethod(swfUrl));
+        if (is == null) {
+            throw new ServiceConnectionProblemException("Error downloading SWF");
+        }
+        return new YouTubeSigDecipher(is);
     }
 
     private void checkFileProblems() throws Exception {
@@ -182,8 +250,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         Map<Integer, YouTubeMedia> fmtStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
         String fmtStreams[] = content.split(",");
         for (String fmtStream : fmtStreams) {
-            //fmtStream example :
-            //url=http%3A%2F%2Fr5---sn-2uuxa3vh-jb3l.googlevideo.com%2Fvideoplayback%3Fmv%3Dm%26upn%3DZC7X-TgcnkI%26source%3Dyoutube%26sparams%3Did%252Cip%252Cipbits%252Citag%252Cratebypass%252Csource%252Cupn%252Cexpire%26ms%3Dau%26expire%3D1385234607%26fexp%3D910100%252C910207%252C900222%252C916624%252C919510%252C936912%252C936910%252C923308%252C936913%252C907231%252C907240%26mt%3D1385210269%26id%3Do-AJpZVaZ_pyzg65PoyK8IHQwiD_4EXmalD6shPyZuX1Zw%26sver%3D3%26ratebypass%3Dyes%26ip%3D192.168.1.113%26key%3Dyt5%26itag%3D22%26ipbits%3D0\u0026type=video%2Fmp4%3B+codecs%3D%22avc1.64001F%2C+mp4a.40.2%22\u0026sig=8A9764AECD80DBA23E94F4E149B42699FC3C0402.042C3EE60DB22A9E3E21E7D65D662D39E90A6C39\u0026fallback_host=tc.v19.cache7.googlevideo.com\u0026quality=hd720\u0026itag=22
             String fmtStreamComponents[] = PlugUtils.unescapeUnicode(fmtStream).split("&"); // \u0026 as separator
             int itag = -1;
             String url = null;
@@ -197,13 +263,14 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     itag = Integer.parseInt(value);
                 } else if (key.equals("url")) {
                     url = URLDecoder.decode(value, "UTF-8");
+                    String sigParam = null;
                     try {
-                        String sigParam = URLUtil.getQueryParams(url, "UTF-8").get("signature");
-                        if (sigParam != null) { //contains "signature" param
-                            signature = sigParam;
-                        }
+                        sigParam = URLUtil.getQueryParams(url, "UTF-8").get("signature");
                     } catch (Exception e) {
                         //
+                    }
+                    if (sigParam != null) { //contains "signature" param
+                        signature = sigParam;
                     }
                 } else if (key.equals("signature") || key.equals("sig") || key.equals("s")) {
                     signature = value;
@@ -220,6 +287,51 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         return fmtStreamMap;
     }
 
+    private Map<Integer, YouTubeMedia> getDashStreamMap(String dashContent) throws Exception {
+        Map<Integer, YouTubeMedia> dashStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
+        if (dashContent != null) {
+            try {
+                final NodeList representationElements = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(dashContent
+                        .getBytes("UTF-8"))).getElementsByTagName("Representation");
+                for (int i = 0, n = representationElements.getLength(); i < n; i++) {
+                    try {
+                        final Element representationElement = (Element) representationElements.item(i);
+                        int itag;
+                        String url;
+                        String signature = null;
+                        boolean cipherSig = false; //assume there is cipher sig in the future, couldn't find sample at the moment.
+                        String sigParam = null;
+
+                        itag = Integer.parseInt(representationElement.getAttribute("id"));
+                        url = representationElement.getElementsByTagName("BaseURL").item(0).getTextContent();
+
+                        try {
+                            sigParam = URLUtil.getQueryParams(url, "UTF-8").get("signature");
+                        } catch (Exception e) {
+                            //
+                        }
+                        if (sigParam != null) { //contains "signature" param
+                            signature = sigParam;
+                        }
+
+                        if (itag == -1 || url == null || signature == null) {
+                            throw new PluginImplementationException("Invalid YouTube DASH media : " + representationElement.getTextContent());
+                        }
+
+                        YouTubeMedia youTubeMedia = new YouTubeMedia(itag, url, signature, cipherSig);
+                        logger.info("Found DASH media : " + youTubeMedia);
+                        dashStreamMap.put(itag, youTubeMedia);
+                    } catch (Exception e) {
+                        LogUtils.processException(logger, e);
+                    }
+                }
+            } catch (Exception e) {
+                throw new PluginImplementationException("Error parsing playlist XML", e);
+            }
+        }
+        return dashStreamMap;
+    }
+
     private YouTubeMedia getSelectedYouTubeMedia(Map<Integer, YouTubeMedia> ytMediaMap) throws ErrorDuringDownloadingException {
         if (ytMediaMap.isEmpty()) {
             throw new PluginImplementationException("No available YouTube media");
@@ -227,6 +339,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         int selectedItagCode = -1;
 
         if (config.isConvertToAudio()) { //convert to audio
+            //DASH streams are skipped
             final int NOT_SUPPORTED_PENALTY = 10000;
             final int LOWER_QUALITY_PENALTY = 5;
             int configAudioBitrate = config.getAudioQuality().getBitrate();
@@ -271,10 +384,20 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             //select video quality
             VideoQuality configVideoQuality = config.getVideoQuality();
             if (configVideoQuality == VideoQuality.Highest) {
-                selectedItagCode = ytMediaMap.keySet().iterator().next(); //first key
+                List<YouTubeMedia> sortedYtMediaList = new LinkedList<YouTubeMedia>(ytMediaMap.values());
+                Collections.sort(sortedYtMediaList, new Comparator<YouTubeMedia>() { //sorted by video quality, descending
+                    @Override
+                    public int compare(YouTubeMedia o1, YouTubeMedia o2) {
+                        return Integer.compare(o2.getVideoQuality(), o1.getVideoQuality()); //reverse order
+                    }
+                });
+                selectedItagCode = sortedYtMediaList.iterator().next().getItagCode();
             } else if (configVideoQuality == VideoQuality.Lowest) {
                 for (Integer itagCode : ytMediaMap.keySet()) {
-                    selectedItagCode = itagCode; //last key
+                    if ((YouTubeMedia.getContainer(itagCode) == Container.dash_v) || (YouTubeMedia.getContainer(itagCode) == Container.dash_a)) { //skip DASH
+                        continue;
+                    }
+                    selectedItagCode = itagCode; //last key of fmtStreamMap
                 }
             } else {
                 final int LOWER_QUALITY_PENALTY = 10;
@@ -302,7 +425,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         Container container = ytMedia.getContainer();
                         if (config.getContainer() == container) {
                             tempWeight = 100;
-                        } else if (container == Container.mp4) { //mp4 > flv > webm > 3gp
+                        } else if (container == Container.mp4) { //mp4 > flv > webm > 3gp > DASH
                             tempWeight = 50;
                         } else if (container == Container.flv) {
                             tempWeight = 49;
@@ -310,6 +433,8 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                             tempWeight = 48;
                         } else if (container == Container._3gp) {
                             tempWeight = 47;
+                        } else if (container == Container.dash_v) {
+                            tempWeight = 10;
                         }
                         if (tempWeight > weight) {
                             weight = tempWeight;
@@ -321,6 +446,56 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
 
         return ytMediaMap.get(selectedItagCode);
+    }
+
+    private void queueDashAudio(Map<Integer, YouTubeMedia> dashStreamMap) throws Exception {
+        int selectedItag = -1;
+        int weight = Integer.MIN_VALUE;
+        for (YouTubeMedia ytMedia : dashStreamMap.values()) {
+            if (ytMedia.getContainer() != Container.dash_a) { //skip non DASH audio
+                continue;
+            }
+            int tempWeight = Integer.MIN_VALUE;
+            switch (ytMedia.getAudioBitrate()) { //audio bitrate as criteria
+                case 128: //128 > 256 > 48
+                    tempWeight = 50;
+                    break;
+                case 256:
+                    tempWeight = 49;
+                    break;
+                case 48:
+                    tempWeight = 48;
+                    break;
+            }
+            if (tempWeight > weight) {
+                weight = tempWeight;
+                selectedItag = ytMedia.getItagCode();
+            }
+        }
+        if (selectedItag == -1) {
+            throw new PluginImplementationException("Preferred DASH audio stream not found");
+        }
+        List<URI> uriList = new LinkedList<URI>();
+        String url = fileURL + "&" + DASH_AUDIO_ITAG + "=" + selectedItag;
+        try {
+            uriList.add(new URI(url));
+        } catch (final URISyntaxException e) {
+            LogUtils.processException(logger, e);
+        }
+        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+    }
+
+    private boolean isDashAudio() {
+        return fileURL.contains("&" + DASH_AUDIO_ITAG + "=");
+    }
+
+    private void normalizeDashAudioUrl() throws PluginImplementationException {
+        Matcher matcher = PlugUtils.matcher("&" + DASH_AUDIO_ITAG + "=(\\d+)", fileURL);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("DASH audio itag param not found");
+        }
+        dashAudioItag = Integer.parseInt(matcher.group(1));
+        fileURL = fileURL.replaceFirst("&" + DASH_AUDIO_ITAG + "=.+", ""); //remove dash audio itag param;
     }
 
     private boolean isVideo() {

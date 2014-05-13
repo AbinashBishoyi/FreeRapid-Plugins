@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://xhamster.com/movies/1149264/topless_beach_girls_down_under.html"));
+            httpFile.setNewURL(new URL("https://xhamster.com/movies/1149264/topless_beach_girls_down_under.html"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("75.125.40.18", 3128); //eg we can use local proxy to sniff HTTP communication
             final xHamsterServiceImpl service = new xHamsterServiceImpl();

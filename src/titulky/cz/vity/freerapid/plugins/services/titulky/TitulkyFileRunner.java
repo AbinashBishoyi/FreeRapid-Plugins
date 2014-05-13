@@ -31,7 +31,7 @@ class TitulkyFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        //admin%2Bbob03@
+/*        //admin%2Bbob03@
         final HttpMethod loginMethod = getMethodBuilder().setAction("http://www.titulky.com/index.php").setParameter("Login", "Bob03").setParameter("Detail2", "").setParameter("Password", "0123456789").toPostMethod();
         if (!makeRedirectedRequest(loginMethod))  //we make the main request
             throw new PluginImplementationException();
@@ -39,7 +39,7 @@ class TitulkyFileRunner extends AbstractRunner {
         final HttpMethod welcomeMethod = getMethodBuilder().setAction("http://www.titulky.com/index.php?welcome=").toGetMethod();
         if (!makeRedirectedRequest(welcomeMethod))  //we make the main request
             throw new PluginImplementationException();
-
+*/
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
             checkProblems();//check problems
@@ -72,10 +72,9 @@ class TitulkyFileRunner extends AbstractRunner {
     }
 
     private void parseDownloadPage() throws Exception {
-        HttpMethod httpMethod;
         downloadTask.sleep(PlugUtils.getNumberBetween(getContentAsString(), "CountDown(", ")"));
         final String id = PlugUtils.getStringBetween(getContentAsString(), "href=\"/idown.php?id=", "\"");
-        httpMethod = getMethodBuilder().setAction("http://titulky.com//idown.php?id=" + id).toHttpMethod();
+        final HttpMethod httpMethod = getMethodBuilder().setAction("http://www.titulky.com/idown.php?id=" + id).toGetMethod();
         //here is the download link extraction
         client.getHTTPClient().getParams().setBooleanParameter("noContentLengthAvailable", true);
         if (!tryDownloadAndSaveFile(httpMethod)) {

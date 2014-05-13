@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
+import java.net.Proxy;
 import java.net.URL;
 
 /**
@@ -19,13 +20,20 @@ public class TestApp extends PluginDevApplication {
             //InputStream is = new BufferedInputStream(new FileInputStream("E:\\Stuff\\logtest.properties"));
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
-            httpFile.setNewURL(new URL("http://video.pbs.org/video/2163057527/"));
+            //httpFile.setNewURL(new URL("http://video.pbs.org/video/2163057527/"));
+            //httpFile.setNewURL(new URL("http://ga.video.cdn.pbs.org/captions/nova/77aacc41-923c-4262-a265-4c003b674319/captions/203507_Encoded.srt?fname=The+Fabric+of+the+Cosmos+-+What+Is+Space%253F"));
+            //httpFile.setNewURL(new URL("http://ga.video.cdn.pbs.org/captions/nova/77aacc41-923c-4262-a265-4c003b674319/captions/203505_Encoded.sami?fname=The+Fabric+of+the+Cosmos+-+What+Is+Space%253F"));
+            //httpFile.setNewURL(new URL("http://ga.video.cdn.pbs.org/captions/nova/77aacc41-923c-4262-a265-4c003b674319/captions/203506_Encoded.dfxp?fname=The+Fabric+of+the+Cosmos+-+What+Is+Space%253F"));
+            httpFile.setNewURL(new URL("http://ga.video.cdn.pbs.org/captions/american-experience/453a663a-4e87-4e36-88d4-692845f27820/captions/147627_Encoded.srt?fname=The+Presidents+-+Nixon"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("localhost", 9060, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final PbsServiceImpl service = new PbsServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
+            SettingsConfig config = new SettingsConfig();
+            config.setDownloadSubtitles(true);
+            service.setConfig(config);
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

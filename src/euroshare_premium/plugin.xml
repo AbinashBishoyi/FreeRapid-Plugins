@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.euroshare_premium.EuroShareServiceImpl"
+        id="euroshare.eu_premium" vendor="ntoskrnl" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?euroshare\.(eu|hu|pl|cz|sk)/.+"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="euroshare.eu_premium"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="euroshare.eu_premium" path="/" type="code"/>
+    </runtime>
+</plugin>

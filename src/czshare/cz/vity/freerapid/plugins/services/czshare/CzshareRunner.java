@@ -117,7 +117,7 @@ class CzshareRunner extends AbstractRunner {
     private String stepCaptcha(final String referer) throws Exception {
         CaptchaSupport captchaSupport = getCaptchaSupport();
         client.setReferer(referer);
-        String captchaURL = "http://czshare.com/captcha.php";
+        String captchaURL = "http://sdilej.cz/captcha.php";
         String captcha = captchaSupport.getCaptcha(captchaURL);
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();
@@ -153,5 +153,6 @@ class CzshareRunner extends AbstractRunner {
 
     private void normalizeFileURL() {
         fileURL = fileURL.replaceFirst("czshare\\.cz", "czshare.com");
+        fileURL = fileURL.replaceFirst("czshare\\.com", "sdilej.cz");
     }
 }

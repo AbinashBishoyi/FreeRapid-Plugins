@@ -61,8 +61,7 @@ class FlickrFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        //logger.info(getContentAsString());
-        final String title = PlugUtils.getStringBetween(getContentAsString(), "\"title\":{\"_content\":\"", "\"");
+        final String title = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"title\":{\"_content\":\"", "\""));
         final String media = PlugUtils.getStringBetween(getContentAsString(), "\"media\":\"", "\"");
 
         //Step #2 Get the best quality content
@@ -75,7 +74,6 @@ class FlickrFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Connection Error");
         }
         checkProblems();
-        //logger.info(getContentAsString());
         final Matcher matcher = getMatcherAgainstContent("\"source\":\"(.+?)\", ?\"url\":\"(.+?)\"");
         String source = null;
         String url = null;

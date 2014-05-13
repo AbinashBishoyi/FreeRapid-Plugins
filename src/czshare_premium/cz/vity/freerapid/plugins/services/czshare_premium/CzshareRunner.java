@@ -76,11 +76,11 @@ class CzshareRunner extends AbstractRunner {
             if (!pa.isSet()) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
-                    throw new BadLoginException("No CZShare premium account login information");
+                    throw new BadLoginException("No CZShare/Sdilej premium account login information");
                 }
             }
             final HttpMethod method = getMethodBuilder()
-                    .setAction("https://czshare.com/index.php")
+                    .setAction("https://sdilej.cz/index.php")
                     .setParameter("login-name", pa.getUsername())
                     .setParameter("login-password", pa.getPassword())
                     .setParameter("trvale", "on")
@@ -90,7 +90,7 @@ class CzshareRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException();
             }
             if (getContentAsString().contains("Zadané jméno se neshoduje s heslem")) {
-                throw new BadLoginException("Invalid CZShare premium account login information");
+                throw new BadLoginException("Invalid CZShare/Sdilej premium account login information");
             }
         }
     }
@@ -118,12 +118,13 @@ class CzshareRunner extends AbstractRunner {
             throw new YouHaveToWaitException("Bohužel je vyčerpána maximální kapacita FREE downloadů", WAIT_TIME);
         }
         if (getContentAsString().equals("")) {
-            throw new NotRecoverableDownloadException("Bad CZshare profi account login information!");
+            throw new NotRecoverableDownloadException("Bad CZShare/Sdilej profi account login information!");
         }
     }
 
     private void normalizeFileURL() {
         fileURL = fileURL.replaceFirst("czshare\\.cz", "czshare.com");
+        fileURL = fileURL.replaceFirst("czshare\\.com", "sdilej.cz");
     }
 
 }

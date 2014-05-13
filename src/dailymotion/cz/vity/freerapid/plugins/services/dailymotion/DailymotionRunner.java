@@ -191,6 +191,8 @@ class DailymotionRunner extends AbstractRunner {
             }
             client.setReferer(fileURL);
             method = getGetMethod(urlDecode(url).replace("\\", ""));
+            setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
+            httpFile.setResumeSupported(true);
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

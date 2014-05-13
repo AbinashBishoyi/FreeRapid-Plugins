@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -51,6 +52,8 @@ class xVideosFileRunner extends AbstractRunner {
                     .setReferer(fileURL)
                     .setAction(URLDecoder.decode(PlugUtils.getStringBetween(contentAsString, "flv_url=", "&amp"), "UTF-8"))
                     .toHttpMethod();
+            setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
+            httpFile.setResumeSupported(true);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

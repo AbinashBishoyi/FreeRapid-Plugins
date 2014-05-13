@@ -24,7 +24,17 @@ class ShareSixFileRunner extends XFileSharingRunner {
         fileNameHandlers.add(0, new FileNameHandler() {
             @Override
             public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-                final Matcher matcher = Pattern.compile("Filename:.*?<p>(.+?)</p", Pattern.DOTALL).matcher(content);
+                final Matcher matcher = Pattern.compile("Filename:.*?<p>(.+?)(?:\\((?:[\\s\\d\\.,]+?(?:bytes|.B|.b))\\s*\\))?</p", Pattern.DOTALL).matcher(content);
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("File name not found");
+                }
+                httpFile.setFileName(matcher.group(1).trim());
+            }
+        });
+        fileNameHandlers.add(0, new FileNameHandler() {
+            @Override
+            public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
+                final Matcher matcher = Pattern.compile(">\\s*Download File ([^<>]+?)(?:\\((?:[\\s\\d\\.,]+?(?:bytes|.B|.b))\\s*\\))?</p", Pattern.DOTALL).matcher(content);
                 if (!matcher.find()) {
                     throw new PluginImplementationException("File name not found");
                 }
@@ -32,5 +42,19 @@ class ShareSixFileRunner extends XFileSharingRunner {
             }
         });
         return fileNameHandlers;
+    }
+
+    @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("Create Download link");
+        return downloadPageMarkers;
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add("file\\s*?:\\s*?['\"](http://[^'\"]+?)['\"]");
+        return downloadLinkRegexes;
     }
 }

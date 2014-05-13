@@ -34,6 +34,7 @@ class MegaVideozFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<title>MegaVideoZ - ", "</title>");
+        httpFile.setFileName(httpFile.getFileName() + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

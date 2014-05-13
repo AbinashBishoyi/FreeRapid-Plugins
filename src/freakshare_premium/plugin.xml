@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.freakshare_premium.FreakShareServiceImpl"
+        id="FreakShare_premium" vendor="birchie" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="http://(www\.)?freakshare\.(com|net)/.+"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="freakshare.com"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="recaptcha.com"
+                plugin-version="1.0" reverse-lookup="false"/>
+    </requires>
+
+    <runtime>
+        <library id="freakshare.com_premium" path="/" type="code"/>
+    </runtime>
+</plugin>

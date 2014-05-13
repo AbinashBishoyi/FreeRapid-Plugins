@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.fileparadox;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 
@@ -38,4 +39,12 @@ class FileParadoxFileRunner extends XFileSharingRunner {
         super.checkFileProblems();
     }
 
+    @Override
+    protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("Upgrade to premium account to download this file")) {
+            throw new NotRecoverableDownloadException("Upgrade to premium account to download this file");
+        }
+        super.checkDownloadProblems();
+    }
 }

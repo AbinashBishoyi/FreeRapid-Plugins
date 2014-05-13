@@ -91,6 +91,7 @@ class UploadableFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("The file could not be found") ||
+                contentAsString.contains("This file is no longer available") ||
                 contentAsString.contains("File not available")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }

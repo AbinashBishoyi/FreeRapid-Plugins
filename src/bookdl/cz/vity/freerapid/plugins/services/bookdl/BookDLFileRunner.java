@@ -70,7 +70,7 @@ class BookDLFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
+        if (contentAsString.contains("File Not Found") || contentAsString.contains("Page Cannot Be Found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

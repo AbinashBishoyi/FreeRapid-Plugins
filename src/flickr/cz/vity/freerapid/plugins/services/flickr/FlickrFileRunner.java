@@ -61,8 +61,11 @@ class FlickrFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        final String title = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"title\":{\"_content\":\"", "\""));
+        String title = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"title\":{\"_content\":\"", "\""));
         final String media = PlugUtils.getStringBetween(getContentAsString(), "\"media\":\"", "\"");
+        if (title.length() > 200) {
+            title = title.substring(0, 199);
+        }
 
         //Step #2 Get the best quality content
         //reference : http://www.flickr.com/services/api/flickr.photos.getSizes.html

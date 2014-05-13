@@ -15,7 +15,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://rapidgator.net/file/193818d17e4ede41fb1a9b01186b10bb/Ravi_Shankar_-_The_Master.softarchive.net.part1.rar.html"));
+            httpFile.setNewURL(new URL("http://rapidgator.net/file/9c513c3581b44e6dd001ba723ba0886f/Hustle.S05E01.DVDRip.XviD-SAiNTS.avi.html"));
             //httpFile.setNewURL(new URL("http://rapidgator.net/file/12111436"));
             //httpFile.setNewURL(new URL("http://rapidgator.net/folder/1251306/M+ki.html"));    // folder
             //httpFile.setNewURL(new URL("http://rapidgator.net/file/3575395")); // > 1 GB

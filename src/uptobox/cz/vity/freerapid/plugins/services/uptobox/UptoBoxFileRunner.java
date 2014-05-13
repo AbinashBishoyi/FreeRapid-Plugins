@@ -26,7 +26,7 @@ class UptoBoxFileRunner extends XFileSharingRunner {
 
     @Override
     protected int getWaitTime() throws Exception {
-        final Matcher matcher = getMatcherAgainstContent("Wait.*?<.+?\">.*?(\\d+).*?</span");
+        final Matcher matcher = getMatcherAgainstContent("[Ww]ait.*?<.+?\">.*?(\\d+).*?</span");
         if (matcher.find()) {
             return Integer.parseInt(matcher.group(1)) + 1;
         }

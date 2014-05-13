@@ -41,6 +41,7 @@ class RapidGatorFileRunner extends AbstractRunner {
             } else
                 checkNameAndSize(getContentAsString());
         } else {
+            checkFileProblems();
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -72,6 +73,7 @@ class RapidGatorFileRunner extends AbstractRunner {
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             String contentAsString = getContentAsString();
+            checkFileProblems();
             checkProblems();
             if (fileURL.contains("/folder/")) {
                 List<URI> list = new LinkedList<URI>();
@@ -149,6 +151,7 @@ class RapidGatorFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
+            checkFileProblems();
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
@@ -215,7 +218,6 @@ class RapidGatorFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        checkFileProblems();
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Delay between downloads must be not less than")) {
             final String waitTime = PlugUtils.getStringBetween(contentAsString, "must be not less than", "min");

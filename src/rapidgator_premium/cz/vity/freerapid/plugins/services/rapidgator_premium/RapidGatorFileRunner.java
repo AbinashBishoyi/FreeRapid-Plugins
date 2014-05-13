@@ -68,7 +68,13 @@ class RapidGatorFileRunner extends AbstractRunner {
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
         login();
         HttpMethod method = getGetMethod(fileURL);
-        if (makeRedirectedRequest(method)) {
+        final int status = client.makeRequest(method, false);
+        if (status / 100 == 3) {
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();//if downloading failed
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            }
+        } else if (status == 200) {
             checkProblems();
             if (fileURL.contains("/folder/")) {
                 List<URI> list = new LinkedList<URI>();

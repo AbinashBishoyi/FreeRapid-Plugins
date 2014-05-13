@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
 class CzshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CzshareRunner.class.getName());
     private final static int WAIT_TIME = 30;
+    private final static String BASE_URL = "http://sdilej.cz";
 
     @Override
     public void runCheck() throws Exception {
@@ -67,6 +68,7 @@ class CzshareRunner extends AbstractRunner {
 
         MethodBuilder methodBuilder = getMethodBuilder()
                 .setReferer(fileURL)
+                .setBaseURL(BASE_URL)
                 .setActionFromAHrefWhereATagContains("Stáhnout FREE");
         methodBuilder.setAction(PlugUtils.unescapeHtml(methodBuilder.getAction()));
         HttpMethod httpMethod = methodBuilder.toGetMethod();
@@ -76,12 +78,11 @@ class CzshareRunner extends AbstractRunner {
         }
         checkProblems();
 
-        final String downloadPageURL = (httpMethod.getURI().toString());
         while (getContentAsString().contains("captchastring2")) {
             httpMethod = getMethodBuilder()
-                    .setReferer(downloadPageURL)
+                    .setBaseURL(BASE_URL)
                     .setActionFromFormWhereTagContains("freedown", true)
-                    .setParameter("captchastring2", stepCaptcha(downloadPageURL))
+                    .setParameter("captchastring2", stepCaptcha())
                     .toPostMethod();
             final int httpStatus = client.makeRequest(httpMethod, false);
             if (httpStatus / 100 == 3) { //redirect to download file location
@@ -89,7 +90,7 @@ class CzshareRunner extends AbstractRunner {
                 if (locationHeader == null)
                     throw new ServiceConnectionProblemException("Could not find download file location");
                 httpMethod = getMethodBuilder()
-                        .setReferer(downloadPageURL)
+                        .setBaseURL(BASE_URL)
                         .setAction(locationHeader.getValue())
                         .toGetMethod();
                 break;
@@ -104,8 +105,8 @@ class CzshareRunner extends AbstractRunner {
         //final int waitTime = PlugUtils.getNumberBetween(getContentAsString(),"countdown_number =",";");
         //downloadTask.sleep(waitTime);
         httpMethod = getMethodBuilder()
-                .setReferer(downloadPageURL)
-                .setActionFromAHrefWhereATagContains("Stáhnout free omezenou rychlostí")
+                .setActionFromAHrefWhereATagContains("Stáhnout free omezenou rychlostí")          //Ověřit a stáhnout
+                .setBaseURL(BASE_URL)
                 .toGetMethod();
 
         if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -114,10 +115,9 @@ class CzshareRunner extends AbstractRunner {
         }
     }
 
-    private String stepCaptcha(final String referer) throws Exception {
+    private String stepCaptcha() throws Exception {
         CaptchaSupport captchaSupport = getCaptchaSupport();
-        client.setReferer(referer);
-        String captchaURL = "http://sdilej.cz/captcha.php";
+        String captchaURL = BASE_URL + "/captcha.php";
         String captcha = captchaSupport.getCaptcha(captchaURL);
         if (captcha == null) {
             throw new CaptchaEntryInputMismatchException();

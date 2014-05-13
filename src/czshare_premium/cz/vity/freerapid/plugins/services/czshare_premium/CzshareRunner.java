@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 class CzshareRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(CzshareRunner.class.getName());
     private final static int WAIT_TIME = 30;
+    private final static String BASE_URL = "http://sdilej.cz";
 
     @Override
     public void runCheck() throws Exception {
@@ -58,7 +59,9 @@ class CzshareRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            method = getMethodBuilder().setActionFromFormWhereActionContains("profi_down", true).toPostMethod();
+            method = getMethodBuilder().setActionFromFormWhereActionContains("profi_down", true)
+                    .setBaseURL(BASE_URL)
+                    .toPostMethod();
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -85,6 +88,7 @@ class CzshareRunner extends AbstractRunner {
                     .setParameter("login-password", pa.getPassword())
                     .setParameter("trvale", "on")
                     .setParameter("Prihlasit", "Přihlásit SSL")
+                    .setBaseURL(BASE_URL)
                     .toPostMethod();
             if (!makeRedirectedRequest(method)) {
                 throw new ServiceConnectionProblemException();

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.multi_debrid.Multi_DebridServiceImpl"
+        id="multi-debrid.com" vendor="birchie" version="1.0.0">
+    <attributes>
+        <!--
+        <attribute id="urlRegex" value="http://(www\.)?multi-debrid\.com/not_to_be_used_0.9.0"/>
+        -->
+        <attribute id="urlRegex"
+                   value="(https?://(www\.)?(4shared(\-china)?.com|bitshare\.com|crocko\.com|easybytez\.com|filepost\.com/files|filerio\.(?:com|in)|firedrive\.com/file|freakshare\.(com|net)|hipfile\.com|mixturecloud\.com|netload\.in|(rg\.to|rapidgator\.net)/file|sockshare\.com/file|terafile\.co|turbobit\.net|uploaded\.net|uploaded\.to|ul\.to|uploading\.com|uptobox\.com)/.+|https?://(.*?\.)?(1fichier|desfichiers)\.com/.*|https?://(.*?\.)?(letitbit\.net/download|shareflare\.net/download)/.+)"/>
+        <attribute id="minver" value="0.854"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="see wordrider.net/forum/10/14191"/>
+        <attribute id="www" value="http://wordrider.net/forum/10/14191"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="multi_debrid.com" path="/" type="code"/>
+    </runtime>
+</plugin>

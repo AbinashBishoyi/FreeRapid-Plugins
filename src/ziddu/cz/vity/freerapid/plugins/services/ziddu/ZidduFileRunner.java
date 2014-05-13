@@ -13,9 +13,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
-import java.io.IOException;
 import java.util.Locale;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * @author Kajda+tonyk
@@ -45,13 +45,13 @@ class ZidduFileRunner extends AbstractRunner {
         HttpMethod httpMethod = getMethodBuilder().setAction(fileURL).toHttpMethod();
 
         if (makeRedirectedRequest(httpMethod)) {
-            System.out.print(getContentAsString());
             checkAllProblems();
             checkNameAndSize();
+            fileURL = httpMethod.getURI().getURI();
             final MethodBuilder methodBuilder = getMethodBuilder();
-            httpMethod = methodBuilder.setReferer(fileURL).setActionFromFormByName("dfrm", true).toHttpMethod();
-            final String redirectURL = methodBuilder.getAction();
+            httpMethod = methodBuilder.setReferer(fileURL).setActionFromFormByName("dfrm", true).setBaseURL(SERVICE_WEB).toHttpMethod();
             makeRedirectedRequest(httpMethod);
+            final String redirectURL = httpMethod.getURI().getURI();
 /*
             site throws internal server error (SC_INTERNAL_SERVER_ERROR) at every download page, so condition had to be cancelled
             if (makeRedirectedRequest(httpMethod)){
@@ -67,7 +67,7 @@ class ZidduFileRunner extends AbstractRunner {
                     }
                     checkAllProblems();
                     logger.warning(getContentAsString());
-                    throw new IOException("File input stream is empty");
+                    throw new ServiceConnectionProblemException("File input stream is empty");
                 } else break;
             }
 /*            } else {
@@ -99,7 +99,10 @@ class ZidduFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         PlugUtils.checkName(httpFile, contentAsString, "top.document.title=\"Download ", " in Ziddu");
-        PlugUtils.checkFileSize(httpFile, contentAsString, "td height=\"18\" align=\"left\" class=\"fontfamilyverdana normal12blue\"><span class=\"fontfamilyverdana normal12black\">", "<");
+        final Matcher match = PlugUtils.matcher("File Size(?:\\s|&nbsp;)*?:(?:\\s|&nbsp;)*?(\\d.+?)(?:\\s|&nbsp;)*?\\|", contentAsString);
+        if (!match.find())
+            throw new PluginImplementationException("File size not found");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -132,6 +135,7 @@ class ZidduFileRunner extends AbstractRunner {
                     .setReferer(redirectURL)
                     .setActionFromFormByName("securefrm", true)
                     .setBaseURL(SERVICE_WEB).setParameter("securitycode", captcha)
+                    .setParameter("Keyword", "Ok")
                     .setParameter("accelerator", "").toHttpMethod();
         }
     }

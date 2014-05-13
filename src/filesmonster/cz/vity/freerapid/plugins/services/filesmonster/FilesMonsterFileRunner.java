@@ -72,9 +72,8 @@ class FilesMonsterFileRunner extends AbstractRunner {
     }
 
     private void processMainFile() throws ErrorDuringDownloadingException, IOException {
-        final String contentAsString = getContentAsString();//check for response
         checkProblems();//check problems
-        checkNameAndSize(contentAsString);//extract file name and size from the page
+        checkNameAndSize(getContentAsString());//extract file name and size from the page
 
         final HttpMethod postMethodForTicket = getMethodBuilder()
                 .setReferer(fileURL).setActionFromFormByName("slowdownload", true).toPostMethod();
@@ -106,12 +105,15 @@ class FilesMonsterFileRunner extends AbstractRunner {
     }
 
     private void processPartOfFile() throws Exception {
-        final HttpMethod getMethodForCaptcha = getMethodBuilder()
-                .setAction(fileURL).setReferer(httpFile.getDescription()).toGetMethod();
-        getMethodForCaptcha.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
-        if (!makeRedirectedRequest(getMethodForCaptcha)) {
-            checkContentOrConnectionProblems();
-        }
+        checkProblems();//check problems
+        checkNameAndSize(getContentAsString());//extract file name and size from the page
+
+        //       final HttpMethod getMethodForCaptcha = getMethodBuilder()
+        //               .setAction(fileURL).setReferer(httpFile.getDescription()).toGetMethod();
+        //       getMethodForCaptcha.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
+        //       if (!makeRedirectedRequest(getMethodForCaptcha)) {
+        //           checkContentOrConnectionProblems();
+        //       }
         while (getContentAsString().contains("recaptcha")) {
             if (!makeRedirectedRequest(stepCaptcha(fileURL))) {
                 checkContentOrConnectionProblems();
@@ -128,14 +130,14 @@ class FilesMonsterFileRunner extends AbstractRunner {
         if (!makeRequest(getMethodForLink)) checkContentOrConnectionProblems();
         if (!getContentAsString().contains("url\":\"")) checkJSONProblems(getContentAsString());
         String finalLink = PlugUtils.getStringBetween(getContentAsString(),
-                "url\":\"", "\",").replace("\\", "");
-        String fileRequest = PlugUtils.getStringBetween(getContentAsString(),
-                "file_request\":\"", "\"");
+                "url\":\"", "\"").replace("\\", "");
+        //  String fileRequest = PlugUtils.getStringBetween(getContentAsString(),
+        //          "file_request\":\"", "\"");
         httpFile.setFileName(finalLink.substring(1 + finalLink.lastIndexOf("/")));
 
         final HttpMethod postMethodForDownload = getMethodBuilder()
                 .setAction(finalLink).setReferer(fileURL)
-                .setParameter("X-File-Request", fileRequest)
+                        //          .setParameter("X-File-Request", fileRequest)
                 .setParameter("x", "688").setParameter("y", "258").toPostMethod(); // mouse position when clicked to download button - not necessary but what if...
         postMethodForDownload.addRequestHeader(AJAX_HEADER_FIELD, AJAX_HEADER_VALUE); // send as AJAX
         if (!tryDownloadAndSaveFile(postMethodForDownload)) {
@@ -176,7 +178,7 @@ class FilesMonsterFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
 
-        if (contentAsString.contains("File was deleted by owner") || contentAsString.contains("This document does not exist"))
+        if (contentAsString.contains("File not found") || contentAsString.contains("File was deleted by owner") || contentAsString.contains("This document does not exist"))
             throw new URLNotAvailableAnymoreException("File not found");
 
         if (contentAsString.contains("You can wait for the start of downloading"))
@@ -219,8 +221,10 @@ class FilesMonsterFileRunner extends AbstractRunner {
         if (error.contains("downloaded file recently")) {
             throw new NotRecoverableDownloadException("Link probably expired - Try restart main download file for new link to this part");
         }
-
-        throw new ServiceConnectionProblemException("Unspecified server response");
+        if (error.contains("Link has expired")) {
+            throw new NotRecoverableDownloadException("Link has expired. Please, generate it once more.");
+        }
+        throw new PluginImplementationException("Unspecified server response");
     }
 
     private HttpMethod stepCaptcha(final String referer) throws Exception {

@@ -37,7 +37,7 @@ class NowDownloadFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("Downloading</span> <br>\\s*?(.+?)\\s+?(.+?)\\s*?</h4>", content);
+        final Matcher match = PlugUtils.matcher("Downloading</span> <br>\\s*?(.+)\\s+?(\\d[\\d\\.,]+? .B)\\s*?</h4>", content);
         if (!match.find())
             throw new PluginImplementationException("File name/size not found");
         httpFile.setFileName(match.group(1).trim());
@@ -73,6 +73,10 @@ class NowDownloadFileRunner extends AbstractRunner {
                 }
                 httpMethod = getMethodBuilder().setReferer(fileURL)
                         .setActionFromAHrefWhereATagContains("Click here to download").toHttpMethod();
+                final String dlUrl = httpMethod.getURI().getURI();
+                final String fName = dlUrl.substring(dlUrl.lastIndexOf("/") + 1);
+                if (!fName.contains("?")) httpFile.setFileName(fName);
+                else httpFile.setFileName(fName.substring(0, fName.indexOf("?")));
             }
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed

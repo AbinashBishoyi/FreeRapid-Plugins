@@ -208,7 +208,8 @@ class RapidGatorFileRunner extends AbstractRunner {
 
     private void checkFileProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File not found")) {
+        if (contentAsString.contains("File not found") ||
+                contentAsString.contains("<title>Rapidgator.net: Fast, safe and secure file hosting</title>")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

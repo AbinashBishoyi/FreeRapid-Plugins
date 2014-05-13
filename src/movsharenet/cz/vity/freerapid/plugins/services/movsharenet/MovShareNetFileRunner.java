@@ -35,7 +35,7 @@ class MovShareNetFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "Title: </strong>", "</");
+        PlugUtils.checkName(httpFile, content, "Title:</strong>", "</");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

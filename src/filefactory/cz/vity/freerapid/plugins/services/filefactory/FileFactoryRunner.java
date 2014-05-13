@@ -54,7 +54,7 @@ class FileFactoryRunner extends AbstractRunner {
             }
             final HttpMethod finalMethod = getMethodBuilder()
                     .setReferer(fileURL)
-                    .setAction(PlugUtils.getStringBetween(getContentAsString(), "data-href-direct=\"", "\""))
+                    .setAction(PlugUtils.getStringBetween(getContentAsString(), "data-href=\"", "\""))
                     .toGetMethod();
 
             downloadTask.sleep(PlugUtils.getWaitTimeBetween(getContentAsString(), "data-delay=\"", "\"", TimeUnit.SECONDS) + 1);

@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -45,46 +46,57 @@ class RapiduFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
+        doLogin();
         final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
+        final int status = client.makeRequest(method, false);
+        if (status / 100 == 3) {
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();//if downloading failed
+                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            }
+        } else if (status == 200) {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final String fileID = PlugUtils.getStringBetween(contentAsString, "downloadFreeFile('", "');");
-            final HttpMethod waitMethod = getMethodBuilder()
-                    .setAjax().setReferer(fileURL)
-                    .setAction("/ajax.php?a=getLoadTimeToDownload")
-                    .setParameter("_go", "")
-                    .toPostMethod();
-            if (!makeRedirectedRequest(waitMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            final int wait = (int) (Long.parseLong(PlugUtils.getStringBetween(getContentAsString(), "{\"timeToDownload\":", "}")) - (System.currentTimeMillis() / 1000));
-            if (wait > 0)
-                downloadTask.sleep(wait + 1);
-            int loop = 0;
-            do {
-                loop++;
-                if (loop > 5)
-                    throw new ErrorDuringDownloadingException("Excessive failed captcha attempts");
-                final HttpMethod httpMethod = doCaptcha(getMethodBuilder()
+            final String dlURL;
+            if (contentAsString.contains("Konto: <b>Premium")) {
+                dlURL = PlugUtils.getStringBetween(contentAsString, "href=\"", "\" class=\"premium\"");
+            } else {
+                final String fileID = PlugUtils.getStringBetween(contentAsString, "downloadFreeFile('", "');");
+                final HttpMethod waitMethod = getMethodBuilder()
                         .setAjax().setReferer(fileURL)
-                        .setAction("/ajax.php?a=getCheckCaptcha")
-                        .setParameter("fileId", fileID)
+                        .setAction("/ajax.php?a=getLoadTimeToDownload")
                         .setParameter("_go", "")
-                ).toPostMethod();
-                if (!makeRedirectedRequest(httpMethod)) {
+                        .toPostMethod();
+                if (!makeRedirectedRequest(waitMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException();
                 }
-            } while (getContentAsString().contains("\"message\":\"error\""));
-            if (getContentAsString().trim().equals(""))
-                throw new PluginImplementationException("Error");
-            if (!getContentAsString().contains("\"message\":\"success\""))
-                throw new PluginImplementationException("Error getting download link");
-            final String dlURL = PlugUtils.getStringBetween(getContentAsString(), "url\":\"", "\"").replace("\\/", "/");
-
+                final int wait = (int) (Long.parseLong(PlugUtils.getStringBetween(getContentAsString(), "{\"timeToDownload\":", "}")) - (System.currentTimeMillis() / 1000));
+                if (wait > 0)
+                    downloadTask.sleep(wait + 1);
+                int loop = 0;
+                do {
+                    loop++;
+                    if (loop > 5)
+                        throw new ErrorDuringDownloadingException("Excessive failed captcha attempts");
+                    final HttpMethod httpMethod = doCaptcha(getMethodBuilder()
+                            .setAjax().setReferer(fileURL)
+                            .setAction("/ajax.php?a=getCheckCaptcha")
+                            .setParameter("fileId", fileID)
+                            .setParameter("_go", "")
+                    ).toPostMethod();
+                    if (!makeRedirectedRequest(httpMethod)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                } while (getContentAsString().contains("\"message\":\"error\""));
+                if (getContentAsString().trim().equals(""))
+                    throw new PluginImplementationException("Error");
+                if (!getContentAsString().contains("\"message\":\"success\""))
+                    throw new PluginImplementationException("Error getting download link");
+                dlURL = PlugUtils.getStringBetween(getContentAsString(), "url\":\"", "\"").replace("\\/", "/");
+            }
             if (!tryDownloadAndSaveFile(getGetMethod(dlURL))) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -128,5 +140,34 @@ class RapiduFileRunner extends AbstractRunner {
         methodBuilder.setParameter("captcha1", r.getChallenge());
         methodBuilder.setParameter("captcha2", captcha);
         return methodBuilder;
+    }
+
+    private void doLogin() throws Exception {
+        synchronized (RapiduFileRunner.class) {
+            RapiduServiceImpl service = (RapiduServiceImpl) getPluginService();
+            PremiumAccount pa = service.getConfig();
+            if (!pa.isSet()) {
+                logger.info("No Rapidu account");
+            } else {
+                final HttpMethod method = getMethodBuilder()
+                        .setAjax().setReferer(getBaseURL())
+                        .setAction("/ajax.php?a=getUserLogin")
+                        .setParameter("login", pa.getUsername())
+                        .setParameter("pass", pa.getPassword())
+                        .setParameter("remember", "1")
+                        .setParameter("_go", "")
+                        .toPostMethod();
+                if (!makeRedirectedRequest(method)) {
+                    throw new ServiceConnectionProblemException("Error posting login info");
+                }
+                if (getContentAsString().contains("message\":\"error")) {
+                    throw new BadLoginException("Invalid Rapidu account login information!");
+                }
+                if (!getContentAsString().contains("message\":\"success")) {
+                    throw new PluginImplementationException("Unknown error logging into Rapidu account!");
+                }
+                logger.info("Logged into Rapidu account");
+            }
+        }
     }
 }

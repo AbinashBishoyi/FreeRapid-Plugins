@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.rapidu.RapiduServiceImpl"
-        id="rapidu.net" vendor="birchie" version="1.0.0">
+        id="rapidu.net" vendor="birchie" version="1.1.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?rapidu\.net/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="rapidu.net"/>
-        <attribute id="maxDownloads" value="1"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="defaultDownloads" value="1"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>

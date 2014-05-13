@@ -51,10 +51,17 @@ class SolidFilesFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);
-            final Matcher match = PlugUtils.matcher("<a.+?id=\"download-button\".+?href=\"(.+?)\".*?>", contentAsString);
-            if (!match.find())
-                throw new PluginImplementationException("Download link not found");
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(match.group(1)).toGetMethod();
+            String link;
+            final Matcher match = PlugUtils.matcher("<a.+?id=\"direct-download-link\".+?href=\"(.+?)\".*?>", contentAsString);
+            if (match.find()) {
+                link = match.group(1);
+            } else {
+                final Matcher match2 = PlugUtils.matcher("<a.+?id=\"download-button\".+?href=\"(.+?)\".*?>", contentAsString);
+                if (!match2.find())
+                    throw new PluginImplementationException("Download link not found");
+                link = match2.group(1);
+            }
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(link).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

@@ -4,7 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 
 public class YouTubeMedia {
-    private int itagCode;
+    private int itag;
     private Container container;
     private int videoQuality; // deliberately not using VideoQuality, reason : flexibility, it's possible that YT introduces video quality which is not listed in VideoQuality data structure
     private String audioEncoding;
@@ -13,20 +13,20 @@ public class YouTubeMedia {
     private String signature;
     private boolean cipherSignature;
 
-    public YouTubeMedia(int itagCode, String url, String signature, boolean cipherSignature) throws ErrorDuringDownloadingException {
-        this.itagCode = itagCode;
-        this.container = getContainer(itagCode);
-        this.videoQuality = getVideoResolution(itagCode);
-        this.audioEncoding = getAudioEncoding(itagCode);
-        this.audioBitrate = getAudioBitrate(itagCode);
+    public YouTubeMedia(int itag, String url, String signature, boolean cipherSignature) throws ErrorDuringDownloadingException {
+        this.itag = itag;
+        this.container = getContainer(itag);
+        this.videoQuality = getVideoResolution(itag);
+        this.audioEncoding = getAudioEncoding(itag);
+        this.audioBitrate = getAudioBitrate(itag);
         this.url = url;
         this.signature = signature;
         this.cipherSignature = cipherSignature;
     }
 
     //source : http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
-    public static Container getContainer(int itagCode) {
-        switch (itagCode) {
+    public static Container getContainer(int itag) {
+        switch (itag) {
             case 13:
             case 17:
             case 36:
@@ -67,8 +67,8 @@ public class YouTubeMedia {
         }
     }
 
-    public static String getAudioEncoding(int itagCode) {
-        switch (itagCode) {
+    public static String getAudioEncoding(int itag) {
+        switch (itag) {
             case 5:
             case 6:
                 return "MP3";
@@ -84,8 +84,8 @@ public class YouTubeMedia {
         }
     }
 
-    public static int getAudioBitrate(int itagCode) {
-        switch (itagCode) {
+    public static int getAudioBitrate(int itag) {
+        switch (itag) {
             case 17:
                 return 24;
             case 36:
@@ -124,8 +124,8 @@ public class YouTubeMedia {
         }
     }
 
-    public static int getVideoResolution(int itagCode) throws ErrorDuringDownloadingException {
-        switch (itagCode) {
+    public static int getVideoResolution(int itag) throws ErrorDuringDownloadingException {
+        switch (itag) {
             case 17:
             case 160:
                 return 144;
@@ -172,12 +172,12 @@ public class YouTubeMedia {
             case 172:
                 return -1;
             default:
-                throw new PluginImplementationException("Unknown video resolution for itagCode=" + itagCode);
+                throw new PluginImplementationException("Unknown video resolution for itag=" + itag);
         }
     }
 
-    public int getItagCode() {
-        return itagCode;
+    public int getItag() {
+        return itag;
     }
 
     public Container getContainer() {
@@ -211,7 +211,7 @@ public class YouTubeMedia {
     @Override
     public String toString() {
         return "YouTubeMedia{" +
-                "itagCode=" + itagCode +
+                "itag=" + itag +
                 ", container=" + container +
                 ", videoQuality=" + videoQuality +
                 ", audioEncoding='" + audioEncoding + '\'' +

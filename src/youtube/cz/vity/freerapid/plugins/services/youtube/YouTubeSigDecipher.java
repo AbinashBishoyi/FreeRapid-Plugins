@@ -39,6 +39,7 @@ class YouTubeSigDecipher {
 
     private final InputStream is;
     private Map<Integer, String> multiname_map = new HashMap<Integer, String>();
+    private String bytecode = null;
 
     public YouTubeSigDecipher(final InputStream is) {
         this.is = is;
@@ -100,14 +101,17 @@ class YouTubeSigDecipher {
     }
 
     private String getBytecode() throws Exception {
-        final String swf = readSwfStreamToString(is);
-        final String regex = "(?s)\\Q\u00d0\u0030\u00d1\u002c\u0001\u0046\\E..\\Q\u0001\u0080\\E.\\Q\u00d6\\E"
-                + "(.+?)\\Q\u00d6\u00d2\u002c\u0001\u0046\\E..\\Q\u0001\u0048\\E";
-        final Matcher matcher = PlugUtils.matcher(regex, swf);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("Error parsing SWF (1)");
+        if (bytecode == null) {
+            final String swf = readSwfStreamToString(is);
+            final String regex = "(?s)\\Q\u00d0\u0030\u00d1\u002c\u0001\u0046\\E..\\Q\u0001\u0080\\E.\\Q\u00d6\\E"
+                    + "(.+?)\\Q\u00d6\u00d2\u002c\u0001\u0046\\E..\\Q\u0001\u0048\\E";
+            final Matcher matcher = PlugUtils.matcher(regex, swf);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Error parsing SWF (1)");
+            }
+            bytecode = matcher.group(1);
         }
-        return matcher.group(1);
+        return bytecode;
     }
 
     private String readSwfStreamToString(InputStream is) throws IOException {

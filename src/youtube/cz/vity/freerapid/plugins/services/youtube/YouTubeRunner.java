@@ -39,12 +39,12 @@ import java.util.regex.Pattern;
  */
 class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0";
     private static final String DEFAULT_FILE_EXT = ".flv";
     private static final String DASH_AUDIO_ITAG = "dashaudioitag";
 
     private YouTubeSettingsConfig config;
-    private int dashAudioItag = -1;
+    private int dashAudioItagValue = -1;
 
     @Override
     public void runCheck() throws Exception {
@@ -112,8 +112,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             YouTubeSigDecipher ytSigDecipher = null;
             logger.info("Swf URL : " + swfUrl);
             if (getContentAsString().contains("\"dashmpd\": \"")) {
-                String dashUrl;
-                dashUrl = PlugUtils.getStringBetween(getContentAsString(), "\"dashmpd\": \"", "\"").replace("\\/", "/");
+                String dashUrl = PlugUtils.getStringBetween(getContentAsString(), "\"dashmpd\": \"", "\"").replace("\\/", "/");
                 logger.info("DASH url : " + dashUrl);
                 if (!(dashUrl.contains("/sig/") || dashUrl.contains("/signature/"))) {  //cipher signature
                     Matcher matcher = PlugUtils.matcher("/s/([^/]+)", dashUrl);
@@ -138,7 +137,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
             YouTubeMedia youTubeMedia;
             Map<Integer, YouTubeMedia> dashStreamMap = getDashStreamMap(dashStreamMapContent);
-            if (dashAudioItag == -1) { //not dash audio
+            if (dashAudioItagValue == -1) { //not dash audio
                 Map<Integer, YouTubeMedia> fmtStreamMap = getFmtStreamMap(fmtStreamMapContent);
                 Map<Integer, YouTubeMedia> ytStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
                 ytStreamMap.putAll(fmtStreamMap); //put fmtStreamMap at the top of the map
@@ -147,12 +146,12 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 }
                 youTubeMedia = getSelectedYouTubeMedia(ytStreamMap);
                 if (youTubeMedia.getContainer() == Container.dash_v) {
-                    queueDashAudio(dashStreamMap);
+                    queueDashAudio(dashStreamMap, youTubeMedia);
                 }
             } else { //dash audio
-                youTubeMedia = dashStreamMap.get(dashAudioItag);
+                youTubeMedia = dashStreamMap.get(dashAudioItagValue);
                 if (youTubeMedia == null) {
-                    throw new PluginImplementationException("DASH audio stream with itag='" + dashAudioItag + "' not found");
+                    throw new PluginImplementationException("DASH audio stream with itag='" + dashAudioItagValue + "' not found");
                 }
             }
 
@@ -234,7 +233,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "- YouTube\n</title>");
         }
         String fileName = PlugUtils.unescapeHtml(PlugUtils.unescapeHtml(httpFile.getFileName()));
-        if (isVideo()) {
+        if (dashAudioItagValue != -1) {
+            fileName += Container.dash_a.getFileExt();
+        } else if (isVideo()) {
             fileName += DEFAULT_FILE_EXT;
         }
         httpFile.setFileName(fileName);
@@ -304,7 +305,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
                         itag = Integer.parseInt(representationElement.getAttribute("id"));
                         url = representationElement.getElementsByTagName("BaseURL").item(0).getTextContent();
-
                         try {
                             sigParam = URLUtil.getQueryParams(url, "UTF-8").get("signature");
                         } catch (Exception e) {
@@ -313,11 +313,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         if (sigParam != null) { //contains "signature" param
                             signature = sigParam;
                         }
-
-                        if (itag == -1 || url == null || signature == null) {
+                        if (signature == null) {
                             throw new PluginImplementationException("Invalid YouTube DASH media : " + representationElement.getTextContent());
                         }
-
                         YouTubeMedia youTubeMedia = new YouTubeMedia(itag, url, signature, cipherSig);
                         logger.info("Found DASH media : " + youTubeMedia);
                         dashStreamMap.put(itag, youTubeMedia);
@@ -326,7 +324,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     }
                 }
             } catch (Exception e) {
-                throw new PluginImplementationException("Error parsing playlist XML", e);
+                throw new PluginImplementationException("Error parsing DASH descriptor XML", e);
             }
         }
         return dashStreamMap;
@@ -336,7 +334,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         if (ytMediaMap.isEmpty()) {
             throw new PluginImplementationException("No available YouTube media");
         }
-        int selectedItagCode = -1;
+        int selectedItag = -1;
 
         if (config.isConvertToAudio()) { //convert to audio
             //DASH streams are skipped
@@ -347,8 +345,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             //select audio bitrate
             int selectedAudioBitrate = -1;
             int weight = Integer.MAX_VALUE;
-            for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
-                YouTubeMedia ytMedia = ytMediaEntry.getValue();
+            for (YouTubeMedia ytMedia : ytMediaMap.values()) {
                 int audioBitrate = ytMedia.getAudioBitrate();
                 int deltaAudioBitrate = audioBitrate - configAudioBitrate;
                 int tempWeight = (deltaAudioBitrate < 0 ? Math.abs(deltaAudioBitrate) + LOWER_QUALITY_PENALTY : deltaAudioBitrate);
@@ -361,10 +358,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 }
             }
 
-            //calc (the lowest) video quality + penalty to get the fittest itagcode  -> select video quality
+            //calc (the lowest) video quality + penalty to get the fittest itag  -> select video quality
             weight = Integer.MAX_VALUE;
-            for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
-                YouTubeMedia ytMedia = ytMediaEntry.getValue();
+            for (YouTubeMedia ytMedia : ytMediaMap.values()) {
                 if (ytMedia.getAudioBitrate() == selectedAudioBitrate) {
                     int tempWeight = ytMedia.getVideoQuality();
                     if (!isVid2AudSupported(ytMedia)) {
@@ -372,11 +368,11 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     }
                     if (tempWeight < weight) {
                         weight = tempWeight;
-                        selectedItagCode = ytMedia.getItagCode();
+                        selectedItag = ytMedia.getItag();
                     }
                 }
             }
-            if (!isVid2AudSupported(ytMediaMap.get(selectedItagCode))) {
+            if (!isVid2AudSupported(ytMediaMap.get(selectedItag))) {
                 throw new PluginImplementationException("Only supports MP3 or AAC audio encoding");
             }
 
@@ -391,24 +387,23 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         return Integer.compare(o2.getVideoQuality(), o1.getVideoQuality()); //reverse order
                     }
                 });
-                selectedItagCode = sortedYtMediaList.iterator().next().getItagCode();
+                selectedItag = sortedYtMediaList.iterator().next().getItag();
             } else if (configVideoQuality == VideoQuality.Lowest) {
-                for (Integer itagCode : ytMediaMap.keySet()) {
-                    if ((YouTubeMedia.getContainer(itagCode) == Container.dash_v) || (YouTubeMedia.getContainer(itagCode) == Container.dash_a)) { //skip DASH
+                for (Integer itag : ytMediaMap.keySet()) {
+                    if ((YouTubeMedia.getContainer(itag) == Container.dash_v) || (YouTubeMedia.getContainer(itag) == Container.dash_a)) { //skip DASH
                         continue;
                     }
-                    selectedItagCode = itagCode; //last key of fmtStreamMap
+                    selectedItag = itag; //last key of fmtStreamMap
                 }
             } else {
                 final int LOWER_QUALITY_PENALTY = 10;
                 int weight = Integer.MAX_VALUE;
-                for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
-                    YouTubeMedia ytMedia = ytMediaEntry.getValue();
+                for (YouTubeMedia ytMedia : ytMediaMap.values()) {
                     int deltaQ = ytMedia.getVideoQuality() - configVideoQuality.getQuality();
                     int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
                     if (tempWeight < weight) {
                         weight = tempWeight;
-                        selectedItagCode = ytMedia.getItagCode();
+                        selectedItag = ytMedia.getItag();
                     }
                 }
             }
@@ -416,10 +411,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             //select container
             final Container configContainer = config.getContainer();
             if (configContainer != Container.Any) {
-                final int selectedVideoQuality = ytMediaMap.get(selectedItagCode).getVideoQuality();
+                final int selectedVideoQuality = ytMediaMap.get(selectedItag).getVideoQuality();
                 int weight = Integer.MIN_VALUE;
-                for (Map.Entry<Integer, YouTubeMedia> ytMediaEntry : ytMediaMap.entrySet()) {
-                    YouTubeMedia ytMedia = ytMediaEntry.getValue();
+                for (YouTubeMedia ytMedia : ytMediaMap.values()) {
                     if (ytMedia.getVideoQuality() == selectedVideoQuality) {
                         int tempWeight = 0;
                         Container container = ytMedia.getContainer();
@@ -438,30 +432,30 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         }
                         if (tempWeight > weight) {
                             weight = tempWeight;
-                            selectedItagCode = ytMedia.getItagCode();
+                            selectedItag = ytMedia.getItag();
                         }
                     }
                 }
             }
         }
 
-        return ytMediaMap.get(selectedItagCode);
+        return ytMediaMap.get(selectedItag);
     }
 
-    private void queueDashAudio(Map<Integer, YouTubeMedia> dashStreamMap) throws Exception {
+    private void queueDashAudio(Map<Integer, YouTubeMedia> dashStreamMap, YouTubeMedia selectedDashVideoStream) throws Exception {
         int selectedItag = -1;
         int weight = Integer.MIN_VALUE;
-        for (YouTubeMedia ytMedia : dashStreamMap.values()) {
-            if (ytMedia.getContainer() != Container.dash_a) { //skip non DASH audio
+        for (YouTubeMedia dashStream : dashStreamMap.values()) {
+            if ((dashStream.getContainer() != Container.dash_a) || (dashStream.getAudioEncoding().equalsIgnoreCase("Vorbis"))) { //skip non DASH audio or Vorbis
                 continue;
             }
             int tempWeight = Integer.MIN_VALUE;
-            switch (ytMedia.getAudioBitrate()) { //audio bitrate as criteria
-                case 128: //128 > 256 > 48
+            switch (dashStream.getAudioBitrate()) { //audio bitrate as criteria, it'd be better if we have videoQ-audioBitRate map for the qualifier
+                case 128:
                     tempWeight = 50;
                     break;
                 case 256:
-                    tempWeight = 49;
+                    tempWeight = (selectedDashVideoStream.getVideoQuality() >= VideoQuality._720.getQuality() ? 51 : 49);
                     break;
                 case 48:
                     tempWeight = 48;
@@ -469,12 +463,13 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
             if (tempWeight > weight) {
                 weight = tempWeight;
-                selectedItag = ytMedia.getItagCode();
+                selectedItag = dashStream.getItag();
             }
         }
         if (selectedItag == -1) {
             throw new PluginImplementationException("Preferred DASH audio stream not found");
         }
+        logger.info("Queueing DASH audio stream : " + dashStreamMap.get(selectedItag));
         List<URI> uriList = new LinkedList<URI>();
         String url = fileURL + "&" + DASH_AUDIO_ITAG + "=" + selectedItag;
         try {
@@ -494,8 +489,8 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         if (!matcher.find()) {
             throw new PluginImplementationException("DASH audio itag param not found");
         }
-        dashAudioItag = Integer.parseInt(matcher.group(1));
-        fileURL = fileURL.replaceFirst("&" + DASH_AUDIO_ITAG + "=.+", ""); //remove dash audio itag param;
+        dashAudioItagValue = Integer.parseInt(matcher.group(1));
+        fileURL = fileURL.replaceFirst("&" + DASH_AUDIO_ITAG + "=.+", ""); //remove dash audio itag param
     }
 
     private boolean isVideo() {

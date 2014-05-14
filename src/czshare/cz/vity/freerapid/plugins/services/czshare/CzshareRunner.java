@@ -154,5 +154,6 @@ class CzshareRunner extends AbstractRunner {
     private void normalizeFileURL() {
         fileURL = fileURL.replaceFirst("czshare\\.cz", "czshare.com");
         fileURL = fileURL.replaceFirst("czshare\\.com", "sdilej.cz");
+        fileURL = fileURL.replaceFirst("https:", "http:");
     }
 }

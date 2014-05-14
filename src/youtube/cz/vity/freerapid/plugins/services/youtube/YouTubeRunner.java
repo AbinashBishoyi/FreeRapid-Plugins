@@ -108,40 +108,41 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
             String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
             String fmtStreamMapContent = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
-            String dashStreamMapContent = null;
             YouTubeSigDecipher ytSigDecipher = null;
+            Map<Integer, YouTubeMedia> dashStreamMap = null;
             logger.info("Swf URL : " + swfUrl);
-            if (getContentAsString().contains("\"dashmpd\": \"")) {
-                String dashUrl = PlugUtils.getStringBetween(getContentAsString(), "\"dashmpd\": \"", "\"").replace("\\/", "/");
-                logger.info("DASH url : " + dashUrl);
-                if (!(dashUrl.contains("/sig/") || dashUrl.contains("/signature/"))) {  //cipher signature
-                    Matcher matcher = PlugUtils.matcher("/s/([^/]+)", dashUrl);
-                    if (!matcher.find()) {
-                        throw new PluginImplementationException("Cipher signature not found");
+            if (config.isEnableDash() && !config.isConvertToAudio()) { //DASH streams are skipped for audio conversion
+                if (getContentAsString().contains("\"dashmpd\": \"")) {
+                    String dashUrl = PlugUtils.getStringBetween(getContentAsString(), "\"dashmpd\": \"", "\"").replace("\\/", "/");
+                    logger.info("DASH url : " + dashUrl);
+                    if (!(dashUrl.contains("/sig/") || dashUrl.contains("/signature/"))) {  //cipher signature
+                        Matcher matcher = PlugUtils.matcher("/s/([^/]+)", dashUrl);
+                        if (!matcher.find()) {
+                            throw new PluginImplementationException("Cipher signature not found");
+                        }
+                        String signature = matcher.group(1);
+                        ytSigDecipher = getYouTubeSigDecipher(swfUrl);
+                        signature = ytSigDecipher.decipher(signature); //deciphered signature
+                        dashUrl = dashUrl.replaceFirst("/s/[^/]+", "/signature/" + signature);
+                        logger.info("DASH url (deciphered) : " + dashUrl);
                     }
-                    String signature = matcher.group(1);
-                    ytSigDecipher = getYouTubeSigDecipher(swfUrl);
-                    signature = ytSigDecipher.decipher(signature); //deciphered signature
-                    dashUrl = dashUrl.replaceFirst("/s/[^/]+", "/signature/" + signature);
-                    logger.info("DASH url (deciphered) : " + dashUrl);
-                }
-                method = getMethodBuilder().setReferer(fileURL).setAction(dashUrl).toGetMethod();
-                setTextContentTypes("video/vnd.mpeg.dash.mpd");
-                if (!makeRedirectedRequest(method)) {
+                    method = getMethodBuilder().setReferer(fileURL).setAction(dashUrl).toGetMethod();
+                    setTextContentTypes("video/vnd.mpeg.dash.mpd");
+                    if (!makeRedirectedRequest(method)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
                     checkProblems();
-                    throw new ServiceConnectionProblemException();
+                    dashStreamMap = getDashStreamMap(getContentAsString());
                 }
-                checkProblems();
-                dashStreamMapContent = getContentAsString();
             }
 
             YouTubeMedia youTubeMedia;
-            Map<Integer, YouTubeMedia> dashStreamMap = getDashStreamMap(dashStreamMapContent);
             if (dashAudioItagValue == -1) { //not dash audio
                 Map<Integer, YouTubeMedia> fmtStreamMap = getFmtStreamMap(fmtStreamMapContent);
                 Map<Integer, YouTubeMedia> ytStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
                 ytStreamMap.putAll(fmtStreamMap); //put fmtStreamMap at the top of the map
-                if (config.isEnableDash() && !config.isConvertToAudio()) {  //DASH streams are skipped for audio conversion
+                if (config.isEnableDash() && dashStreamMap != null && !config.isConvertToAudio()) {  //DASH streams are skipped for audio conversion
                     ytStreamMap.putAll(dashStreamMap);
                 }
                 youTubeMedia = getSelectedYouTubeMedia(ytStreamMap);
@@ -149,6 +150,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     queueDashAudio(dashStreamMap, youTubeMedia);
                 }
             } else { //dash audio
+                if (dashStreamMap == null) {
+                    throw new PluginImplementationException("DASH streams not found");
+                }
                 youTubeMedia = dashStreamMap.get(dashAudioItagValue);
                 if (youTubeMedia == null) {
                     throw new PluginImplementationException("DASH audio stream with itag='" + dashAudioItagValue + "' not found");
@@ -324,7 +328,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     }
                 }
             } catch (Exception e) {
-                throw new PluginImplementationException("Error parsing DASH descriptor XML", e);
+                throw new PluginImplementationException("Error parsing DASH descriptor", e);
             }
         }
         return dashStreamMap;
@@ -384,7 +388,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 Collections.sort(sortedYtMediaList, new Comparator<YouTubeMedia>() { //sorted by video quality, descending
                     @Override
                     public int compare(YouTubeMedia o1, YouTubeMedia o2) {
-                        return Integer.compare(o2.getVideoQuality(), o1.getVideoQuality()); //reverse order
+                        return Integer.valueOf(o2.getVideoQuality()).compareTo(o1.getVideoQuality()); //reverse order
                     }
                 });
                 selectedItag = sortedYtMediaList.iterator().next().getItag();

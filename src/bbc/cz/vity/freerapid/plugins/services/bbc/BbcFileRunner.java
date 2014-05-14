@@ -10,6 +10,8 @@ import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import jlibs.core.net.URLUtil;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.w3c.dom.Element;
@@ -17,6 +19,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -34,10 +37,12 @@ import java.util.regex.Pattern;
  */
 class BbcFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(BbcFileRunner.class.getName());
-    private final static String SWF_URL = "http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf";
+    private final static String SWF_URL = "http://emp.bbci.co.uk/emp/releases/smp-flash/revisions/1.9.18/1.9.18_smp.swf?1.9.17";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
     private final static String DEFAULT_EXT = ".flv";
     private final static String SUBTITLE_FILENAME_PARAM = "fname";
+    private final static String MEDIA_SELECTOR_HASH = "7dff7671d0c697fedb1d905d9a121719938b92bf";
+    private final static String MEDIA_SELECTOR_ASN = "1";
 
     private SettingsConfig config;
 
@@ -53,38 +58,23 @@ class BbcFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         if (isSubtitle(fileURL)) {
             return;
         }
-        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize();
+            requestPlaylist(getPid(fileURL));
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        String name;
-        final Matcher matcher = getMatcherAgainstContent("<div class=\"module\" id=\"programme-info\">\\s*?<h2>(.+?)<span class=\"blq-hide\"> - </span><span>(.*?)</span></h2>");
-        if (matcher.find()) {
-            final String series = matcher.group(1).replace(": ", " - ");
-            final String episode = matcher.group(2).replace(": ", " - ");
-            name = series + (episode.isEmpty() ? "" : " - " + episode);
-        } else {
-            try {
-                name = PlugUtils.getStringBetween(getContentAsString(), "emp.setEpisodeTitle(\"", "\"").replace("\\/", ".").replace(": ", " - ");
-            } catch (PluginImplementationException e1) {
-                try {
-                    name = PlugUtils.getStringBetween(getContentAsString(), "<meta name=\"title\" content=\"", "\" />");
-                } catch (PluginImplementationException e2) {
-                    throw new PluginImplementationException("File name not found");
-                }
-            }
-        }
+    private void checkNameAndSize(String playlistContent) throws ErrorDuringDownloadingException, UnsupportedEncodingException {
+        String name = PlugUtils.getStringBetween(playlistContent, "<title>", "</title>").replace(": ", " - ");
         httpFile.setFileName(name + DEFAULT_EXT);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -94,39 +84,26 @@ class BbcFileRunner extends AbstractRtmpRunner {
         super.run();
         checkUrl();
         logger.info("Starting download in TASK " + fileURL);
-
         if (isSubtitle(fileURL)) {
             downloadSubtitle();
             return;
         }
-
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            checkNameAndSize();
             //sometimes they redirect, set fileURL to the new page
             fileURL = method.getURI().toString();
+            String pid = getPid(fileURL);
+            requestPlaylist(pid);
+            checkNameAndSize(getContentAsString());
             setConfig();
-            final String pid;
-            Matcher matcher = PlugUtils.matcher("/programmes/([a-z\\d]+)", fileURL);
-            if (matcher.find()) {
-                method = getGetMethod("http://www.bbc.co.uk/iplayer/playlist/" + matcher.group(1));
-                if (!makeRedirectedRequest(method)) {
-                    throw new ServiceConnectionProblemException();
-                }
-                matcher = getMatcherAgainstContent("<item[^<>]*?identifier=\"([^<>]+?)\"");
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Identifier not found");
-                }
-                pid = matcher.group(1);
-            } else {
-                matcher = getMatcherAgainstContent("emp\\.setPid\\(\".+?\", \"(.+?)\"\\);");
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("PID not found");
-                }
-                pid = matcher.group(1);
+            Matcher matcher = getMatcherAgainstContent("<item[^<>]*?identifier=\"([^<>]+?)\"");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Identifier not found");
             }
-            String mediaSelector = "http://www.bbc.co.uk/mediaselector/4/mtis/stream/" + pid + "?cb=" + new Random().nextInt(100000);
+            String vpid = matcher.group(1);
+            String atk = Hex.encodeHexString(DigestUtils.sha(MEDIA_SELECTOR_HASH + vpid));
+            String mediaSelector = String.format("http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/pc/vpid/%s/atk/%s/asn/%s/", vpid, atk, MEDIA_SELECTOR_ASN);
             method = getGetMethod(mediaSelector);
             final TorProxyClient torClient = TorProxyClient.forCountry("gb", client, getPluginService().getPluginContext().getConfigurationStorageSupport());
             if (!torClient.makeRequest(method)) {
@@ -136,14 +113,13 @@ class BbcFileRunner extends AbstractRtmpRunner {
             if (matcher.find()) {
                 final String id = matcher.group(1);
                 if (id.equals("notavailable")) {
-                    throw new URLNotAvailableAnymoreException("Playlist not found");
+                    throw new URLNotAvailableAnymoreException("Media not found");
                 } else if (id.equals("notukerror")) {
                     throw new NotRecoverableDownloadException("This video is not available in your area");
                 } else {
-                    throw new NotRecoverableDownloadException("Error fetching playlist: '" + id + "'");
+                    throw new NotRecoverableDownloadException("Error fetching media selector: '" + id + "'");
                 }
             }
-
             final RtmpSession rtmpSession = getRtmpSession(getStream(getContentAsString()));
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
@@ -163,6 +139,23 @@ class BbcFileRunner extends AbstractRtmpRunner {
         if (getContentAsString().contains("Page not found") || getContentAsString().contains("page was not found")) {
             throw new URLNotAvailableAnymoreException("Page not found");
         }
+    }
+
+    private String getPid(String fileUrl) throws PluginImplementationException {
+        Matcher matcher = PlugUtils.matcher("/(?:programmes|iplayer(?:/[^/]+)?|i(?:/[^/]+)?)/([a-z\\d]{8})", fileUrl);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("PID not found");
+        }
+        return matcher.group(1);
+    }
+
+    private void requestPlaylist(String pid) throws Exception {
+        GetMethod method = getGetMethod("http://www.bbc.co.uk/iplayer/playlist/" + pid);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
     }
 
     private RtmpSession getRtmpSession(Stream stream) {
@@ -215,7 +208,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate > stream.bitrate)) { //put the highest bitrate on same quality
                     continue;
                 }
-                if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight"))) || stream.supplier.equals("akamai")) { //akamai is not downloadable, prefer limelight
+                if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("akamai"))) || stream.supplier.equals("limelight")) { //limelight is not downloadable, prefer akamai
                     continue;
                 }
                 streamMap.put(quality, stream); //For TV : key=quality, value=stream
@@ -266,9 +259,10 @@ class BbcFileRunner extends AbstractRtmpRunner {
         List<URI> uriList = new LinkedList<URI>();
         uriList.add(new URI(new org.apache.commons.httpclient.URI(subtitleUrl, false, "UTF-8").toString()));
         if (uriList.isEmpty()) {
-            logger.warning("No subtitles found");
+            logger.info("No subtitles found");
+        } else {
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
         }
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
     }
 
     private void downloadSubtitle() throws Exception {

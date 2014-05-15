@@ -19,7 +19,6 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -73,7 +72,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private void checkNameAndSize(String playlistContent) throws ErrorDuringDownloadingException, UnsupportedEncodingException {
+    private void checkNameAndSize(String playlistContent) throws ErrorDuringDownloadingException {
         String name = PlugUtils.getStringBetween(playlistContent, "<title>", "</title>").replace(": ", " - ");
         httpFile.setFileName(name + DEFAULT_EXT);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -93,8 +92,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
             checkProblems();
             //sometimes they redirect, set fileURL to the new page
             fileURL = method.getURI().toString();
-            String pid = getPid(fileURL);
-            requestPlaylist(pid);
+            requestPlaylist(getPid(fileURL));
             checkNameAndSize(getContentAsString());
             setConfig();
             Matcher matcher = getMatcherAgainstContent("<item[^<>]*?identifier=\"([^<>]+?)\"");
@@ -208,7 +206,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate > stream.bitrate)) { //put the highest bitrate on same quality
                     continue;
                 }
-                if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("akamai"))) || stream.supplier.equals("limelight")) { //limelight is not downloadable, prefer akamai
+                if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight"))) || stream.supplier.equals("akamai")) { //prefer limelight, akamai is only downloadable in UK
                     continue;
                 }
                 streamMap.put(quality, stream); //For TV : key=quality, value=stream

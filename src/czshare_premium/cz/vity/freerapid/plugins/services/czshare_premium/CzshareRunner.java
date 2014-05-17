@@ -55,7 +55,7 @@ class CzshareRunner extends AbstractRunner {
         normalizeFileURL();
         logger.info("Starting download in TASK " + fileURL);
         login();
-        HttpMethod method = getGetMethod(fileURL);
+        HttpMethod method = getMethodBuilder().setAction(fileURL).setReferer("").setBaseURL(BASE_URL).toGetMethod();
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();

@@ -187,6 +187,9 @@ class FilesMonsterFileRunner extends AbstractRunner {
         if (contentAsString.contains("There are no free download slots available"))
             throw new ServiceConnectionProblemException("No more free download slots");
 
+        if (contentAsString.contains("<title>416 Requested Range not satisfiable"))
+            throw new NotRecoverableDownloadException("Can not resume download");
+
         if (contentAsString.contains("Next download will be available in")) {
             final int time = PlugUtils.getWaitTimeBetween(contentAsString,
                     "Next download will be available in", "min", TimeUnit.MINUTES);

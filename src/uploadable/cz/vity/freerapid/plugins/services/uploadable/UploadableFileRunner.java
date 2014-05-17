@@ -50,8 +50,7 @@ class UploadableFileRunner extends AbstractRunner {
             downloadTask.sleep(getWaitTime() + 1);
             doJsonMethod("checkDownload", "check");
             if (!getContentAsString().contains("\"success\"")) {
-                if (getContentAsString().contains("fail\":\"timeLimit"))
-                    throw new YouHaveToWaitException("Please wait for 60 minutes to download the next file", 60 * 60);
+                checkProblems();
                 throw new PluginImplementationException("Processing Error 1");
             }
             final String response = PlugUtils.getStringBetween(getContentAsString(), "{\"success\":\"", "\"}");
@@ -95,6 +94,10 @@ class UploadableFileRunner extends AbstractRunner {
                 contentAsString.contains("File not available")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if (getContentAsString().contains("fail\":\"timeLimit"))
+            throw new YouHaveToWaitException("Please wait for 60 minutes to download the next file", 60 * 60);
+        if (getContentAsString().contains("fail\":\"parallelDownload"))
+            throw new YouHaveToWaitException("1 download at a time", 300);
     }
 
     private int getWaitTime() throws Exception {

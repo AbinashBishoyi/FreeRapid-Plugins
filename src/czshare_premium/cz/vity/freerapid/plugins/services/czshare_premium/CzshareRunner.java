@@ -83,7 +83,7 @@ class CzshareRunner extends AbstractRunner {
                 }
             }
             final HttpMethod method = getMethodBuilder()
-                    .setAction("https://sdilej.cz/index.php")
+                    .setAction("http://sdilej.cz/index.php")
                     .setParameter("login-name", pa.getUsername())
                     .setParameter("login-password", pa.getPassword())
                     .setParameter("trvale", "on")

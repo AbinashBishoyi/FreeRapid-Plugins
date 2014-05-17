@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.czshare_premium.CzshareServiceImpl"
-        id="czshare.com_premium" vendor="Smisek+ntoskrnl" version="2.0.6">
+        id="czshare.com_premium" vendor="Smisek+ntoskrnl" version="2.0.7">
     <attributes>
         <attribute id="urlRegex" value="https?://(www\.)?(czshare\.(com|cz)|sdilej\.cz)/.+"/>
         <attribute id="minver" value="0.854"/>

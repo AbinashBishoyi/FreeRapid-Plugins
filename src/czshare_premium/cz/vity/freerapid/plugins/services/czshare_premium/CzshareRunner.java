@@ -62,6 +62,11 @@ class CzshareRunner extends AbstractRunner {
             method = getMethodBuilder().setActionFromFormWhereActionContains("profi_down", true)
                     .setBaseURL(BASE_URL)
                     .toPostMethod();
+            final int status = client.makeRequest(method, false);
+            if (status / 100 == 3) {
+                final String dlLink = method.getResponseHeader("Location").getValue();
+                method = getMethodBuilder().setAction(dlLink.replaceFirst("https:", "http:")).toGetMethod();
+            }
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");

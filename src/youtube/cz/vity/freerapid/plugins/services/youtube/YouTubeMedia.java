@@ -16,9 +16,9 @@ public class YouTubeMedia {
     public YouTubeMedia(int itag, String url, String signature, boolean cipherSignature) throws ErrorDuringDownloadingException {
         this.itag = itag;
         this.container = getContainer(itag);
-        this.videoQuality = getVideoResolution(itag);
+        this.videoQuality = (container == Container.dash_a ? -1 : getVideoResolution(itag));
         this.audioEncoding = getAudioEncoding(itag);
-        this.audioBitrate = getAudioBitrate(itag);
+        this.audioBitrate = ((container == Container.dash_v) || (container == Container.dash_v_vpx) ? -1 : getAudioBitrate(itag));
         this.url = url;
         this.signature = signature;
         this.cipherSignature = cipherSignature;
@@ -53,9 +53,16 @@ public class YouTubeMedia {
             case 135:
             case 136:
             case 137:
+            case 138:
             case 160:
             case 264:
                 return Container.dash_v;
+            case 242:
+            case 243:
+            case 244:
+            case 247:
+            case 248:
+                return Container.dash_v_vpx;
             case 139:
             case 140:
             case 141:
@@ -111,14 +118,6 @@ public class YouTubeMedia {
                 return 152;
             case 141:
                 return 256;
-            case 133: //DASH video
-            case 134:
-            case 135:
-            case 136:
-            case 137:
-            case 160:
-            case 264:
-                return -1;
             default:
                 return 192;
         }
@@ -133,6 +132,7 @@ public class YouTubeMedia {
             case 36:
             case 83:
             case 133:
+            case 242:
                 return 240;
             case 6:
                 return 270;
@@ -143,10 +143,12 @@ public class YouTubeMedia {
             case 100:
             case 101:
             case 134:
+            case 243:
                 return 360;
             case 35:
             case 44:
             case 135:
+            case 244:
                 return 480;
             case 85:
                 return 520;
@@ -156,21 +158,18 @@ public class YouTubeMedia {
             case 102:
             case 120:
             case 136:
+            case 247:
                 return 720;
             case 37:
             case 46:
             case 137:
+            case 248:
                 return 1080;
             case 264:
                 return 1440;
             case 38:
+            case 138: //138=original
                 return 3072;
-            case 139: //DASH audio
-            case 140:
-            case 141:
-            case 171:
-            case 172:
-                return -1;
             default:
                 throw new PluginImplementationException("Unknown video resolution for itag=" + itag);
         }

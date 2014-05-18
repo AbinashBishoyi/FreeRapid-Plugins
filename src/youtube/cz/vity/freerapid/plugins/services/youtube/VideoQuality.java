@@ -13,6 +13,9 @@ public enum VideoQuality {
     _480(480),
     _720(720),
     _1080(1080),
+    _1440(1440),
+    _2160(2160),
+    _3072(3072),
     Highest(10000);
 
     private final int quality;

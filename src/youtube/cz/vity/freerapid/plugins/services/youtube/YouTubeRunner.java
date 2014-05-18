@@ -110,8 +110,13 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             String fmtStreamMapContent = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
             YouTubeSigDecipher ytSigDecipher = null;
             Map<Integer, YouTubeMedia> dashStreamMap = null;
+            Map<Integer, YouTubeMedia> afStreamMap = null;
             logger.info("Swf URL : " + swfUrl);
             if (config.isEnableDash() && !config.isConvertToAudio()) { //DASH streams are skipped for audio conversion
+                if (getContentAsString().contains("\"adaptive_fmts\": \"")) {
+                    String afContent = PlugUtils.getStringBetween(getContentAsString(), "\"adaptive_fmts\": \"", "\"");
+                    afStreamMap = getFmtStreamMap(afContent); //adaptive_fmts parser is similar with fmt_stream_map parser
+                }
                 if (getContentAsString().contains("\"dashmpd\": \"")) {
                     String dashUrl = PlugUtils.getStringBetween(getContentAsString(), "\"dashmpd\": \"", "\"").replace("\\/", "/");
                     logger.info("DASH url : " + dashUrl);
@@ -142,11 +147,14 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 Map<Integer, YouTubeMedia> fmtStreamMap = getFmtStreamMap(fmtStreamMapContent);
                 Map<Integer, YouTubeMedia> ytStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
                 ytStreamMap.putAll(fmtStreamMap); //put fmtStreamMap at the top of the map
-                if (config.isEnableDash() && dashStreamMap != null && !config.isConvertToAudio()) {  //DASH streams are skipped for audio conversion
+                if (afStreamMap != null) {
+                    ytStreamMap.putAll(afStreamMap);
+                }
+                if (dashStreamMap != null) {
                     ytStreamMap.putAll(dashStreamMap);
                 }
                 youTubeMedia = getSelectedYouTubeMedia(ytStreamMap);
-                if (youTubeMedia.getContainer() == Container.dash_v) {
+                if ((youTubeMedia.getContainer() == Container.dash_v) || (youTubeMedia.getContainer() == Container.dash_v_vpx)) {
                     queueDashAudio(dashStreamMap, youTubeMedia);
                 }
             } else { //dash audio
@@ -255,39 +263,43 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         Map<Integer, YouTubeMedia> fmtStreamMap = new LinkedHashMap<Integer, YouTubeMedia>();
         String fmtStreams[] = content.split(",");
         for (String fmtStream : fmtStreams) {
-            String fmtStreamComponents[] = PlugUtils.unescapeUnicode(fmtStream).split("&"); // \u0026 as separator
-            int itag = -1;
-            String url = null;
-            String signature = null;
-            boolean cipherSig = false;
-            for (String fmtStreamComponent : fmtStreamComponents) {
-                String fmtStreamComponentParts[] = fmtStreamComponent.split("=");
-                String key = fmtStreamComponentParts[0];
-                String value = fmtStreamComponentParts[1];
-                if (key.equals("itag")) {
-                    itag = Integer.parseInt(value);
-                } else if (key.equals("url")) {
-                    url = URLDecoder.decode(value, "UTF-8");
-                    String sigParam = null;
-                    try {
-                        sigParam = URLUtil.getQueryParams(url, "UTF-8").get("signature");
-                    } catch (Exception e) {
-                        //
+            try {
+                String fmtStreamComponents[] = PlugUtils.unescapeUnicode(fmtStream).split("&"); // \u0026 as separator
+                int itag = -1;
+                String url = null;
+                String signature = null;
+                boolean cipherSig = false;
+                for (String fmtStreamComponent : fmtStreamComponents) {
+                    String fmtStreamComponentParts[] = fmtStreamComponent.split("=");
+                    String key = fmtStreamComponentParts[0];
+                    String value = fmtStreamComponentParts[1];
+                    if (key.equals("itag")) {
+                        itag = Integer.parseInt(value);
+                    } else if (key.equals("url")) {
+                        url = URLDecoder.decode(value, "UTF-8");
+                        String sigParam = null;
+                        try {
+                            sigParam = URLUtil.getQueryParams(url, "UTF-8").get("signature");
+                        } catch (Exception e) {
+                            //
+                        }
+                        if (sigParam != null) { //contains "signature" param
+                            signature = sigParam;
+                        }
+                    } else if (key.equals("signature") || key.equals("sig") || key.equals("s")) {
+                        signature = value;
+                        cipherSig = key.equals("s");
                     }
-                    if (sigParam != null) { //contains "signature" param
-                        signature = sigParam;
-                    }
-                } else if (key.equals("signature") || key.equals("sig") || key.equals("s")) {
-                    signature = value;
-                    cipherSig = key.equals("s");
                 }
+                if (itag == -1 || url == null || signature == null) {
+                    throw new PluginImplementationException("Invalid YouTube media : " + fmtStream);
+                }
+                YouTubeMedia youTubeMedia = new YouTubeMedia(itag, url, signature, cipherSig);
+                logger.info("Found video : " + youTubeMedia);
+                fmtStreamMap.put(itag, youTubeMedia);
+            } catch (Exception e) {
+                LogUtils.processException(logger, e);
             }
-            if (itag == -1 || url == null || signature == null) {
-                throw new PluginImplementationException("Invalid YouTube media : " + fmtStream);
-            }
-            YouTubeMedia youTubeMedia = new YouTubeMedia(itag, url, signature, cipherSig);
-            logger.info("Found video : " + youTubeMedia);
-            fmtStreamMap.put(itag, youTubeMedia);
         }
         return fmtStreamMap;
     }
@@ -394,7 +406,10 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 selectedItag = sortedYtMediaList.iterator().next().getItag();
             } else if (configVideoQuality == VideoQuality.Lowest) {
                 for (Integer itag : ytMediaMap.keySet()) {
-                    if ((YouTubeMedia.getContainer(itag) == Container.dash_v) || (YouTubeMedia.getContainer(itag) == Container.dash_a)) { //skip DASH
+                    Container container = YouTubeMedia.getContainer(itag);
+                    if ((container == Container.dash_v)
+                            || (container == Container.dash_v_vpx)
+                            || (container == Container.dash_a)) { //skip DASH
                         continue;
                     }
                     selectedItag = itag; //last key of fmtStreamMap
@@ -423,7 +438,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         Container container = ytMedia.getContainer();
                         if (config.getContainer() == container) {
                             tempWeight = 100;
-                        } else if (container == Container.mp4) { //mp4 > flv > webm > 3gp > DASH
+                        } else if (container == Container.mp4) { //mp4 > flv > webm > 3gp > DASH (H264) > DASH (VP9)
                             tempWeight = 50;
                         } else if (container == Container.flv) {
                             tempWeight = 49;
@@ -432,6 +447,8 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         } else if (container == Container._3gp) {
                             tempWeight = 47;
                         } else if (container == Container.dash_v) {
+                            tempWeight = 30;
+                        } else if (configContainer == Container.dash_v_vpx) {
                             tempWeight = 10;
                         }
                         if (tempWeight > weight) {

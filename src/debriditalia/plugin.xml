@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.debriditalia.DebridItaliaServiceImpl"
+        id="debriditalia.com" vendor="birchie" version="1.0.0">
+    <attributes>
+        <!--
+        <attribute id="urlRegex" value="https?://(www\.)?debriditalia\.com/not_to_be_used_0.9.0"/>
+        -->
+        <attribute id="urlRegex"
+                   value="(https?://(www\.)?(4shared(\-china)?.com|backin\.net|bitshare\.com|crocko\.com|ddlstorage\.com|(i-filez|depfile)\.com|easybytez\.com|extmatrix\.com|filecloud\.io|filemoney\.com|fileom\.com|filepost\.com/files|filepup\.net|filesmonster\.com|freakshare\.(com|net)|goldbytez\.com|junocloud\.me|netload\.in|nowdownload\.(ch|eu)|oboom\.com|(putlocker|firedrive)\.com/file|(rg\.to|rapidgator\.net)/file|scribd\.com|secureupload\.eu|share\-online\.biz/dl|terafile\.co|turbobit\.net|tusfiles\.net|uploadable\.ch|uploaded\.net|uploaded\.to|ul\.to|uploadinc\.com|uptobox\.com|videopremium\.me)/.+|https?://(.*?\.)?(letitbit\.net/download|megashares\.com|nowvideo\.(eu|co|sx|ch)|rapidshare\.com)/.+)"/>
+        <attribute id="minver" value="0.855"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="see wordrider.net/forum/10/14386"/>
+        <attribute id="www" value="http://wordrider.net/forum/10/14386"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="debriditalia.com" path="/" type="code"/>
+    </runtime>
+</plugin>

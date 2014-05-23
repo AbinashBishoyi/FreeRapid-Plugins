@@ -17,8 +17,10 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("https://www.box.com/s/l9rzpwfr4q2fz9nix5lr"));
-            //httpFile.setNewURL(new URL("https://app.box.com/s/vprlmeaz6qfkyhfvdfcn"));
-            httpFile.setNewURL(new URL("https://app.box.com/shared/static/zm151bt7fgq3kdpncnvo.pdf"));
+            httpFile.setNewURL(new URL("https://app.box.com/s/vprlmeaz6qfkyhfvdfcn"));
+            //httpFile.setNewURL(new URL("https://app.box.com/shared/static/zm151bt7fgq3kdpncnvo.pdf"));  //direct
+            //httpFile.setNewURL(new URL("https://app.box.com/s/g05fqm0chp3r9s8hasby"));  //folder
+            //httpFile.setNewURL(new URL("https://app.box.com/s/g05fqm0chp3r9s8hasby/1/1978549231/17246128159/1"));  //file from folder
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

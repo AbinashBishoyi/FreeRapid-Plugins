@@ -44,14 +44,14 @@ class ShareRapidRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
 
-        Login();
-
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
 
             client.setReferer(fileURL);
             String serverURL = "http://" + getMethod.getURI().getHost();
+
+            Login(serverURL);
 
             Matcher matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\"><a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
             if (matcher.find()) {
@@ -104,7 +104,7 @@ class ShareRapidRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private void Login() throws Exception {
+    private void Login(String serverURL) throws Exception {
         synchronized (ShareRapidRunner.class) {
             ShareRapidServiceImpl service = (ShareRapidServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
@@ -115,7 +115,7 @@ class ShareRapidRunner extends AbstractRunner {
                 }
                 badConfig = false;
             }                   */
-                String postURL = "http://sharerapid.cz/prihlaseni/";
+                String postURL = serverURL + "/prihlaseni/";
 
                 GetMethod getmethod = getGetMethod(postURL);
                 if (!makeRequest(getmethod))
@@ -131,10 +131,10 @@ class ShareRapidRunner extends AbstractRunner {
                     if (!getContentAsString().contains("class=\"logged_in_nickname")) {
                         throw new NotRecoverableDownloadException("Bad ShareRapid account login information!");
                     }
-                    GetMethod getMethod = getGetMethod(fileURL);
-                    if (!makeRedirectedRequest(getMethod)) {
-                        throw new PluginImplementationException();
-                    }
+                }
+                GetMethod getMethod = getGetMethod(fileURL);
+                if (!makeRedirectedRequest(getMethod)) {
+                    throw new PluginImplementationException();
                 }
             }
         }

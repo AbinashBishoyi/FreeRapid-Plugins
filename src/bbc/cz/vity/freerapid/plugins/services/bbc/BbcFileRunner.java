@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.bbc;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.geoip.CountryLocator;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
@@ -23,7 +24,10 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -105,19 +109,10 @@ class BbcFileRunner extends AbstractRtmpRunner {
             method = getGetMethod(mediaSelector);
             final TorProxyClient torClient = TorProxyClient.forCountry("gb", client, getPluginService().getPluginContext().getConfigurationStorageSupport());
             if (!torClient.makeRequest(method)) {
+                checkMediaSelectorProblems();
                 throw new ServiceConnectionProblemException();
             }
-            matcher = getMatcherAgainstContent("<error id=\"(.+?)\"");
-            if (matcher.find()) {
-                final String id = matcher.group(1);
-                if (id.equals("notavailable")) {
-                    throw new URLNotAvailableAnymoreException("Media not found");
-                } else if (id.equals("notukerror")) {
-                    throw new NotRecoverableDownloadException("This video is not available in your area");
-                } else {
-                    throw new NotRecoverableDownloadException("Error fetching media selector: '" + id + "'");
-                }
-            }
+            checkMediaSelectorProblems();
             final RtmpSession rtmpSession = getRtmpSession(getStream(getContentAsString()));
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
             rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
@@ -126,6 +121,20 @@ class BbcFileRunner extends AbstractRtmpRunner {
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private void checkMediaSelectorProblems() throws NotRecoverableDownloadException {
+        Matcher matcher = getMatcherAgainstContent("<error id=\"(.+?)\"");
+        if (matcher.find()) {
+            final String id = matcher.group(1);
+            if (id.equals("notavailable")) {
+                throw new URLNotAvailableAnymoreException("Media not found");
+            } else if (id.equals("notukerror") || id.equals("geolocation")) {
+                throw new NotRecoverableDownloadException("This video is not available in your area");
+            } else {
+                throw new NotRecoverableDownloadException("Error fetching media selector: '" + id + "'");
+            }
         }
     }
 
@@ -157,7 +166,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
     }
 
     private RtmpSession getRtmpSession(Stream stream) {
-        return new RtmpSession(stream.server, 1935, stream.app, stream.play, stream.encrypted);
+        return new RtmpSession(stream.server, config.getRtmpPort().getPort(), stream.app, stream.play, stream.encrypted);
     }
 
     private Stream getStream(String content) throws Exception {
@@ -200,14 +209,21 @@ class BbcFileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("No suitable streams found");
         }
 
+        boolean isInUK = (client.getSettings().isProxySet() || CountryLocator.getDefault().is("gb"));
         for (Stream stream : list) {
             if (video) {
                 int quality = stream.quality;
                 if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate > stream.bitrate)) { //put the highest bitrate on same quality
                     continue;
                 }
-                if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight"))) || stream.supplier.equals("akamai")) { //prefer limelight, akamai is only downloadable in UK
-                    continue;
+                if (isInUK) {
+                    if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("akamai"))) || stream.supplier.equals("limelight")) { //limelight has strange behaviour, prefer akamai
+                        continue;
+                    }
+                } else {
+                    if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight"))) || stream.supplier.equals("akamai")) { //akamai is only downloadable in UK, prefer limelight
+                        continue;
+                    }
                 }
                 streamMap.put(quality, stream); //For TV : key=quality, value=stream
             } else {
@@ -224,8 +240,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
             } else {
                 final int LOWER_QUALITY_PENALTY = 10;
                 int weight = Integer.MAX_VALUE;
-                for (Map.Entry<Integer, Stream> streamEntry : streamMap.entrySet()) {
-                    Stream stream = streamEntry.getValue();
+                for (Stream stream : streamMap.values()) {
                     int deltaQ = stream.quality - config.getVideoQuality().getQuality();
                     int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
                     if (tempWeight < weight) {

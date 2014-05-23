@@ -23,7 +23,9 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b043xdmw/eastenders-12052014"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b04470xx/the-next-step-10-road-to-joy"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b042twvq/the-first-georgians-the-german-kings-who-made-britain-episode-2"));
-            httpFile.setNewURL(new URL("http://www.bbc.co.uk/programmes/b042z1g4"));
+            //httpFile.setNewURL(new URL("http://www.bbc.co.uk/programmes/b042z1g4"));
+            httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b044trs9/click-17052014"));
+            //httpFile.setNewURL(new URL("http://www.bbc.co.uk/programmes/b043pmd0"));
 
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
@@ -31,8 +33,9 @@ public class TestApp extends PluginDevApplication {
             //then we tries to download
             final BbcServiceImpl service = new BbcServiceImpl(); //instance of service - of our plugin
             SettingsConfig config = new SettingsConfig();
-            config.setVideoQuality(VideoQuality._480);
+            config.setVideoQuality(VideoQuality.Highest);
             config.setDownloadSubtitles(true);
+            config.setRtmpPort(RtmpPort._80);
             service.setConfig(config);
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

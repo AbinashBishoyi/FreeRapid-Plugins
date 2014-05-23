@@ -21,10 +21,14 @@ public class SettingsPanel extends JPanel {
     private void initPanel() {
         final JLabel lblQuality = new JLabel("Preferred quality level:");
         final JComboBox<VideoQuality> cbbVideoQuality = new JComboBox<VideoQuality>(VideoQuality.getItems());
+        final JLabel lblRtmpPort = new JLabel("Preferred RTMP port:");
+        final JComboBox<RtmpPort> cbbRtmpPort = new JComboBox<RtmpPort>(RtmpPort.values());
         final JCheckBox checkSubtitles = new JCheckBox("Download subtitles", config.isDownloadSubtitles());
 
         lblQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbVideoQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblRtmpPort.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cbbRtmpPort.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkSubtitles.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         cbbVideoQuality.setSelectedItem(config.getVideoQuality());
@@ -32,6 +36,13 @@ public class SettingsPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 config.setVideoQuality((VideoQuality) cbbVideoQuality.getSelectedItem());
+            }
+        });
+        cbbRtmpPort.setSelectedItem(config.getRtmpPort());
+        cbbRtmpPort.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setRtmpPort((RtmpPort) cbbRtmpPort.getSelectedItem());
             }
         });
         checkSubtitles.addActionListener(new ActionListener() {
@@ -44,6 +55,9 @@ public class SettingsPanel extends JPanel {
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(lblQuality);
         add(cbbVideoQuality);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(lblRtmpPort);
+        add(cbbRtmpPort);
         add(Box.createRigidArea(new Dimension(0, 5)));
         add(checkSubtitles);
         add(Box.createRigidArea(new Dimension(0, 15)));

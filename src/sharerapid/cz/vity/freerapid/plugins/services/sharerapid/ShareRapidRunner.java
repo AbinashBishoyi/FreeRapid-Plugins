@@ -21,7 +21,6 @@ import java.util.regex.Matcher;
  */
 class ShareRapidRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ShareRapidRunner.class.getName());
-    private boolean badConfig = false;
     //time to next check (seconds)
     private final static Integer timeToCheck = 120;
     private final static Integer maxReconnect = 30;
@@ -45,20 +44,16 @@ class ShareRapidRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
 
+        Login();
+
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
 
             client.setReferer(fileURL);
-
             String serverURL = "http://" + getMethod.getURI().getHost();
 
-            Matcher matcher = PlugUtils.matcher("(Stahování je povoleno pouze pro přihlášené uživatele|<strong>Stahov.n. je p..stupn. pouze p.ihl..en.m u.ivatel.m</strong>)", getContentAsString());
-            if (matcher.find()) {
-                Login(serverURL);
-            }
-
-            matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\"><a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
+            Matcher matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\"><a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
             if (matcher.find()) {
                 String downURL = matcher.group(1);
                 if (!downURL.contains("http://"))
@@ -89,7 +84,7 @@ class ShareRapidRunner extends AbstractRunner {
                 throw new PluginImplementationException();
             } else {
                 checkProblems();
-                throw new PluginImplementationException();
+                throw new PluginImplementationException("No download link found");
             }
         } else
             throw new ServiceConnectionProblemException();
@@ -109,40 +104,37 @@ class ShareRapidRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
-    private void Login(String serverURL) throws Exception {
+    private void Login() throws Exception {
         synchronized (ShareRapidRunner.class) {
             ShareRapidServiceImpl service = (ShareRapidServiceImpl) getPluginService();
             PremiumAccount pa = service.getConfig();
-            if (!pa.isSet() || badConfig) {
+            if (pa.isSet()) { /* || badConfig) {
                 pa = service.showConfigDialog();
                 if (pa == null || !pa.isSet()) {
                     throw new NotRecoverableDownloadException("No ShareRapid account login information!, Stahování je přístupné pouze přihlášeným uživatelům");
                 }
                 badConfig = false;
-            }
+            }                   */
+                String postURL = "http://sharerapid.cz/prihlaseni/";
 
-            Matcher matcher;
-            String postURL = serverURL + "/prihlaseni/";
-
-            GetMethod getmethod = getGetMethod(postURL);
-            if (!makeRequest(getmethod))
-                throw new PluginImplementationException();
-
-            PostMethod postmethod = getPostMethod(postURL);
-
-            PlugUtils.addParameters(postmethod, getContentAsString(), new String[]{"hash", "sbmt"});
-            postmethod.addParameter("login", pa.getUsername());
-            postmethod.addParameter("pass1", pa.getPassword());
-
-            if (makeRedirectedRequest(postmethod)) {
-                matcher = getMatcherAgainstContent("<title>Přihlášení - Share-Rapid</title>");
-                if (matcher.find()) {
-                    badConfig = true;
-                    throw new NotRecoverableDownloadException("Bad ShareRapid account login information!");
-                }
-                GetMethod getMethod = getGetMethod(fileURL);
-                if (!makeRedirectedRequest(getMethod)) {
+                GetMethod getmethod = getGetMethod(postURL);
+                if (!makeRequest(getmethod))
                     throw new PluginImplementationException();
+
+                PostMethod postmethod = getPostMethod(postURL + "?");
+
+                PlugUtils.addParameters(postmethod, getContentAsString(), new String[]{"hash", "sbmt"});
+                postmethod.addParameter("login", pa.getUsername());
+                postmethod.addParameter("pass1", pa.getPassword());
+
+                if (makeRedirectedRequest(postmethod)) {
+                    if (!getContentAsString().contains("class=\"logged_in_nickname")) {
+                        throw new NotRecoverableDownloadException("Bad ShareRapid account login information!");
+                    }
+                    GetMethod getMethod = getGetMethod(fileURL);
+                    if (!makeRedirectedRequest(getMethod)) {
+                        throw new PluginImplementationException();
+                    }
                 }
             }
         }
@@ -167,9 +159,6 @@ class ShareRapidRunner extends AbstractRunner {
         matcher = getMatcherAgainstContent("<strong>Ji. V.m do.el kredit a vy.erpal jste free limit</strong>");
         if (matcher.find()) {
             throw new NotRecoverableDownloadException("No credit for download!");
-        }
-        if (badConfig) {
-            throw new NotRecoverableDownloadException("Bad ShareRapid account login information!");
         }
     }
 

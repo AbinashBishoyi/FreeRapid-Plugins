@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.video2audio;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -9,18 +10,18 @@ import java.nio.ByteBuffer;
  */
 public abstract class VideoToAudioInputStream extends InputStream {
 
-    protected final InputStream in;
+    protected final FileInputStream in;
     protected final int targetBitrate;
 
     private ByteBuffer buffer;
     private boolean finished = false;
 
-    public VideoToAudioInputStream(final InputStream in, final int targetBitrate) {
+    public VideoToAudioInputStream(final FileInputStream in, final int targetBitrate) {
         this.in = in;
         this.targetBitrate = targetBitrate;
     }
 
-    public VideoToAudioInputStream(final InputStream in) {
+    public VideoToAudioInputStream(final FileInputStream in) {
         this(in, 192);
     }
 

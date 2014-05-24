@@ -1,5 +1,10 @@
 package cz.vity.freerapid.plugins.services.youtube;
 
+import com.googlecode.mp4parser.FileDataSourceImpl;
+import com.googlecode.mp4parser.authoring.Movie;
+import com.googlecode.mp4parser.authoring.Track;
+import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
+import com.googlecode.mp4parser.authoring.container.mp4.MovieCreator;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
@@ -8,6 +13,7 @@ import cz.vity.freerapid.plugins.services.youtube.srt.Transcription2SrtUtil;
 import cz.vity.freerapid.plugins.video2audio.AbstractVideo2AudioRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
@@ -19,9 +25,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -155,7 +159,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 }
                 youTubeMedia = getSelectedYouTubeMedia(ytStreamMap);
                 if ((youTubeMedia.getContainer() == Container.dash_v) || (youTubeMedia.getContainer() == Container.dash_v_vpx)) {
-                    queueDashAudio(dashStreamMap, youTubeMedia);
+                    queueDashAudio(ytStreamMap, youTubeMedia);
                 }
             } else { //dash audio
                 if (dashStreamMap == null) {
@@ -194,20 +198,19 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             logger.info("Downloading media : " + youTubeMedia);
             method = getGetMethod(videoURL);
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-            if (config.isConvertToAudio()) {
-                httpFile.setFileName(httpFile.getFileName().replaceFirst("\\..{3,4}$", ".mp3"));
+            if (!tryDownloadAndSaveFile(method)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
+            } else if (config.isConvertToAudio()) {
                 final int bitrate = youTubeMedia.getAudioBitrate();
                 final boolean mp4 = ".mp4".equalsIgnoreCase(youTubeMedia.getContainer().getFileExt());
-                if (!tryDownloadAndSaveFile(method, bitrate, mp4)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
-                }
-            } else {
-                if (!tryDownloadAndSaveFile(method)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException("Error starting download");
-                }
+                convertToAudio(bitrate, mp4);
+            } else if ((youTubeMedia.getContainer() == Container.dash_v)
+                    || (youTubeMedia.getContainer() == Container.dash_v_vpx)
+                    || (youTubeMedia.getContainer() == Container.dash_a)) { //DASH
+                multiplexDash(youTubeMedia.getContainer() == Container.dash_a);
             }
+
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -448,7 +451,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                             tempWeight = 47;
                         } else if (container == Container.dash_v) {
                             tempWeight = 30;
-                        } else if (configContainer == Container.dash_v_vpx) {
+                        } else if (container == Container.dash_v_vpx) {
                             tempWeight = 10;
                         }
                         if (tempWeight > weight) {
@@ -463,15 +466,15 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         return ytMediaMap.get(selectedItag);
     }
 
-    private void queueDashAudio(Map<Integer, YouTubeMedia> dashStreamMap, YouTubeMedia selectedDashVideoStream) throws Exception {
+    private void queueDashAudio(Map<Integer, YouTubeMedia> ytStreamMap, YouTubeMedia selectedDashVideoStream) throws Exception {
         int selectedItag = -1;
         int weight = Integer.MIN_VALUE;
-        for (YouTubeMedia dashStream : dashStreamMap.values()) {
-            if ((dashStream.getContainer() != Container.dash_a) || (dashStream.getAudioEncoding().equalsIgnoreCase("Vorbis"))) { //skip non DASH audio or Vorbis
+        for (YouTubeMedia ytMedia : ytStreamMap.values()) {
+            if ((ytMedia.getContainer() != Container.dash_a) || (ytMedia.getAudioEncoding().equalsIgnoreCase("Vorbis"))) { //skip non DASH audio or Vorbis
                 continue;
             }
             int tempWeight = Integer.MIN_VALUE;
-            switch (dashStream.getAudioBitrate()) { //audio bitrate as criteria, it'd be better if we have videoQ-audioBitRate map for the qualifier
+            switch (ytMedia.getAudioBitrate()) { //audio bitrate as criteria, it'd be better if we have videoQ-audioBitRate map for the qualifier
                 case 128:
                     tempWeight = 50;
                     break;
@@ -484,13 +487,13 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
             if (tempWeight > weight) {
                 weight = tempWeight;
-                selectedItag = dashStream.getItag();
+                selectedItag = ytMedia.getItag();
             }
         }
         if (selectedItag == -1) {
             throw new PluginImplementationException("Preferred DASH audio stream not found");
         }
-        logger.info("Queueing DASH audio stream : " + dashStreamMap.get(selectedItag));
+        logger.info("Queueing DASH audio stream : " + ytStreamMap.get(selectedItag));
         List<URI> uriList = new LinkedList<URI>();
         String url = fileURL + "&" + DASH_AUDIO_ITAG + "=" + selectedItag;
         try {
@@ -743,6 +746,67 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
         }
         return false;
+    }
+
+    private void multiplexDash(final boolean isAudio) throws Exception {
+        if (downloadTask.isTerminated()) {
+            logger.info("Download task is terminated");
+            return;
+        }
+        logger.info("Multiplexing DASH streams");
+        final HttpFile downloadFile = downloadTask.getDownloadFile();
+        final File inputFile = downloadFile.getStoreFile();
+        logger.info("Input file: " + inputFile);
+        if (!inputFile.exists()) {
+            throw new PluginImplementationException("Input file not found");
+        }
+
+        FileOutputStream fos = null;
+        File videoFile;
+        File audioFile;
+        String fnameNoExt = downloadFile.getFileName().replaceFirst("\\..{3,4}$", "");
+        String fname = fnameNoExt + Container.mp4.getFileExt();
+        if (isAudio) {
+            videoFile = new File(downloadFile.getSaveToDirectory(), fnameNoExt + Container.dash_v.getFileExt());
+            audioFile = inputFile;
+        } else {
+            videoFile = inputFile;
+            audioFile = new File(downloadFile.getSaveToDirectory(), fnameNoExt + Container.dash_a.getFileExt());
+        }
+        if (!videoFile.exists()) {
+            logger.info("DASH video file not found");
+            return;
+        }
+        if (!audioFile.exists()) {
+            logger.info("DASH audio file not found");
+            return;
+        }
+        File outputFile = new File(downloadFile.getSaveToDirectory(), fname);
+        int outputFileCounter = 1;
+
+        try {
+            while (outputFile.exists()) {
+                fname = fnameNoExt + "-" + outputFileCounter++ + Container.mp4.getFileExt();
+                outputFile = new File(downloadFile.getSaveToDirectory(), fname);
+            }
+            fos = new FileOutputStream(outputFile);
+            Movie movieVideo = MovieCreator.build(new FileDataSourceImpl(videoFile));
+            Movie movieAudio = MovieCreator.build(new FileDataSourceImpl(audioFile));
+            Track trackAudio = movieAudio.getTracks().get(0);
+            trackAudio.getTrackMetaData().setLanguage("eng");
+            movieVideo.addTrack(trackAudio);
+            com.coremedia.iso.boxes.Container out = new DefaultMp4Builder().build(movieVideo);
+            out.writeContainer(fos.getChannel());
+            audioFile.delete();
+            videoFile.delete();
+            downloadFile.setFileName(fname);
+            downloadFile.setDownloaded(fos.getChannel().position());
+            downloadFile.setFileSize(fos.getChannel().position());
+        } finally {
+            if (fos != null) {
+                fos.close();
+            }
+        }
     }
 
     private void bypassAgeVerification(HttpMethod method) throws Exception {

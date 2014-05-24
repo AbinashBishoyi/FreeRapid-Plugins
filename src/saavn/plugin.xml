@@ -13,8 +13,6 @@
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.13"
                 reverse-lookup="false"/>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="video2audio"
-                plugin-version="1.0.1" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="saavn.com" path="/" type="code"/>

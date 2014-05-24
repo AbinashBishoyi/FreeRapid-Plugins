@@ -77,7 +77,6 @@
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
             <sourcepath location="../devapp"/>
             <sourcepath location="../rtmp"/>
-            <sourcepath location="../video2audio"/>
         </javac>
         <!-- zkopirovani resourcu -->
 

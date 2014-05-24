@@ -1,7 +1,7 @@
 package cz.vity.freerapid.plugins.video2audio;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
@@ -12,11 +12,11 @@ public class FlvToMp3InputStream extends VideoToAudioInputStream {
     private FlvReader flvReader;
     private AacToMp3Converter converter = null;
 
-    public FlvToMp3InputStream(final InputStream in, final int targetBitrate) {
+    public FlvToMp3InputStream(final FileInputStream in, final int targetBitrate) {
         super(in, targetBitrate);
     }
 
-    public FlvToMp3InputStream(final InputStream in) {
+    public FlvToMp3InputStream(final FileInputStream in) {
         super(in);
     }
 

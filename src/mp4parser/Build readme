@@ -1,0 +1,6 @@
+mp4parser plugin requires aspectj, therefore it has to be compiled using aspectj compiler.
+The easiest way to do this is by using Eclipse IDE with aspectj plugin.
+IntelliJ IDEA only supports aspectj in commercial version.
+- We compile mp4parser using Eclipse. We can find the output (classes binary) in ../out/production.
+- Copy com, org, and resource directory from ../out/production to ../_classes.
+- Make plugin distribution (.frp) using distWithoutCompile ant task.

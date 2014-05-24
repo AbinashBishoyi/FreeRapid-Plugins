@@ -1,8 +1,8 @@
 package cz.vity.freerapid.plugins.services.saavn;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.video2audio.AbstractVideo2AudioRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * @author tong2shot
  * @since 0.9u2
  */
-class SaavnFileRunner extends AbstractVideo2AudioRunner {
+class SaavnFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(SaavnFileRunner.class.getName());
     private final static byte[] SECRET_KEY = "38346591".getBytes(Charset.forName("UTF-8"));
     //private final static String SWF_URL = "http://www.saavn.com/dplayer/2.inviplayer.swf";
@@ -73,7 +73,7 @@ class SaavnFileRunner extends AbstractVideo2AudioRunner {
                 final String host = "r.saavncdn.com";
                 final String play = decryptPlay(url);
                 final RtmpSession rtmpSession = new RtmpSession(host, 1935, app, play, true);
-                tryDownloadAndSaveFile(rtmpSession, 128);
+                tryDownloadAndSaveFile(rtmpSession);
             }
         } else {
             checkProblems();

@@ -74,7 +74,7 @@ class DepFileFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            if (httpMethod.getURI().getURI().endsWith("/premium"))
+            if (httpMethod.getResponseHeader("Location").getValue().endsWith("/premium"))
                 throw new YouHaveToWaitException("Wait before next download or upgrade to premium", 600);
             checkProblems();
         }

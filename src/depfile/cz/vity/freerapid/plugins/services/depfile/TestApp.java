@@ -17,9 +17,9 @@ public class TestApp extends PluginDevApplication {
         try {
             //httpFile.setNewURL(new URL("http://depfile.com/downloads/i/799054/f/KoOoRa.CoM_Rey_Mysterio_-_The_Life_of_a_Masked_Man_DVD_3_Discs_By_MASHA_ERA.part01.rar.html"));
             //httpFile.setNewURL(new URL("http://depfile.com/a1Ek8mPCz"));
-            httpFile.setNewURL(new URL("http://depfile.com/fBlxjSXw4"));
+            httpFile.setNewURL(new URL("http://depfile.com/cAVEDlLO"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            connectionSettings.setProxy("203.176.183.198", 8080); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("203.176.183.198", 8080); //eg we can use local proxy to sniff HTTP communication
             final DepFileServiceImpl service = new DepFileServiceImpl();
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {

@@ -44,6 +44,7 @@ class DepFileFileRunner extends AbstractRunner {
                 .setAction(fileURL)
                 .toGetMethod();
         if (!makeRedirectedRequest(httpMethod)) {
+            checkProblems();
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
@@ -73,6 +74,8 @@ class DepFileFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
+            if (httpMethod.getURI().getURI().endsWith("/premium"))
+                throw new YouHaveToWaitException("Wait before next download or upgrade to premium", 600);
             checkProblems();
         }
         final String url = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "document.getElementById(\"wait_input\").value= unescape('", "');"), "UTF-8");

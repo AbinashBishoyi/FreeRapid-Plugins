@@ -23,13 +23,19 @@ public class SettingsPanel extends JPanel {
         final JComboBox<VideoQuality> cbbVideoQuality = new JComboBox<VideoQuality>(VideoQuality.getItems());
         final JLabel lblRtmpPort = new JLabel("Preferred RTMP port:");
         final JComboBox<RtmpPort> cbbRtmpPort = new JComboBox<RtmpPort>(RtmpPort.values());
+        final JLabel lblCdn = new JLabel("Preferred CDN: *)");
+        final JComboBox<Cdn> cbbCdn = new JComboBox<Cdn>(Cdn.values());
         final JCheckBox checkSubtitles = new JCheckBox("Download subtitles", config.isDownloadSubtitles());
+        final JLabel lblCdnNote = new JLabel("<html>*) Akamai is only downloadble<br>in the UK</html>");
 
         lblQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbVideoQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblRtmpPort.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbRtmpPort.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblCdn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cbbCdn.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkSubtitles.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblCdnNote.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         cbbVideoQuality.setSelectedItem(config.getVideoQuality());
         cbbVideoQuality.addActionListener(new ActionListener() {
@@ -43,6 +49,13 @@ public class SettingsPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 config.setRtmpPort((RtmpPort) cbbRtmpPort.getSelectedItem());
+            }
+        });
+        cbbCdn.setSelectedItem(config.getCdn());
+        cbbCdn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setCdn((Cdn) cbbCdn.getSelectedItem());
             }
         });
         checkSubtitles.addActionListener(new ActionListener() {
@@ -59,7 +72,12 @@ public class SettingsPanel extends JPanel {
         add(lblRtmpPort);
         add(cbbRtmpPort);
         add(Box.createRigidArea(new Dimension(0, 5)));
+        add(lblCdn);
+        add(cbbCdn);
+        add(Box.createRigidArea(new Dimension(0, 5)));
         add(checkSubtitles);
+        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(lblCdnNote);
         add(Box.createRigidArea(new Dimension(0, 15)));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }

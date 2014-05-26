@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.bbc;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.geoip.CountryLocator;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
@@ -24,10 +23,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -171,12 +167,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
 
     private Stream getStream(String content) throws Exception {
         boolean video = false;
-        final List<Stream> list = new ArrayList<Stream>();
-        //streamMap
-        //For radio : key=bitrate, value=stream
-        //For TV    : key=quality, value=stream
-        //sorted by key, ascending
-        final TreeMap<Integer, Stream> streamMap = new TreeMap<Integer, Stream>();
+        final List<Stream> streamList = new ArrayList<Stream>();
         try {
             final NodeList mediaElements = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(content.getBytes("UTF-8"))
             ).getElementsByTagName("media");
@@ -191,7 +182,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                             Element connectionElement = (Element) connectionElements.item(j);
                             final Stream stream = Stream.build(mediaElement, connectionElement);
                             if (stream != null) {
-                                list.add(stream);
+                                streamList.add(stream);
                                 if (!video && mediaElement.getAttribute("kind").equals("video")) {
                                     video = true;
                                 }
@@ -205,42 +196,21 @@ class BbcFileRunner extends AbstractRtmpRunner {
         } catch (Exception e) {
             throw new PluginImplementationException("Error parsing playlist XML", e);
         }
-        if (list.isEmpty()) {
+        if (streamList.isEmpty()) {
             throw new PluginImplementationException("No suitable streams found");
-        }
-
-        boolean isInUK = (client.getSettings().isProxySet() || CountryLocator.getDefault().is("gb"));
-        for (Stream stream : list) {
-            if (video) {
-                int quality = stream.quality;
-                if (streamMap.containsKey(quality) && (streamMap.get(quality).bitrate > stream.bitrate)) { //put the highest bitrate on same quality
-                    continue;
-                }
-                if (isInUK) {
-                    if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("akamai"))) || stream.supplier.equals("limelight")) { //limelight has strange behaviour, prefer akamai
-                        continue;
-                    }
-                } else {
-                    if ((streamMap.containsKey(quality) && (streamMap.get(quality).supplier.equals("limelight"))) || stream.supplier.equals("akamai")) { //akamai is only downloadable in UK, prefer limelight
-                        continue;
-                    }
-                }
-                streamMap.put(quality, stream); //For TV : key=quality, value=stream
-            } else {
-                streamMap.put(stream.bitrate, stream); //For radio : key=bitrate, value=stream
-            }
         }
 
         Stream selectedStream = null;
         if (video) { //video/tv
+            //select quality
             if (config.getVideoQuality() == VideoQuality.Highest) {
-                selectedStream = streamMap.get(streamMap.lastKey());
+                selectedStream = Collections.max(streamList);
             } else if (config.getVideoQuality() == VideoQuality.Lowest) {
-                selectedStream = streamMap.get(streamMap.firstKey());
+                selectedStream = Collections.min(streamList);
             } else {
                 final int LOWER_QUALITY_PENALTY = 10;
                 int weight = Integer.MAX_VALUE;
-                for (Stream stream : streamMap.values()) {
+                for (Stream stream : streamList) {
                     int deltaQ = stream.quality - config.getVideoQuality().getQuality();
                     int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
                     if (tempWeight < weight) {
@@ -249,14 +219,52 @@ class BbcFileRunner extends AbstractRtmpRunner {
                     }
                 }
             }
+            if (selectedStream == null) {
+                throw new PluginImplementationException("Unable to select stream");
+            }
+            int selectedQuality = selectedStream.quality;
+
+            //select the highest bitrate for the selected quality            
+            int selectedBitrate = Integer.MIN_VALUE;
+            for (Stream stream : streamList) {
+                if ((stream.quality == selectedQuality) && (stream.bitrate > selectedBitrate)) {
+                    selectedBitrate = stream.bitrate;
+                    selectedStream = stream;
+                }
+            }
+
+            //select CDN
+            int weight = Integer.MIN_VALUE;
+            for (Stream stream : streamList) {
+                if ((stream.quality == selectedQuality) && (stream.bitrate == selectedBitrate)) {
+                    int tempWeight = 0;
+                    if (stream.supplier.equalsIgnoreCase(config.getCdn().toString())) {
+                        tempWeight = 100;
+                    } else if (stream.supplier.equalsIgnoreCase(Cdn.Level3.toString())) { //level3>limelight>akamai
+                        tempWeight = 50;
+                    } else if (stream.supplier.equalsIgnoreCase(Cdn.Limelight.toString())) {
+                        tempWeight = 49;
+                    } else if (stream.supplier.equalsIgnoreCase(Cdn.Akamai.toString())) {
+                        tempWeight = 48;
+                    }
+                    if (tempWeight > weight) {
+                        weight = tempWeight;
+                        selectedStream = stream;
+                    }
+                }
+            }
+
         } else { //audio/radio, ignore config, always pick the highest bitrate
-            selectedStream = streamMap.get(streamMap.lastKey());
+            selectedStream = Collections.max(streamList, new Comparator<Stream>() {
+                @Override
+                public int compare(Stream o1, Stream o2) {
+                    return Integer.valueOf(o1.bitrate).compareTo(o2.bitrate);
+                }
+            });
         }
 
         logger.info("Stream kind : " + (video ? "TV" : "Radio"));
-        if (video) {
-            logger.info("Config settings : " + config);
-        }
+        logger.info("Config settings : " + config);
         logger.info("Selected stream : " + selectedStream);
         return selectedStream;
     }
@@ -309,7 +317,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private static class Stream {
+    private static class Stream implements Comparable<Stream> {
         private final String server;
         private final String app;
         private final String play;
@@ -362,5 +370,11 @@ class BbcFileRunner extends AbstractRtmpRunner {
                     ", supplier='" + supplier + '\'' +
                     '}';
         }
+
+        @Override
+        public int compareTo(Stream that) {
+            return Integer.valueOf(this.quality).compareTo(that.quality);
+        }
+
     }
 }

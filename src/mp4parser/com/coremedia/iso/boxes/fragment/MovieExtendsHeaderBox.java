@@ -63,10 +63,16 @@ public class MovieExtendsHeaderBox extends AbstractFullBox {
     }
 
     public long getFragmentDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return fragmentDuration;
     }
 
     public void setFragmentDuration(long fragmentDuration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.fragmentDuration = fragmentDuration;
     }
 }

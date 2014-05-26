@@ -133,31 +133,52 @@ public class SampleGroupDescriptionBox extends AbstractFullBox {
 
 
     public String getGroupingType() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return groupingType;
     }
 
     public void setGroupingType(String groupingType) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.groupingType = groupingType;
     }
 
     public int getDefaultLength() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultLength;
     }
 
     public void setDefaultLength(int defaultLength) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.defaultLength = defaultLength;
     }
 
     public List<GroupEntry> getGroupEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return groupEntries;
     }
 
     public void setGroupEntries(List<GroupEntry> groupEntries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.groupEntries = groupEntries;
     }
 
     @Override
     public boolean equals(Object o) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (this == o) {
             return true;
         }
@@ -182,6 +203,9 @@ public class SampleGroupDescriptionBox extends AbstractFullBox {
 
     @Override
     public int hashCode() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         int result = groupingType != null ? groupingType.hashCode() : 0;
         result = 31 * result + defaultLength;
         result = 31 * result + (groupEntries != null ? groupEntries.hashCode() : 0);
@@ -190,6 +214,9 @@ public class SampleGroupDescriptionBox extends AbstractFullBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SampleGroupDescriptionBox{" +
                 "groupingType='" + groupingType + '\'' +
                 ", defaultLength=" + defaultLength +

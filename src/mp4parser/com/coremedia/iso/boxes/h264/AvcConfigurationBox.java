@@ -52,98 +52,170 @@ public final class AvcConfigurationBox extends AbstractBox {
     }
 
     public int getConfigurationVersion() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.configurationVersion;
     }
 
     public int getAvcProfileIndication() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.avcProfileIndication;
     }
 
     public int getProfileCompatibility() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.profileCompatibility;
     }
 
     public int getAvcLevelIndication() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.avcLevelIndication;
     }
 
     public int getLengthSizeMinusOne() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.lengthSizeMinusOne;
     }
 
     public List<byte[]> getSequenceParameterSets() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return Collections.unmodifiableList(avcDecoderConfigurationRecord.sequenceParameterSets);
     }
 
     public List<byte[]> getPictureParameterSets() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return Collections.unmodifiableList(avcDecoderConfigurationRecord.pictureParameterSets);
     }
 
     public void setConfigurationVersion(int configurationVersion) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.configurationVersion = configurationVersion;
     }
 
     public void setAvcProfileIndication(int avcProfileIndication) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.avcProfileIndication = avcProfileIndication;
     }
 
     public void setProfileCompatibility(int profileCompatibility) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.profileCompatibility = profileCompatibility;
     }
 
     public void setAvcLevelIndication(int avcLevelIndication) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.avcLevelIndication = avcLevelIndication;
     }
 
     public void setLengthSizeMinusOne(int lengthSizeMinusOne) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.lengthSizeMinusOne = lengthSizeMinusOne;
     }
 
     public void setSequenceParameterSets(List<byte[]> sequenceParameterSets) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.sequenceParameterSets = sequenceParameterSets;
     }
 
     public void setPictureParameterSets(List<byte[]> pictureParameterSets) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.pictureParameterSets = pictureParameterSets;
     }
 
     public int getChromaFormat() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.chromaFormat;
     }
 
     public void setChromaFormat(int chromaFormat) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.chromaFormat = chromaFormat;
     }
 
     public int getBitDepthLumaMinus8() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.bitDepthLumaMinus8;
     }
 
     public void setBitDepthLumaMinus8(int bitDepthLumaMinus8) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.bitDepthLumaMinus8 = bitDepthLumaMinus8;
     }
 
     public int getBitDepthChromaMinus8() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.bitDepthChromaMinus8;
     }
 
     public void setBitDepthChromaMinus8(int bitDepthChromaMinus8) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.bitDepthChromaMinus8 = bitDepthChromaMinus8;
     }
 
     public List<byte[]> getSequenceParameterSetExts() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.sequenceParameterSetExts;
     }
 
     public void setSequenceParameterSetExts(List<byte[]> sequenceParameterSetExts) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.sequenceParameterSetExts = sequenceParameterSetExts;
     }
 
     public boolean hasExts() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.hasExts;
     }
 
     public void setHasExts(boolean hasExts) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avcDecoderConfigurationRecord.hasExts = hasExts;
     }
 
@@ -155,26 +227,41 @@ public final class AvcConfigurationBox extends AbstractBox {
 
     @Override
     public long getContentSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getContentSize();
     }
 
 
     @Override
     public void getContent(ByteBuffer byteBuffer) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         avcDecoderConfigurationRecord.getContent(byteBuffer);
     }
 
     // just to display sps in isoviewer no practical use
     public String[] getSPS() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getSPS();
     }
 
     public String[] getPPS() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getPPS();
     }
 
 
     public AVCDecoderConfigurationRecord getavcDecoderConfigurationRecord() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord;
     }
 

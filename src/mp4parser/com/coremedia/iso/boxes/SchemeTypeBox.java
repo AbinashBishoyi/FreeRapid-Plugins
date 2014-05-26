@@ -42,27 +42,45 @@ public class SchemeTypeBox extends AbstractFullBox {
     }
 
     public String getSchemeType() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return schemeType;
     }
 
     public long getSchemeVersion() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return schemeVersion;
     }
 
     public String getSchemeUri() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return schemeUri;
     }
 
     public void setSchemeType(String schemeType) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         assert schemeType != null && schemeType.length() == 4 : "SchemeType may not be null or not 4 bytes long";
         this.schemeType = schemeType;
     }
 
     public void setSchemeVersion(int schemeVersion) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.schemeVersion = schemeVersion;
     }
 
     public void setSchemeUri(String schemeUri) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.schemeUri = schemeUri;
     }
 
@@ -91,6 +109,9 @@ public class SchemeTypeBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         StringBuilder buffer = new StringBuilder();
         buffer.append("Schema Type Box[");
         buffer.append("schemeUri=").append(schemeUri).append("; ");

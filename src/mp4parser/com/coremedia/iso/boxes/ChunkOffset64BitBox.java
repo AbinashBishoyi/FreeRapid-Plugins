@@ -21,6 +21,9 @@ public class ChunkOffset64BitBox extends ChunkOffsetBox {
 
     @Override
     public long[] getChunkOffsets() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return chunkOffsets;
     }
 

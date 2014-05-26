@@ -137,15 +137,24 @@ public class SampleDependencyTypeBox extends AbstractFullBox {
     }
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         final StringBuilder sb = new StringBuilder();
         sb.append("SampleDependencyTypeBox");
         sb.append("{entries=").append(entries);

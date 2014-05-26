@@ -124,62 +124,107 @@ public class TrackFragmentHeaderBox extends AbstractFullBox {
     }
 
     public boolean hasBaseDataOffset() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x1) != 0;
     }
 
     public boolean hasSampleDescriptionIndex() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x2) != 0;
     }
 
     public boolean hasDefaultSampleDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x8) != 0;
     }
 
     public boolean hasDefaultSampleSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x10) != 0;
     }
 
     public boolean hasDefaultSampleFlags() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x20) != 0;
     }
 
     public long getTrackId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return trackId;
     }
 
     public long getBaseDataOffset() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return baseDataOffset;
     }
 
     public long getSampleDescriptionIndex() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return sampleDescriptionIndex;
     }
 
     public long getDefaultSampleDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleDuration;
     }
 
     public long getDefaultSampleSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleSize;
     }
 
     public SampleFlags getDefaultSampleFlags() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleFlags;
     }
 
     public boolean isDurationIsEmpty() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return durationIsEmpty;
     }
 
     public boolean isDefaultBaseIsMoof() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultBaseIsMoof;
     }
 
     public void setTrackId(long trackId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.trackId = trackId;
     }
 
     public void setBaseDataOffset(long baseDataOffset) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (baseDataOffset == -1) {
             setFlags(getFlags() & (Integer.MAX_VALUE ^ 0x1));
         } else {
@@ -189,6 +234,9 @@ public class TrackFragmentHeaderBox extends AbstractFullBox {
     }
 
     public void setSampleDescriptionIndex(long sampleDescriptionIndex) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (sampleDescriptionIndex == -1) {
             setFlags(getFlags() & (Integer.MAX_VALUE ^ 0x2));
         } else {
@@ -198,32 +246,50 @@ public class TrackFragmentHeaderBox extends AbstractFullBox {
     }
 
     public void setDefaultSampleDuration(long defaultSampleDuration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         setFlags(getFlags() | 0x8); // activate the field
         this.defaultSampleDuration = defaultSampleDuration;
     }
 
     public void setDefaultSampleSize(long defaultSampleSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         setFlags(getFlags() | 0x10); // activate the field
         this.defaultSampleSize = defaultSampleSize;
     }
 
     public void setDefaultSampleFlags(SampleFlags defaultSampleFlags) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         setFlags(getFlags() | 0x20); // activate the field
         this.defaultSampleFlags = defaultSampleFlags;
     }
 
     public void setDurationIsEmpty(boolean durationIsEmpty) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         setFlags(getFlags() | 0x10000); // activate the field
         this.durationIsEmpty = durationIsEmpty;
     }
 
     public void setDefaultBaseIsMoof(boolean defaultBaseIsMoof) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         setFlags(getFlags() | 0x20000); // activate the field
         this.defaultBaseIsMoof = defaultBaseIsMoof;
     }
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         final StringBuilder sb = new StringBuilder();
         sb.append("TrackFragmentHeaderBox");
         sb.append("{trackId=").append(trackId);

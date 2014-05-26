@@ -55,6 +55,9 @@ public class TrackRunBox extends AbstractFullBox {
 
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
@@ -118,6 +121,9 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public void setDataOffset(int dataOffset) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (dataOffset == -1) {
             setFlags(getFlags() & (0xFFFFFF ^ 1));
         } else {
@@ -127,6 +133,9 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public long[] getSampleCompositionTimeOffsets() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (isSampleCompositionTimeOffsetPresent()) {
             long[] result = new long[entries.size()];
 
@@ -240,35 +249,59 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public long getSampleCount() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries.size();
     }
 
     public boolean isDataOffsetPresent() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x1) == 1;
     }
 
     public boolean isFirstSampleFlagsPresent() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x4) == 0x4;
     }
 
 
     public boolean isSampleSizePresent() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x200) == 0x200;
     }
 
     public boolean isSampleDurationPresent() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x100) == 0x100;
     }
 
     public boolean isSampleFlagsPresent() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x400) == 0x400;
     }
 
     public boolean isSampleCompositionTimeOffsetPresent() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 0x800) == 0x800;
     }
 
     public void setDataOffsetPresent(boolean v) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (v) {
             setFlags(getFlags() | 0x01);
         } else {
@@ -277,6 +310,9 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public void setSampleSizePresent(boolean v) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (v) {
             setFlags(getFlags() | 0x200);
         } else {
@@ -285,6 +321,9 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public void setSampleDurationPresent(boolean v) {
+        if (!isParsed()) {
+            parseDetails();
+        }
 
         if (v) {
             setFlags(getFlags() | 0x100);
@@ -294,6 +333,9 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public void setSampleFlagsPresent(boolean v) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (v) {
             setFlags(getFlags() | 0x400);
         } else {
@@ -302,6 +344,9 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public void setSampleCompositionTimeOffsetPresent(boolean v) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (v) {
             setFlags(getFlags() | 0x800);
         } else {
@@ -311,14 +356,23 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public int getDataOffset() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return dataOffset;
     }
 
     public SampleFlags getFirstSampleFlags() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return firstSampleFlags;
     }
 
     public void setFirstSampleFlags(SampleFlags firstSampleFlags) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (firstSampleFlags == null) {
             setFlags(getFlags() & (0xFFFFFF ^ 0x4));
         } else {
@@ -329,6 +383,9 @@ public class TrackRunBox extends AbstractFullBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         final StringBuilder sb = new StringBuilder();
         sb.append("TrackRunBox");
         sb.append("{sampleCount=").append(entries.size());
@@ -344,6 +401,9 @@ public class TrackRunBox extends AbstractFullBox {
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 }

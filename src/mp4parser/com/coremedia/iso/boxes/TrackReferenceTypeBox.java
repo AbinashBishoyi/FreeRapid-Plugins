@@ -38,6 +38,9 @@ public class TrackReferenceTypeBox extends AbstractBox {
     }
 
     public long[] getTrackIds() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return trackIds;
     }
 
@@ -63,6 +66,9 @@ public class TrackReferenceTypeBox extends AbstractBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         StringBuilder buffer = new StringBuilder();
         buffer.append("TrackReferenceTypeBox[type=").append(getType());
         for (int i = 0; i < trackIds.length; i++) {

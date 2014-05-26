@@ -44,22 +44,37 @@ public class MediaHeaderBox extends AbstractFullBox {
     }
 
     public Date getCreationTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return creationTime;
     }
 
     public Date getModificationTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return modificationTime;
     }
 
     public long getTimescale() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return timescale;
     }
 
     public long getDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return duration;
     }
 
     public String getLanguage() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return language;
     }
 
@@ -77,22 +92,37 @@ public class MediaHeaderBox extends AbstractFullBox {
     }
 
     public void setCreationTime(Date creationTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.creationTime = creationTime;
     }
 
     public void setModificationTime(Date modificationTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.modificationTime = modificationTime;
     }
 
     public void setTimescale(long timescale) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.timescale = timescale;
     }
 
     public void setDuration(long duration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.duration = duration;
     }
 
     public void setLanguage(String language) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.language = language;
     }
 
@@ -116,6 +146,9 @@ public class MediaHeaderBox extends AbstractFullBox {
 
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         StringBuilder result = new StringBuilder();
         result.append("MediaHeaderBox[");
         result.append("creationTime=").append(getCreationTime());

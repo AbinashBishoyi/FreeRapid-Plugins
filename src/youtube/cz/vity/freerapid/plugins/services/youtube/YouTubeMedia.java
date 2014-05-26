@@ -74,6 +74,12 @@ public class YouTubeMedia {
         }
     }
 
+    public static boolean isDash(Container container) {
+        return (container == Container.dash_v)
+                || (container == Container.dash_v_vpx)
+                || (container == Container.dash_a);
+    }
+
     public static String getAudioEncoding(int itag) {
         switch (itag) {
             case 5:

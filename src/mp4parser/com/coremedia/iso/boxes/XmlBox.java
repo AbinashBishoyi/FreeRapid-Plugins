@@ -18,10 +18,16 @@ public class XmlBox extends AbstractFullBox {
     }
 
     public String getXml() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return xml;
     }
 
     public void setXml(String xml) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.xml = xml;
     }
 
@@ -44,6 +50,9 @@ public class XmlBox extends AbstractFullBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "XmlBox{" +
                 "xml='" + xml + '\'' +
                 '}';

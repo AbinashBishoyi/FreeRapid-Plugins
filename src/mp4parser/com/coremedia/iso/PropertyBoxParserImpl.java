@@ -17,7 +17,6 @@ package com.coremedia.iso;
 
 import com.coremedia.iso.boxes.Box;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -34,13 +33,13 @@ public class PropertyBoxParserImpl extends AbstractBoxParser {
     Pattern constuctorPattern = Pattern.compile("(.*)\\((.*?)\\)");
 
     public PropertyBoxParserImpl(String... customProperties) {
-        //InputStream is = getClass().getResourceAsStream("/isoparser-default.properties");
-        InputStream is = null;
-        try {
-            is = new FileInputStream("/media/LNXDEV/mp4parser-read-only/isoparser/src/main/resources/isoparser-default.properties");
-        } catch (Exception e1) {
-            //
-        }
+        InputStream is = getClass().getResourceAsStream("/resources/isoparser-default.properties");
+        //InputStream is;
+        //try {
+        //    is = new FileInputStream("/home/bams/Dev/freerapid-plugins/trunk/src/mp4parser/resources/isoparser-default.properties");
+        //} catch (Exception e1) {
+        //    throw new RuntimeException("isoparser properties file not found");
+        //}
         try {
             mapping = new Properties();
             try {

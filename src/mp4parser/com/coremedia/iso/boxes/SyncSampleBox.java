@@ -44,6 +44,9 @@ public class SyncSampleBox extends AbstractFullBox {
      * @return random access sample numbers.
      */
     public long[] getSampleNumber() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return sampleNumber;
     }
 
@@ -75,10 +78,16 @@ public class SyncSampleBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SyncSampleBox[entryCount=" + sampleNumber.length + "]";
     }
 
     public void setSampleNumber(long[] sampleNumber) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.sampleNumber = sampleNumber;
     }
 }

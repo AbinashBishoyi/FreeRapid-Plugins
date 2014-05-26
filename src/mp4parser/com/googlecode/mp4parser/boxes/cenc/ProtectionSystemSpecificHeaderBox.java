@@ -36,19 +36,31 @@ public class ProtectionSystemSpecificHeaderBox extends AbstractFullBox {
 
 
     public byte[] getSystemId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return systemId;
     }
 
     public void setSystemId(byte[] systemId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         assert systemId.length == 16;
         this.systemId = systemId;
     }
 
     public byte[] getContent() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return content;
     }
 
     public void setContent(byte[] content) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.content = content;
     }
 

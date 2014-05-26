@@ -57,15 +57,24 @@ public class MovieFragmentHeaderBox extends AbstractFullBox {
     }
 
     public long getSequenceNumber() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return sequenceNumber;
     }
 
     public void setSequenceNumber(long sequenceNumber) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.sequenceNumber = sequenceNumber;
     }
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "MovieFragmentHeaderBox{" +
                 "sequenceNumber=" + sequenceNumber +
                 '}';

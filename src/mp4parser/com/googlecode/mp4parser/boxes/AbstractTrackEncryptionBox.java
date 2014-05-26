@@ -22,28 +22,46 @@ public abstract class AbstractTrackEncryptionBox extends AbstractFullBox {
     }
 
     public int getDefaultAlgorithmId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultAlgorithmId;
     }
 
     public void setDefaultAlgorithmId(int defaultAlgorithmId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.defaultAlgorithmId = defaultAlgorithmId;
     }
 
     public int getDefaultIvSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultIvSize;
     }
 
     public void setDefaultIvSize(int defaultIvSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.defaultIvSize = defaultIvSize;
     }
 
     public String getDefault_KID() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         ByteBuffer b = ByteBuffer.wrap(default_KID);
         b.order(ByteOrder.BIG_ENDIAN);
         return new UUID(b.getLong(), b.getLong()).toString();
     }
 
     public void setDefault_KID(byte[] default_KID) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.default_KID = default_KID;
     }
 
@@ -71,6 +89,9 @@ public abstract class AbstractTrackEncryptionBox extends AbstractFullBox {
 
     @Override
     public boolean equals(Object o) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
@@ -85,6 +106,9 @@ public abstract class AbstractTrackEncryptionBox extends AbstractFullBox {
 
     @Override
     public int hashCode() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         int result = defaultAlgorithmId;
         result = 31 * result + defaultIvSize;
         result = 31 * result + (default_KID != null ? Arrays.hashCode(default_KID) : 0);

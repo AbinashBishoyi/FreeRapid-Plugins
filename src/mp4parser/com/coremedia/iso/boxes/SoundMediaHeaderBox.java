@@ -34,6 +34,9 @@ public class SoundMediaHeaderBox extends AbstractMediaHeaderBox {
     }
 
     public float getBalance() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return balance;
     }
 
@@ -56,6 +59,9 @@ public class SoundMediaHeaderBox extends AbstractMediaHeaderBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SoundMediaHeaderBox[balance=" + getBalance() + "]";
     }
 }

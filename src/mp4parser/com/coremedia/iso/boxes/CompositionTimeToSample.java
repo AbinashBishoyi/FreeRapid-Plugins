@@ -55,10 +55,16 @@ public class CompositionTimeToSample extends AbstractFullBox {
     }
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 

@@ -31,15 +31,24 @@ public class ESDescriptorBox extends AbstractDescriptorBox {
     }
 
     public ESDescriptor getEsDescriptor() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (ESDescriptor) super.getDescriptor();
     }
 
     public void setEsDescriptor(ESDescriptor esDescriptor) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         super.setDescriptor(esDescriptor);
     }
 
     @Override
     public boolean equals(Object o) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
@@ -51,6 +60,9 @@ public class ESDescriptorBox extends AbstractDescriptorBox {
 
     @Override
     public int hashCode() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return data != null ? data.hashCode() : 0;
     }
 }

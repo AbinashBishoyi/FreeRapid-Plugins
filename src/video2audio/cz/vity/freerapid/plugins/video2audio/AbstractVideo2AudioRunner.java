@@ -1,6 +1,5 @@
 package cz.vity.freerapid.plugins.video2audio;
 
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 
@@ -15,7 +14,7 @@ public abstract class AbstractVideo2AudioRunner extends AbstractRtmpRunner {
 
     private static final Logger logger = Logger.getLogger(AbstractVideo2AudioRunner.class.getName());
 
-    public void convertToAudio(final int bitrate, final boolean mp4) throws IOException, PluginImplementationException {
+    public void convertToAudio(final int bitrate, final boolean mp4) throws IOException {
         if (downloadTask.isTerminated()) {
             logger.info("Download task is terminated");
             return;
@@ -23,10 +22,11 @@ public abstract class AbstractVideo2AudioRunner extends AbstractRtmpRunner {
         logger.info("Converting to audio");
         final HttpFile downloadFile = downloadTask.getDownloadFile();
         final File inputFile = downloadFile.getStoreFile();
-        logger.info("Input file: " + inputFile);
         if (!inputFile.exists()) {
-            throw new PluginImplementationException("Input file not found");
+            logger.warning("Input file not found, conversion aborted");
+            return;
         }
+        logger.info("Input file: " + inputFile);
 
         InputStream is = null;
         FileOutputStream fos = null;
@@ -35,14 +35,14 @@ public abstract class AbstractVideo2AudioRunner extends AbstractRtmpRunner {
         File outputFile = new File(downloadFile.getSaveToDirectory(), fname);
         int outputFileCounter = 1;
         try {
-            is = mp4 ? new Mp4ToMp3InputStream(new FileInputStream(inputFile), bitrate) : new FlvToMp3InputStream(new FileInputStream(inputFile), bitrate);
+            is = (mp4 ? new Mp4ToMp3InputStream(new FileInputStream(inputFile), bitrate) : new FlvToMp3InputStream(new FileInputStream(inputFile), bitrate));
             while (outputFile.exists()) {
                 fname = fnameNoExt + "-" + outputFileCounter++ + ".mp3";
                 outputFile = new File(downloadFile.getSaveToDirectory(), fname);
             }
             fos = new FileOutputStream(outputFile);
             logger.info("Output name: " + fname);
-            byte[] buffer = new byte[16 * 1024];
+            byte[] buffer = new byte[1024 * 1024];
             int len;
             int size = 0;
             while ((len = is.read(buffer)) != -1) {

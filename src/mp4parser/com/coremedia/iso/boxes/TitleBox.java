@@ -44,10 +44,16 @@ public class TitleBox extends AbstractFullBox {
     }
 
     public String getLanguage() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return language;
     }
 
     public String getTitle() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return title;
     }
 
@@ -57,10 +63,16 @@ public class TitleBox extends AbstractFullBox {
      * @param language 3-letter ISO-639 code
      */
     public void setLanguage(String language) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.language = language;
     }
 
     public void setTitle(String title) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.title = title;
     }
 
@@ -84,6 +96,9 @@ public class TitleBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "TitleBox[language=" + getLanguage() + ";title=" + getTitle() + "]";
     }
 }

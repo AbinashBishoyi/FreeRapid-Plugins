@@ -49,10 +49,16 @@ public class SubSampleInformationBox extends AbstractFullBox {
     }
 
     public List<SampleEntry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<SampleEntry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
         entryCount = entries.size();
     }
@@ -113,6 +119,9 @@ public class SubSampleInformationBox extends AbstractFullBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SubSampleInformationBox{" +
                 "entryCount=" + entryCount +
                 ", entries=" + entries +

@@ -48,15 +48,24 @@ public class SampleSizeBox extends AbstractFullBox {
      * @return the sampleSize field
      */
     public long getSampleSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return sampleSize;
     }
 
     public void setSampleSize(long sampleSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.sampleSize = sampleSize;
     }
 
 
     public long getSampleSizeAtIndex(int index) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (sampleSize > 0) {
             return sampleSize;
         } else {
@@ -65,6 +74,9 @@ public class SampleSizeBox extends AbstractFullBox {
     }
 
     public long getSampleCount() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (sampleSize > 0) {
             return sampleCount;
         } else {
@@ -74,10 +86,16 @@ public class SampleSizeBox extends AbstractFullBox {
     }
 
     public long[] getSampleSizes() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return sampleSizes;
     }
 
     public void setSampleSizes(long[] sampleSizes) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.sampleSizes = sampleSizes;
     }
 
@@ -117,6 +135,9 @@ public class SampleSizeBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SampleSizeBox[sampleSize=" + getSampleSize() + ";sampleCount=" + getSampleCount() + "]";
     }
 }

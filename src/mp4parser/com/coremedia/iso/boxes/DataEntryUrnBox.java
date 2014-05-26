@@ -38,10 +38,16 @@ public class DataEntryUrnBox extends AbstractFullBox {
     }
 
     public String getName() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return name;
     }
 
     public String getLocation() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return location;
     }
 
@@ -65,6 +71,9 @@ public class DataEntryUrnBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "DataEntryUrlBox[name=" + getName() + ";location=" + getLocation() + "]";
     }
 }

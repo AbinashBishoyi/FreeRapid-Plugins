@@ -73,6 +73,9 @@ public final class BitRateBox extends AbstractBox {
      * @return decoding buffer size
      */
     public long getBufferSizeDb() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return bufferSizeDb;
     }
 
@@ -82,6 +85,9 @@ public final class BitRateBox extends AbstractBox {
      * @param bufferSizeDb decoding buffer size
      */
     public void setBufferSizeDb(long bufferSizeDb) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.bufferSizeDb = bufferSizeDb;
     }
 
@@ -91,6 +97,9 @@ public final class BitRateBox extends AbstractBox {
      * @return max bit rate
      */
     public long getMaxBitrate() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return maxBitrate;
     }
 
@@ -100,6 +109,9 @@ public final class BitRateBox extends AbstractBox {
      * @param maxBitrate max bit rate
      */
     public void setMaxBitrate(long maxBitrate) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.maxBitrate = maxBitrate;
     }
 
@@ -109,6 +121,9 @@ public final class BitRateBox extends AbstractBox {
      * @return average bit rate
      */
     public long getAvgBitrate() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avgBitrate;
     }
 
@@ -118,6 +133,9 @@ public final class BitRateBox extends AbstractBox {
      * @param avgBitrate the track's average bit rate
      */
     public void setAvgBitrate(long avgBitrate) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.avgBitrate = avgBitrate;
     }
 }

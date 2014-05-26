@@ -64,42 +64,72 @@ public class CompositionShiftLeastGreatestAtom extends AbstractFullBox {
 
 
     public int getCompositionOffsetToDisplayOffsetShift() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return compositionOffsetToDisplayOffsetShift;
     }
 
     public void setCompositionOffsetToDisplayOffsetShift(int compositionOffsetToDisplayOffsetShift) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.compositionOffsetToDisplayOffsetShift = compositionOffsetToDisplayOffsetShift;
     }
 
     public int getLeastDisplayOffset() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return leastDisplayOffset;
     }
 
     public void setLeastDisplayOffset(int leastDisplayOffset) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.leastDisplayOffset = leastDisplayOffset;
     }
 
     public int getGreatestDisplayOffset() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return greatestDisplayOffset;
     }
 
     public void setGreatestDisplayOffset(int greatestDisplayOffset) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.greatestDisplayOffset = greatestDisplayOffset;
     }
 
     public int getDisplayStartTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return displayStartTime;
     }
 
     public void setDisplayStartTime(int displayStartTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.displayStartTime = displayStartTime;
     }
 
     public int getDisplayEndTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return displayEndTime;
     }
 
     public void setDisplayEndTime(int displayEndTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.displayEndTime = displayEndTime;
     }
 }

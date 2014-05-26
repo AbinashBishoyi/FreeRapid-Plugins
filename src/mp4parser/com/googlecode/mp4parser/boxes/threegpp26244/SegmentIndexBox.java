@@ -126,50 +126,86 @@ public class SegmentIndexBox extends AbstractFullBox {
 
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 
     public long getReferenceId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return referenceId;
     }
 
     public void setReferenceId(long referenceId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.referenceId = referenceId;
     }
 
     public long getTimeScale() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return timeScale;
     }
 
     public void setTimeScale(long timeScale) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.timeScale = timeScale;
     }
 
     public long getEarliestPresentationTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return earliestPresentationTime;
     }
 
     public void setEarliestPresentationTime(long earliestPresentationTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.earliestPresentationTime = earliestPresentationTime;
     }
 
     public long getFirstOffset() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return firstOffset;
     }
 
     public void setFirstOffset(long firstOffset) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.firstOffset = firstOffset;
     }
 
     public int getReserved() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return reserved;
     }
 
     public void setReserved(int reserved) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.reserved = reserved;
     }
 

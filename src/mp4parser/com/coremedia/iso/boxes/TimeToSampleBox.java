@@ -77,14 +77,23 @@ public class TimeToSampleBox extends AbstractFullBox {
     }
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "TimeToSampleBox[entryCount=" + entries.size() + "]";
     }
 

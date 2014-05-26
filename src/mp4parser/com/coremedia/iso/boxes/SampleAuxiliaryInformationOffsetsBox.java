@@ -107,26 +107,44 @@ public class SampleAuxiliaryInformationOffsetsBox extends AbstractFullBox {
 
 
     public String getAuxInfoType() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return auxInfoType;
     }
 
     public void setAuxInfoType(String auxInfoType) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.auxInfoType = auxInfoType;
     }
 
     public String getAuxInfoTypeParameter() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return auxInfoTypeParameter;
     }
 
     public void setAuxInfoTypeParameter(String auxInfoTypeParameter) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.auxInfoTypeParameter = auxInfoTypeParameter;
     }
 
     public List<Long> getOffsets() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return offsets;
     }
 
     public void setOffsets(List<Long> offsets) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.offsets = offsets;
     }
 }

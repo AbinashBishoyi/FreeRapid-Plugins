@@ -36,10 +36,16 @@ public class ProgressiveDownloadInformationBox extends AbstractFullBox {
     }
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 
@@ -110,6 +116,9 @@ public class ProgressiveDownloadInformationBox extends AbstractFullBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "ProgressiveDownloadInfoBox{" +
                 "entries=" + entries +
                 '}';

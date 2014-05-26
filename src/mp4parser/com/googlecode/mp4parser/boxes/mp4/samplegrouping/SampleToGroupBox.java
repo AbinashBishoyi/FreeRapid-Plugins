@@ -148,26 +148,44 @@ public class SampleToGroupBox extends AbstractFullBox {
     }
 
     public String getGroupingType() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return groupingType;
     }
 
     public void setGroupingType(String groupingType) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.groupingType = groupingType;
     }
 
     public String getGroupingTypeParameter() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return groupingTypeParameter;
     }
 
     public void setGroupingTypeParameter(String groupingTypeParameter) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.groupingTypeParameter = groupingTypeParameter;
     }
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 }

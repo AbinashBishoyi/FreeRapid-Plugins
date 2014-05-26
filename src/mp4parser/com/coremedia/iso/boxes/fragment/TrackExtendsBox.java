@@ -70,46 +70,79 @@ public class TrackExtendsBox extends AbstractFullBox {
     }
 
     public long getTrackId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return trackId;
     }
 
     public long getDefaultSampleDescriptionIndex() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleDescriptionIndex;
     }
 
     public long getDefaultSampleDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleDuration;
     }
 
     public long getDefaultSampleSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleSize;
     }
 
     public SampleFlags getDefaultSampleFlags() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleFlags;
     }
 
     public String getDefaultSampleFlagsStr() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleFlags.toString();
     }
 
     public void setTrackId(long trackId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.trackId = trackId;
     }
 
     public void setDefaultSampleDescriptionIndex(long defaultSampleDescriptionIndex) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.defaultSampleDescriptionIndex = defaultSampleDescriptionIndex;
     }
 
     public void setDefaultSampleDuration(long defaultSampleDuration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.defaultSampleDuration = defaultSampleDuration;
     }
 
     public void setDefaultSampleSize(long defaultSampleSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.defaultSampleSize = defaultSampleSize;
     }
 
     public void setDefaultSampleFlags(SampleFlags defaultSampleFlags) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.defaultSampleFlags = defaultSampleFlags;
 
     }

@@ -38,6 +38,9 @@ public class UserBox extends AbstractBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "UserBox[type=" + (getType()) +
                 ";userType=" + new String(getUserType()) +
                 ";contentLength=" + data.length + "]";
@@ -45,10 +48,16 @@ public class UserBox extends AbstractBox {
 
 
     public byte[] getData() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return data;
     }
 
     public void setData(byte[] data) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.data = data;
     }
 

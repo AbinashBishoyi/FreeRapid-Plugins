@@ -96,48 +96,81 @@ public class SampleAuxiliaryInformationSizesBox extends AbstractFullBox {
     }
 
     public String getAuxInfoType() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return auxInfoType;
     }
 
     public void setAuxInfoType(String auxInfoType) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.auxInfoType = auxInfoType;
     }
 
     public String getAuxInfoTypeParameter() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return auxInfoTypeParameter;
     }
 
     public void setAuxInfoTypeParameter(String auxInfoTypeParameter) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.auxInfoTypeParameter = auxInfoTypeParameter;
     }
 
     public int getDefaultSampleInfoSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return defaultSampleInfoSize;
     }
 
     public void setDefaultSampleInfoSize(int defaultSampleInfoSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         assert defaultSampleInfoSize <= 255;
         this.defaultSampleInfoSize = defaultSampleInfoSize;
     }
 
     public List<Short> getSampleInfoSizes() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return sampleInfoSizes;
     }
 
     public void setSampleInfoSizes(List<Short> sampleInfoSizes) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.sampleInfoSizes = sampleInfoSizes;
     }
 
     public int getSampleCount() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return sampleCount;
     }
 
     public void setSampleCount(int sampleCount) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.sampleCount = sampleCount;
     }
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SampleAuxiliaryInformationSizesBox{" +
                 "defaultSampleInfoSize=" + defaultSampleInfoSize +
                 ", sampleCount=" + sampleCount +

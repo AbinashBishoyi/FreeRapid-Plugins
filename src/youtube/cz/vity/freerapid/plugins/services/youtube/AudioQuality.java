@@ -9,8 +9,8 @@ public enum AudioQuality {
     _128(128),
     _192(192);
 
-    private int bitrate;
-    private String name;
+    private final int bitrate;
+    private final String name;
 
     private AudioQuality(int quality) {
         this.bitrate = quality;

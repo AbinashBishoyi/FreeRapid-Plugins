@@ -73,19 +73,6 @@
 
     </target>
 
-    <target name="buildWithoutCompile" description="building ERModeller">
-
-        <copy todir="${build.dir}">
-            <fileset dir="${classes.dir}" includes="**/${application}/**, resources/**, com/**, org/**"
-                     excludes="**/TestApp*"/>
-        </copy>
-
-        <copy todir="${build.dir}">
-            <fileset dir="${src.dir}" includes="plugin.xml"/>
-        </copy>
-
-    </target>
-
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
@@ -121,25 +108,6 @@
 
 
     <target name="dist" depends="build" description="creating release">
-        <zip zipfile="${dist.dir}/${version.name}.frp">
-            <fileset dir="${build.dir}" includes="**/*">
-                <!--<include name="${build.dir}/${version.name}"/>-->
-                <!--<exclude name="${build.dir}/${mainjar-packed.file}"/>-->
-            </fileset>
-        </zip>
-        <!--<zip destfile="${dist.dir}/${version.name}-src.frp">-->
-        <!--<fileset dir=".">-->
-        <!--<include name="${lib.dir}/"/>-->
-        <!--<include name="${src.dir}/"/>-->
-
-        <!--<include name="${plugins.dir}/"/>-->
-
-        <!--<include name="build.xml"/>-->
-        <!--</fileset>-->
-        <!--</zip>-->
-    </target>
-
-    <target name="distWithoutCompile" depends="buildWithoutCompile" description="creating release">
         <zip zipfile="${dist.dir}/${version.name}.frp">
             <fileset dir="${build.dir}" includes="**/*">
                 <!--<include name="${build.dir}/${version.name}"/>-->

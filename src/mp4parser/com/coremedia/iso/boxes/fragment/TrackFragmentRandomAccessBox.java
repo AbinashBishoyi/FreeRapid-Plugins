@@ -143,50 +143,86 @@ public class TrackFragmentRandomAccessBox extends AbstractFullBox {
 
 
     public void setTrackId(long trackId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.trackId = trackId;
     }
 
     public void setLengthSizeOfTrafNum(int lengthSizeOfTrafNum) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.lengthSizeOfTrafNum = lengthSizeOfTrafNum;
     }
 
     public void setLengthSizeOfTrunNum(int lengthSizeOfTrunNum) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.lengthSizeOfTrunNum = lengthSizeOfTrunNum;
     }
 
     public void setLengthSizeOfSampleNum(int lengthSizeOfSampleNum) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.lengthSizeOfSampleNum = lengthSizeOfSampleNum;
     }
 
     public long getTrackId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return trackId;
     }
 
     public int getReserved() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return reserved;
     }
 
     public int getLengthSizeOfTrafNum() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return lengthSizeOfTrafNum;
     }
 
     public int getLengthSizeOfTrunNum() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return lengthSizeOfTrunNum;
     }
 
     public int getLengthSizeOfSampleNum() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return lengthSizeOfSampleNum;
     }
 
     public long getNumberOfEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries.size();
     }
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return Collections.unmodifiableList(entries);
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 
@@ -288,6 +324,9 @@ public class TrackFragmentRandomAccessBox extends AbstractFullBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "TrackFragmentRandomAccessBox{" +
                 "trackId=" + trackId +
                 ", entries=" + entries +

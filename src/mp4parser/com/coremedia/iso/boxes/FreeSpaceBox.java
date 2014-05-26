@@ -40,10 +40,16 @@ public class FreeSpaceBox extends AbstractBox {
     }
 
     public void setData(byte[] data) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.data = data;
     }
 
     public byte[] getData() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return data;
     }
 
@@ -59,6 +65,9 @@ public class FreeSpaceBox extends AbstractBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "FreeSpaceBox[size=" + data.length + ";type=" + getType() + "]";
     }
 }

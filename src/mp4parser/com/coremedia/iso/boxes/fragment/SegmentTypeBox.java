@@ -83,6 +83,9 @@ public class SegmentTypeBox extends AbstractBox {
      * @return the brand identifier
      */
     public String getMajorBrand() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return majorBrand;
     }
 
@@ -92,6 +95,9 @@ public class SegmentTypeBox extends AbstractBox {
      * @param majorBrand the new major brand
      */
     public void setMajorBrand(String majorBrand) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.majorBrand = majorBrand;
     }
 
@@ -101,6 +107,9 @@ public class SegmentTypeBox extends AbstractBox {
      * @param minorVersion the version number of the major brand
      */
     public void setMinorVersion(int minorVersion) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.minorVersion = minorVersion;
     }
 
@@ -111,6 +120,9 @@ public class SegmentTypeBox extends AbstractBox {
      * @see com.coremedia.iso.boxes.fragment.SegmentTypeBox#getMajorBrand()
      */
     public long getMinorVersion() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return minorVersion;
     }
 
@@ -120,10 +132,16 @@ public class SegmentTypeBox extends AbstractBox {
      * @return the compatible brands
      */
     public List<String> getCompatibleBrands() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return compatibleBrands;
     }
 
     public void setCompatibleBrands(List<String> compatibleBrands) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.compatibleBrands = compatibleBrands;
     }
 

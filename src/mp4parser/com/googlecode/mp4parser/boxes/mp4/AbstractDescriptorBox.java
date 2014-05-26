@@ -40,6 +40,9 @@ public class AbstractDescriptorBox extends AbstractFullBox {
     }
 
     public ByteBuffer getData() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return data;
     }
 
@@ -56,18 +59,30 @@ public class AbstractDescriptorBox extends AbstractFullBox {
     }
 
     public BaseDescriptor getDescriptor() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return descriptor;
     }
 
     public String getDescriptorAsString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return descriptor.toString();
     }
 
     public void setDescriptor(BaseDescriptor descriptor) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.descriptor = descriptor;
     }
 
     public void setData(ByteBuffer data) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.data = data;
     }
 

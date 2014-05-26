@@ -41,31 +41,52 @@ public class AvcNalUnitStorageBox extends AbstractBox {
     }
 
     public AvcConfigurationBox.AVCDecoderConfigurationRecord getAvcDecoderConfigurationRecord() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord;
     }
 
     // just to display sps in isoviewer no practical use
     public int getLengthSizeMinusOne() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.lengthSizeMinusOne;
     }
 
     public String[] getSPS() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getSPS();
     }
 
     public String[] getPPS() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getPPS();
     }
 
     public List<String> getSequenceParameterSetsAsStrings() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getSequenceParameterSetsAsStrings();
     }
 
     public List<String> getSequenceParameterSetExtsAsStrings() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getSequenceParameterSetExtsAsStrings();
     }
 
     public List<String> getPictureParameterSetsAsStrings() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avcDecoderConfigurationRecord.getPictureParameterSetsAsStrings();
     }
 
@@ -86,6 +107,9 @@ public class AvcNalUnitStorageBox extends AbstractBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "AvcNalUnitStorageBox{" +
                 "SPS=" + avcDecoderConfigurationRecord.getSequenceParameterSetsAsStrings() +
                 ",PPS=" + avcDecoderConfigurationRecord.getPictureParameterSetsAsStrings() +

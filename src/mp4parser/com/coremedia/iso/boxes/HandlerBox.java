@@ -76,6 +76,9 @@ public class HandlerBox extends AbstractFullBox {
     }
 
     public String getHandlerType() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return handlerType;
     }
 
@@ -85,18 +88,30 @@ public class HandlerBox extends AbstractFullBox {
      * @param name the new human readable name
      */
     public void setName(String name) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.name = name;
     }
 
     public void setHandlerType(String handlerType) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.handlerType = handlerType;
     }
 
     public String getName() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return name;
     }
 
     public String getHumanReadableTrackType() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return readableTypes.get(handlerType) != null ? readableTypes.get(handlerType) : "Unknown Handler Type";
     }
 
@@ -147,6 +162,9 @@ public class HandlerBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "HandlerBox[handlerType=" + getHandlerType() + ";name=" + getName() + "]";
     }
 }

@@ -49,6 +49,9 @@ public abstract class AbstractFullBox extends AbstractBox implements FullBox {
     }
 
     public void setVersion(int version) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.version = version;
     }
 
@@ -62,6 +65,9 @@ public abstract class AbstractFullBox extends AbstractBox implements FullBox {
     }
 
     public void setFlags(int flags) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.flags = flags;
     }
 

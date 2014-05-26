@@ -58,42 +58,72 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public Date getCreationTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return creationTime;
     }
 
     public Date getModificationTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return modificationTime;
     }
 
     public long getTrackId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return trackId;
     }
 
     public long getDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return duration;
     }
 
     public int getLayer() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return layer;
     }
 
     public int getAlternateGroup() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return alternateGroup;
     }
 
     public float getVolume() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return volume;
     }
 
     public Matrix getMatrix() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return matrix;
     }
 
     public double getWidth() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return width;
     }
 
     public double getHeight() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return height;
     }
 
@@ -136,6 +166,9 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void getContent(ByteBuffer byteBuffer) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         writeVersionAndFlags(byteBuffer);
         if (getVersion() == 1) {
             IsoTypeWriter.writeUInt64(byteBuffer, DateHelper.convert(creationTime));
@@ -164,6 +197,9 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         StringBuilder result = new StringBuilder();
         result.append("TrackHeaderBox[");
         result.append("creationTime=").append(getCreationTime());
@@ -190,6 +226,9 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void setCreationTime(Date creationTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.creationTime = creationTime;
         if (DateHelper.convert(creationTime) >= (1l << 32)) {
             setVersion(1);
@@ -197,6 +236,9 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void setModificationTime(Date modificationTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.modificationTime = modificationTime;
         if (DateHelper.convert(modificationTime) >= (1l << 32)) {
             setVersion(1);
@@ -205,10 +247,16 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void setTrackId(long trackId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.trackId = trackId;
     }
 
     public void setDuration(long duration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.duration = duration;
         if (duration >= (1l << 32)) {
             setFlags(1);
@@ -216,47 +264,80 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void setLayer(int layer) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.layer = layer;
     }
 
     public void setAlternateGroup(int alternateGroup) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.alternateGroup = alternateGroup;
     }
 
     public void setVolume(float volume) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.volume = volume;
     }
 
     public void setMatrix(Matrix matrix) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.matrix = matrix;
     }
 
     public void setWidth(double width) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.width = width;
     }
 
     public void setHeight(double height) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.height = height;
     }
 
 
     public boolean isEnabled() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 1) > 0;
     }
 
     public boolean isInMovie() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 2) > 0;
     }
 
     public boolean isInPreview() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 4) > 0;
     }
 
     public boolean isInPoster() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return (getFlags() & 8) > 0;
     }
 
     public void setEnabled(boolean enabled) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (enabled) {
             setFlags(getFlags() | 1);
         } else {
@@ -265,6 +346,9 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void setInMovie(boolean inMovie) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (inMovie) {
             setFlags(getFlags() | 2);
         } else {
@@ -273,6 +357,9 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void setInPreview(boolean inPreview) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (inPreview) {
             setFlags(getFlags() | 4);
         } else {
@@ -281,6 +368,9 @@ public class TrackHeaderBox extends AbstractFullBox {
     }
 
     public void setInPoster(boolean inPoster) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (inPoster) {
             setFlags(getFlags() | 8);
         } else {

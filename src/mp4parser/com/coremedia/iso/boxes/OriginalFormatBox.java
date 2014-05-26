@@ -40,11 +40,17 @@ public class OriginalFormatBox extends AbstractBox {
     }
 
     public String getDataFormat() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return dataFormat;
     }
 
 
     public void setDataFormat(String dataFormat) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         assert dataFormat.length() == 4;
         this.dataFormat = dataFormat;
     }
@@ -65,6 +71,9 @@ public class OriginalFormatBox extends AbstractBox {
 
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "OriginalFormatBox[dataFormat=" + getDataFormat() + "]";
     }
 }

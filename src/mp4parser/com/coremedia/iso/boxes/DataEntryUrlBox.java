@@ -49,6 +49,9 @@ public class DataEntryUrlBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "DataEntryUrlBox[]";
     }
 }

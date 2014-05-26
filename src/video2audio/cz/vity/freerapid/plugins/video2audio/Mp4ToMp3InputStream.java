@@ -25,7 +25,7 @@ public class Mp4ToMp3InputStream extends VideoToAudioInputStream {
 
     private List<Sample> samples = null;
     private AacToMp3Converter converter;
-    Iterator<Sample> samplesIterator;
+    private Iterator<Sample> samplesIterator;
 
     public Mp4ToMp3InputStream(final FileInputStream in, final int targetBitrate) {
         super(in, targetBitrate);

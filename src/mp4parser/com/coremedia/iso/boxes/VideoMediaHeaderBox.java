@@ -37,10 +37,16 @@ public class VideoMediaHeaderBox extends AbstractMediaHeaderBox {
     }
 
     public int getGraphicsmode() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return graphicsmode;
     }
 
     public int[] getOpcolor() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return opcolor;
     }
 
@@ -69,14 +75,23 @@ public class VideoMediaHeaderBox extends AbstractMediaHeaderBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "VideoMediaHeaderBox[graphicsmode=" + getGraphicsmode() + ";opcolor0=" + getOpcolor()[0] + ";opcolor1=" + getOpcolor()[1] + ";opcolor2=" + getOpcolor()[2] + "]";
     }
 
     public void setOpcolor(int[] opcolor) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.opcolor = opcolor;
     }
 
     public void setGraphicsmode(int graphicsmode) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.graphicsmode = graphicsmode;
     }
 }

@@ -27,6 +27,9 @@ public abstract class AbstractSampleEncryptionBox extends AbstractFullBox {
     }
 
     public int getOffsetToFirstIV() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         int offset = (getSize() > (1l << 32) ? 16 : 8);
         offset += isOverrideTrackEncryptionBoxParameters() ? (4 + kid.length) : 0;
         offset += 4; //num entries
@@ -86,10 +89,16 @@ public abstract class AbstractSampleEncryptionBox extends AbstractFullBox {
     }
 
     public List<CencSampleAuxiliaryDataFormat> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<CencSampleAuxiliaryDataFormat> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 
@@ -158,6 +167,9 @@ public abstract class AbstractSampleEncryptionBox extends AbstractFullBox {
 
     @Override
     public boolean equals(Object o) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         if (this == o) {
             return true;
         }
@@ -185,6 +197,9 @@ public abstract class AbstractSampleEncryptionBox extends AbstractFullBox {
 
     @Override
     public int hashCode() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         int result = algorithmId;
         result = 31 * result + ivSize;
         result = 31 * result + (kid != null ? Arrays.hashCode(kid) : 0);
@@ -193,6 +208,9 @@ public abstract class AbstractSampleEncryptionBox extends AbstractFullBox {
     }
 
     public List<Short> getEntrySizes() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         List<Short> entrySizes = new ArrayList<Short>(entries.size());
         for (CencSampleAuxiliaryDataFormat entry : entries) {
             short size = (short) entry.iv.length;

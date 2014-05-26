@@ -40,18 +40,30 @@ public class HintMediaHeaderBox extends AbstractMediaHeaderBox {
     }
 
     public int getMaxPduSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return maxPduSize;
     }
 
     public int getAvgPduSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avgPduSize;
     }
 
     public long getMaxBitrate() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return maxBitrate;
     }
 
     public long getAvgBitrate() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return avgBitrate;
     }
 
@@ -82,6 +94,9 @@ public class HintMediaHeaderBox extends AbstractMediaHeaderBox {
 
     @Override
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "HintMediaHeaderBox{" +
                 "maxPduSize=" + maxPduSize +
                 ", avgPduSize=" + avgPduSize +

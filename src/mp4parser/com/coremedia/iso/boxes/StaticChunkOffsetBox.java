@@ -37,6 +37,9 @@ public class StaticChunkOffsetBox extends ChunkOffsetBox {
     }
 
     public long[] getChunkOffsets() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return chunkOffsets;
     }
 
@@ -45,6 +48,9 @@ public class StaticChunkOffsetBox extends ChunkOffsetBox {
     }
 
     public void setChunkOffsets(long[] chunkOffsets) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.chunkOffsets = chunkOffsets;
     }
 

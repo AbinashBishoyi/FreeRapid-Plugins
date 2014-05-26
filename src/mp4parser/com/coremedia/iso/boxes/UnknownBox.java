@@ -50,10 +50,16 @@ public class UnknownBox extends AbstractBox {
     }
 
     public ByteBuffer getData() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return data;
     }
 
     public void setData(ByteBuffer data) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.data = data;
     }
 }

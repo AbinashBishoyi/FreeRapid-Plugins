@@ -61,34 +61,58 @@ public class MovieHeaderBox extends AbstractFullBox {
     }
 
     public Date getCreationTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return creationTime;
     }
 
     public Date getModificationTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return modificationTime;
     }
 
     public long getTimescale() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return timescale;
     }
 
     public long getDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return duration;
     }
 
     public double getRate() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return rate;
     }
 
     public float getVolume() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return volume;
     }
 
     public Matrix getMatrix() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return matrix;
     }
 
     public long getNextTrackId() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return nextTrackId;
     }
 
@@ -137,6 +161,9 @@ public class MovieHeaderBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         StringBuilder result = new StringBuilder();
         result.append("MovieHeaderBox[");
         result.append("creationTime=").append(getCreationTime());
@@ -193,6 +220,9 @@ public class MovieHeaderBox extends AbstractFullBox {
 
 
     public void setCreationTime(Date creationTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.creationTime = creationTime;
         if (DateHelper.convert(creationTime) >= (1l << 32)) {
             setVersion(1);
@@ -201,6 +231,9 @@ public class MovieHeaderBox extends AbstractFullBox {
     }
 
     public void setModificationTime(Date modificationTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.modificationTime = modificationTime;
         if (DateHelper.convert(modificationTime) >= (1l << 32)) {
             setVersion(1);
@@ -209,10 +242,16 @@ public class MovieHeaderBox extends AbstractFullBox {
     }
 
     public void setTimescale(long timescale) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.timescale = timescale;
     }
 
     public void setDuration(long duration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.duration = duration;
         if (duration >= (1l << 32)) {
             setVersion(1);
@@ -220,66 +259,114 @@ public class MovieHeaderBox extends AbstractFullBox {
     }
 
     public void setRate(double rate) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.rate = rate;
     }
 
     public void setVolume(float volume) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.volume = volume;
     }
 
     public void setMatrix(Matrix matrix) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.matrix = matrix;
     }
 
     public void setNextTrackId(long nextTrackId) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.nextTrackId = nextTrackId;
     }
 
     public int getPreviewTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return previewTime;
     }
 
     public void setPreviewTime(int previewTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.previewTime = previewTime;
     }
 
     public int getPreviewDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return previewDuration;
     }
 
     public void setPreviewDuration(int previewDuration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.previewDuration = previewDuration;
     }
 
     public int getPosterTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return posterTime;
     }
 
     public void setPosterTime(int posterTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.posterTime = posterTime;
     }
 
     public int getSelectionTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return selectionTime;
     }
 
     public void setSelectionTime(int selectionTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.selectionTime = selectionTime;
     }
 
     public int getSelectionDuration() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return selectionDuration;
     }
 
     public void setSelectionDuration(int selectionDuration) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.selectionDuration = selectionDuration;
     }
 
     public int getCurrentTime() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return currentTime;
     }
 
     public void setCurrentTime(int currentTime) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.currentTime = currentTime;
     }
 }

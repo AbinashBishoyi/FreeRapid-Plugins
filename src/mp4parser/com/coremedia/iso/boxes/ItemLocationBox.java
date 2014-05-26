@@ -117,47 +117,80 @@ public class ItemLocationBox extends AbstractFullBox {
 
 
     public int getOffsetSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return offsetSize;
     }
 
     public void setOffsetSize(int offsetSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.offsetSize = offsetSize;
     }
 
     public int getLengthSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return lengthSize;
     }
 
     public void setLengthSize(int lengthSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.lengthSize = lengthSize;
     }
 
     public int getBaseOffsetSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return baseOffsetSize;
     }
 
     public void setBaseOffsetSize(int baseOffsetSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.baseOffsetSize = baseOffsetSize;
     }
 
     public int getIndexSize() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return indexSize;
     }
 
     public void setIndexSize(int indexSize) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.indexSize = indexSize;
     }
 
     public List<Item> getItems() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return items;
     }
 
     public void setItems(List<Item> items) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.items = items;
     }
 
 
     public Item createItem(int itemId, int constructionMethod, int dataReferenceIndex, long baseOffset, List<Extent> extents) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return new Item(itemId, constructionMethod, dataReferenceIndex, baseOffset, extents);
     }
 
@@ -283,6 +316,9 @@ public class ItemLocationBox extends AbstractFullBox {
 
 
     public Extent createExtent(long extentOffset, long extentLength, long extentIndex) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return new Extent(extentOffset, extentLength, extentIndex);
     }
 

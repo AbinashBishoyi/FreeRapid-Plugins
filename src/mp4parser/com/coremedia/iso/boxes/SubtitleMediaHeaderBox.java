@@ -28,6 +28,9 @@ public class SubtitleMediaHeaderBox extends AbstractMediaHeaderBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SubtitleMediaHeaderBox";
     }
 }

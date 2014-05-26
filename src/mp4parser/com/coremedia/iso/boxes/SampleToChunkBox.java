@@ -41,10 +41,16 @@ public class SampleToChunkBox extends AbstractFullBox {
     }
 
     public List<Entry> getEntries() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return entries;
     }
 
     public void setEntries(List<Entry> entries) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         this.entries = entries;
     }
 
@@ -78,6 +84,9 @@ public class SampleToChunkBox extends AbstractFullBox {
     }
 
     public String toString() {
+        if (!isParsed()) {
+            parseDetails();
+        }
         return "SampleToChunkBox[entryCount=" + entries.size() + "]";
     }
 
@@ -89,6 +98,9 @@ public class SampleToChunkBox extends AbstractFullBox {
      * @return number of samples per chunk
      */
     public long[] blowup(int chunkCount) {
+        if (!isParsed()) {
+            parseDetails();
+        }
         long[] numberOfSamples = new long[chunkCount];
         int j = 0;
         List<Entry> sampleToChunkEntries = new LinkedList<Entry>(entries);

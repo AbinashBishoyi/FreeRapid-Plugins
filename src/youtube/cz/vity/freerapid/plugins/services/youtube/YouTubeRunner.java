@@ -46,15 +46,20 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0";
     private static final String DEFAULT_FILE_EXT = ".flv";
     private static final String DASH_AUDIO_ITAG = "dashaudioitag";
+    private static final String SECONDARY_DASH_AUDIO_ITAG = "secondarydashaudioitag"; //as backup, in case the primary fails
 
     private YouTubeSettingsConfig config;
     private int dashAudioItagValue = -1;
+    private int secondarydashAudioItagValue = -1;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
         setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
+        if (isAttributionLink()) {
+            processAttributionLink();
+        }
         if (isVideo()) {
             checkFileProblems();
         }
@@ -79,11 +84,12 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         setConfig();
-
+        if (isAttributionLink()) {
+            processAttributionLink();
+        }
         if (checkSubtitles()) {
             return;
         }
-
         if (isVideo()) {
             checkFileProblems();
         }
@@ -173,35 +179,27 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
             Container container = youTubeMedia.getContainer();
             httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", container.getFileExt()));
-            String videoURL = youTubeMedia.getUrl();
-            String signatureInUrl = null;
-            try {
-                signatureInUrl = URLUtil.getQueryParams(videoURL, "UTF-8").get("signature");
-            } catch (Exception e) {
-                //
-            }
-            if (signatureInUrl == null) { //if there is no "signature" param in url
-                String signature;
-                if (youTubeMedia.isCipherSignature()) { //signature is encrypted
-                    logger.info("Cipher signature : " + youTubeMedia.getSignature());
-                    if (ytSigDecipher == null) {
-                        ytSigDecipher = getYouTubeSigDecipher(swfUrl);
-                    }
-                    signature = ytSigDecipher.decipher(youTubeMedia.getSignature());
-                    logger.info("Deciphered signature : " + signature);
-                } else {
-                    signature = youTubeMedia.getSignature();
-                }
-                videoURL += "&signature=" + signature;
-            }
-
+            String videoURL = getVideoUrl(swfUrl, ytSigDecipher, youTubeMedia);
             logger.info("Config setting : " + config);
             logger.info("Downloading media : " + youTubeMedia);
             method = getGetMethod(videoURL);
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             if (!tryDownloadAndSaveFile(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+                if ((secondarydashAudioItagValue != -1) && (dashStreamMap != null)) { //try secondary dash audio
+                    youTubeMedia = dashStreamMap.get(secondarydashAudioItagValue);
+                    if (youTubeMedia == null) {
+                        throw new PluginImplementationException("DASH audio stream with itag='" + secondarydashAudioItagValue + "' not found");
+                    }
+                    logger.info("Primary DASH audio failed, trying to download the secondary DASH audio");
+                    logger.info("Downloading media : " + youTubeMedia);
+                    if (!tryDownloadAndSaveFile(getGetMethod(getVideoUrl(swfUrl, ytSigDecipher, youTubeMedia)))) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                } else {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
             } else if (config.isConvertToAudio()) {
                 convertToAudio(youTubeMedia.getAudioBitrate(), container == Container.mp4);
             } else if (YouTubeMedia.isDash(container)) { //DASH
@@ -212,6 +210,31 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private String getVideoUrl(String swfUrl, YouTubeSigDecipher ytSigDecipher, YouTubeMedia youTubeMedia) throws Exception {
+        String videoURL = youTubeMedia.getUrl();
+        String signatureInUrl = null;
+        try {
+            signatureInUrl = URLUtil.getQueryParams(videoURL, "UTF-8").get("signature");
+        } catch (Exception e) {
+            //
+        }
+        if (signatureInUrl == null) { //if there is no "signature" param in url
+            String signature;
+            if (youTubeMedia.isCipherSignature()) { //signature is encrypted
+                logger.info("Cipher signature : " + youTubeMedia.getSignature());
+                if (ytSigDecipher == null) {
+                    ytSigDecipher = getYouTubeSigDecipher(swfUrl);
+                }
+                signature = ytSigDecipher.decipher(youTubeMedia.getSignature());
+                logger.info("Deciphered signature : " + signature);
+            } else {
+                signature = youTubeMedia.getSignature();
+            }
+            videoURL += "&signature=" + signature;
+        }
+        return videoURL;
     }
 
     private YouTubeSigDecipher getYouTubeSigDecipher(String swfUrl) throws IOException, ServiceConnectionProblemException {
@@ -461,6 +484,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
     private void queueDashAudio(Map<Integer, YouTubeMedia> ytStreamMap, YouTubeMedia selectedDashVideoStream) throws Exception {
         int selectedItag = -1;
+        int secondaryItag = -1; //as backup, in case the primary fails
         int weight = Integer.MIN_VALUE;
         for (YouTubeMedia ytMedia : ytStreamMap.values()) {
             if ((ytMedia.getContainer() != Container.dash_a) || (ytMedia.getAudioEncoding().equalsIgnoreCase("Vorbis"))) { //skip non DASH audio or Vorbis
@@ -480,6 +504,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
             if (tempWeight > weight) {
                 weight = tempWeight;
+                secondaryItag = selectedItag;
                 selectedItag = ytMedia.getItag();
             }
         }
@@ -488,7 +513,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
         logger.info("Queueing DASH audio stream : " + ytStreamMap.get(selectedItag));
         List<URI> uriList = new LinkedList<URI>();
-        String url = fileURL + "&" + DASH_AUDIO_ITAG + "=" + selectedItag;
+        String url = fileURL + "&" + DASH_AUDIO_ITAG + "=" + selectedItag + (secondaryItag == -1 ? "" : "&" + SECONDARY_DASH_AUDIO_ITAG + "=" + secondaryItag);
         try {
             uriList.add(new URI(url));
         } catch (final URISyntaxException e) {
@@ -507,6 +532,11 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             throw new PluginImplementationException("DASH audio itag param not found");
         }
         dashAudioItagValue = Integer.parseInt(matcher.group(1));
+
+        matcher = PlugUtils.matcher("&" + SECONDARY_DASH_AUDIO_ITAG + "=(\\d+)", fileURL);
+        if (matcher.find()) {
+            secondarydashAudioItagValue = Integer.parseInt(matcher.group(1));
+        }
         fileURL = fileURL.replaceFirst("&" + DASH_AUDIO_ITAG + "=.+", ""); //remove dash audio itag param
     }
 
@@ -519,6 +549,20 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         String audioEncoding = ytMedia.getAudioEncoding();
         return ((container == Container.mp4 || container == Container.flv)
                 && (audioEncoding.equalsIgnoreCase("MP3") || audioEncoding.equalsIgnoreCase("AAC")));
+    }
+
+    private boolean isAttributionLink() {
+        return fileURL.contains("/attribution_link?");
+    }
+
+    private void processAttributionLink() throws Exception {
+        HttpMethod method = getGetMethod(fileURL);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
+        fileURL = method.getURI().toString();
     }
 
     private String getIdFromUrl() throws ErrorDuringDownloadingException {
@@ -744,7 +788,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
     private void multiplexDash(final boolean isAudio) throws Exception {
         if (downloadTask.isTerminated()) {
-            logger.info("Download task is terminated");
+            logger.info("Download task was terminated");
             return;
         }
         logger.info("Multiplexing DASH streams");

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.youtube.YouTubeServiceImpl"
-        id="youtube.com" vendor="Kajda+JPEXS+ntoskrnl+tong2shot" version="2.3.3">
+        id="youtube.com" vendor="Kajda+JPEXS+ntoskrnl+tong2shot" version="2.4.0">
     <attributes>
         <attribute id="urlRegex"
-                   value="https?://(www\.)?(youtube\.com/(watch\?|user/|playlist\?|course\?)|youtu\.be/).+"/>
+                   value="https?://(www\.)?(youtube\.com/(watch\?|user/|playlist\?|course\?|attribution_link\?)|youtu\.be/).+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="youtube.com"/>
@@ -16,7 +16,7 @@
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.13"
                 reverse-lookup="false"/>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="video2audio"
-                plugin-version="1.0.1" reverse-lookup="false"/>
+                plugin-version="1.0.2" reverse-lookup="false"/>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="mp4parser"
                 plugin-version="1.0.0" reverse-lookup="false"/>
     </requires>

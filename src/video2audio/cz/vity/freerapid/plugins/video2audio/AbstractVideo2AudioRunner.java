@@ -16,7 +16,7 @@ public abstract class AbstractVideo2AudioRunner extends AbstractRtmpRunner {
 
     public void convertToAudio(final int bitrate, final boolean mp4) throws IOException {
         if (downloadTask.isTerminated()) {
-            logger.info("Download task is terminated");
+            logger.info("Download task was terminated");
             return;
         }
         logger.info("Converting to audio");

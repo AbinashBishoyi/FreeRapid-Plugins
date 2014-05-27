@@ -33,7 +33,8 @@ public class YouTubeSettingsPanel extends JPanel {
         final JPanel audioPanel = new JPanel();
         final JCheckBox orderCheckBox = new JCheckBox("Sort by newest first when adding links from user pages");
         final JCheckBox subtitlesCheckBox = new JCheckBox("Download subtitles whenever available");
-        final JCheckBox enableDashCheckBox = new JCheckBox("Enable DASH streams");
+        final JCheckBox enableDashCheckBox = new JCheckBox("Enable DASH streams *)");
+        final JLabel dashNoteLabel = new JLabel("*) For 480p or 1080p or above, DASH streams need to be enabled");
         videoQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         containerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -43,6 +44,7 @@ public class YouTubeSettingsPanel extends JPanel {
         orderCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         subtitlesCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         enableDashCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dashNoteLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoRb.setActionCommand(videoStr);
         audioRb.setActionCommand(audioStr);
         buttonGroup.add(videoRb);
@@ -138,6 +140,8 @@ public class YouTubeSettingsPanel extends JPanel {
         add(orderCheckBox);
         add(subtitlesCheckBox);
         add(enableDashCheckBox);
+        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(dashNoteLabel);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }
 

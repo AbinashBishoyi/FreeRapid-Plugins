@@ -25,8 +25,11 @@ public class SettingsPanel extends JPanel {
         final JComboBox<RtmpPort> cbbRtmpPort = new JComboBox<RtmpPort>(RtmpPort.values());
         final JLabel lblCdn = new JLabel("Preferred CDN: *)");
         final JComboBox<Cdn> cbbCdn = new JComboBox<Cdn>(Cdn.values());
+        final JCheckBox checkTor = new JCheckBox("Enable Tor **)", config.isEnableTor());
         final JCheckBox checkSubtitles = new JCheckBox("Download subtitles", config.isDownloadSubtitles());
-        final JLabel lblCdnNote = new JLabel("<html>*) Akamai is only downloadble<br>in the UK</html>");
+        final JLabel lblCdnNote = new JLabel("<html><small>*) Akamai is only downloadble in the UK.</small></html>");
+        final JLabel lblTorNote = new JLabel("<html><small>**) Doesn't affect UK and proxy users," +
+                "<br>UK and proxy users won't use Tor.</small></html>");
 
         lblQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbVideoQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -34,8 +37,10 @@ public class SettingsPanel extends JPanel {
         cbbRtmpPort.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblCdn.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbCdn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        checkTor.setAlignmentX(Component.LEFT_ALIGNMENT);
         checkSubtitles.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblCdnNote.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblTorNote.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         cbbVideoQuality.setSelectedItem(config.getVideoQuality());
         cbbVideoQuality.addActionListener(new ActionListener() {
@@ -58,6 +63,12 @@ public class SettingsPanel extends JPanel {
                 config.setCdn((Cdn) cbbCdn.getSelectedItem());
             }
         });
+        checkTor.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setEnableTor(checkTor.isSelected());
+            }
+        });
         checkSubtitles.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(final ActionEvent e) {
@@ -75,9 +86,13 @@ public class SettingsPanel extends JPanel {
         add(lblCdn);
         add(cbbCdn);
         add(Box.createRigidArea(new Dimension(0, 5)));
+        add(checkTor);
+        add(Box.createRigidArea(new Dimension(0, 5)));
         add(checkSubtitles);
         add(Box.createRigidArea(new Dimension(0, 15)));
         add(lblCdnNote);
+        add(Box.createRigidArea(new Dimension(0, 10)));
+        add(lblTorNote);
         add(Box.createRigidArea(new Dimension(0, 15)));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }

@@ -36,6 +36,7 @@ public class TestApp extends PluginDevApplication {
             config.setVideoQuality(VideoQuality.Highest);
             config.setDownloadSubtitles(true);
             config.setRtmpPort(RtmpPort._80);
+            config.setEnableTor(false);
             service.setConfig(config);
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

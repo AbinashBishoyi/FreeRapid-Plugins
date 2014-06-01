@@ -103,10 +103,18 @@ class BbcFileRunner extends AbstractRtmpRunner {
             String atk = Hex.encodeHexString(DigestUtils.sha(MEDIA_SELECTOR_HASH + vpid));
             String mediaSelector = String.format("http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/pc/vpid/%s/atk/%s/asn/%s/", vpid, atk, MEDIA_SELECTOR_ASN);
             method = getGetMethod(mediaSelector);
-            final TorProxyClient torClient = TorProxyClient.forCountry("gb", client, getPluginService().getPluginContext().getConfigurationStorageSupport());
-            if (!torClient.makeRequest(method)) {
-                checkMediaSelectorProblems();
-                throw new ServiceConnectionProblemException();
+            if (config.isEnableTor()) {
+                //internally, UK & proxy users don't use Tor
+                final TorProxyClient torClient = TorProxyClient.forCountry("gb", client, getPluginService().getPluginContext().getConfigurationStorageSupport());
+                if (!torClient.makeRequest(method)) {
+                    checkMediaSelectorProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+            } else {
+                if (!makeRedirectedRequest(method)) {
+                    checkMediaSelectorProblems();
+                    throw new ServiceConnectionProblemException();
+                }
             }
             checkMediaSelectorProblems();
             final RtmpSession rtmpSession = getRtmpSession(getStream(getContentAsString()));
@@ -276,7 +284,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
     private void queueSubtitle(Element media) throws Exception {
         Element connection = (Element) media.getElementsByTagName("connection").item(0);
         String subtitleUrl = connection.getAttribute("href") + "?" + SUBTITLE_FILENAME_PARAM + "="
-                + URLEncoder.encode(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_EXT) + "$", ""), "UTF-8"); //add fname param
+                + URLEncoder.encode(PlugUtils.replaceEntities(httpFile.getFileName()).replaceFirst(Pattern.quote(DEFAULT_EXT) + "$", ""), "UTF-8"); //add fname param
         List<URI> uriList = new LinkedList<URI>();
         uriList.add(new URI(new org.apache.commons.httpclient.URI(subtitleUrl, false, "UTF-8").toString()));
         if (uriList.isEmpty()) {

@@ -13,6 +13,7 @@ public class YouTubeSettingsConfig {
     private boolean reversePlaylistOrder = false;
     private boolean downloadSubtitles = false;
     private boolean enableDash = false;
+    private boolean enableInternalMultiplexer = true;
 
     public void setVideoQuality(VideoQuality videoQuality) {
         this.videoQuality = videoQuality;
@@ -68,6 +69,14 @@ public class YouTubeSettingsConfig {
 
     public void setEnableDash(boolean enableDash) {
         this.enableDash = enableDash;
+    }
+
+    public boolean isEnableInternalMultiplexer() {
+        return enableInternalMultiplexer;
+    }
+
+    public void setEnableInternalMultiplexer(boolean enableInternalMultiplexer) {
+        this.enableInternalMultiplexer = enableInternalMultiplexer;
     }
 
     @Override

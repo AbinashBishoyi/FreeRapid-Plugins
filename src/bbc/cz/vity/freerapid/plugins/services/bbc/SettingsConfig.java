@@ -9,6 +9,7 @@ public class SettingsConfig {
     private boolean downloadSubtitles = false;
     private RtmpPort rtmpPort = RtmpPort._1935;
     private Cdn cdn = Cdn.Akamai;
+    private boolean enableTor = true;
 
     public VideoQuality getVideoQuality() {
         return videoQuality;
@@ -40,6 +41,14 @@ public class SettingsConfig {
 
     public void setCdn(Cdn cdn) {
         this.cdn = cdn;
+    }
+
+    public boolean isEnableTor() {
+        return enableTor;
+    }
+
+    public void setEnableTor(boolean enableTor) {
+        this.enableTor = enableTor;
     }
 
     @Override

@@ -50,7 +50,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
     private YouTubeSettingsConfig config;
     private int dashAudioItagValue = -1;
-    private int secondarydashAudioItagValue = -1;
+    private int secondaryDashAudioItagValue = -1;
 
     @Override
     public void runCheck() throws Exception {
@@ -185,16 +185,16 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             method = getGetMethod(videoURL);
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             if (!tryDownloadAndSaveFile(method)) {
-                if ((secondarydashAudioItagValue != -1) && (dashStreamMap != null)) { //try secondary dash audio
-                    youTubeMedia = dashStreamMap.get(secondarydashAudioItagValue);
+                if ((secondaryDashAudioItagValue != -1) && (dashStreamMap != null)) { //try secondary dash audio
+                    youTubeMedia = dashStreamMap.get(secondaryDashAudioItagValue);
                     if (youTubeMedia == null) {
-                        throw new PluginImplementationException("DASH audio stream with itag='" + secondarydashAudioItagValue + "' not found");
+                        throw new PluginImplementationException("DASH audio stream with itag='" + secondaryDashAudioItagValue + "' not found");
                     }
                     logger.info("Primary DASH audio failed, trying to download the secondary DASH audio");
                     logger.info("Downloading media : " + youTubeMedia);
                     if (!tryDownloadAndSaveFile(getGetMethod(getVideoUrl(swfUrl, ytSigDecipher, youTubeMedia)))) {
                         checkProblems();
-                        throw new ServiceConnectionProblemException();
+                        throw new ServiceConnectionProblemException("Error starting download");
                     }
                 } else {
                     checkProblems();
@@ -202,7 +202,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 }
             } else if (config.isConvertToAudio()) {
                 convertToAudio(youTubeMedia.getAudioBitrate(), container == Container.mp4);
-            } else if (YouTubeMedia.isDash(container)) { //DASH
+            } else if ((config.isEnableInternalMultiplexer()) && (YouTubeMedia.isDash(container))) { //DASH
                 multiplexDash(container == Container.dash_a);
             }
 
@@ -486,6 +486,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         int selectedItag = -1;
         int secondaryItag = -1; //as backup, in case the primary fails
         int weight = Integer.MIN_VALUE;
+        int secondaryWeight = Integer.MIN_VALUE;
         for (YouTubeMedia ytMedia : ytStreamMap.values()) {
             if ((ytMedia.getContainer() != Container.dash_a) || (ytMedia.getAudioEncoding().equalsIgnoreCase("Vorbis"))) { //skip non DASH audio or Vorbis
                 continue;
@@ -496,16 +497,20 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     tempWeight = 50;
                     break;
                 case 256:
-                    tempWeight = (selectedDashVideoStream.getVideoQuality() >= VideoQuality._720.getQuality() ? 51 : 49);
+                    tempWeight = (selectedDashVideoStream.getVideoQuality() >= VideoQuality._720.getQuality() ? 51 : 47);
                     break;
                 case 48:
                     tempWeight = 48;
                     break;
             }
             if (tempWeight > weight) {
+                secondaryWeight = weight;
                 weight = tempWeight;
                 secondaryItag = selectedItag;
                 selectedItag = ytMedia.getItag();
+            } else if (tempWeight > secondaryWeight) {
+                secondaryWeight = tempWeight;
+                secondaryItag = ytMedia.getItag();
             }
         }
         if (selectedItag == -1) {
@@ -535,7 +540,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
 
         matcher = PlugUtils.matcher("&" + SECONDARY_DASH_AUDIO_ITAG + "=(\\d+)", fileURL);
         if (matcher.find()) {
-            secondarydashAudioItagValue = Integer.parseInt(matcher.group(1));
+            secondaryDashAudioItagValue = Integer.parseInt(matcher.group(1));
         }
         fileURL = fileURL.replaceFirst("&" + DASH_AUDIO_ITAG + "=.+", ""); //remove dash audio itag param
     }
@@ -786,6 +791,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         return false;
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void multiplexDash(final boolean isAudio) throws Exception {
         if (downloadTask.isTerminated()) {
             logger.info("Download task was terminated");
@@ -799,7 +805,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             return;
         }
 
-        FileOutputStream fos = null;
         File videoFile;
         File audioFile;
         String fnameNoExt = downloadFile.getFileName().replaceFirst("\\..{3,4}$", "");
@@ -823,8 +828,12 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         logger.info("DASH video file size: " + videoFile.length());
         logger.info("DASH audio file size: " + audioFile.length());
 
+        FileOutputStream fos = null;
+        FileDataSourceImpl videoFds = null;
+        FileDataSourceImpl audioFds = null;
         File outputFile = new File(downloadFile.getSaveToDirectory(), fname);
         int outputFileCounter = 1;
+        boolean finished = false;
         try {
             while (outputFile.exists()) {
                 fname = fnameNoExt + "-" + outputFileCounter++ + Container.mp4.getFileExt();
@@ -832,22 +841,48 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
             fos = new FileOutputStream(outputFile);
             logger.info("Output file name: " + fname);
-            Movie movieVideo = MovieCreator.build(new FileDataSourceImpl(videoFile));
-            Movie movieAudio = MovieCreator.build(new FileDataSourceImpl(audioFile));
+            videoFds = new FileDataSourceImpl(videoFile);
+            audioFds = new FileDataSourceImpl(audioFile);
+            Movie movieVideo = MovieCreator.build(videoFds);
+            Movie movieAudio = MovieCreator.build(audioFds);
             Track trackAudio = movieAudio.getTracks().get(0);
             trackAudio.getTrackMetaData().setLanguage("eng");
             movieVideo.addTrack(trackAudio);
             com.coremedia.iso.boxes.Container out = new DefaultMp4Builder().build(movieVideo);
             out.writeContainer(fos.getChannel());
+            finished = true;
+        } catch (Exception ex) {
+            finished = false;
+        } finally {
+            if (videoFds != null) {
+                try {
+                    videoFds.close();
+                } catch (IOException e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+            if (audioFds != null) {
+                try {
+                    audioFds.close();
+                } catch (IOException e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    LogUtils.processException(logger, e);
+                }
+            }
+        }
+        if (finished) {
+            //in windows despite these code, the files can't be deleted.
+            //in linux it works fine.
+            //https://groups.google.com/forum/#!topic/mp4parser-discussion/mOKEXESezUg
+            //http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4724038
             audioFile.delete();
             videoFile.delete();
-            downloadFile.setFileName(fname);
-            downloadFile.setDownloaded(fos.getChannel().position());
-            downloadFile.setFileSize(fos.getChannel().position());
-        } finally {
-            if (fos != null) {
-                fos.close();
-            }
         }
     }
 

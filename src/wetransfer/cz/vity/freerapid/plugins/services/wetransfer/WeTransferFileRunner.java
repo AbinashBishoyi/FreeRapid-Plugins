@@ -35,7 +35,7 @@ class WeTransferFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("<span class='filename'>(.+?)</span>\\s*?<br>\\s*?(.+?)\\s*?</div>", content);
+        final Matcher match = PlugUtils.matcher("<span class='filename'>(.+?)</span>\\s*?<br>\\s*?.*?(\\d[\\d\\.,]+? \\w+?B)\\s*?</div>", content);
         if (!match.find())
             throw new PluginImplementationException("File name/size not found");
         httpFile.setFileName(match.group(1).trim());

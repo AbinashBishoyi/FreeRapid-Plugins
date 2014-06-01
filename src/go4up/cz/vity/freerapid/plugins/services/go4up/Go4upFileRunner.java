@@ -9,6 +9,7 @@ import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
@@ -33,10 +34,10 @@ class Go4upFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             String sFileName = ".";
-            if (getContentAsString().contains(">File : "))
-                sFileName = " From : " + PlugUtils.getStringBetween(getContentAsString(), ">File : ", "<br");
-            httpFile.setFileName("Ready to Extract Link(s)" + sFileName);
-            httpFile.setFileSize(0);
+            if (getContentAsString().contains("<title>Download"))
+                sFileName = " For: " + PlugUtils.getStringBetween(getContentAsString(), "<title>Download ", "<");
+            httpFile.setFileName("Extract Link(s)" + sFileName);
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), " (", ")<");
             httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         } else {
             checkProblems();
@@ -55,7 +56,14 @@ class Go4upFileRunner extends AbstractRunner {
             if (fileURL.contains("/rd/"))   // single redirect url link
                 processLink(fileURL, list);
             else {   // get multiple redirect url links
-                final Matcher matcher = getMatcherAgainstContent("href=\"(http://go4up.com/rd/[^/]+?/\\w{1,5})\"");
+                final HttpMethod hostsMethod = getMethodBuilder()
+                        .setActionFromTextBetween("url: \"", "\"")
+                        .setReferer(fileURL).toGetMethod();
+                if (!makeRedirectedRequest(hostsMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException();
+                }
+                final Matcher matcher = getMatcherAgainstContent(">(http://go4up.com/rd/[^/]+?/[\\w\\d]{1,5})</a>");
                 while (matcher.find()) {
                     processLink(matcher.group(1), list);
                 }
@@ -89,6 +97,10 @@ class Go4upFileRunner extends AbstractRunner {
                     } else if (subContent.contains("window.location =")) {
                         String strNewUrl = PlugUtils.getStringBetween(subContent, "window.location = \"", "\"");
                         listing.add(new URI(strNewUrl));
+                    } else {
+                        final Matcher match = PlugUtils.matcher("id=\"linklist\">\\s*?<center>\\s*?<b><a href=\"(.+?)\">", getContentAsString());
+                        if (match.find())
+                            listing.add(new URI(match.group(1)));
                     }
                 }
             } catch (final URISyntaxException e) {
@@ -101,7 +113,8 @@ class Go4upFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("download does not exist") || contentAsString.contains("not found on this server")) {
+        if (contentAsString.contains("download does not exist") || contentAsString.contains("not found on this server")
+                || contentAsString.contains("Page Not Found") || contentAsString.contains("page you requested was not found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

@@ -64,6 +64,7 @@ class One2UpFileRunner extends AbstractRunner {
                     .setReferer(fileURL)
                     .setActionFromTextBetween("txt_URL\" value=\"", "\" ")
                     .toGetMethod();
+            setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

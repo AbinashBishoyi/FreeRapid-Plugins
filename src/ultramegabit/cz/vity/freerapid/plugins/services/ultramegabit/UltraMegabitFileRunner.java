@@ -81,6 +81,9 @@ class UltraMegabitFileRunner extends AbstractRunner {
                 || content.contains("file has been removed")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (content.contains("a database connection error has occur")) {
+            throw new ServiceConnectionProblemException("A database connection error has occurred");
+        }
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {

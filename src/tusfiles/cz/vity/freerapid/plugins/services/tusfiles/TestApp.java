@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //  httpFile.setNewURL(new URL("https://www.tusfiles.net/hq9ggbkbosc2/easysup.rar"));
-            httpFile.setNewURL(new URL("https://www.tusfiles.net/pmigt9oed2uu"));
+            httpFile.setNewURL(new URL("http://www.tusfiles.net/888ax5ix124w"));
             //httpFile.setNewURL(new URL("https://www.tusfiles.net/go/gohk5ekgtexa/"));  // folder
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

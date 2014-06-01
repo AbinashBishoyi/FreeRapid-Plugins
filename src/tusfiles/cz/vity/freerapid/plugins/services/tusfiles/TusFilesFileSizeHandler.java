@@ -18,6 +18,6 @@ public class TusFilesFileSizeHandler implements FileSizeHandler {
         if (match.find())
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
         else
-            PlugUtils.checkFileSize(httpFile, content, "Size:</b> <small>", "</small></li>");
+            PlugUtils.checkFileSize(httpFile, content, "Size:", "| <");
     }
 }

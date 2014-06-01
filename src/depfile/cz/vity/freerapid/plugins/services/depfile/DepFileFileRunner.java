@@ -74,8 +74,10 @@ class DepFileFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            if (httpMethod.getResponseHeader("Location").getValue().endsWith("/premium"))
-                throw new YouHaveToWaitException("Wait before next download or upgrade to premium", 600);
+            try {
+                if (httpMethod.getResponseHeader("Location").getValue().endsWith("/premium"))
+                    throw new YouHaveToWaitException("Wait before next download or upgrade to premium", 600);
+            } catch (Exception e) { /*-*/ }
             checkProblems();
         }
         final String url = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "document.getElementById(\"wait_input\").value= unescape('", "');"), "UTF-8");

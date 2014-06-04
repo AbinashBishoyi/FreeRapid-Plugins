@@ -29,11 +29,9 @@ class ShareRapidRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         final GetMethod getMethod = getGetMethod(fileURL);
-        if (makeRequest(getMethod)) {
+        if (makeRedirectedRequest(getMethod)) {
             checkNameAndSize(getContentAsString());
         } else {
-            checkProblems();
-            makeRedirectedRequest(getMethod);
             checkProblems();
             throw new PluginImplementationException();
         }
@@ -53,7 +51,7 @@ class ShareRapidRunner extends AbstractRunner {
 
             Login(serverURL);
 
-            Matcher matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\"><a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
+            Matcher matcher = PlugUtils.matcher("(?:<h1>|<span style=\"padding: 12px 0px 0px 10px; display: block\">)<a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
             if (matcher.find()) {
                 String downURL = matcher.group(1);
                 if (!downURL.contains("http://"))
@@ -93,9 +91,10 @@ class ShareRapidRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws Exception {
         Matcher matcher = PlugUtils.matcher("<span style=\"padding: 12px 0px 0px 10px; display: block\">(.+?)<", content);
-        if (!matcher.find())
-            throw new PluginImplementationException("Filename not found");
-        httpFile.setFileName(matcher.group(1).trim());
+        if (matcher.find())
+            httpFile.setFileName(matcher.group(1).trim());
+        else
+            PlugUtils.checkName(httpFile, content, "<h1>", "</h1>");
 
         matcher = PlugUtils.matcher("<td class=\"i\">Velikost:</td>\\s*?<td class=\"h\"><strong>\\s*?([0-9].+?B)</strong></td>", content);
         if (matcher.find()) {

@@ -36,7 +36,9 @@ import java.util.regex.Pattern;
  */
 class BbcFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(BbcFileRunner.class.getName());
-    private final static String SWF_URL = "http://emp.bbci.co.uk/emp/releases/smp-flash/revisions/1.9.18/1.9.18_smp.swf?1.9.17";
+    private final static String SWF_URL = "http://emp.bbci.co.uk/emp/releases/smp-flash/revisions/1.9.23/1.9.23_smp.swf";
+    private final static String LIMELIGHT_SWF_URL = "http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf";
+    private final static SwfVerificationHelper limelightHelper = new SwfVerificationHelper(LIMELIGHT_SWF_URL);
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
     private final static String DEFAULT_EXT = ".flv";
     private final static String SUBTITLE_FILENAME_PARAM = "fname";
@@ -117,10 +119,16 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 }
             }
             checkMediaSelectorProblems();
-            final RtmpSession rtmpSession = getRtmpSession(getStream(getContentAsString()));
+            Stream selectedStream = getStream(getContentAsString());
+            final RtmpSession rtmpSession = getRtmpSession(selectedStream);
+            boolean isLimelight = selectedStream.supplier.equalsIgnoreCase("limelight");
             rtmpSession.getConnectParams().put("pageUrl", fileURL);
-            rtmpSession.getConnectParams().put("swfUrl", SWF_URL);
-            helper.setSwfVerification(rtmpSession, client);
+            rtmpSession.getConnectParams().put("swfUrl", isLimelight ? LIMELIGHT_SWF_URL : SWF_URL);
+            if (isLimelight) {
+                limelightHelper.setSwfVerification(rtmpSession, client);
+            } else {
+                helper.setSwfVerification(rtmpSession, client);
+            }
             tryDownloadAndSaveFile(rtmpSession);
         } else {
             checkProblems();

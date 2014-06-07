@@ -23,9 +23,9 @@ public class SettingsPanel extends JPanel {
         final JComboBox<VideoQuality> cbbVideoQuality = new JComboBox<VideoQuality>(VideoQuality.getItems());
         final JLabel lblRtmpPort = new JLabel("Preferred RTMP port:");
         final JComboBox<RtmpPort> cbbRtmpPort = new JComboBox<RtmpPort>(RtmpPort.values());
-        final JLabel lblCdn = new JLabel("Preferred CDN: *)");
+        final JLabel lblCdn = new JLabel("<html>Preferred CDN: <small><sup>*)</sup></small></html>");
         final JComboBox<Cdn> cbbCdn = new JComboBox<Cdn>(Cdn.values());
-        final JCheckBox checkTor = new JCheckBox("Enable Tor **)", config.isEnableTor());
+        final JCheckBox checkTor = new JCheckBox("<html>Enable Tor <small><sup>**)</sup></small></html>", config.isEnableTor());
         final JCheckBox checkSubtitles = new JCheckBox("Download subtitles", config.isDownloadSubtitles());
         final JLabel lblCdnNote = new JLabel("<html><small>*) Akamai is only downloadble in the UK.</small></html>");
         final JLabel lblTorNote = new JLabel("<html><small>**) Doesn't affect UK and proxy users," +

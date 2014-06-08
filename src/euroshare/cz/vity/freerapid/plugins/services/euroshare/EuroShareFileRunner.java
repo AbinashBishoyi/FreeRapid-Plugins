@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.euroshare;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -53,7 +50,7 @@ class EuroShareFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
-                    .setActionFromAHrefWhereATagContains("STIAHNUŤ BEZ REGISTRÁCIE").toHttpMethod();
+                    .setActionFromAHrefWhereATagContains("STIAHNUŤ ZDARMA").toHttpMethod();
 
             //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
@@ -71,6 +68,13 @@ class EuroShareFileRunner extends AbstractRunner {
         if (contentAsString.contains("Požadovaný súbor sa na serveri nenachádza alebo bol odstránený") ||
                 contentAsString.contains("Súbor neexistuje")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (contentAsString.contains("Server overloaded. Use PREMIUM downloading")) {
+            throw new YouHaveToWaitException("Server overloaded. Use PREMIUM downloading", 300); //let to know user in FRD
+        }
+        if (contentAsString.contains("Z Vasej IP uz prebieha stahovanie") ||
+                contentAsString.contains("Ako free uzivatel mozete stahovat iba jeden subor")) {
+            throw new ServiceConnectionProblemException("Free users can only download one file at a time"); //let to know user in FRD
         }
     }
 

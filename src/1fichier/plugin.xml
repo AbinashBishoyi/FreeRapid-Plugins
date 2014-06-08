@@ -3,8 +3,8 @@
 <plugin class="cz.vity.freerapid.plugins.services.onefichier.OneFichierServiceImpl"
         id="1fichier.com" vendor="birchie" version="1.0.6">
     <attributes>
-        <attribute id="urlRegex" value="http://\w+\.(1fichier|desfichiers)\.com.*"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="urlRegex" value="https?://\w+\.(1fichier|desfichiers)\.com.*"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="1fichier.com desfichiers.com"/>
         <attribute id="maxDownloads" value="1"/>

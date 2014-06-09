@@ -28,28 +28,33 @@ public class YouTubeSettingsPanel extends JPanel {
         final JComboBox<VideoQuality> videoQualityList = new JComboBox<VideoQuality>(VideoQuality.getItems());
         final JLabel containerLabel = new JLabel("Preferred container:");
         final JComboBox<Container> containerList = new JComboBox<Container>(Container.getItems());
-        final JLabel audioQualityLabel = new JLabel("Audio bitrate:");
-        final JComboBox<AudioQuality> audioQualityList = new JComboBox<AudioQuality>(AudioQuality.getItems());
+        final JLabel convertAudioQualityLabel = new JLabel("Audio bitrate:");
+        final JComboBox<AudioQuality> convertAudioQualityList = new JComboBox<AudioQuality>(AudioQuality.getItems());
+        final JLabel extractAudioQualityLabel = new JLabel("Audio bitrate:");
+        final JComboBox<AudioQuality> extractAudioQualityList = new JComboBox<AudioQuality>(AudioQuality.getItems());
         final ButtonGroup buttonGroup = new ButtonGroup();
-        final String videoStr = "Download video";
-        final String audioStr = "Convert to audio";
-        final JRadioButton videoRb = new JRadioButton(videoStr);
-        final JRadioButton audioRb = new JRadioButton(audioStr);
-        final JPanel videoPanel = new JPanel();
-        final JPanel audioPanel = new JPanel();
+        final JRadioButton downloadVideoRb = new JRadioButton(DownloadMode.downloadVideo.toString());
+        final JRadioButton convertToAudioRb = new JRadioButton(DownloadMode.convertToAudio.toString());
+        final JRadioButton extractAudioRb = new JRadioButton(DownloadMode.extractAudio.toString());
+        final JPanel downloadVideoPanel = new JPanel();
+        final JPanel convertToAudioPanel = new JPanel();
+        final JPanel extractAudioPanel = new JPanel();
         final JCheckBox orderCheckBox = new JCheckBox("Sort by newest first when adding links from user pages");
         final JCheckBox subtitlesCheckBox = new JCheckBox("Download subtitles whenever available");
-        final JCheckBox enableDashCheckBox = new JCheckBox("Enable DASH streams *)");
+        final JCheckBox enableDashCheckBox = new JCheckBox("<html>Enable DASH streams <small><sup>*)</sup></small></html>");
         final JCheckBox enableInternalMultiplexerCheckBox = new JCheckBox("Enable internal DASH multiplexer/merger");
         final JLabel dashNoteLabel = new JLabel("<html><small>*) For 480p or 1080p or above, DASH streams need to be enabled.</small></html>");
         final JLabel ffmpegLinkLabel = new JLabel("<html><small>If you're not using the internal DASH multiplexer :" +
                 "<br><a href=\"\">How to multiplex/merge DASH files using FFmpeg</a></small></html>");
+
         videoQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         containerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         containerList.setAlignmentX(Component.LEFT_ALIGNMENT);
-        audioQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        audioQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
+        convertAudioQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        convertAudioQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
+        extractAudioQualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        extractAudioQualityList.setAlignmentX(Component.LEFT_ALIGNMENT);
         orderCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         subtitlesCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         enableDashCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -57,29 +62,51 @@ public class YouTubeSettingsPanel extends JPanel {
         dashNoteLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         ffmpegLinkLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         ffmpegLinkLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        videoRb.setActionCommand(videoStr);
-        audioRb.setActionCommand(audioStr);
-        buttonGroup.add(videoRb);
-        buttonGroup.add(audioRb);
+
+        downloadVideoRb.setActionCommand(DownloadMode.downloadVideo.toString());
+        convertToAudioRb.setActionCommand(DownloadMode.convertToAudio.toString());
+        extractAudioRb.setActionCommand(DownloadMode.extractAudio.toString());
+        buttonGroup.add(downloadVideoRb);
+        buttonGroup.add(convertToAudioRb);
+        buttonGroup.add(extractAudioRb);
 
         videoQualityList.setSelectedItem(config.getVideoQuality());
         containerList.setSelectedItem(config.getContainer());
+        convertAudioQualityList.setSelectedItem(config.getConvertAudioQuality());
+        extractAudioQualityList.setSelectedItem(config.getExtractAudioQuality());
+
         orderCheckBox.setSelected(config.isReversePlaylistOrder());
         subtitlesCheckBox.setSelected(config.isDownloadSubtitles());
         enableDashCheckBox.setSelected(config.isEnableDash());
         enableInternalMultiplexerCheckBox.setSelected(config.isEnableInternalMultiplexer());
-        videoRb.setSelected(!config.isConvertToAudio());
-        audioRb.setSelected(config.isConvertToAudio());
-        if (videoRb.isSelected()) {
-            videoQualityList.setEnabled(true);
-            containerList.setEnabled(true);
-            audioQualityList.setEnabled(false);
-        } else {
-            audioQualityList.setEnabled(true);
-            videoQualityList.setEnabled(false);
-            containerList.setEnabled(false);
-        }
-        audioQualityList.setSelectedItem(config.getAudioQuality());
+
+        downloadVideoRb.setSelected(config.getDownloadMode() == DownloadMode.downloadVideo);
+        convertToAudioRb.setSelected(config.getDownloadMode() == DownloadMode.convertToAudio);
+        extractAudioRb.setSelected(config.getDownloadMode() == DownloadMode.extractAudio);
+
+        videoQualityList.setEnabled(config.getDownloadMode() == DownloadMode.downloadVideo);
+        containerList.setEnabled(config.getDownloadMode() == DownloadMode.downloadVideo);
+        convertAudioQualityList.setEnabled(config.getDownloadMode() == DownloadMode.convertToAudio);
+        extractAudioQualityList.setEnabled(config.getDownloadMode() == DownloadMode.extractAudio);
+
+        ActionListener rbListener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boolean isDownloadVideo = e.getActionCommand().equals(DownloadMode.downloadVideo.toString());
+                boolean isConvertAudio = e.getActionCommand().equals(DownloadMode.convertToAudio.toString());
+                boolean isExtractAudio = e.getActionCommand().equals(DownloadMode.extractAudio.toString());
+                videoQualityList.setEnabled(isDownloadVideo);
+                containerList.setEnabled(isDownloadVideo);
+                convertAudioQualityList.setEnabled(isConvertAudio);
+                extractAudioQualityList.setEnabled(isExtractAudio);
+                DownloadMode downloadMode = (isDownloadVideo ? DownloadMode.downloadVideo :
+                        (isConvertAudio ? DownloadMode.convertToAudio : DownloadMode.extractAudio));
+                config.setDownloadMode(downloadMode);
+            }
+        };
+        downloadVideoRb.addActionListener(rbListener);
+        convertToAudioRb.addActionListener(rbListener);
+        extractAudioRb.addActionListener(rbListener);
 
         videoQualityList.addActionListener(new ActionListener() {
             @Override
@@ -93,30 +120,19 @@ public class YouTubeSettingsPanel extends JPanel {
                 config.setContainer((Container) containerList.getSelectedItem());
             }
         });
-        ActionListener rbListener = new ActionListener() {
+        convertAudioQualityList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (e.getActionCommand().equals(videoStr)) {
-                    videoQualityList.setEnabled(true);
-                    containerList.setEnabled(true);
-                    audioQualityList.setEnabled(false);
-                    config.setConvertToAudio(false);
-                } else {
-                    audioQualityList.setEnabled(true);
-                    videoQualityList.setEnabled(false);
-                    containerList.setEnabled(false);
-                    config.setConvertToAudio(true);
-                }
-            }
-        };
-        videoRb.addActionListener(rbListener);
-        audioRb.addActionListener(rbListener);
-        audioQualityList.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                config.setAudioQuality((AudioQuality) audioQualityList.getSelectedItem());
+                config.setConvertAudioQuality((AudioQuality) convertAudioQualityList.getSelectedItem());
             }
         });
+        extractAudioQualityList.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                config.setExtractAudioQuality((AudioQuality) extractAudioQualityList.getSelectedItem());
+            }
+        });
+
         orderCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -153,30 +169,37 @@ public class YouTubeSettingsPanel extends JPanel {
                 }
             }
         });
-        videoPanel.setLayout(new BoxLayout(videoPanel, BoxLayout.Y_AXIS));
-        videoPanel.add(videoQualityLabel);
-        videoPanel.add(videoQualityList);
-        videoPanel.add(containerLabel);
-        videoPanel.add(containerList);
-        audioPanel.setLayout(new BoxLayout(audioPanel, BoxLayout.Y_AXIS));
-        audioPanel.add(audioQualityLabel);
-        audioPanel.add(audioQualityList);
+
+        downloadVideoPanel.setLayout(new BoxLayout(downloadVideoPanel, BoxLayout.Y_AXIS));
+        downloadVideoPanel.add(videoQualityLabel);
+        downloadVideoPanel.add(videoQualityList);
+        downloadVideoPanel.add(containerLabel);
+        downloadVideoPanel.add(containerList);
+        convertToAudioPanel.setLayout(new BoxLayout(convertToAudioPanel, BoxLayout.Y_AXIS));
+        convertToAudioPanel.add(convertAudioQualityLabel);
+        convertToAudioPanel.add(convertAudioQualityList);
+        extractAudioPanel.setLayout(new BoxLayout(extractAudioPanel, BoxLayout.Y_AXIS));
+        extractAudioPanel.add(extractAudioQualityLabel);
+        extractAudioPanel.add(extractAudioQualityList);
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        add(videoRb);
-        add(videoPanel);
-        add(Box.createRigidArea(new Dimension(0, 15)));
-        add(audioRb);
-        add(audioPanel);
-        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(downloadVideoRb);
+        add(downloadVideoPanel);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(convertToAudioRb);
+        add(convertToAudioPanel);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(extractAudioRb);
+        add(extractAudioPanel);
+        add(Box.createRigidArea(new Dimension(0, 10)));
         add(orderCheckBox);
         add(subtitlesCheckBox);
         add(enableDashCheckBox);
         add(enableInternalMultiplexerCheckBox);
-        add(Box.createRigidArea(new Dimension(0, 15)));
-        add(dashNoteLabel);
         add(Box.createRigidArea(new Dimension(0, 10)));
+        add(dashNoteLabel);
+        add(Box.createRigidArea(new Dimension(0, 5)));
         add(ffmpegLinkLabel);
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBorder(BorderFactory.createEmptyBorder(0, 10, 5, 10));
     }
 
 }

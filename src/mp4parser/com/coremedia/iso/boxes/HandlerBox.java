@@ -82,6 +82,13 @@ public class HandlerBox extends AbstractFullBox {
         return handlerType;
     }
 
+    public void setA(int a) {
+        if (!isParsed()) {
+            parseDetails();
+        }
+        this.a = a;
+    }
+
     /**
      * You are required to add a '\0' string termination by yourself.
      *

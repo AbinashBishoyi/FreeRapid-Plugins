@@ -18,6 +18,8 @@ package com.googlecode.mp4parser.authoring.builder;
 import com.coremedia.iso.boxes.Container;
 import com.googlecode.mp4parser.authoring.Movie;
 
+import java.io.IOException;
+
 /**
  * Transforms a <code>Movie</code> object to an IsoFile. Implementations can
  * determine the specific format: Fragmented MP4, MP4, MP4 with Apple Metadata,
@@ -30,6 +32,6 @@ public interface Mp4Builder {
      * @param movie data source
      * @return the freshly built IsoFile
      */
-    public Container build(Movie movie);
+    public Container build(Movie movie) throws IOException;
 
 }

@@ -7,7 +7,8 @@ public enum AudioQuality {
     _64(64),
     _96(96),
     _128(128),
-    _192(192);
+    _192(192),
+    _256(256);
 
     private final int bitrate;
     private final String name;

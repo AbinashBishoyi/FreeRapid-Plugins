@@ -4,14 +4,14 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 
 public class YouTubeMedia {
-    private int itag;
-    private Container container;
-    private int videoQuality; // deliberately not using VideoQuality, reason : flexibility, it's possible that YT introduces video quality which is not listed in VideoQuality data structure
-    private String audioEncoding;
-    private int audioBitrate;
-    private String url;
-    private String signature;
-    private boolean cipherSignature;
+    private final int itag;
+    private final Container container;
+    private final int videoQuality; // deliberately not using VideoQuality, reason : flexibility, it's possible that YT introduces video quality which is not listed in VideoQuality data structure
+    private final String audioEncoding;
+    private final int audioBitrate;
+    private final String url;
+    private final String signature;
+    private final boolean cipherSignature;
 
     public YouTubeMedia(int itag, String url, String signature, boolean cipherSignature) throws ErrorDuringDownloadingException {
         this.itag = itag;
@@ -25,7 +25,7 @@ public class YouTubeMedia {
     }
 
     //source : http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
-    public static Container getContainer(int itag) {
+    private Container getContainer(int itag) {
         switch (itag) {
             case 13:
             case 17:
@@ -74,13 +74,7 @@ public class YouTubeMedia {
         }
     }
 
-    public static boolean isDash(Container container) {
-        return (container == Container.dash_v)
-                || (container == Container.dash_v_vpx)
-                || (container == Container.dash_a);
-    }
-
-    public static String getAudioEncoding(int itag) {
+    private String getAudioEncoding(int itag) {
         switch (itag) {
             case 5:
             case 6:
@@ -97,7 +91,7 @@ public class YouTubeMedia {
         }
     }
 
-    public static int getAudioBitrate(int itag) {
+    private int getAudioBitrate(int itag) {
         switch (itag) {
             case 17:
                 return 24;
@@ -129,7 +123,7 @@ public class YouTubeMedia {
         }
     }
 
-    public static int getVideoResolution(int itag) throws ErrorDuringDownloadingException {
+    private int getVideoResolution(int itag) throws ErrorDuringDownloadingException {
         switch (itag) {
             case 17:
             case 160:
@@ -179,6 +173,21 @@ public class YouTubeMedia {
             default:
                 throw new PluginImplementationException("Unknown video resolution for itag=" + itag);
         }
+    }
+
+    public boolean isVid2AudSupported() {
+        return ((container == Container.mp4 || container == Container.flv || container == Container.dash_a)
+                && (audioEncoding.equalsIgnoreCase("MP3") || audioEncoding.equalsIgnoreCase("AAC")));
+    }
+
+    public boolean isAudioExtractSupported() {
+        return isVid2AudSupported();
+    }
+
+    public boolean isDash() {
+        return (container == Container.dash_v)
+                || (container == Container.dash_v_vpx)
+                || (container == Container.dash_a);
     }
 
     public int getItag() {

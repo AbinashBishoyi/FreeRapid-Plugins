@@ -54,7 +54,7 @@ public class DefaultMp4Builder implements Mp4Builder {
     /**
      * {@inheritDoc}
      */
-    public Container build(Movie movie) {
+    public Container build(Movie movie) throws IOException {
         if (intersectionFinder == null) {
             intersectionFinder = new TwoSecondIntersectionFinder(movie, 2);
         }

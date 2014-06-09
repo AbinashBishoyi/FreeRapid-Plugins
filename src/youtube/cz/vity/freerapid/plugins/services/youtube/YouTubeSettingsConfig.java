@@ -6,10 +6,11 @@ package cz.vity.freerapid.plugins.services.youtube;
  * @author tong2shot
  */
 public class YouTubeSettingsConfig {
+    private DownloadMode downloadMode = DownloadMode.downloadVideo;
     private VideoQuality videoQuality = VideoQuality._480;
     private Container container = Container.mp4;
-    private boolean convertToAudio = false;
-    private AudioQuality audioQuality = AudioQuality._192;
+    private AudioQuality convertAudioQuality = AudioQuality._192;
+    private AudioQuality extractAudioQuality = AudioQuality._192;
     private boolean reversePlaylistOrder = false;
     private boolean downloadSubtitles = false;
     private boolean enableDash = false;
@@ -31,20 +32,28 @@ public class YouTubeSettingsConfig {
         this.container = container;
     }
 
-    public boolean isConvertToAudio() {
-        return convertToAudio;
+    public DownloadMode getDownloadMode() {
+        return downloadMode;
     }
 
-    public void setConvertToAudio(boolean convertToAudio) {
-        this.convertToAudio = convertToAudio;
+    public void setDownloadMode(DownloadMode downloadMode) {
+        this.downloadMode = downloadMode;
     }
 
-    public AudioQuality getAudioQuality() {
-        return audioQuality;
+    public AudioQuality getConvertAudioQuality() {
+        return convertAudioQuality;
     }
 
-    public void setAudioQuality(AudioQuality audioQuality) {
-        this.audioQuality = audioQuality;
+    public void setConvertAudioQuality(AudioQuality convertAudioQuality) {
+        this.convertAudioQuality = convertAudioQuality;
+    }
+
+    public AudioQuality getExtractAudioQuality() {
+        return extractAudioQuality;
+    }
+
+    public void setExtractAudioQuality(AudioQuality extractAudioQuality) {
+        this.extractAudioQuality = extractAudioQuality;
     }
 
     public void setReversePlaylistOrder(boolean reversePlaylistOrder) {
@@ -82,11 +91,12 @@ public class YouTubeSettingsConfig {
     @Override
     public String toString() {
         return "YouTubeSettingsConfig{" +
-                "convertToAudio=" + convertToAudio + (convertToAudio ?
-                ", audioQuality=" + audioQuality :
+                "downloadMode=" + downloadMode + (downloadMode == DownloadMode.convertToAudio ?
+                ", convertAudioQuality=" + convertAudioQuality : (downloadMode == DownloadMode.extractAudio ?
+                ", extractAudioQuality=" + extractAudioQuality :
                 ", videoQuality=" + videoQuality +
                         ", container='" + container + '\'' +
-                        ", enableDash=" + enableDash) +
+                        ", enableDash=" + enableDash)) +
                 '}';
     }
 }

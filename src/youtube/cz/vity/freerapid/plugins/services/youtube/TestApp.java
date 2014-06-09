@@ -51,9 +51,10 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("https://www.youtube.com/watch?v=FbcEs-o0d-g"));
             //httpFile.setNewURL(new URL("https://www.youtube.com/watch?v=dEA_8A9TBGM")); //4K
             //httpFile.setNewURL(new URL("http://www.youtube.com/attribution_link?a=G1xmCJAKUUM&u=/watch%3Fv%3DGQp_Xn_DbI8%26feature%3Dem-uploademail"));
-            httpFile.setNewURL(new URL("https://www.youtube.com/watch?v=E7WuQoF3fAQ")); //primary dash audio fails for the highest video quality
+            //httpFile.setNewURL(new URL("https://www.youtube.com/watch?v=E7WuQoF3fAQ")); //primary dash audio fails for the highest video quality
             //httpFile.setNewURL(new URL("https://www.youtube.com/watch?v=E7WuQoF3fAQ&dashaudioitag=141&secondarydashaudioitag=140"));
             //httpFile.setNewURL(new URL("https://www.youtube.com/watch?v=kTqgsKxv-0Q"));
+            httpFile.setNewURL(new URL("http://www.youtube.com/watch?v=gY5rztWa1TM"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8118); //eg we can use local proxy to sniff HTTP communication
@@ -66,8 +67,8 @@ public class TestApp extends PluginDevApplication {
             config.setContainer(Container.flv);
             config.setReversePlaylistOrder(false);
             config.setDownloadSubtitles(true);
-            config.setConvertToAudio(false);
-            config.setAudioQuality(AudioQuality._128);
+            config.setDownloadMode(DownloadMode.downloadVideo);
+            config.setConvertAudioQuality(AudioQuality._128);
             service.setConfig(config);
 
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner

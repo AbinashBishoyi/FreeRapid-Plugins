@@ -48,7 +48,14 @@ public class FileDataSourceImpl implements DataSource {
     }
 
     public ByteBuffer map(long startPosition, long size) throws IOException {
-        return fc.map(FileChannel.MapMode.READ_ONLY, startPosition, size);
+        long currPos = fc.position();
+        ByteBuffer ret = ByteBuffer.allocate((int) size);
+        fc.position(startPosition);
+        fc.read(ret);
+        fc.position(currPos);
+        ret.flip();
+        return ret;
+        //return fc.map(FileChannel.MapMode.READ_ONLY, startPosition, size);
     }
 
     public void close() throws IOException {

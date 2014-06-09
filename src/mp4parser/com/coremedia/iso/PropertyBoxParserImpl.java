@@ -34,12 +34,6 @@ public class PropertyBoxParserImpl extends AbstractBoxParser {
 
     public PropertyBoxParserImpl(String... customProperties) {
         InputStream is = getClass().getResourceAsStream("/resources/isoparser-default.properties");
-        //InputStream is;
-        //try {
-        //    is = new FileInputStream("/home/bams/Dev/freerapid-plugins/trunk/src/mp4parser/resources/isoparser-default.properties");
-        //} catch (Exception e1) {
-        //    throw new RuntimeException("isoparser properties file not found");
-        //}
         try {
             mapping = new Properties();
             try {

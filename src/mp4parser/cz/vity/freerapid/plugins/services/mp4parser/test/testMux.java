@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.mp4parser;
+package cz.vity.freerapid.plugins.services.mp4parser.test;
 
 import com.googlecode.mp4parser.authoring.Movie;
 import com.googlecode.mp4parser.authoring.Track;
@@ -13,10 +13,8 @@ import java.io.FileOutputStream;
  */
 public class testMux {
     public static void main(String[] args) throws Exception {
-        //To test : edit PropertyBoxParserImpl so that 'isoparser-default.properties' file loaded from file.
-        //Don't forget to change it back.
-
-        String dir = "/media/TEMP/download/movie/dash test2/";
+        //To test : make sure your IDE load 'isoparser-default.properties' as resource.
+        String dir = "/media/LNXDEV/frd/frd-test/dash test2/";
         String fnameNoExt = "α7S Unparalleled 4K image quality (from Sony: Official Video Release)";
         String audio = dir + fnameNoExt + ".m4a";
         String video = dir + fnameNoExt + ".m4v";

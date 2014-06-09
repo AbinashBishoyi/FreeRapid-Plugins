@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class AACTrackImpl extends AbstractTrack {
 
-    static Map<Integer, String> audioObjectTypes = new HashMap<Integer, String>();
+    public static Map<Integer, String> audioObjectTypes = new HashMap<Integer, String>();
 
     static {
         audioObjectTypes.put(1, "AAC Main");

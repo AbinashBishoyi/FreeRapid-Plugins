@@ -2,13 +2,17 @@ package cz.vity.freerapid.plugins.services.onefichier_premium;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URI;
 import java.net.URLDecoder;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -43,7 +47,7 @@ class OneFichierFileRunner extends AbstractRunner {
     }
 
     private void getAltTempFileName() throws Exception {
-        final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
+        final Matcher match = PlugUtils.matcher("https?://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
         if (match.find()) {
             String name = match.group(1);
             if (URLDecoder.decode(match.group(3), "UTF-8").replace("\"", "").trim().length() > 0)
@@ -63,8 +67,12 @@ class OneFichierFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "name :</th><td>", "</td>");
-        PlugUtils.checkFileSize(httpFile, content, "Size :</th><td>", "</td>");
+        if (fileURL.contains("/dir/")) {
+            PlugUtils.checkName(httpFile, content, "<title>", "</title>");
+        } else {
+            PlugUtils.checkName(httpFile, content, "name :</th><td>", "</td>");
+            PlugUtils.checkFileSize(httpFile, content, "Size :</th><td>", "</td>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -84,16 +92,29 @@ class OneFichierFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else if (status == 200) {
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("Download the file", true).toPostMethod(); //  2do ?
+            if (fileURL.contains("/dir/")) {
+                List<URI> list = new LinkedList<URI>();
+                final Matcher match = PlugUtils.matcher("<a href=\"(https?://(\\w+)\\.(1fichier|desfichiers)\\..+?)\"", getContentAsString());
+                while (match.find()) {
+                    list.add(new URI(match.group(1).trim()));
+                }
+                if (list.isEmpty()) throw new PluginImplementationException("No links found");
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                httpFile.setFileName("Link(s) Extracted !");
+                httpFile.setState(DownloadState.COMPLETED);
+                httpFile.getProperties().put("removeCompleted", true);
+            } else {
+                final String contentAsString = getContentAsString();//check for response
+                checkProblems();//check problems
+                checkNameAndSize(contentAsString);//extract file name and size from the page
+                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
+                        .setActionFromFormWhereTagContains("Download the file", true).toPostMethod(); //  2do ?
 
-            //here is the download link extraction
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                //here is the download link extraction
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();//if downloading failed
+                    throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                }
             }
         } else {
             checkProblems();

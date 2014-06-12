@@ -1,16 +1,17 @@
 package cz.vity.freerapid.plugins.services.onefichier;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.exceptions.YouHaveToWaitException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.net.URI;
 import java.net.URLDecoder;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -44,7 +45,7 @@ class OneFichierFileRunner extends AbstractRunner {
     }
 
     private void getAltTempFileName() throws Exception {
-        final Matcher match = PlugUtils.matcher("http://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
+        final Matcher match = PlugUtils.matcher("https?://(\\w+)\\.(1fichier|desfichiers)\\.com/en/?(.*)", fileURL);
         if (match.find()) {
             String name = match.group(1);
             if (URLDecoder.decode(match.group(3), "UTF-8").replace("\"", "").trim().length() > 0)
@@ -63,8 +64,12 @@ class OneFichierFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "name :</th><td>", "</td>");
-        PlugUtils.checkFileSize(httpFile, content, "Size :</th><td>", "</td>");
+        if (fileURL.contains("/dir/")) {
+            PlugUtils.checkName(httpFile, content, "<title>", "</title>");
+        } else {
+            PlugUtils.checkName(httpFile, content, "name :</th><td>", "</td>");
+            PlugUtils.checkFileSize(httpFile, content, "Size :</th><td>", "</td>");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -83,22 +88,35 @@ class OneFichierFileRunner extends AbstractRunner {
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
         } else if (status1 == 200) {
-            while (true) {
-                checkProblems();//check problems
-                try {
-                    checkNameAndSize(getContentAsString());//extract file name and size from the page
-                } catch (Exception e) {/**/}
-                final HttpMethod hMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("ownload", true).toPostMethod();
-                final int status = client.makeRequest(hMethod, false);
-                if (status / 100 == 3) {
-                    if (!tryDownloadAndSaveFile(getGetMethod(hMethod.getResponseHeader("Location").getValue()))) {
-                        checkProblems();//if downloading failed
-                        throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+            if (fileURL.contains("/dir/")) {
+                List<URI> list = new LinkedList<URI>();
+                final Matcher match = PlugUtils.matcher("<a href=\"(https?://(\\w+)\\.(1fichier|desfichiers)\\..+?)\"", getContentAsString());
+                while (match.find()) {
+                    list.add(new URI(match.group(1).trim()));
+                }
+                if (list.isEmpty()) throw new PluginImplementationException("No links found");
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                httpFile.setFileName("Link(s) Extracted !");
+                httpFile.setState(DownloadState.COMPLETED);
+                httpFile.getProperties().put("removeCompleted", true);
+            } else {
+                while (true) {
+                    checkProblems();//check problems
+                    try {
+                        checkNameAndSize(getContentAsString());//extract file name and size from the page
+                    } catch (Exception e) {/**/}
+                    final HttpMethod hMethod = getMethodBuilder().setReferer(fileURL).setActionFromFormWhereTagContains("ownload", true).toPostMethod();
+                    final int status = client.makeRequest(hMethod, false);
+                    if (status / 100 == 3) {
+                        if (!tryDownloadAndSaveFile(getGetMethod(hMethod.getResponseHeader("Location").getValue()))) {
+                            checkProblems();//if downloading failed
+                            throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                        }
+                        return;
+                    } else if (status != 200) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
                     }
-                    return;
-                } else if (status != 200) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
                 }
             }
         } else {

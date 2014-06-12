@@ -34,7 +34,7 @@ class DataFileFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "file-name\">", "</div>");
-        PlugUtils.checkFileSize(httpFile, content, "Filesize:<span class=\"lime\">", "</span>");
+        PlugUtils.checkFileSize(httpFile, content, "Filesize: <span class=\"lime\">", "</span>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -49,7 +49,6 @@ class DataFileFileRunner extends AbstractRunner {
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
             MethodBuilder builder = getMethodBuilder()
-                    .setActionFromFormWhereTagContains("recaptcha", true)
                     .setAjax()
                     .setAction("https://www.datafile.com/files/ajax.html")
                     .setReferer(fileURL)
@@ -64,11 +63,11 @@ class DataFileFileRunner extends AbstractRunner {
                     }
                     checkProblems();
                 }
-                //final int waitTime = 1 + PlugUtils.getNumberBetween(getContentAsString(), "counter.contdownTimer('", "'");
-                //final long startTime = System.currentTimeMillis();
+                final int waitTime = 1 + PlugUtils.getNumberBetween(getContentAsString(), "counter.contdownTimer('", "'");
+                final long startTime = System.currentTimeMillis();
                 doCaptcha(builder);
-                //final long endTime = System.currentTimeMillis();
-                //downloadTask.sleep(waitTime - (int)((endTime-startTime)/1000));
+                final long endTime = System.currentTimeMillis();
+                downloadTask.sleep(waitTime - (int) ((endTime - startTime) / 1000));
                 setFileStreamContentTypes(new String[0], new String[]{"application/x-www-form-urlencoded"});
                 if (!makeRedirectedRequest(builder.toPostMethod())) {
                     checkProblems();
@@ -93,7 +92,7 @@ class DataFileFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File not found")) {
+        if (contentAsString.contains("File not found") || contentAsString.contains("ErrorCode 3: This file was deleted")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (contentAsString.contains("This file can be downloaded only users with<br />Premium account")) {

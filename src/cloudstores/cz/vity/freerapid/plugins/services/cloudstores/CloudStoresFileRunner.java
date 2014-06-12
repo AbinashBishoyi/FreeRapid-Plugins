@@ -59,7 +59,8 @@ class CloudStoresFileRunner extends AbstractRunner {
             if (!matcher.find()) {
                 throw new PluginImplementationException("Download parameters not found");
             }
-            final MethodBuilder mb = getMethodBuilder().setAjax().setReferer(fileURL).setAction(matcher.group(1));
+            final MethodBuilder mb = getMethodBuilder().setAjax().setReferer(fileURL)
+                    .setBaseURL("http://cloudstor.es").setAction(matcher.group(1));
             matcher = PlugUtils.matcher("([a-z]+?): '(.+?)'", matcher.group(2));
             while (matcher.find()) {
                 mb.setParameter(matcher.group(1), matcher.group(2));

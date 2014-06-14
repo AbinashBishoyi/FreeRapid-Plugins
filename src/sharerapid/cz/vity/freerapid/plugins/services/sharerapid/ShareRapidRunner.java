@@ -51,7 +51,7 @@ class ShareRapidRunner extends AbstractRunner {
 
             Login(serverURL);
 
-            Matcher matcher = PlugUtils.matcher("(?:<h1>|<span style=\"padding: 12px 0px 0px 10px; display: block\">)<a href=\"([^\"]+)\" title=\"[^\"]+\">[^<]+</a>", getContentAsString());
+            Matcher matcher = PlugUtils.matcher("(?:<h1>|<div style=\"margin: 30px 0 10px 30px;\">|<span style=\"padding: 12px 0px 0px 10px; display: block\">)\\s*?<a href=\"([^\"]+)\" title=\"[^\"]+\">.+?</a>", getContentAsString());
             if (matcher.find()) {
                 String downURL = matcher.group(1);
                 if (!downURL.contains("http://"))

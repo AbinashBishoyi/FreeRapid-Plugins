@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.gett;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -22,6 +19,7 @@ class GettFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception {
+        checkUrl();
         super.runCheck();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -33,6 +31,14 @@ class GettFileRunner extends AbstractRunner {
         }
     }
 
+    private void checkUrl() throws Exception {
+        if (fileURL.contains("ge.tt/api/")) {
+            final Matcher match = PlugUtils.matcher("ge.tt/api/\\d+?/\\w+?/(.+?)/", fileURL);
+            if (!match.find()) throw new InvalidURLOrServiceProblemException("Url format error");
+            fileURL = "http://ge.tt/" + match.group(1) + "/v/0";
+        }
+    }
+
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, getContentAsString(), "<title>", "</title>");
         PlugUtils.checkFileSize(httpFile, getContentAsString(), "title='size'>", "</");
@@ -41,6 +47,7 @@ class GettFileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
+        checkUrl();
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);

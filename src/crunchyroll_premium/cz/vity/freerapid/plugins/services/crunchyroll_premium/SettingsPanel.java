@@ -26,6 +26,7 @@ public class SettingsPanel extends JPanel {
         final JPasswordField pswdfldPassword = new JPasswordField(30);
         final JLabel lblQuality = new JLabel("Preferred quality level:");
         final JComboBox<VideoQuality> cbbVideoQuality = new JComboBox<VideoQuality>(VideoQuality.getItems());
+        final JCheckBox checkSubtitles = new JCheckBox("Download subtitle", config.isDownloadSubtitle());
 
         lblUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtfldUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -33,6 +34,7 @@ public class SettingsPanel extends JPanel {
         pswdfldPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
         cbbVideoQuality.setAlignmentX(Component.LEFT_ALIGNMENT);
+        checkSubtitles.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         txtfldUsername.setText(config.getUsername());
         pswdfldPassword.setText(config.getPassword());
@@ -49,7 +51,6 @@ public class SettingsPanel extends JPanel {
                 config.setUsername(txtfldUsername.getText().trim().isEmpty() ? null : txtfldUsername.getText());
             }
         });
-
         pswdfldPassword.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -61,13 +62,19 @@ public class SettingsPanel extends JPanel {
                 config.setPassword((pswdfldPassword.getPassword().length == 0) ? null : new String(pswdfldPassword.getPassword()));
             }
         });
-
         cbbVideoQuality.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 config.setVideoQuality((VideoQuality) cbbVideoQuality.getSelectedItem());
             }
         });
+        checkSubtitles.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(final ActionEvent e) {
+                config.setDownloadSubtitle(checkSubtitles.isSelected());
+            }
+        });
+
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(lblUsername);
         add(txtfldUsername);
@@ -77,6 +84,8 @@ public class SettingsPanel extends JPanel {
         add(Box.createRigidArea(new Dimension(0, 5)));
         add(lblQuality);
         add(cbbVideoQuality);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(checkSubtitles);
         setBorder(BorderFactory.createEmptyBorder(5, 15, 15, 15));
     }
 

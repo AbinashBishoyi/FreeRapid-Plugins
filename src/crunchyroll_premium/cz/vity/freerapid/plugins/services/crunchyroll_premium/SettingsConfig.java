@@ -8,6 +8,7 @@ public class SettingsConfig {
     private String username = null;
     private String password = null;
     private VideoQuality videoQuality = VideoQuality._480;
+    private boolean downloadSubtitle = false;
 
     public String getUsername() {
         return username;
@@ -33,11 +34,19 @@ public class SettingsConfig {
         this.videoQuality = videoQuality;
     }
 
+    public boolean isDownloadSubtitle() {
+        return downloadSubtitle;
+    }
+
+    public void setDownloadSubtitle(boolean downloadSubtitle) {
+        this.downloadSubtitle = downloadSubtitle;
+    }
 
     @Override
     public String toString() {
         return "SettingsConfig{" +
                 "videoQuality=" + videoQuality +
+                ", downloadSubtitle=" + downloadSubtitle +
                 '}';
     }
 }

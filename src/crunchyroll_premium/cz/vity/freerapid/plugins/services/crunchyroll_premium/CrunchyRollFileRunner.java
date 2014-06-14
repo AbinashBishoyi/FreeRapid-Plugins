@@ -95,6 +95,9 @@ class CrunchyRollFileRunner extends AbstractRtmpRunner {
             } catch (final URISyntaxException e) {
                 throw new PluginImplementationException("Invalid SWF URL", e);
             }
+            if (config.isDownloadSubtitle()) {
+                new SubtitleDownloader().downloadSubtitle(httpFile, getContentAsString());
+            }
             final RtmpSession rtmpSession = new RtmpSession(host, file);
             setSwfVerification(rtmpSession, swfUrl);
             tryDownloadAndSaveFile(rtmpSession);

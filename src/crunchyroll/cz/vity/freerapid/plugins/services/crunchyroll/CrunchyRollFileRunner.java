@@ -21,10 +21,18 @@ import java.util.regex.Matcher;
  * Class which contains main code
  *
  * @author ntoskrnl
+ * @author tong2shot (subtitle)
  */
 class CrunchyRollFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(CrunchyRollFileRunner.class.getName());
     private static SwfVerificationHelper helper = null;
+
+    private SettingsConfig config;
+
+    private void setConfig() throws Exception {
+        final CrunchyRollServiceImpl service = (CrunchyRollServiceImpl) getPluginService();
+        config = service.getConfig();
+    }
 
     @Override
     public void runCheck() throws Exception {
@@ -40,7 +48,7 @@ class CrunchyRollFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
-        final Matcher matcher = getMatcherAgainstContent("<title>(?:Watch |Music \\- )?(.+?)(?: \\- Crunchyroll)?</title>");
+        final Matcher matcher = getMatcherAgainstContent("<title>(?:Crunchyroll \\- )?(?:Watch |Music \\- )?(.+?)(?: \\- Crunchyroll)?</title>");
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found");
         }
@@ -56,6 +64,8 @@ class CrunchyRollFileRunner extends AbstractRtmpRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkName();
+            setConfig();
+            logger.info("Settings config : " + config);
             final String loaderSwfUrl = PlugUtils.getStringBetween(getContentAsString(), ".embedSWF(\"", "\"").replace("\\/", "/");
             final String configUrl = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "\"config_url\":\"", "\""), "UTF-8");
             method = getMethodBuilder().setReferer(null).setAction(configUrl).setParameter("current_page", fileURL).toPostMethod();
@@ -72,6 +82,9 @@ class CrunchyRollFileRunner extends AbstractRtmpRunner {
                 swfUrl = new URI(loaderSwfUrl).resolve(new URI(playerSwfUrl)).toString();
             } catch (final URISyntaxException e) {
                 throw new PluginImplementationException("Invalid SWF URL", e);
+            }
+            if (config.isDownloadSubtitle()) {
+                new SubtitleDownloader().downloadSubtitle(httpFile, getContentAsString());
             }
             final RtmpSession rtmpSession = new RtmpSession(host, file);
             setSwfVerification(rtmpSession, swfUrl);

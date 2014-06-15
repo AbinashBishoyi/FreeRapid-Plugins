@@ -21,7 +21,7 @@ package net.sourceforge.jaad.aac.syntax;
 
 import net.sourceforge.jaad.aac.AACException;
 import net.sourceforge.jaad.aac.SampleFrequency;
-import net.sourceforge.jaad.aac.sbr.SBR;
+import net.sourceforge.jaad.aac.sbr2.SBR;
 
 public abstract class Element implements Constants {
 

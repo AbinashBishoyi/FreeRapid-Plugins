@@ -11,7 +11,6 @@ import java.io.InputStream;
 public class FlvReader {
 
     private static final int FLV_MAGIC = 0x464c5601;
-    private static final int AAC_PROFILE = 2;
     private static final int TAG_TYPE_AUDIO = 0x08;
     private static final int CODEC_ID_AAC = 10 << 4;
     private static final int CODEC_ID_MP3 = 2 << 4;
@@ -49,28 +48,29 @@ public class FlvReader {
             final int flags = in.readUnsignedByte();
             size--;
             final int codecId = flags & 0xf0;
+            byte[] data;
             switch (codecId) {
                 case CODEC_ID_AAC:
                     final int aacType = in.readUnsignedByte();
                     size--;
-                    if (info == null) {
-                        aac = true;
-                        final int sampleRate = 44100 << ((flags & 0x0c) >>> 2) >>> 3;
-                        final boolean stereo = (flags & 0x01) != 0;
-                        initDecoderSpecificInfo(sampleRate, stereo);
-                    }
+                    data = new byte[size];
+                    in.readFully(data);
                     if (aacType == 0) {
-                        skip(size + 4);
+                        if (info == null) {
+                            aac = true;
+                            info = data;
+                        }
+                        skip(4);
                         continue;
                     }
                     break;
                 case CODEC_ID_MP3:
+                    data = new byte[size];
+                    in.readFully(data);
                     break;
                 default:
                     throw new IOException("Unsupported codec: 0x" + Integer.toHexString(codecId));
             }
-            final byte[] data = new byte[size];
-            in.readFully(data);
             skip(4);
             return data;
         }
@@ -82,15 +82,6 @@ public class FlvReader {
 
     public boolean isAac() {
         return aac;
-    }
-
-    private void initDecoderSpecificInfo(final int sampleFrequency, final boolean stereo) {
-        //5 bits profile, 4 bits sample frequency, 4 bits channel configuration
-        info = new byte[2];
-        info[0] = (byte) (AAC_PROFILE << 3);
-        info[0] |= (sampleFrequency >> 1) & 0x7;
-        info[1] = (byte) ((sampleFrequency & 0x1) << 7);
-        info[1] |= ((stereo ? 2 : 1) << 3);
     }
 
     private int readInt24() throws IOException {

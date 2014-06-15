@@ -17,8 +17,8 @@ public class YouTubeMedia {
         this.itag = itag;
         this.container = getContainer(itag);
         this.videoQuality = (container == Container.dash_a ? -1 : getVideoResolution(itag));
-        this.audioEncoding = getAudioEncoding(itag);
-        this.audioBitrate = ((container == Container.dash_v) || (container == Container.dash_v_vpx) ? -1 : getAudioBitrate(itag));
+        this.audioEncoding = (isDashVideo() ? "None" : getAudioEncoding(itag));
+        this.audioBitrate = (isDashVideo() ? -1 : getAudioBitrate(itag));
         this.url = url;
         this.signature = signature;
         this.cipherSignature = cipherSignature;
@@ -184,10 +184,12 @@ public class YouTubeMedia {
         return isVid2AudSupported();
     }
 
+    public boolean isDashVideo() {
+        return (container == Container.dash_v) || (container == Container.dash_v_vpx);
+    }
+
     public boolean isDash() {
-        return (container == Container.dash_v)
-                || (container == Container.dash_v_vpx)
-                || (container == Container.dash_a);
+        return isDashVideo() || (container == Container.dash_a);
     }
 
     public int getItag() {

@@ -21,7 +21,7 @@ package net.sourceforge.jaad.aac.syntax;
 
 import net.sourceforge.jaad.aac.*;
 import net.sourceforge.jaad.aac.filterbank.FilterBank;
-import net.sourceforge.jaad.aac.sbr.SBR;
+import net.sourceforge.jaad.aac.sbr2.SBR;
 import net.sourceforge.jaad.aac.tools.IS;
 import net.sourceforge.jaad.aac.tools.LTPrediction;
 import net.sourceforge.jaad.aac.tools.MS;
@@ -278,8 +278,8 @@ public class SyntacticElements implements Constants {
             final SBR sbr = scelfe.getSBR();
             if (sbr.isPSUsed()) {
                 chs = 2;
-                scelfe.getSBR().process(data[channel], data[channel + 1]);
-            } else scelfe.getSBR().process(data[channel], null);
+                scelfe.getSBR().process(data[channel], data[channel + 1], false);
+            } else scelfe.getSBR().process(data[channel], null, false);
         }
         return chs;
     }
@@ -346,7 +346,7 @@ public class SyntacticElements implements Constants {
         if (sbrPresent && config.isSBREnabled()) {
             if (data[channel].length == config.getFrameLength())
                 LOGGER.log(Level.WARNING, "SBR data present, but buffer has normal size!");
-            cpe.getSBR().process(data[channel], data[channel + 1]);
+            cpe.getSBR().process(data[channel], data[channel + 1], false);
         }
     }
 

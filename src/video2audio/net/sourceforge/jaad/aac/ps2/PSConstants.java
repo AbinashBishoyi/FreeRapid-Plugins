@@ -17,28 +17,25 @@
  *  License along with this library.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.sourceforge.jaad.aac.syntax;
+package net.sourceforge.jaad.aac.ps2;
 
-import net.sourceforge.jaad.aac.AACException;
+interface PSConstants {
 
-class DSE extends Element {
-
-    private byte[] dataStreamBytes;
-
-    DSE() {
-        super();
-    }
-
-    void decode(BitStream in) throws AACException {
-        final boolean byteAlign = in.readBool();
-        int count = in.readBits(8);
-        if (count == 255) count += in.readBits(8);
-
-        if (byteAlign) in.byteAlign();
-
-        dataStreamBytes = new byte[count];
-        for (int i = 0; i < count; i++) {
-            dataStreamBytes[i] = (byte) in.readBits(8);
-        }
-    }
+    //maximum values/lengths
+    int MAX_ENVELOPES = 4;
+    int MAX_IID_ICC_PARS = 34;
+    int MAX_IPD_OPD_PARS = 17;
+    int MAX_DELAY = 14;
+    //band numbers
+    int[] BANDS = {71, 91};
+    int[] ALLPASS_BANDS = {30, 50};
+    int[] PAR_BANDS = {20, 34};
+    int[] DECAY_CUTOFF = {10, 32};
+    int[] SHORT_DELAY_BANDS = {42, 62};
+    int ALLPASS_LINKS = 3;
+    //decorrelation factors
+    float PEAK_DECAY_FACTOR = 0.76592833836465f;
+    float A_SMOOTH = 0.25f;
+    float GAMMA = 1.5f;
+    float DECAY_SLOPE = 0.05f;
 }

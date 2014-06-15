@@ -42,7 +42,7 @@ public abstract class AbstractVideo2AudioRunner extends AbstractRtmpRunner {
             }
             fos = new FileOutputStream(outputFile);
             logger.info("Output name: " + fname);
-            byte[] buffer = new byte[1024 * 1024];
+            byte[] buffer = new byte[64 * 1024];
             int len;
             int size = 0;
             while ((len = is.read(buffer)) != -1) {

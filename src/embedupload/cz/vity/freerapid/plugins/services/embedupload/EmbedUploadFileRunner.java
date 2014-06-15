@@ -41,8 +41,6 @@ class EmbedUploadFileRunner extends AbstractRunner {
 
     @Override
     public void runCheck() throws Exception {
-        if (fileURL.contains("embedupload.com/"))
-            fileURL = fileURL.replaceFirst("embedupload.com/", "embedupload.to/");
         super.runCheck();
         if (isSingleLinkURL()) return;
         final GetMethod getMethod = getGetMethod(fileURL);
@@ -60,7 +58,7 @@ class EmbedUploadFileRunner extends AbstractRunner {
         if (!matcher.find()) {
             logger.warning("File name and/or file size not found");
         } else {
-            httpFile.setFileName(matcher.group(1).trim());
+            httpFile.setFileName("Links: " + matcher.group(1).trim());
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2).trim()));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -68,8 +66,6 @@ class EmbedUploadFileRunner extends AbstractRunner {
 
     @Override
     public void run() throws Exception {
-        if (fileURL.contains("embedupload.com/"))
-            fileURL = fileURL.replaceFirst("embedupload.com/", "embedupload.to/");
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         final List<URI> list = new LinkedList<URI>();
@@ -119,7 +115,7 @@ class EmbedUploadFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        final Matcher matcher = getMatcherAgainstContent("File hosting link:\\s*?<b>\\s*?<a href=['\"](https?://.+?)['\"]");
+        final Matcher matcher = getMatcherAgainstContent("link\\s*?:\\s*?<a href=['\"](https?://.+?)['\"]");
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing link");
         }

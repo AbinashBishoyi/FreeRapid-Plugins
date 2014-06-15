@@ -1,5 +1,6 @@
 package cz.vity.freerapid.plugins.services.vodlocker;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandlerNoSize;
@@ -31,7 +32,7 @@ class VoDLockerFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add("file\\s*?:\\s*?['\"](.+?)['\"],");
+        downloadLinkRegexes.add(0, "file\\s*?:\\s*?['\"](.+?)['\"],");
         return downloadLinkRegexes;
     }
 
@@ -48,4 +49,11 @@ class VoDLockerFileRunner extends XFileSharingRunner {
         return methodBuilder;
     }
 
+    @Override
+    protected void checkDownloadProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("Skipped countdown")) {
+        }
+        super.checkDownloadProblems();
+    }
 }

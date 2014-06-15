@@ -80,9 +80,14 @@ class DepFileFileRunner extends AbstractRunner {
             } catch (Exception e) { /*-*/ }
             checkProblems();
         }
-        final String url = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "document.getElementById(\"wait_input\").value= unescape('", "');"), "UTF-8");
-        final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var sec=", ";", TimeUnit.SECONDS);
-        downloadTask.sleep(waitTime);
+        String url;
+        try {
+            url = URLDecoder.decode(PlugUtils.getStringBetween(getContentAsString(), "document.getElementById(\"wait_input\").value= unescape('", "');"), "UTF-8");
+            final int waitTime = PlugUtils.getWaitTimeBetween(getContentAsString(), "var sec=", ";", TimeUnit.SECONDS);
+            downloadTask.sleep(waitTime);
+        } catch (Exception e) {
+            throw new PluginImplementationException("Download link not available");
+        }
         httpMethod = getMethodBuilder()
                 .setAction(url)
                 .setReferer(fileURL)
@@ -126,7 +131,7 @@ class DepFileFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("File is available only for Premium users")) {
-            throw new PluginImplementationException("File is available only for Premium users");
+            throw new NotRecoverableDownloadException("File is available only for Premium users");
         }
         if (contentAsString.contains("A file was recently downloaded from your IP address")) {
             final Matcher waitTimeMatcher = getMatcherAgainstContent("No less than (\\d+) min should");

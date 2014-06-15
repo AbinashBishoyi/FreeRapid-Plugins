@@ -35,7 +35,7 @@ class DataFileHostFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "File:", "<br>");
+        PlugUtils.checkName(httpFile, content.replace("\n", " "), "File:", "<br>");
         PlugUtils.checkFileSize(httpFile, content, "Size:", "<br>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

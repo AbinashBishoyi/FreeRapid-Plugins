@@ -29,7 +29,7 @@ class RockDizFileFileRunner extends XFileSharingRunner {
         fileNameHandlers.add(0, new FileNameHandler() {
             @Override
             public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-                PlugUtils.checkName(httpFile, content, "downloadtitle\"><h1>", "</h1>");
+                PlugUtils.checkName(httpFile, content, "<h1>", "</h1>");
             }
         });
         fileNameHandlers.add(0, new FileNameHandler() {

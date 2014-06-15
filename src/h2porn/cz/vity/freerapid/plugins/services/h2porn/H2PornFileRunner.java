@@ -34,18 +34,26 @@ public class H2PornFileRunner extends AbstractRunner {
         }
     }
 
-    protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+    protected void getFileName(String content) throws ErrorDuringDownloadingException {
         try {
             httpFile.setFileName(PlugUtils.getStringBetween(content, "<title>", "@ H2Porn</title>").trim());
         } catch (Exception e) {
             httpFile.setFileName(PlugUtils.getStringBetween(content, "<title>", "</title>").trim());
         }
+    }
+
+    protected void getFileType(String content) throws ErrorDuringDownloadingException {
         try {
             httpFile.setFileName(httpFile.getFileName() + getParam("postfix", content));
         } catch (Exception e) {
             final String getExt = PlugUtils.getStringBetween(content, "flashvars['video_url']='", "/';");
             httpFile.setFileName(httpFile.getFileName() + getExt.substring(getExt.lastIndexOf(".")));
         }
+    }
+
+    protected void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
+        getFileName(content);
+        getFileType(content);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -76,7 +84,11 @@ public class H2PornFileRunner extends AbstractRunner {
             try {
                 playerSwf = PlugUtils.getStringBetween(contentAsString, "swfobject.embedSWF('", "', 'kt_player'");
             } catch (Exception e) {
-                playerSwf = PlugUtils.getStringBetween(contentAsString, "kt_player', '", "',");
+                try {
+                    playerSwf = PlugUtils.getStringBetween(contentAsString, "kt_player', '", "',");
+                } catch (Exception ee) {
+                    playerSwf = PlugUtils.getStringBetween(contentAsString, "kt_player('vpc', '", "',");
+                }
             }
             final HttpMethod httpMethod = tdBuilder.doDownloadParams(vidUrl, getMethodBuilder()
                     .setAction(vidUrl)

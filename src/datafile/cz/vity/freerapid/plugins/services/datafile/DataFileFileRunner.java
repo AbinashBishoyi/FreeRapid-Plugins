@@ -50,7 +50,7 @@ class DataFileFileRunner extends AbstractRunner {
 
             MethodBuilder builder = getMethodBuilder()
                     .setAjax()
-                    .setAction("https://www.datafile.com/files/ajax.html")
+                    .setAction("/files/ajax.html")
                     .setReferer(fileURL)
                     .setParameter("doaction", "getFileDownloadLink")
                     .setParameter("fileid", PlugUtils.getStringBetween(getContentAsString(), "getFileDownloadLink('", "'"));
@@ -64,6 +64,7 @@ class DataFileFileRunner extends AbstractRunner {
                     checkProblems();
                 }
                 final int waitTime = 1 + PlugUtils.getNumberBetween(getContentAsString(), "counter.contdownTimer('", "'");
+                if (waitTime > 123) throw new YouHaveToWaitException("Wait between downloads", waitTime);
                 final long startTime = System.currentTimeMillis();
                 doCaptcha(builder);
                 final long endTime = System.currentTimeMillis();

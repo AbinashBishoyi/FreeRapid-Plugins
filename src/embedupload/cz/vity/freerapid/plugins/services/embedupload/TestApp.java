@@ -17,8 +17,8 @@ public class TestApp extends PluginDevApplication {
         try {
             //httpFile.setNewURL(new URL("http://www.embedupload.com/?d=9QAVQ4QVVJ"));
             //httpFile.setNewURL(new URL("http://www.embedupload.com/?d=6HKAAWEUU4"));
-            //httpFile.setNewURL(new URL("http://www.embedupload.com/?RG=6LQHKAHRYI"));
-            httpFile.setNewURL(new URL("http://www.embedupload.com/?d=7EBERVDSVI"));
+            //httpFile.setNewURL(new URL("http://www.embedupload.com/?FR=0XD5E1MIIN"));
+            httpFile.setNewURL(new URL("http://www.embedupload.com/?d=0XD5E1MIIN"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final EmbedUploadServiceImpl service = new EmbedUploadServiceImpl();

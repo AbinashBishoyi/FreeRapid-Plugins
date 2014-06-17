@@ -19,11 +19,10 @@ import java.util.regex.Matcher;
 class FileRioFileRunner extends XFileSharingRunner {
 
     @Override
-    public void runCheck() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.matches("http://(?:www\\.)?filerio\\.com/.+")) {
             httpFile.setNewURL(new URL(fileURL.replaceFirst("filerio\\.com", "filerio.in")));
         }
-        super.runCheck();
     }
 
     @Override

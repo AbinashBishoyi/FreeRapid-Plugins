@@ -15,10 +15,9 @@ import java.util.regex.Matcher;
 class FileParadoxFileRunner extends XFileSharingRunner {
 
     @Override
-    protected void setLanguageCookie() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.startsWith("http:"))
             fileURL = fileURL.replaceFirst("http:", "https:");
-        super.setLanguageCookie();
     }
 
     @Override

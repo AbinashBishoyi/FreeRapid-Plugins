@@ -12,10 +12,9 @@ import java.util.List;
 class one80UploadFileRunner extends XFileSharingRunner {
 
     @Override
-    protected void setLanguageCookie() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.contains("180upload.nl/"))
             fileURL = fileURL.replaceFirst("180upload.nl/", "180upload.com/");
-        super.setLanguageCookie();
     }
 
     @Override

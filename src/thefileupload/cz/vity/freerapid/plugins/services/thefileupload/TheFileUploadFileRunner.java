@@ -12,12 +12,11 @@ import java.util.List;
  */
 class TheFileUploadFileRunner extends XFileSharingRunner {
     @Override
-    protected void setLanguageCookie() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.contains("efileuploading.com"))
             fileURL = fileURL.replace("efileuploading.com", "thefileupload.com");
         if (fileURL.contains("thefileupload.com"))
             fileURL = fileURL.replace("thefileupload.com", "themediastorage.com");
-        super.setLanguageCookie();
     }
 
     @Override

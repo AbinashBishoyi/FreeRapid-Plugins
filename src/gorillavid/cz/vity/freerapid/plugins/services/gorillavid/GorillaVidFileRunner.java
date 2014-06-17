@@ -20,11 +20,10 @@ class GorillaVidFileRunner extends XFileSharingRunner {
     private final static Logger logger = Logger.getLogger(GorillaVidFileRunner.class.getName());
 
     @Override
-    protected void setLanguageCookie() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.matches("http://(?:www\\.)?gorillavid\\.com/.+")) {
             fileURL = fileURL.replaceFirst("gorillavid\\.com", "gorillavid.in");
         }
-        super.setLanguageCookie();
     }
 
     @Override

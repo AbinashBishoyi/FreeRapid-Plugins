@@ -79,9 +79,13 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     }
 
     protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
+        return getXFSMethodBuilder(content, "method_");
+    }
+
+    protected MethodBuilder getXFSMethodBuilder(final String content, final String tag) throws Exception {
         final MethodBuilder methodBuilder = getMethodBuilder(content)
                 .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("method_", true)
+                .setActionFromFormWhereTagContains(tag, true)
                 .setAction(fileURL)
                 .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
@@ -96,9 +100,17 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         return methodBuilder;
     }
 
+    protected void correctURL() throws Exception {
+    }
+
+    protected boolean stepProcessFolder() throws Exception {
+        return false;
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        correctURL();
         setLanguageCookie();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -113,6 +125,7 @@ public abstract class XFileSharingRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        correctURL();
         setLanguageCookie();
         logger.info("Starting download in TASK " + fileURL);
         login();
@@ -129,6 +142,9 @@ public abstract class XFileSharingRunner extends AbstractRunner {
         checkFileProblems();
         checkNameAndSize();
         checkDownloadProblems();
+        if (stepProcessFolder()) {
+            return;
+        }
         for (int loopCounter = 0; ; loopCounter++) {
             if (loopCounter >= 8) {
                 //avoid infinite loops

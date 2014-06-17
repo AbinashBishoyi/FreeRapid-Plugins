@@ -21,15 +21,7 @@ class RedLoadFileRunner extends XFileSharingRunner {
     }
 
     @Override
-    protected MethodBuilder getXFSMethodBuilder() throws Exception {
-        final MethodBuilder methodBuilder = getMethodBuilder()
-                .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("method_free", true)   //## method_free
-                .setAction(fileURL)
-                .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-        if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
-            methodBuilder.removeParameter("method_premium");
-        }
-        return methodBuilder;
+    protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
+        return getXFSMethodBuilder(content, "method_free");
     }
 }

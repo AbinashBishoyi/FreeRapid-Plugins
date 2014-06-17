@@ -16,10 +16,9 @@ import java.util.regex.Pattern;
 class NosVideOFileRunner extends XFileSharingRunner {
 
     @Override
-    protected void setLanguageCookie() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.contains("nosvideo.com/"))
             fileURL = fileURL.replaceFirst("nosvideo\\.com/(?:\\?v=)?([^/]+)(?:/.+)?", "nosupload.com/?d=$1");
-        super.setLanguageCookie();
     }
 
     @Override

@@ -37,14 +37,6 @@ class BestreamsFileRunner extends XFileSharingRunner {
 
     @Override
     protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
-        final MethodBuilder methodBuilder = getMethodBuilder(content)
-                .setReferer(fileURL)
-                .setActionFromFormWhereTagContains("download1", true)                 //####
-                .setAction(fileURL)
-                .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-        if ((methodBuilder.getParameters().get("method_free") != null) && (!methodBuilder.getParameters().get("method_free").isEmpty())) {
-            methodBuilder.removeParameter("method_premium");
-        }
-        return methodBuilder;
+        return getXFSMethodBuilder(content, "download1");
     }
 }

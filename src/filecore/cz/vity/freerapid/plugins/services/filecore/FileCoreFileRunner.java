@@ -57,10 +57,9 @@ class FileCoreFileRunner extends XFileSharingRunner {
 
 
     @Override
-    protected void setLanguageCookie() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.contains("fcore.eu"))
             fileURL = fileURL.replaceFirst("fcore\\.eu", "filecore.co.nz");
-        super.setLanguageCookie();
     }
 
 }

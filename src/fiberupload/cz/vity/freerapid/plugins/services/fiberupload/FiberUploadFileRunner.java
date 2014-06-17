@@ -32,11 +32,10 @@ class FiberUploadFileRunner extends XFileSharingRunner {
     }
 
     @Override
-    public void runCheck() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.matches("http://(?:www\\.)?bulletupload\\.com/.+")) {
             httpFile.setNewURL(new URL(fileURL.replaceFirst("bulletupload\\.com", "fiberupload.com")));
         }
-        super.runCheck();
     }
 
     @Override

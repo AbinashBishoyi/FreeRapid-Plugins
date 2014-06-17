@@ -37,43 +37,37 @@ class TusFilesFileRunner extends XFileSharingRunner {
     }
 
     @Override
-    public void run() throws Exception {
-        runCheck();
+    protected boolean stepProcessFolder() throws Exception {
         if (httpFile.getFileName().startsWith("Folder >")) {
-            getAllFilesInFolder();
-        } else {
-            super.run();
-        }
-    }
-
-    private void getAllFilesInFolder() throws Exception {
-        checkDownloadProblems();
-        List<URI> list = new LinkedList<URI>();
-        boolean morePages;
-        do {
-            morePages = false;
-            final Matcher match = PlugUtils.matcher("<a href=\"(https?://(www\\.)?tusfiles\\.net/[^\"]+?)\"><img", getContentAsString());
-            while (match.find()) {
-                list.add(new URI(match.group(1)));
-            }
-            if (getContentAsString().contains(">Next")) {
-                morePages = true;
-                final HttpMethod nextMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Next").toGetMethod();
-                if (!makeRedirectedRequest(nextMethod)) {
-                    checkFileProblems();
-                    throw new ServiceConnectionProblemException();
+            List<URI> list = new LinkedList<URI>();
+            boolean morePages;
+            do {
+                morePages = false;
+                final Matcher match = PlugUtils.matcher("<a href=\"(https?://(www\\.)?tusfiles\\.net/[^\"]+?)\"><img", getContentAsString());
+                while (match.find()) {
+                    list.add(new URI(match.group(1)));
                 }
-                checkFileProblems();
-                checkDownloadProblems();
-            }
-            Logger.getLogger(TusFilesFileRunner.class.getName()).info(list.size() + " Links found");
-        } while (morePages);
+                if (getContentAsString().contains(">Next")) {
+                    morePages = true;
+                    final HttpMethod nextMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Next").toGetMethod();
+                    if (!makeRedirectedRequest(nextMethod)) {
+                        checkFileProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                    checkFileProblems();
+                    checkDownloadProblems();
+                }
+                Logger.getLogger(TusFilesFileRunner.class.getName()).info(list.size() + " Links found");
+            } while (morePages);
 
-        if (list.isEmpty()) throw new PluginImplementationException("No links found");
-        getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
-        httpFile.setFileName("Link(s) Extracted !");
-        httpFile.setState(DownloadState.COMPLETED);
-        httpFile.getProperties().put("removeCompleted", true);
+            if (list.isEmpty()) throw new PluginImplementationException("No links found");
+            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+            httpFile.setFileName("Link(s) Extracted !");
+            httpFile.setState(DownloadState.COMPLETED);
+            httpFile.getProperties().put("removeCompleted", true);
+            return true;
+        }
+        return false;
     }
 
     @Override

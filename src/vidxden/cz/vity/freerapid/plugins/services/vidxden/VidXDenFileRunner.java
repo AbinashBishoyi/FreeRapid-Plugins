@@ -34,11 +34,10 @@ class VidXDenFileRunner extends XFileSharingRunner {
     }
 
     @Override
-    public void runCheck() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.matches("http://(?:www\\.)?divxden\\.com/.+")) {
             httpFile.setNewURL(new URL(fileURL.replaceFirst("divxden\\.com", "vidxden.com")));
         }
-        super.runCheck();
     }
 
     @Override

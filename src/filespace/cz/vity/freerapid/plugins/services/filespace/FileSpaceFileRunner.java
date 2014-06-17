@@ -14,10 +14,9 @@ import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 class FileSpaceFileRunner extends XFileSharingRunner {
 
     @Override
-    protected void setLanguageCookie() throws Exception {
+    protected void correctURL() throws Exception {
         if (fileURL.contains("spaceforfiles.com/"))
             fileURL = fileURL.replace("spaceforfiles.com/", "filespace.com/");
-        super.setLanguageCookie();
     }
 
     @Override

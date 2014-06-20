@@ -15,6 +15,7 @@ import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.youtube.srt.Transcription2SrtUtil;
 import cz.vity.freerapid.plugins.video2audio.AbstractVideo2AudioRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
@@ -861,6 +862,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             }
             fos = new FileOutputStream(outputFile);
             logger.info("Output file name: " + fnameOutput);
+            downloadFile.setState(DownloadState.COMPLETED);
             videoFds = new FileDataSourceImpl(videoFile);
             audioFds = new FileDataSourceImpl(audioFile);
             Movie videoMovie = MovieCreator.build(videoFds);
@@ -918,6 +920,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             fos = new FileOutputStream(tempOutputFile);
             logger.info("Temp output file name: " + fnameTempOutput);
             logger.info("Output file name: " + fnameOutput);
+            downloadFile.setState(DownloadState.COMPLETED);
 
             Movie movie;
             inputFds = new FileDataSourceImpl(inputFile);

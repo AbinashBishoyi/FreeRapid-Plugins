@@ -32,16 +32,16 @@ class StiahniSiFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "file_download_name\">", "</div>");
-        PlugUtils.checkFileSize(httpFile, content, "Velikost:", "<br/>");
+        PlugUtils.checkName(httpFile, content, "name\">", "</");
+        PlugUtils.checkFileSize(httpFile, content, "fileSize\" content=\"", "\"/>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     private void setLang() {
-        if (fileURL.contains("lg="))
-            fileURL = fileURL.replaceFirst("lg=..", "lg=cz");
+        if (PlugUtils.matcher("stiahni.si/\\w+?/file", fileURL).find())
+            fileURL = fileURL.replaceFirst("stiahni.si/\\w+?/file", "stiahni.si/en/file");
         else
-            fileURL = fileURL + "&lg=cz";
+            fileURL = fileURL.replaceFirst("stiahni.si/file", "stiahni.si/en/file");
     }
 
     @Override
@@ -55,8 +55,8 @@ class StiahniSiFileRunner extends AbstractRunner {
             checkFileProblems();
             checkNameAndSize(contentAsString);
             checkDownloadProblems();
-            final String[] waitTimeArray = PlugUtils.getStringBetween(getContentAsString(), "var limit='", "'").split(":");
-            downloadTask.sleep(Integer.parseInt(waitTimeArray[0]) * 60 + Integer.parseInt(waitTimeArray[1]) + 1);
+            final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "var parselimit =", ";");
+            downloadTask.sleep(waitTime + 1);
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setActionFromTextBetween("window.location='", "';")
@@ -77,7 +77,8 @@ class StiahniSiFileRunner extends AbstractRunner {
         if (contentAsString.contains("bol zmazaný") ||
                 contentAsString.contains("Soubor nikdo nestáhnul více") ||
                 contentAsString.contains("Soubor obsahoval nelegální obsah") ||
-                contentAsString.contains("Soubor byl smazaný uploaderem")) {
+                contentAsString.contains("Soubor byl smazaný uploaderem") ||
+                contentAsString.contains("This file does not exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
@@ -88,7 +89,8 @@ class StiahniSiFileRunner extends AbstractRunner {
                 contentAsString.contains("Všechny free sloty jsou obsazené")) {
             throw new YouHaveToWaitException("All free slots are occupied", 5 * 60);
         }
-        if (contentAsString.contains("Paralelné sťahovanie nieje pre free uzivateľov povolené")) {
+        if (contentAsString.contains("Paralelné sťahovanie nieje pre free uzivateľov povolené") ||
+                contentAsString.contains("Free download dont support parallel downloading")) {
             throw new PluginImplementationException("Parallel download for free users is not allowed");
         }
     }

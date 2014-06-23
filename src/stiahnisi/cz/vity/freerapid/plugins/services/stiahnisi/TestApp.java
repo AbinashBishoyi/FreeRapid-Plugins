@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //httpFile.setNewURL(new URL("http://www.stiahni.si/download.php?id=6685"));
             //httpFile.setNewURL(new URL("http://www.stiahni.si/download.php?id=17943"));
-            httpFile.setNewURL(new URL("http://www.stiahni.si/download.php?id=89148‎"));
+            httpFile.setNewURL(new URL("http://www.stiahni.si/file/8108619"));
             //httpFile.setNewURL(new URL("http://www.stiahni.si/download.php?id=17925")); //server error
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("159.253.237.14", 8080); //eg we can use local proxy to sniff HTTP communication

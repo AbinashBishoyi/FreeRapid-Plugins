@@ -95,7 +95,7 @@ class LetitBitFileRunner extends AbstractRunner {
             }
             final HttpMethod httpMethod = getMethodBuilder()
                     .setReferer("http://letitbit.net/")
-                    .setAction("http://letitbit.net/")
+                    .setAction("/index.php")
                     .setParameter("act", "login")
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())

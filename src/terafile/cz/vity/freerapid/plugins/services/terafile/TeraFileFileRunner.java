@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandlerNoSize;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
@@ -101,6 +102,7 @@ class TeraFileFileRunner extends XFileSharingRunner {
                 httpFile.setFileSize(Long.parseLong(match.group(1)));
             }
         });
+        fileSizeHandlers.add(new FileSizeHandlerNoSize());
         return fileSizeHandlers;
     }
 

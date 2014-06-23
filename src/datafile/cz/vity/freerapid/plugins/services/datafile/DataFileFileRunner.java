@@ -3,8 +3,10 @@ package cz.vity.freerapid.plugins.services.datafile;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -66,7 +68,8 @@ class DataFileFileRunner extends AbstractRunner {
                 final int waitTime = 1 + PlugUtils.getNumberBetween(getContentAsString(), "counter.contdownTimer('", "'");
                 if (waitTime > 123) throw new YouHaveToWaitException("Wait between downloads", waitTime);
                 final long startTime = System.currentTimeMillis();
-                doCaptcha(builder);
+                if (captchaLoop)
+                    doCaptcha(builder);
                 final long endTime = System.currentTimeMillis();
                 downloadTask.sleep(waitTime - (int) ((endTime - startTime) / 1000));
                 setFileStreamContentTypes(new String[0], new String[]{"application/x-www-form-urlencoded"});
@@ -79,12 +82,15 @@ class DataFileFileRunner extends AbstractRunner {
             } while (!getContentAsString().contains("success\":1"));
 
             final String url = PlugUtils.getStringBetween(getContentAsString(), "link\":\"", "\"").replace("\\/", "/");
-            client.getHTTPClient().getParams().setBooleanParameter("dontUseHeaderFilename", true);
+            client.getHTTPClient().getParams().setBooleanParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             final HttpMethod httpMethod = getGetMethod(url);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
             }
+            // correctly get Header file name to avoid truncation of long file names
+            String name = HttpUtils.getFileName(httpMethod);
+            httpFile.setFileName(name.substring(0, name.indexOf("\"")));
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

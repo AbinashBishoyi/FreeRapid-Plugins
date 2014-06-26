@@ -1,10 +1,12 @@
 package cz.vity.freerapid.plugins.services.webshare;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -14,7 +16,7 @@ import java.util.logging.Logger;
 /**
  * Class which contains main code
  *
- * @author Vity
+ * @author Vity, birchie
  */
 class WebShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(WebShareFileRunner.class.getName());
@@ -22,6 +24,9 @@ class WebShareFileRunner extends AbstractRunner {
     final String baseUrl = "https://webshare.cz/";
     final String urlFileInfo = "https://webshare.cz/api/file_info/";
     final String urlFileLink = "https://webshare.cz/api/file_link/";
+    final String urlLoginSalt = "https://webshare.cz/api/salt/";
+    final String urlUserLogin = "https://webshare.cz/api/login/";
+    String PremiumToken = "";
 
     @Override
     public void runCheck() throws Exception {
@@ -68,6 +73,8 @@ class WebShareFileRunner extends AbstractRunner {
         super.run();
         if (fileURL.contains("/#/")) fileURL = fileURL.replace("/#/", "/");
         logger.info("Starting download in TASK " + fileURL);
+        login();
+
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -77,7 +84,7 @@ class WebShareFileRunner extends AbstractRunner {
                     .setReferer(baseUrl)
                     .setAction(urlFileLink)
                     .setParameter("ident", getFileIdent(method))
-                    .setParameter("wst", "")
+                    .setParameter("wst", PremiumToken)
                     .toPostMethod();
             httpMethod.addRequestHeader("X-Requested-With", "XMLHttpRequest");
             if (!makeRedirectedRequest(httpMethod)) {
@@ -104,4 +111,49 @@ class WebShareFileRunner extends AbstractRunner {
         }
     }
 
+    private void login() throws Exception {
+        synchronized (WebShareFileRunner.class) {
+            WebShareServiceImpl service = (WebShareServiceImpl) getPluginService();
+            PremiumAccount pa = service.getConfig();
+            if (!pa.isSet()) {
+                logger.info("No account login information !");
+            } else {
+                final HttpMethod methodSalt = getMethodBuilder().setReferer(baseUrl)
+                        .setAction(urlLoginSalt)
+                        .setParameter("username_or_email", pa.getUsername())
+                        .toPostMethod();
+                methodSalt.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                if (!makeRedirectedRequest(methodSalt)) {
+                    throw new ServiceConnectionProblemException("Error posting login info");
+                }
+                if (getContentAsString().contains("SALT_FATAL") ||
+                        getContentAsString().contains("User not found") ||
+                        !getContentAsString().contains("<status>OK<")) {
+                    throw new PluginImplementationException("Invalid user name or email address");
+                }
+                final String salt = PlugUtils.getStringBetween(getContentAsString(), "<salt>", "</salt>");
+
+                final PasswordJS passJS = new PasswordJS();
+                final String encPass = passJS.encryptPassword(pa.getPassword(), salt);
+
+                final HttpMethod methodLogin = getMethodBuilder().setReferer(baseUrl)
+                        .setAction(urlUserLogin)
+                        .setParameter("username_or_email", pa.getUsername())
+                        .setParameter("password", encPass)
+                        .setParameter("keep_logged_in", "false")
+                        .toPostMethod();
+                methodLogin.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                if (!makeRedirectedRequest(methodLogin)) {
+                    throw new ServiceConnectionProblemException("Error posting login info");
+                }
+                if (getContentAsString().contains("LOGIN_FATAL") ||
+                        getContentAsString().contains("Invalid credentials") ||
+                        !getContentAsString().contains("<status>OK<")) {
+                    throw new PluginImplementationException("Invalid account or error logging in");
+                }
+                PremiumToken = PlugUtils.getStringBetween(getContentAsString(), "<token>", "</token>");
+                logger.info("Logged in !");
+            }
+        }
+    }
 }

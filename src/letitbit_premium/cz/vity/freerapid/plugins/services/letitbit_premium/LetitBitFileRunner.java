@@ -100,8 +100,8 @@ class LetitBitFileRunner extends AbstractRunner {
                     .setParameter("login", pa.getUsername())
                     .setParameter("password", pa.getPassword())
                     .toPostMethod();
-            if (!makeRedirectedRequest(httpMethod))
-                throw new ServiceConnectionProblemException("Error posting login info");
+            makeRedirectedRequest(httpMethod);
+
             if (getContentAsString().contains("Authorization data is invalid")
                     || getContentAsString().contains("Login is indicated in wrong format"))
                 throw new BadLoginException("Invalid LetitBit Premium account login information!");

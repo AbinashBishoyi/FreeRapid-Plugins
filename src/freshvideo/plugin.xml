@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.uploadscenter.UploadsCenterServiceImpl"
-        id="uploadscenter.com" vendor="birchie" version="1.0.3">
+<plugin class="cz.vity.freerapid.plugins.services.freshvideo.FreshVideoServiceImpl"
+        id="freshvideo.net" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?uploadscenter\.com/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?freshvideo\.net/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="uploadscenter.com"/>
+        <attribute id="services" value="freshvideo.net"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="defaultDownloads" value="1"/>
         <attribute id="premium" value="false"/>
@@ -15,9 +15,9 @@
     </attributes>
     <requires>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.14" reverse-lookup="false"/>
+                plugin-version="1.0.15" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="uploadscenter.com" path="/" type="code"/>
+        <library id="freshvideo.net" path="/" type="code"/>
     </runtime>
 </plugin>

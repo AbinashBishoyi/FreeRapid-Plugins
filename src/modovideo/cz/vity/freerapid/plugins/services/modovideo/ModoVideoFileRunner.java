@@ -1,23 +1,25 @@
-package cz.vity.freerapid.plugins.services.exashare;
+package cz.vity.freerapid.plugins.services.modovideo;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
-import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
+import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
  *
  * @author birchie
  */
-class ExaShareFileRunner extends AbstractRunner {
-    private final static Logger logger = Logger.getLogger(ExaShareFileRunner.class.getName());
+class ModoVideoFileRunner extends AbstractRtmpRunner {
+    private final static Logger logger = Logger.getLogger(ModoVideoFileRunner.class.getName());
 
     @Override
     public void runCheck() throws Exception { //this method validates file
@@ -33,9 +35,9 @@ class ExaShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "<title>Watch ", "</");
-        httpFile.setFileName(httpFile.getFileName().replace(" ", "."));
-        PlugUtils.checkFileSize(httpFile, content, ">(", ")");
+        final Matcher match = PlugUtils.matcher("<Title>Watch(.+?)</Title>", content);
+        if (!match.find()) throw new PluginImplementationException("File name not found");
+        httpFile.setFileName(match.group(1).trim().replaceAll("\\s", "."));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -49,22 +51,10 @@ class ExaShareFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
 
-            String dlUrl;
-            try {
-                final String[] portAddr = PlugUtils.getStringBetween(getContentAsString(), "|www|", "|if").split("\\|");
-                final String fileCode = PlugUtils.getStringBetween(getContentAsString(), "|provider|", "|");
-                dlUrl = "http://" + portAddr[1] + ".exashare.com:" + portAddr[0] + "/" + fileCode + "/v";
-            } catch (Exception e) {
-                dlUrl = PlugUtils.getStringBetween(getContentAsString(), "file: \"", "\"");
-            }
-            final HttpMethod httpMethod = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(dlUrl)
-                    .toGetMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
-            }
+            final String streamer = PlugUtils.getStringBetween(getContentAsString(), "streamer: \"", "\"");
+            final String file = "mp4:" + PlugUtils.getStringBetween(getContentAsString(), "file: \"", "\"");
+            final RtmpSession rtmpSession = new RtmpSession(streamer, file);
+            tryDownloadAndSaveFile(rtmpSession);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -72,10 +62,12 @@ class ExaShareFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found") ||
-                contentAsString.contains("The file was deleted")) {
+        final String content = getContentAsString();
+        if (content.contains("File Not Found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+        }
+        if (content.contains("Can't connect to Mysql server")) {
+            throw new ServiceConnectionProblemException("Modovideo.com mysql server problems");
         }
     }
 

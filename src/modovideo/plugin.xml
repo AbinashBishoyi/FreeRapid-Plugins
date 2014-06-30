@@ -10,7 +10,10 @@
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
-
+    <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.13"
+                reverse-lookup="false"/>
+    </requires>
     <runtime>
         <library id="modovideo.com" path="/" type="code"/>
     </runtime>

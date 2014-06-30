@@ -22,9 +22,16 @@ import java.util.regex.Matcher;
 class VideoWeedFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(VideoWeedFileRunner.class.getName());
 
+    private void checkUrl() {
+        if (fileURL.contains("embed.php?v=")) {
+            fileURL = fileURL.replaceFirst("http://embed\\.videoweed\\.(es|com)/embed\\.php\\?v=([a-z0-9]+).*", "http://www.videoweed.$1/file/$2");
+        }
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -40,6 +47,8 @@ class VideoWeedFileRunner extends AbstractRunner {
         final int index = name.lastIndexOf('.');
         if (index > 0) {
             name = name.substring(0, index) + ".flv";
+        } else {
+            name += ".flv";
         }
         httpFile.setFileName(name);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -48,6 +57,7 @@ class VideoWeedFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {

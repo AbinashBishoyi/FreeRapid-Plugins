@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.imageshack.ImageShackServiceImpl" id="imageshack.us" vendor="ntoskrnl" version="1.0.9">
-    <attributes>
+<plugin class="cz.vity.freerapid.plugins.services.imageshack.ImageShackServiceImpl" id="imageshack.us" vendor="ntoskrnl"
+        version="1.0.10">
+<attributes>
         <attribute id="urlRegex" value="http://(img\d+?\.imageshack\.us/(i/|my\.php\?).+|yfrog\.com/[a-z\d]+)"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>

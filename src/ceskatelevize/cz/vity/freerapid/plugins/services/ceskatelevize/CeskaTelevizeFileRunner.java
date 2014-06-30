@@ -34,13 +34,17 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(CeskaTelevizeFileRunner.class.getName());
     private final static String FNAME = "fname";
     private final static String SWITCH_ITEM_ID = "switchitemid";
-    public final static String DEFAULT_EXT = ".flv";
+    private final static String DEFAULT_EXT = ".flv";
     private String switchItemIdFromUrl = null;
     private CeskaTelevizeSettingsConfig config;
 
     private void setConfig() throws Exception {
         CeskaTelevizeServiceImpl service = (CeskaTelevizeServiceImpl) getPluginService();
         config = service.getConfig();
+    }
+
+    private boolean isBonus(String fileUrl) {
+        return fileUrl.contains("/bonus/");
     }
 
     @Override
@@ -168,7 +172,7 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
                 final String content = matcher.group(1);
                 if (content.toLowerCase().contains(lower)) {
                     final String iFrameUrl = PlugUtils.replaceEntities(matcher.group(2));
-                    if (!iFrameUrl.contains("bonus=")) {
+                    if ((!isBonus(fileURL) && !iFrameUrl.contains("bonus=")) || (isBonus(fileURL) && iFrameUrl.contains("bonus="))) {
                         action = iFrameUrl;
                         break;
                     }
@@ -418,6 +422,8 @@ class CeskaTelevizeFileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("No episodes available");
         }
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+        httpFile.setState(DownloadState.COMPLETED);
+        httpFile.getProperties().put("removeCompleted", true);
         logger.info(list.size() + " episodes added");
     }
 

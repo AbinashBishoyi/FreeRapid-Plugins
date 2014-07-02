@@ -4,7 +4,7 @@ package cz.vity.freerapid.plugins.services.firedrive;
  * @author tong2shot
  */
 public class SettingsConfig {
-    private VideoQuality videoQuality = VideoQuality.High;
+    private VideoQuality videoQuality = VideoQuality.Original;
 
     public VideoQuality getVideoQuality() {
         return videoQuality;

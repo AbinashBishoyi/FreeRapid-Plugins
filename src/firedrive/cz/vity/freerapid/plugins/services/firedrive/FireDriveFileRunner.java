@@ -12,6 +12,9 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.util.URIUtil;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -87,30 +90,17 @@ class FireDriveFileRunner extends AbstractRunner {
             checkProblems();
 
             setConfig();
-            VideoQuality configQuality = config.getVideoQuality();
+            FireDriveMedia selectedMedia = getSelectedMedia(getContentAsString());
             logger.info("Config settings : " + config);
-            Matcher hiMatcher = getMatcherAgainstContent("[\"'](http://[^\"']+?\\?key=[^\"']+?)[\"']");
-            Matcher lowMatcher = getMatcherAgainstContent("[\"'](http://[^\"']+?\\?stream=[^\"']+?)[\"']");
-            String downloadURL;
-            //low quality stream is not guaranteed to be exist.
-            //high quality on the other hand, always exists.
-            if (lowMatcher.find()) {
-                if ((configQuality == VideoQuality.High) && (hiMatcher.find())) {
-                    downloadURL = hiMatcher.group(1);
-                } else {
-                    downloadURL = lowMatcher.group(1);
-                }
-            } else if (hiMatcher.find()) {
-                downloadURL = hiMatcher.group(1);
-            } else {
-                throw new PluginImplementationException("Download link not found");
-            }
+            logger.info("Selected media  : " + selectedMedia);
+            String downloadURL = selectedMedia.url;
 
-            if (configQuality == VideoQuality.Mobile) {
-                String mobileDownloadURL = downloadURL.replaceFirst("\\?(key|stream)=", "?mobile=");
+            if (config.getVideoQuality() == VideoQuality.Mobile) {
+                String mobileDownloadURL = downloadURL.replaceFirst("\\?(key|hd|stream)=", "?mobile=");
+                logger.info("Downloading mobile stream: " + mobileDownloadURL);
                 if (!tryDownloadAndSaveFile(getGetMethod(mobileDownloadURL))) {
-                    logger.info("Attempt to download mobile version failed ..\nTrying to download the stream or original version ..");
-                    if (!tryDownloadAndSaveFile(getGetMethod(downloadURL))) { //mobile version is unstable, if fails then download low or high quality
+                    logger.info("Attempt to download mobile stream failed..\nTrying to download SD/HD/Original stream..");
+                    if (!tryDownloadAndSaveFile(getGetMethod(downloadURL))) { //mobile version is unstable, if failed then download SD/HD/Original
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
@@ -135,6 +125,29 @@ class FireDriveFileRunner extends AbstractRunner {
         }
     }
 
+    private FireDriveMedia getSelectedMedia(String content) throws PluginImplementationException {
+        //HD/SD quality is not guaranteed to be exist.
+        //Original quality on the other hand, always exists.
+        Matcher originalMatcher = PlugUtils.matcher("[\"'](http://[^\"']+?\\?key=[^\"']+?)[\"']", content);
+        Matcher hdMatcher = PlugUtils.matcher("[\"'](http://[^\"']+?\\?hd=[^\"']+?)[\"']", content);
+        Matcher sdMatcher = PlugUtils.matcher("[\"'](http://[^\"']+?\\?stream=[^\"']+?)[\"']", content);
+        List<FireDriveMedia> fireDriveMediaList = new LinkedList<FireDriveMedia>();
+
+        if (originalMatcher.find()) {
+            fireDriveMediaList.add(new FireDriveMedia(originalMatcher.group(1), VideoQuality.Original));
+        }
+        if (hdMatcher.find()) {
+            fireDriveMediaList.add(new FireDriveMedia(hdMatcher.group(1), VideoQuality.HD));
+        }
+        if (sdMatcher.find()) {
+            fireDriveMediaList.add(new FireDriveMedia(sdMatcher.group(1), VideoQuality.SD));
+        }
+        if (fireDriveMediaList.isEmpty()) {
+            throw new PluginImplementationException("Download URL not found");
+        }
+        return Collections.min(fireDriveMediaList);
+    }
+
     @Override
     protected boolean tryDownloadAndSaveFile(HttpMethod method) throws Exception {
         setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
@@ -151,8 +164,7 @@ class FireDriveFileRunner extends AbstractRunner {
             }
             method = getMethodBuilder()
                     .setReferer(fileURL)
-                            //.setAction(locationHeader.getValue().replace("'", "%27"))
-                    .setAction(new org.apache.commons.httpclient.URI(URIUtil.encodePathQuery(locationHeader.getValue(), "UTF-8"), true, client.getHTTPClient().getParams().getUriCharset()).toString().replace("'", "%27"))
+                    .setAction(new org.apache.commons.httpclient.URI(URIUtil.encodePathQuery(locationHeader.getValue(), "UTF-8"), true, "UTF-8").toString().replace("'", "%27"))
                     .toGetMethod();
             return (setFileExtAndTryDownloadAndSaveFile(method));
         }
@@ -168,9 +180,9 @@ class FireDriveFileRunner extends AbstractRunner {
                 throw new PluginImplementationException("Maximum redirect depth exceeded");
             }
             final HttpMethod method2 = getMethodBuilder().setReferer(fileURL).setAction(action).toGetMethod();
-            processHttpMethod(method2);
+            processHttpMethod(method2); //processHttpMethod doesn't consume the content
             if (method2.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                throw new URLNotAvailableAnymoreException("File not found");
+                return false; //sometimes mobile stream was deleted
             }
             locationHeader = method2.getResponseHeader("Location");
             if (locationHeader != null) {
@@ -201,5 +213,36 @@ class FireDriveFileRunner extends AbstractRunner {
             client.getHTTPClient().getHostConfiguration().setHost(method.getURI().getHost(), 80, client.getHTTPClient().getHostConfiguration().getProtocol());
         }
         client.getHTTPClient().executeMethod(method);
+    }
+
+    private class FireDriveMedia implements Comparable<FireDriveMedia> {
+        private final VideoQuality quality;
+        private final String url;
+        private final int weight;
+
+        private FireDriveMedia(String url, VideoQuality quality) {
+            this.url = url;
+            this.quality = quality;
+            this.weight = calcWeight();
+            logger.info("Found media: " + this);
+        }
+
+        private int calcWeight() {
+            return Math.abs(quality.getQuality() - config.getVideoQuality().getQuality());
+        }
+
+        @Override
+        public int compareTo(FireDriveMedia that) {
+            return Integer.valueOf(this.weight).compareTo(that.weight);
+        }
+
+        @Override
+        public String toString() {
+            return "FireDriveMedia{" +
+                    "quality=" + quality +
+                    ", url='" + url + '\'' +
+                    ", weight=" + weight +
+                    '}';
+        }
     }
 }

@@ -17,7 +17,8 @@ public class TestApp extends PluginDevApplication {
         try {
             //httpFile.setNewURL(new URL("http://www.putlocker.com/file/359B64625F4CBEA4"));
             //httpFile.setNewURL(new URL("http://www.firedrive.com/file/359B64625F4CBEA4"));
-            httpFile.setNewURL(new URL("http://www.firedrive.com/file/B47E2C82F63DB5A4"));
+            //httpFile.setNewURL(new URL("http://www.firedrive.com/file/B47E2C82F63DB5A4"));
+            httpFile.setNewURL(new URL("http://www.firedrive.com/file/73BD5F3553A04878"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final FireDriveServiceImpl service = new FireDriveServiceImpl();

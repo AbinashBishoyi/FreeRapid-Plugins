@@ -64,12 +64,19 @@ class YunFileFileRunner extends AbstractRunner {
             do {
                 Matcher matcher = getMatcherAgainstContent("Please wait <span.+?>(.+?)</span>");
                 final int waitTime = !matcher.find() ? 30 : Integer.parseInt(matcher.group(1));
-                downloadTask.sleep(waitTime + 1);
-                matcher = getMatcherAgainstContent("id=\"downpage_link\"[^<>]+? href=\"([^\"]+?)\"");
+
+                matcher = getMatcherAgainstContent("<a (.*?id=\"downpage_link\"[^<>]+?)>");
+                Matcher downpageHref = getMatcherAgainstContent("href=\"([^\"]+?)\"");
                 if (!matcher.find()) {
+                    throw new PluginImplementationException("Download page anchor tag not found");
+                }
+                downpageHref.region(matcher.start(1), matcher.end(1));
+                if (!downpageHref.find()) {
                     throw new PluginImplementationException("Download page link not found");
                 }
-                String downloadPageLink = matcher.group(1).trim();
+                String downloadPageLink = downpageHref.group(1).trim();
+
+                downloadTask.sleep(waitTime + 1);
                 if (getContentAsString().contains("vcode")) {
                     final String captcha;
                     captcha = getCaptchaSupport().getCaptcha(baseURL + "/verifyimg/getPcv.html");
@@ -90,8 +97,7 @@ class YunFileFileRunner extends AbstractRunner {
                 checkProblems();
                 baseURL = "http://" + httpMethod.getURI().getAuthority();
                 referer = httpMethod.getURI().toString();
-            }
-            while (getContentAsString().contains("vcode"));
+            } while (getContentAsString().contains("vcode"));
             final String downloadPageUrl = httpMethod.getURI().toString();
             boolean cookieVidSet = false;
             if (getContentAsString().contains("setCookie(\"vid1\", \"")) {

@@ -5,12 +5,29 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 
+import java.util.List;
+import java.util.regex.Pattern;
+
 /**
  * Class which contains main code
  *
  * @author birchie
  */
 class KingFilesFileRunner extends XFileSharingRunner {
+
+    @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("var download_url =");
+        return downloadPageMarkers;
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "download_url\\s*?=\\s*?['\"](http.+?" + Pattern.quote(httpFile.getFileName()) + ")['\"]");
+        return downloadLinkRegexes;
+    }
 
     @Override
     protected void checkFileProblems() throws ErrorDuringDownloadingException {

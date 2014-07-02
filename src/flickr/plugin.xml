@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.flickr.FlickrServiceImpl" id="flickr.com" vendor="Arthur+tong2shot"
-        version="1.1.4">
+        version="1.1.5">
     <attributes>
         <attribute id="urlRegex"
                    value="https?://(www\.)?flickr\.com/photos/.+/((sets/|galleries/)?[0-9]+/?.*|favorites/?)"/>
-        <attribute id="minver" value="0.852"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="flickr.com"/>
         <attribute id="maxDownloads" value="5"/>

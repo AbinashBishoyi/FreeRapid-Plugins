@@ -106,7 +106,7 @@ class FlickrFileRunner extends AbstractRunner {
 
     private MethodBuilder getFlickrMethodBuilder(final String method) throws BuildMethodException {
         return getMethodBuilder()
-                .setAction("http://api.flickr.com/services/rest/")
+                .setAction("https://api.flickr.com/services/rest/")
                 .setParameter("method", method)
                 .setParameter("api_key", API_KEY)
                 .setParameter("format", "json")

@@ -11,6 +11,7 @@ import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -61,7 +62,7 @@ public class HdsDownloader {
         client.getHTTPClient().getParams().setBooleanParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
 
         final FragmentRequester requester = getFragmentRequester(media);
-        final HdsInputStream in = getHdsInputStream(requester);
+        final InputStream in = getInputStream(requester);
 
         try {
             downloadTask.saveToFile(in);
@@ -78,7 +79,7 @@ public class HdsDownloader {
         return new FragmentRequester(httpFile, client, media);
     }
 
-    protected HdsInputStream getHdsInputStream(FragmentRequester requester) {
+    protected InputStream getInputStream(FragmentRequester requester) {
         return new HdsInputStream(requester);
     }
 

@@ -73,14 +73,14 @@ class CanalPlusFileRunner extends AbstractRunner {
             HashMap videoEntry = getVideoEntry(getContentAsString(), videoId);
             checkNameAndSize(videoEntry);
 
-            setConfig();
-            logger.info("Settings config: " + config);
             String hdsUrl;
             try {
                 hdsUrl = (String) ((HashMap) ((HashMap) videoEntry.get("MEDIA")).get("VIDEOS")).get("HDS");
             } catch (Exception e) {
                 throw new PluginImplementationException("HDS URL not found");
             }
+            setConfig();
+            logger.info("Settings config: " + config);
             final CanalPlusHdsDownloader downloader = new CanalPlusHdsDownloader(client, httpFile, downloadTask, config.getVideoQuality().getBitrate());
             downloader.tryDownloadAndSaveFile(hdsUrl + "?hdcore=2.11.3&g=SLMDNWLGMBXS");
         } else {
@@ -120,7 +120,7 @@ class CanalPlusFileRunner extends AbstractRunner {
                     break;
                 }
             }
-        } catch (PluginImplementationException e) {
+        } catch (Exception e) {
             throw new PluginImplementationException("Error getting video entry");
         }
         if (selectedEntry == null) {

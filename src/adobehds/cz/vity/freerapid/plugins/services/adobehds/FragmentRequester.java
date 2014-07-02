@@ -7,11 +7,13 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Logger;
 
 /**
  * @author ntoskrnl
  */
 public class FragmentRequester {
+    private final static Logger logger = Logger.getLogger(FragmentRequester.class.getName());
 
     protected final HttpFile httpFile;
     protected final HttpDownloadClient client;
@@ -29,7 +31,8 @@ public class FragmentRequester {
         if (currentFragment > media.getFragmentCount()) {
             return null;
         }
-        final String url = media.getUrl() + "Seg1-Frag" + currentFragment;
+        final String url = media.getUrl() + "Seg1-Frag" + currentFragment + (media.getUrlQuery() == null ? "" : "?" + media.getUrlQuery());
+        logger.info("Downloading: " + url);
         final HttpMethod method = client.getGetMethod(url);
         final InputStream in = client.makeRequestForFile(method);
         if (in == null) {

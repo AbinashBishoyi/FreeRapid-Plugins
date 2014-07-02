@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.canalplus;
+package cz.vity.freerapid.plugins.services.nbc;
 
 /**
  * @author tong2shot

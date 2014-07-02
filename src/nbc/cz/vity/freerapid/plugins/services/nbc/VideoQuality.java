@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.canalplus;
+package cz.vity.freerapid.plugins.services.nbc;
 
 import java.util.Arrays;
 import java.util.Collections;

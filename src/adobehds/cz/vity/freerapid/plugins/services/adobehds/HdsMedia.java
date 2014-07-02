@@ -5,17 +5,23 @@ package cz.vity.freerapid.plugins.services.adobehds;
  */
 public class HdsMedia implements Comparable<HdsMedia> {
     private final String url;
+    private final String urlQuery;
     private final int bitrate;
     private final int fragmentCount;
 
-    public HdsMedia(final String url, final int bitrate, final int fragmentCount) {
+    public HdsMedia(final String url, String urlQuery, final int bitrate, final int fragmentCount) {
         this.url = url;
+        this.urlQuery = urlQuery;
         this.bitrate = bitrate;
         this.fragmentCount = fragmentCount;
     }
 
     public String getUrl() {
         return url;
+    }
+
+    public String getUrlQuery() {
+        return urlQuery;
     }
 
     public int getFragmentCount() {

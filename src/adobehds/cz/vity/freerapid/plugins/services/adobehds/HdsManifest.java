@@ -45,13 +45,13 @@ class HdsManifest {
                     final MediaNode childMedia = childManifest.getFirstMediaNode();
                     final BootstrapInfo info = childManifest.getBootstrapInfo(childMedia.getBootstrapInfoId());
                     final String url = getUrl(href, childManifest.getBaseUrl(), childMedia.getUrl());
-                    medias.add(new HdsMedia(url, media.getBitrate(), info.getFragmentCount()));
+                    medias.add(new HdsMedia(url, manifest.getUrlQuery(), media.getBitrate(), info.getFragmentCount()));
                 }
             } else {
                 for (final MediaNode media : manifest.getMediaNodes()) {
                     final BootstrapInfo info = manifest.getBootstrapInfo(media.getBootstrapInfoId());
                     final String url = getUrl(manifestUrl, manifest.getBaseUrl(), media.getUrl());
-                    medias.add(new HdsMedia(url, media.getBitrate(), info.getFragmentCount()));
+                    medias.add(new HdsMedia(url, manifest.getUrlQuery(), media.getBitrate(), info.getFragmentCount()));
                 }
             }
             logger.info("Found medias: " + medias.toString());
@@ -83,6 +83,11 @@ class HdsManifest {
 
         public String getBaseUrl() throws Exception {
             return xpath.evaluate("/manifest/baseURL/text()", document);
+        }
+
+        public String getUrlQuery() throws Exception {
+            String ret = xpath.evaluate("/manifest/pv-2.0", document);
+            return ret.isEmpty() ? null : ret.replaceFirst("^;", "");
         }
 
         public List<MediaNode> getMediaNodes() throws Exception {

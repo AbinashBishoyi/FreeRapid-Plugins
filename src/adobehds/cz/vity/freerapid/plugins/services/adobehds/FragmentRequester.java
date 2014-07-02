@@ -11,11 +11,11 @@ import java.io.InputStream;
 /**
  * @author ntoskrnl
  */
-class FragmentRequester {
+public class FragmentRequester {
 
-    private final HttpFile httpFile;
-    private final HttpDownloadClient client;
-    private final HdsMedia media;
+    protected final HttpFile httpFile;
+    protected final HttpDownloadClient client;
+    protected final HdsMedia media;
     private int currentFragment = 1;
     private long totalFragmentsSize;
 

@@ -10,12 +10,13 @@ import java.util.logging.Logger;
 /**
  * @author ntoskrnl
  */
-class HdsInputStream extends InputStream {
+public class HdsInputStream extends InputStream {
 
     private static final Logger logger = Logger.getLogger(HdsInputStream.class.getName());
 
     private static final int TAG_TYPE_AUDIO = 0x08;
     private static final int TAG_TYPE_VIDEO = 0x09;
+    private static final int TAG_TYPE_SCRIPT = 0x12;
     private static final int CODEC_ID_AAC = 0x0a;
     private static final int CODEC_ID_AVC = 0x07;
     private static final int SEQUENCE_HEADER = 0x00;
@@ -139,6 +140,10 @@ class HdsInputStream extends InputStream {
                 case 10:
                 case 11: {
                     throw new IOException("Akamai DRM not supported");
+                }
+                case TAG_TYPE_SCRIPT: {
+                    skipBytes(dataSize + 4);
+                    continue;
                 }
                 case 40:
                 case 41: {

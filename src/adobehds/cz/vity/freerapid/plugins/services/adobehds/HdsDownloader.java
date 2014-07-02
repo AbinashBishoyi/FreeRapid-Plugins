@@ -12,6 +12,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -29,9 +30,9 @@ public class HdsDownloader {
 
     private static final Logger logger = Logger.getLogger(HdsDownloader.class.getName());
 
-    private final HttpDownloadClient client;
-    private final HttpFile httpFile;
-    private final HttpFileDownloadTask downloadTask;
+    protected final HttpDownloadClient client;
+    protected final HttpFile httpFile;
+    protected final HttpFileDownloadTask downloadTask;
 
     public HdsDownloader(final HttpDownloadClient client, final HttpFile httpFile, final HttpFileDownloadTask downloadTask) {
         this.client = client;
@@ -42,7 +43,7 @@ public class HdsDownloader {
     public void tryDownloadAndSaveFile(final String manifestUrl) throws Exception {
         client.getHTTPClient().getParams().setParameter(DownloadClientConsts.FILE_STREAM_RECOGNIZER, new DefaultFileStreamRecognizer(new String[0], new String[]{"video/f4m"}, false));
         final HdsManifest manifest = new HdsManifest(client, manifestUrl);
-        final HdsMedia media = Collections.max(manifest.getMedias());
+        final HdsMedia media = getSelectedMedia(manifest.getMedias());
         logger.info("Downloading media: " + media);
 
         httpFile.setState(DownloadState.GETTING);
@@ -59,14 +60,26 @@ public class HdsDownloader {
 
         client.getHTTPClient().getParams().setBooleanParameter(DownloadClientConsts.NO_CONTENT_LENGTH_AVAILABLE, true);
 
-        final FragmentRequester requester = new FragmentRequester(httpFile, client, media);
-        final HdsInputStream in = new HdsInputStream(requester);
+        final FragmentRequester requester = getFragmentRequester(media);
+        final HdsInputStream in = getHdsInputStream(requester);
 
         try {
             downloadTask.saveToFile(in);
         } finally {
             in.close();
         }
+    }
+
+    protected HdsMedia getSelectedMedia(List<HdsMedia> mediaList) throws Exception {
+        return Collections.max(mediaList);
+    }
+
+    protected FragmentRequester getFragmentRequester(HdsMedia media) {
+        return new FragmentRequester(httpFile, client, media);
+    }
+
+    protected HdsInputStream getHdsInputStream(FragmentRequester requester) {
+        return new HdsInputStream(requester);
     }
 
 }

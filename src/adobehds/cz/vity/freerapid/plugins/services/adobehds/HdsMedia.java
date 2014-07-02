@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.adobehds;
 /**
  * @author ntoskrnl
  */
-class HdsMedia implements Comparable<HdsMedia> {
+public class HdsMedia implements Comparable<HdsMedia> {
     private final String url;
     private final int bitrate;
     private final int fragmentCount;
@@ -20,6 +20,10 @@ class HdsMedia implements Comparable<HdsMedia> {
 
     public int getFragmentCount() {
         return fragmentCount;
+    }
+
+    public int getBitrate() {
+        return bitrate;
     }
 
     @Override

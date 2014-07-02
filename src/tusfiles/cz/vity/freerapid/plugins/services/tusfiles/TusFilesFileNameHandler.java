@@ -5,8 +5,6 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandl
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
-import java.util.regex.Matcher;
-
 public class TusFilesFileNameHandler implements FileNameHandler {
 
     @Override
@@ -15,10 +13,9 @@ public class TusFilesFileNameHandler implements FileNameHandler {
             httpFile.setFileName("Folder > " + PlugUtils.getStringBetween(content, "Files of", "</").trim());
             return;
         }
-        final Matcher match = PlugUtils.matcher("[\\]>]([^\\]>]+?) - [\\d\\.,]+?\\s*?\\w+?[\\[<]/", content);
-        if (match.find())
-            httpFile.setFileName(match.group(1).trim());
-        else {
+        try {
+            httpFile.setFileName(PlugUtils.getStringBetween(content, ">Download", "</").trim().replaceAll("\\s", "."));
+        } catch (Exception ee) {
             try {
                 PlugUtils.checkName(httpFile, content, "globalFileName = '", "';");
             } catch (Exception e) {

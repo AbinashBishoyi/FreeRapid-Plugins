@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.services.adobehds.AdjustableBitrateHdsDownloader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
@@ -73,16 +74,17 @@ class CanalPlusFileRunner extends AbstractRunner {
             HashMap videoEntry = getVideoEntry(getContentAsString(), videoId);
             checkNameAndSize(videoEntry);
 
-            String hdsUrl;
+            String manifestUrl;
             try {
-                hdsUrl = (String) ((HashMap) ((HashMap) videoEntry.get("MEDIA")).get("VIDEOS")).get("HDS");
+                manifestUrl = (String) ((HashMap) ((HashMap) videoEntry.get("MEDIA")).get("VIDEOS")).get("HDS");
             } catch (Exception e) {
                 throw new PluginImplementationException("HDS URL not found");
             }
+            manifestUrl += (!manifestUrl.contains("?") ? "?" : "&") + "hdcore=2.11.3&g=SLMDNWLGMBXS";
             setConfig();
             logger.info("Settings config: " + config);
-            final CanalPlusHdsDownloader downloader = new CanalPlusHdsDownloader(client, httpFile, downloadTask, config.getVideoQuality().getBitrate());
-            downloader.tryDownloadAndSaveFile(hdsUrl + "?hdcore=2.11.3&g=SLMDNWLGMBXS");
+            final AdjustableBitrateHdsDownloader downloader = new AdjustableBitrateHdsDownloader(client, httpFile, downloadTask, config.getVideoQuality().getBitrate());
+            downloader.tryDownloadAndSaveFile(manifestUrl);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

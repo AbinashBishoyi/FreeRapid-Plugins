@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.nbc;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.adobehds.AdjustableBitrateHdsDownloader;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -91,9 +92,6 @@ class NbcFileRunner extends AbstractRunner {
                     .setParameter("format", "SMIL")
                     .setAndEncodeParameter("formats", "MPEG4,F4M,FLV,MP3")
                     .setParameter("manifest", "f4m")
-                    .setParameter("mbr", "true")
-                    .setAndEncodeParameter("player", "nsite Player -- No End Card")
-                    .setParameter("policy", "43674")
                     .toGetMethod();
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
@@ -107,10 +105,11 @@ class NbcFileRunner extends AbstractRunner {
             } catch (PluginImplementationException e) {
                 throw new PluginImplementationException("Manifest URL not found");
             }
+            manifestUrl += (!manifestUrl.contains("?") ? "?" : "&") + "g=FGBNBTGJLYGU&hdcore=3.3.0";
             setConfig();
             logger.info("Settings config: " + config);
-            NbcHdsDownloader downloader = new NbcHdsDownloader(client, httpFile, downloadTask, config.getVideoQuality().getBitrate());
-            downloader.tryDownloadAndSaveFile(manifestUrl + "&g=FGBNBTGJLYGU&hdcore=3.3.0");
+            AdjustableBitrateHdsDownloader downloader = new AdjustableBitrateHdsDownloader(client, httpFile, downloadTask, config.getVideoQuality().getBitrate());
+            downloader.tryDownloadAndSaveFile(manifestUrl);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();

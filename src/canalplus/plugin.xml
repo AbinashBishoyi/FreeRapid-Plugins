@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.canalplus.CanalPlusServiceImpl"
-        id="canalplus.fr" vendor="tong2shot" version="1.0.1">
+        id="canalplus.fr" vendor="tong2shot" version="1.0.2">
     <attributes>
         <attribute id="urlRegex" value="https?://(www\.)?canalplus\.fr/.+?vid=\d+.*"/>
         <attribute id="minver" value="0.855"/>
@@ -12,7 +12,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="adobehds" plugin-version="1.0.5"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="adobehds" plugin-version="1.0.7"
                 reverse-lookup="false"/>
     </requires>
     <runtime>

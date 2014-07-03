@@ -1,8 +1,6 @@
-package cz.vity.freerapid.plugins.services.dramafever;
+package cz.vity.freerapid.plugins.services.adobehds;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.services.adobehds.HdsDownloader;
-import cz.vity.freerapid.plugins.services.adobehds.HdsMedia;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFileDownloadTask;
@@ -12,10 +10,10 @@ import java.util.List;
 /**
  * @author tong2shot
  */
-public class DramaFeverHdsDownloader extends HdsDownloader {
+public class AdjustableBitrateHdsDownloader extends HdsDownloader {
     private final int configBitrate;
 
-    public DramaFeverHdsDownloader(HttpDownloadClient client, HttpFile httpFile, HttpFileDownloadTask downloadTask, int configBitrate) {
+    public AdjustableBitrateHdsDownloader(HttpDownloadClient client, HttpFile httpFile, HttpFileDownloadTask downloadTask, int configBitrate) {
         super(client, httpFile, downloadTask);
         this.configBitrate = configBitrate;
     }

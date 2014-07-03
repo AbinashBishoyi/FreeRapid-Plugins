@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.dramafever;
 
 import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.services.adobehds.AdjustableBitrateHdsDownloader;
 import cz.vity.freerapid.plugins.services.tor.TorProxyClient;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -113,7 +114,7 @@ class DramaFeverFileRunner extends AbstractRunner {
             }
 
             manifestUrl += (!manifestUrl.contains("?") ? "?" : "&") + "hdcore=3.1.0&plugin=aasp-3.1.0.43.124";
-            DramaFeverHdsDownloader downloader = new DramaFeverHdsDownloader(client, httpFile, downloadTask, config.getVideoQuality().getBitrate());
+            AdjustableBitrateHdsDownloader downloader = new AdjustableBitrateHdsDownloader(client, httpFile, downloadTask, config.getVideoQuality().getBitrate());
             downloader.tryDownloadAndSaveFile(manifestUrl);
         } else {
             checkProblems();
@@ -146,7 +147,7 @@ class DramaFeverFileRunner extends AbstractRunner {
     }
 
     private String getEpisodeNumber(String fileUrl) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("dramafever\\.com/[^/]+?/(?:[^/]+?/)?\\d+/(\\d+)/", fileUrl);
+        Matcher matcher = PlugUtils.matcher("dramafever\\.com/(?:[^/]+?/)?[^/]+?/\\d+/(\\d+)/", fileUrl);
         if (!matcher.find()) {
             throw new PluginImplementationException("Episode number not found");
         }

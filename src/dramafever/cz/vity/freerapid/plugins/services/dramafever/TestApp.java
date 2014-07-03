@@ -15,13 +15,17 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("http://www.dramafever.com/drama/728/1/Personal_Taste/"));
+            //httpFile.setNewURL(new URL("http://www.dramafever.com/drama/728/1/Personal_Taste/"));
             //httpFile.setNewURL(new URL("http://imgdf-a.akamaihd.net/st/sub/PersonalTaste_01_new.srt")); //subtitle
             //httpFile.setNewURL(new URL("http://www.dramafever.com/drama/19/1/Jewel_in_the_Palace/")); //Hulu
-            //httpFile.setNewURL(new URL("http://www.dramafever.com/drama/3915/1/The_Relation_of_Face%2C_Mind_and_Love/"));
+            httpFile.setNewURL(new URL("http://www.dramafever.com/drama/3915/1/The_Relation_of_Face%2C_Mind_and_Love/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 9060, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             final DramaFeverServiceImpl service = new DramaFeverServiceImpl();
+            SettingsConfig config = new SettingsConfig();
+            config.setVideoQuality(VideoQuality._1000);
+            //config.setDownloadSubtitle(false);
+            service.setConfig(config);
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

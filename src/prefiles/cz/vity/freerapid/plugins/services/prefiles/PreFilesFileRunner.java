@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.prefiles;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
 import cz.vity.freerapid.plugins.exceptions.NotSupportedDownloadByServiceException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
@@ -64,6 +65,9 @@ class PreFilesFileRunner extends XFileSharingRunner {
         super.checkFileProblems();
         if (getContentAsString().contains("The file you were looking for could not be found")) {
             throw new URLNotAvailableAnymoreException("File not found");
+        }
+        if (getContentAsString().contains("error\">This file is available for Premium Users only")) {
+            throw new NotRecoverableDownloadException("File is for Premium Users only");
         }
         if (getContentAsString().contains("File owner set free user can download max file size")) {
             throw new NotSupportedDownloadByServiceException("File exceeds free user max file size set by file owner");

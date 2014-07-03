@@ -7,6 +7,7 @@ import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandl
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.net.URI;
@@ -78,6 +79,15 @@ class TusFilesFileRunner extends XFileSharingRunner {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         super.checkFileProblems();
+    }
+
+    @Override
+    protected HttpMethod redirectToLocation(final HttpMethod method) throws Exception {
+        final Header locationHeader = method.getResponseHeader("Location");
+        if (locationHeader == null)
+            throw new PluginImplementationException("Invalid redirect");
+        httpFile.setFileName(locationHeader.getValue().substring(locationHeader.getValue().lastIndexOf("/") + 1));
+        return super.redirectToLocation(method);
     }
 
     @Override

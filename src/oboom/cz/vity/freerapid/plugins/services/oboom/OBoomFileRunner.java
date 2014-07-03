@@ -135,13 +135,13 @@ class OBoomFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
-        if (content.contains("404,\"item\"") || content.contains("410,\"abused\"")) {
+        if (content.contains("404,\"item\"") || content.contains("410,\"abused\"") || content.contains("410,\"expired\"")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
         if (content.contains("400,\"blocked_wait\""))
             throw new YouHaveToWaitException("Your Download limit is consumed", 300);
 
-        if (content.contains("[400,"))
+        if (content.contains("[4"))
             throw new PluginImplementationException("Unrecognised error");
     }
 

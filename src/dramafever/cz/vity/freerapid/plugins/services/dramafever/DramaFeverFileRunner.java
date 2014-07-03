@@ -139,7 +139,7 @@ class DramaFeverFileRunner extends AbstractRunner {
     }
 
     private String getSeriesId(String fileUrl) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("dramafever\\.com/(?:[^/]+?/)?[^/]+?/(\\d+)/", fileUrl);
+        Matcher matcher = PlugUtils.matcher("dramafever\\.com/(?:[a-z]+?/)?[a-z]+?/(\\d+)/", fileUrl);
         if (!matcher.find()) {
             throw new PluginImplementationException("Series ID not found");
         }
@@ -147,7 +147,7 @@ class DramaFeverFileRunner extends AbstractRunner {
     }
 
     private String getEpisodeNumber(String fileUrl) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("dramafever\\.com/(?:[^/]+?/)?[^/]+?/\\d+/(\\d+)/", fileUrl);
+        Matcher matcher = PlugUtils.matcher("dramafever\\.com/(?:[a-z]+?/)?[a-z]+?/\\d+/(\\d+)/", fileUrl);
         if (!matcher.find()) {
             throw new PluginImplementationException("Episode number not found");
         }

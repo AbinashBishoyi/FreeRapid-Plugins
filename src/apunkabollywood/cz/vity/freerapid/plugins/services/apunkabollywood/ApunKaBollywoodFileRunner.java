@@ -28,6 +28,7 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        fixUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -38,6 +39,13 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void fixUrl() {
+        if (fileURL.contains("/in/category/view/"))
+            fileURL = fileURL.replaceFirst("/in/category/view/", "/browser/category/view/");
+        if (fileURL.contains("/browser/download/get/"))
+            fileURL = fileURL.replaceFirst("/in/download/get/", "/browser/download/get/");
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
@@ -54,6 +62,7 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        fixUrl();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {

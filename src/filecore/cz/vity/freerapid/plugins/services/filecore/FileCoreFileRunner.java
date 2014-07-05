@@ -51,6 +51,7 @@ class FileCoreFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add("onclick=\"window.open\\('(http.+?" + Pattern.quote(httpFile.getFileName().split("\\.")[0]) + ".+?)'\\);\"");
         downloadLinkRegexes.add("<a.+?href\\s?=\\s?[\"'](http.+?" + Pattern.quote(httpFile.getFileName().split("\\.")[0]) + ".+?)[\"']");
         return downloadLinkRegexes;
     }

@@ -44,7 +44,7 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
     private void fixUrl() {
         if (fileURL.contains("/in/category/view/"))
             fileURL = fileURL.replaceFirst("/in/category/view/", "/browser/category/view/");
-        if (fileURL.contains("/browser/download/get/"))
+        if (fileURL.contains("/in/download/get/"))
             fileURL = fileURL.replaceFirst("/in/download/get/", "/browser/download/get/");
     }
 
@@ -96,7 +96,7 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
     }
 
     private void processAlbum() throws PluginImplementationException, URIException, URISyntaxException {
-        final String urlListRegex = "<a href=['\"](http://.+?/browser/download/get/.+?)['\"]>.+?</a><small>";
+        final String urlListRegex = "<a href=['\"](http://.+?/download/get/.+?)['\"]>.+?</a><small>";
         final Matcher urlListMatcher = getMatcherAgainstContent(urlListRegex);
         final List<URI> uriList = new LinkedList<URI>();
         while (urlListMatcher.find()) {

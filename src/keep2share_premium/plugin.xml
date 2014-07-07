@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.keep2share_premium.Keep2Share_PremiumServiceImpl"
-        id="keep2share.cc_premium" vendor="birchie" version="1.0.0">
+        id="keep2share.cc_premium" vendor="birchie" version="1.0.1">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(keep2share|keep2s|k2s)\.cc/.+"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="urlRegex" value="http://(www\.)?((keep2share|k2share|keep2s|k2s)\.cc|keep2share.com)/.+"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="keep2share.cc keep2s.cc k2s.cc"/>
+        <attribute id="services" value="keep2share.cc k2share.cc keep2s.cc k2s.cc keep2share.com"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="premium" value="true"/>
         <attribute id="hasOptions" value="true"/>

@@ -1,7 +1,6 @@
 package cz.vity.freerapid.plugins.services.keep2share;
 
 import cz.vity.freerapid.plugins.exceptions.*;
-import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
@@ -59,9 +58,10 @@ class Keep2ShareFileRunner extends AbstractRunner {
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
             if (!contentAsString.contains("This link will be available for")) {
+                fileURL = method.getURI().getURI();
                 baseUrl = method.getURI().getURI().split("/file/")[0];
                 final MethodBuilder aMethod = getMethodBuilder()
-                        .setBaseURL(baseUrl)
+                        .setBaseURL(baseUrl).setReferer(fileURL)
                         .setActionFromFormWhereTagContains("slow_id", true);
                 if (!makeRedirectedRequest(aMethod.toPostMethod())) {
                     checkProblems();
@@ -78,9 +78,7 @@ class Keep2ShareFileRunner extends AbstractRunner {
                     }
                     return;
                 }
-                boolean loopCaptcha = true;
-                while (loopCaptcha) {
-                    loopCaptcha = false;
+                do {
                     final MethodBuilder captchaMethod = getMethodBuilder()
                             .setBaseURL(baseUrl)
                             .setActionFromFormWhereTagContains("Slow download", true);
@@ -89,9 +87,8 @@ class Keep2ShareFileRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException();
                     }
                     checkProblems();
-                    if (getContentAsString().contains("The verification code is incorrect"))
-                        loopCaptcha = true;
-                }
+                } while (getContentAsString().contains("The verification code is incorrect"));
+
                 final Matcher match = PlugUtils.matcher("<div id=\"download-wait-timer\">\\s*?(.+?)\\s*?</div>", getContentAsString());
                 if (!match.find())
                     throw new PluginImplementationException("Wait time not found");
@@ -142,13 +139,15 @@ class Keep2ShareFileRunner extends AbstractRunner {
     }
 
     private MethodBuilder doCaptcha(final MethodBuilder builder) throws Exception {
-        String key = PlugUtils.getStringBetween(getContentAsString(), "recaptcha/api/noscript?k=", "\"");
-        final ReCaptcha reCaptcha = new ReCaptcha(key, client);
-        final String captchaTxt = getCaptchaSupport().getCaptcha(reCaptcha.getImageURL());
+        final HttpMethod newCaptcha = getMethodBuilder().setBaseURL(baseUrl).setAction("/file/captcha.html?refresh=1").setAjax().toGetMethod();
+        if (!makeRedirectedRequest(newCaptcha)) {
+            throw new ServiceConnectionProblemException();
+        }
+        final String captchaSrc = getMethodBuilder().setBaseURL(baseUrl).setAction(PlugUtils.getStringBetween(getContentAsString(), "url\":\"", "\"").replace("\\", "")).getEscapedURI();
+        final String captchaTxt = getCaptchaSupport().getCaptcha(captchaSrc);
         if (captchaTxt == null)
             throw new CaptchaEntryInputMismatchException();
-        reCaptcha.setRecognized(captchaTxt);
-        return reCaptcha.modifyResponseMethod(builder);
+        return builder.setParameter("CaptchaForm[code]", captchaTxt);
     }
 
 }

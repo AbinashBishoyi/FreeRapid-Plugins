@@ -95,13 +95,15 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
         }
     }
 
-    private void processAlbum() throws URIException, URISyntaxException {
+    private void processAlbum() throws PluginImplementationException, URIException, URISyntaxException {
         final String urlListRegex = "<a href=['\"](http://.+?/browser/download/get/.+?)['\"]>.+?</a><small>";
         final Matcher urlListMatcher = getMatcherAgainstContent(urlListRegex);
         final List<URI> uriList = new LinkedList<URI>();
         while (urlListMatcher.find()) {
             uriList.add(new java.net.URI(new org.apache.commons.httpclient.URI(urlListMatcher.group(1), false, "UTF-8").toString()));
         }
+        if (uriList.isEmpty())
+            throw new PluginImplementationException("No links found");
         getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
         httpFile.getProperties().put("removeCompleted", true);
     }

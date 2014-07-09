@@ -49,9 +49,14 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
+    private void redirectURL() {
+        fileURL = fileURL.replaceFirst("((keep2share|k2share|keep2s|k2s)\\.cc|keep2share\\.com)", "k2s.cc");
+    }
+
     @Override
     public void run() throws Exception {
         super.run();
+        redirectURL();
         addCookie(new Cookie(".keep2share.cc", "lang", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         login();
@@ -99,7 +104,7 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
         if (content.contains("File not found") || content.contains("<title>Error 404</title>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
-        if (content.contains(">Traffic limit exceed")) {
+        if (content.contains("Traffic limit exceed")) {
             throw new ServiceConnectionProblemException("Traffic limit exceed");
         }
         final Matcher waitMatch = PlugUtils.matcher("Please wait (\\d+?):(\\d+?):(\\d+?) to download this file", content);

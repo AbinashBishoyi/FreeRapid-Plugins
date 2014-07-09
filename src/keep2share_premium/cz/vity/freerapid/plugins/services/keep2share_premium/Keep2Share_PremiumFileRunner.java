@@ -99,6 +99,9 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
         if (content.contains("File not found") || content.contains("<title>Error 404</title>")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
+        if (content.contains(">Traffic limit exceed")) {
+            throw new ServiceConnectionProblemException("Traffic limit exceed");
+        }
         final Matcher waitMatch = PlugUtils.matcher("Please wait (\\d+?):(\\d+?):(\\d+?) to download this file", content);
         if (waitMatch.find()) {
             final int waitTime = Integer.parseInt(waitMatch.group(3)) + 60 * (Integer.parseInt(waitMatch.group(2)) + 60 * Integer.parseInt(waitMatch.group(1)));

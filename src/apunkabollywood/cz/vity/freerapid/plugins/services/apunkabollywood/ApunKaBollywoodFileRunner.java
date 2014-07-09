@@ -93,6 +93,9 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
         if (contentAsString.contains("Page not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (contentAsString.contains("Free Download No More Available")) {
+            throw new ServiceConnectionProblemException("Free Download No More Available");
+        }
     }
 
     private void processAlbum() throws PluginImplementationException, URIException, URISyntaxException {

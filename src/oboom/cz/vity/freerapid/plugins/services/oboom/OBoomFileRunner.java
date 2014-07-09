@@ -141,8 +141,12 @@ class OBoomFileRunner extends AbstractRunner {
         if (content.contains("400,\"blocked_wait\""))
             throw new YouHaveToWaitException("Your Download limit is consumed", 300);
 
+        if (content.contains("421,\"ip_blocked\"")) {
+            final int wait = PlugUtils.getNumberBetween(content, "ip_blocked\",", "]") + 1;
+            throw new YouHaveToWaitException("Wait between downloads", wait);
+        }
         if (content.contains("[4"))
-            throw new PluginImplementationException("Unrecognised error");
+            throw new PluginImplementationException("Unrecognised error:  " + content);
     }
 
     private MethodBuilder stepAppVars(MethodBuilder builder) throws Exception {

@@ -6,6 +6,7 @@ import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -70,11 +71,30 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
             if (fileURL.contains("/browser/category/view/")) {
                 processAlbum();
             } else if (fileURL.contains("/browser/download/get/")) {
-                checkNameAndSize();
-                final HttpMethod httpMethod = getMethodBuilder()
-                        .setReferer(fileURL)
-                        .setActionFromAHrefWhereATagContains("Click Here To Download")
-                        .toGetMethod();
+                HttpMethod httpMethod;
+                if (getContentAsString().contains("Free Download No More Available")) {
+                    final String id = PlugUtils.getStringBetween(fileURL, "/download/get/", "/");
+                    final HttpMethod aMethod = getMethodBuilder()
+                            .setReferer(fileURL).setAjax()
+                            .setAction("http://www.apunkabollywood.us/player/bridge/download/list/ids/" + id)
+                            .toGetMethod();
+                    if (!makeRedirectedRequest(aMethod)) {
+                        checkProblems();
+                        throw new ServiceConnectionProblemException();
+                    }
+                    final String fUrl = getContentAsString().split("\\|")[0];
+                    httpMethod = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setAction(fUrl)
+                            .toGetMethod();
+                    httpFile.setFileName(fUrl.substring(fUrl.lastIndexOf("/") + 1));
+                } else {
+                    checkNameAndSize();
+                    httpMethod = getMethodBuilder()
+                            .setReferer(fileURL)
+                            .setActionFromAHrefWhereATagContains("Click Here To Download")
+                            .toGetMethod();
+                }
                 if (!tryDownloadAndSaveFile(httpMethod)) {
                     checkProblems();
                     throw new ServiceConnectionProblemException("Error starting download");
@@ -92,9 +112,6 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Page not found")) {
             throw new URLNotAvailableAnymoreException("File not found");
-        }
-        if (contentAsString.contains("Free Download No More Available")) {
-            throw new ServiceConnectionProblemException("Free Download No More Available");
         }
     }
 

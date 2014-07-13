@@ -1,12 +1,11 @@
 package cz.vity.freerapid.plugins.services.dailymotion;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
@@ -14,13 +13,13 @@ import org.apache.commons.httpclient.HttpMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,11 +32,8 @@ import java.util.zip.InflaterInputStream;
  */
 class DailymotionRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DailymotionRunner.class.getName());
-    private final static String SUBTITLE_SEPARATOR = "?";
     private final static String DEFAULT_FILE_EXT = ".mp4";
     private DailymotionSettingsConfig config;
-
-    private static enum UriListType {VIDEOS, SUBTITLES}
 
     private void setConfig() throws Exception {
         DailymotionServiceImpl service = (DailymotionServiceImpl) getPluginService();
@@ -56,7 +52,7 @@ class DailymotionRunner extends AbstractRunner {
         addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
         addCookie(new Cookie(".dailymotion.com", "lang", "en_EN", "/", 86400, false));
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
-        if (!(isPlaylist() || isGroup() || isSubtitle())) {
+        if (!(isPlaylist() || isGroup())) {
             checkURL();
             checkName();
         }
@@ -74,8 +70,21 @@ class DailymotionRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        PlugUtils.checkName(httpFile, getContentAsString(), "\"title\":\"", "\"");
-        httpFile.setFileName(PlugUtils.unescapeUnicode(httpFile.getFileName()) + DEFAULT_FILE_EXT);
+
+        Map deserialized;
+        String fname = null;
+        try {
+            JsonMapper jsonMapper = new JsonMapper();
+            deserialized = jsonMapper.deserialize(getContentAsString(), Map.class);
+            fname = PlugUtils.unescapeUnicode(deserialized.get("title") + DEFAULT_FILE_EXT);
+        } catch (Exception e) {
+            //
+        }
+        if (fname == null) {
+            throw new PluginImplementationException("Error getting file name");
+        }
+        logger.info("File name: " + fname);
+        httpFile.setFileName(fname);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -90,8 +99,6 @@ class DailymotionRunner extends AbstractRunner {
             parsePlaylist();
         } else if (isGroup()) {
             parseGroup();
-        } else if (isSubtitle()) {
-            downloadSubtitle();
         } else {
             downloadVideo();
         }
@@ -102,7 +109,7 @@ class DailymotionRunner extends AbstractRunner {
         checkName();
         setConfig();
         if (config.isSubtitleDownload()) {
-            queueSubtitles();
+            downloadSubtitles();
         }
         HttpMethod method = getGetMethod(fileURL);
         //dummy request
@@ -190,7 +197,7 @@ class DailymotionRunner extends AbstractRunner {
                 httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", ".flv"));
             }
             client.setReferer(fileURL);
-            method = getGetMethod(urlDecode(url).replace("\\", ""));
+            method = getGetMethod(URLDecoder.decode(url, "UTF-8").replace("\\", ""));
             setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
             httpFile.setResumeSupported(true);
             if (!tryDownloadAndSaveFile(method)) {
@@ -220,7 +227,7 @@ class DailymotionRunner extends AbstractRunner {
         return sequenceSb.toString();
     }
 
-    private List<DailyMotionVideo> getDailyMotionVideosFromSequence(String sequence, String container) throws PluginImplementationException {
+    private List<DailyMotionVideo> getDailyMotionVideosFromSequence(String sequence, String container) {
         final List<DailyMotionVideo> dailyMotionVideos = new LinkedList<DailyMotionVideo>();
         for (VideoQuality videoQuality : VideoQuality.getItems()) {
             final String qualityToken = videoQuality.getQualityToken();
@@ -282,56 +289,59 @@ class DailymotionRunner extends AbstractRunner {
         }
     }
 
-    private static String urlDecode(final String url) {
-        try {
-            return url == null ? "" : URLDecoder.decode(url, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            LogUtils.processException(logger, e);
-            return "";
-        }
+    private MethodBuilder getDailyMotionMethodBuilder(String action, int page, String fields) throws BuildMethodException {
+        return getMethodBuilder()
+                .setReferer(null)
+                .setAction(action)
+                .setParameter("page", String.valueOf(page))
+                .setParameter("limit", "100")
+                .setParameter("family_filter", "false")
+                .setParameter("fields", fields);
     }
 
-    //reference : http://www.dailymotion.com/doc/api/advanced-api.html#response
-    private LinkedList<URI> getURIList(final String action, UriListType uriListType) throws Exception {
-        final LinkedList<URI> uriList = new LinkedList<URI>();
+    //reference : http://www.dailymotion.com/doc/api/obj-video.html#obj-video-cnx-subtitles
+    private void downloadSubtitles() throws Exception {
+        final String videoId = getVideoIdFromURL();
+        final String action = String.format("https://api.dailymotion.com/video/%s/subtitles", videoId);
         int page = 1;
         do {
-            final HttpMethod method = getMethodBuilder()
-                    .setReferer(null)
-                    .setAction(action)
-                    .setParameter("page", String.valueOf(page++))
-                    .setParameter("limit", "100")
-                    .setParameter("family_filter", "false")
-                    .setParameter("fields", uriListType == UriListType.VIDEOS ? "url" : "language,url")
-                    .toGetMethod();
-            if (!makeRedirectedRequest(method)) {
+            if (!makeRedirectedRequest(getDailyMotionMethodBuilder(action, page++, "language,url").toGetMethod())) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
-            if (uriListType == UriListType.VIDEOS) { //video
-                final Matcher matcher = getMatcherAgainstContent("\"url\":\"(.+?)\"");
-                while (matcher.find()) {
+            final Matcher matcher = getMatcherAgainstContent("\"language\":\"(.+?)\",\"url\":\"(.+?)\"");
+            while (matcher.find()) {
+                String lang = matcher.group(1).trim();
+                String subtitleUrl = matcher.group(2).trim().replace("\\/", "/");
+                if (!lang.isEmpty() && !subtitleUrl.isEmpty()) {
+                    SubtitleDownloader subtitleDownloader = new SubtitleDownloader();
                     try {
-                        uriList.add(new URI(matcher.group(1).replace("\\/", "/")));
-                    } catch (final URISyntaxException e) {
+                        subtitleDownloader.downloadSubtitle(client, httpFile, subtitleUrl, lang);
+                    } catch (Exception e) {
                         LogUtils.processException(logger, e);
                     }
                 }
-            } else { //subtitle
-                final Matcher matcher = getMatcherAgainstContent("\"language\":\"(.+?)\",\"url\":\"(.+?)\"");
-                while (matcher.find()) {
-                    try {
-                        final String title = httpFile.getFileName().replace(DEFAULT_FILE_EXT, "");
-                        final String language = matcher.group(1);
-                        //add title and language to tail, so we can extract it later
-                        //http://static2.dmcdn.net/static/video/339/362/35263933:subtitle_en.srt -> original subtitle url
-                        //http://static2.dmcdn.net/static/video/339/362/35263933:subtitle_en.srt/test subtitle in dailymotion?en -> title and language added at tail
-                        final String subtitleUrl = String.format(matcher.group(2).replace("\\/", "/") + "/%s%s%s", title, SUBTITLE_SEPARATOR, language);
-                        uriList.add(new URI(new org.apache.commons.httpclient.URI(subtitleUrl, false, "UTF-8").toString()));
-                    } catch (final URISyntaxException e) {
-                        LogUtils.processException(logger, e);
-                    }
+            }
+        } while (getContentAsString().contains("\"has_more\":true"));
+    }
+
+    //reference : http://www.dailymotion.com/doc/api/advanced-api.html#response
+    private LinkedList<URI> getURIList(final String action) throws Exception {
+        final LinkedList<URI> uriList = new LinkedList<URI>();
+        int page = 1;
+        do {
+            if (!makeRedirectedRequest(getDailyMotionMethodBuilder(action, page++, "url").toGetMethod())) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            final Matcher matcher = getMatcherAgainstContent("\"url\":\"(.+?)\"");
+            while (matcher.find()) {
+                try {
+                    uriList.add(new URI(matcher.group(1).replace("\\/", "/")));
+                } catch (final URISyntaxException e) {
+                    LogUtils.processException(logger, e);
                 }
             }
         } while (getContentAsString().contains("\"has_more\":true"));
@@ -353,7 +363,6 @@ class DailymotionRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-
     private boolean isPlaylist() {
         return fileURL.contains("/playlist/");
     }
@@ -369,7 +378,7 @@ class DailymotionRunner extends AbstractRunner {
     private void parsePlaylist() throws Exception {
         final String playlistId = getPlaylistIdFromURL();
         final String action = String.format("https://api.dailymotion.com/playlist/%s/videos", playlistId);
-        final List<URI> uriList = getURIList(action, UriListType.VIDEOS);
+        final List<URI> uriList = getURIList(action);
         queueLinks(uriList);
     }
 
@@ -387,42 +396,8 @@ class DailymotionRunner extends AbstractRunner {
     private void parseGroup() throws Exception {
         final String groupId = getGroupIdFromURL();
         final String action = String.format("https://api.dailymotion.com/group/%s/videos", groupId);
-        final List<URI> uriList = getURIList(action, UriListType.VIDEOS);
+        final List<URI> uriList = getURIList(action);
         queueLinks(uriList);
-    }
-
-    private boolean isSubtitle() {
-        return fileURL.matches("http://.*?dmcdn\\.net/static/.+?\\.srt/.+");
-    }
-
-    //reference : http://www.dailymotion.com/doc/api/obj-video.html#obj-video-cnx-subtitles
-    private void queueSubtitles() throws Exception {
-        final String videoId = getVideoIdFromURL();
-        final String action = String.format("https://api.dailymotion.com/video/%s/subtitles", videoId);
-        final List<URI> uriList = getURIList(action, UriListType.SUBTITLES);
-        if (uriList.isEmpty()) {
-            logger.info("No subtitles found");
-        } else {
-            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-            logger.info(uriList.size() + " subtitles added");
-        }
-    }
-
-    private void downloadSubtitle() throws Exception {
-        //http://static2.dmcdn.net/static/video/339/362/35263933:subtitle_en.srt -> original subtitle url
-        //http://static2.dmcdn.net/static/video/339/362/35263933:subtitle_en.srt/test subtitle in dailymotion?en -> title and language added at tail
-        final String titleLanguage = URLDecoder.decode(fileURL.substring(fileURL.lastIndexOf("/") + 1), "UTF-8");
-        final String title = titleLanguage.substring(0, titleLanguage.lastIndexOf(SUBTITLE_SEPARATOR));
-        final String language = titleLanguage.substring(titleLanguage.lastIndexOf(SUBTITLE_SEPARATOR) + 1);
-        httpFile.setFileName(title + "." + language + ".srt");
-        fileURL = fileURL.substring(0, fileURL.lastIndexOf("/")); //remove "/"+title+language
-        final HttpMethod method = getGetMethod(fileURL);
-        setFileStreamContentTypes("text/plain");
-        setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-        if (!tryDownloadAndSaveFile(method)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException("Error downloading subtitle");
-        }
     }
 
     private class DailyMotionVideo implements Comparable<DailyMotionVideo> {

@@ -9,10 +9,10 @@ import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import java.net.URLDecoder;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -82,31 +82,22 @@ class DramaFeverFileRunner extends AbstractRunner {
 
             setConfig();
             JsonMapper mapper = new JsonMapper();
-            Map deserialized;
-            Map mediaGroup;
-            try {
-                deserialized = mapper.deserialize(getContentAsString(), Map.class);
-                mediaGroup = (Map) ((Map) ((Map) deserialized.get("channel")).get("item")).get("media-group");
-            } catch (Exception e) {
+            ObjectMapper om = mapper.getObjectMapper();
+            JsonNode rootNode = om.readTree(getContentAsString());
+            JsonNode mediaGroupNode = rootNode.findPath("media-group");
+            if (mediaGroupNode == null) {
                 throw new PluginImplementationException("Error getting media group");
             }
 
-            String manifestUrl;
-            try {
-                manifestUrl = (String) ((Map) ((Map) ((List) mediaGroup.get("media-content")).get(0)).get("@attributes")).get("url");
-            } catch (Exception e) {
+            String manifestUrl = mediaGroupNode.findPath("media-content").findPath("url").getTextValue();
+            if (manifestUrl == null) {
                 throw new PluginImplementationException("Manifest URL not found");
             }
             manifestUrl = URLDecoder.decode(manifestUrl, "UTF-8");
 
             logger.info("Settings config: " + config);
             if (config.isDownloadSubtitle()) {
-                String subtitleUrl = null;
-                try {
-                    subtitleUrl = (String) ((Map) ((Map) ((List) mediaGroup.get("media-subTitle")).get(0)).get("@attributes")).get("href");
-                } catch (Exception e) {
-                    //
-                }
+                String subtitleUrl = mediaGroupNode.findPath("media-subTitle").findPath("href").getTextValue();
                 if ((subtitleUrl != null) && !subtitleUrl.isEmpty()) {
                     SubtitleDownloader subtitleDownloader = new SubtitleDownloader();
                     subtitleDownloader.downloadSubtitle(client, httpFile, subtitleUrl);

@@ -10,9 +10,9 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -36,28 +36,24 @@ class CanalPlusFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         String videoId = getVideoId(fileURL);
-        final GetMethod getMethod = getGetMethod(getVideoInfoUrl(videoId));
+        final GetMethod getMethod = getGetMethod(getVideoListUrl(videoId));
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            HashMap videoEntry = getVideoEntry(getContentAsString(), videoId);
-            checkNameAndSize(videoEntry);
+            JsonNode videoNode = getVideoNode(getContentAsString(), videoId);
+            checkNameAndSize(videoNode);
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
     }
 
-    private void checkNameAndSize(HashMap videoEntry) throws ErrorDuringDownloadingException {
-        String title;
-        String episode;
-        try {
-            HashMap titrage = (HashMap) ((HashMap) videoEntry.get("INFOS")).get("TITRAGE");
-            title = (String) titrage.get("TITRE");
-            episode = (String) titrage.get("SOUS_TITRE");
-        } catch (Exception e) {
-            throw new PluginImplementationException("Error getting file name");
+    private void checkNameAndSize(JsonNode videoNode) throws ErrorDuringDownloadingException {
+        String title = videoNode.findPath("TITRE").getTextValue();
+        String episode = videoNode.findPath("SOUS_TITRE").getTextValue();
+        if (title == null) {
+            throw new PluginImplementationException("Error getting video title");
         }
-        String fname = (episode.isEmpty() ? title : title + " - " + episode) + ".flv";
+        String fname = ((episode == null || episode.isEmpty()) ? title : title + " - " + episode) + ".flv";
         logger.info("File name: " + fname);
         httpFile.setFileName(fname);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
@@ -68,17 +64,15 @@ class CanalPlusFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         String videoId = getVideoId(fileURL);
-        final GetMethod getMethod = getGetMethod(getVideoInfoUrl(videoId));
+        final GetMethod getMethod = getGetMethod(getVideoListUrl(videoId));
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            HashMap videoEntry = getVideoEntry(getContentAsString(), videoId);
-            checkNameAndSize(videoEntry);
+            JsonNode videoNode = getVideoNode(getContentAsString(), videoId);
+            checkNameAndSize(videoNode);
 
-            String manifestUrl;
-            try {
-                manifestUrl = (String) ((HashMap) ((HashMap) videoEntry.get("MEDIA")).get("VIDEOS")).get("HDS");
-            } catch (Exception e) {
-                throw new PluginImplementationException("HDS URL not found");
+            String manifestUrl = videoNode.findPath("HDS").getTextValue();
+            if (manifestUrl == null) {
+                throw new PluginImplementationException("HDS Manifest URL not found");
             }
             manifestUrl += (!manifestUrl.contains("?") ? "?" : "&") + "hdcore=2.11.3&g=SLMDNWLGMBXS";
             setConfig();
@@ -106,29 +100,29 @@ class CanalPlusFileRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private String getVideoInfoUrl(String videoId) throws PluginImplementationException {
+    private String getVideoListUrl(String videoId) throws PluginImplementationException {
         return "http://service.canal-plus.com/video/rest/getVideosLiees/cplus/" + videoId + "?format=json";
     }
 
-    private HashMap getVideoEntry(String content, String videoId) throws PluginImplementationException {
+    private JsonNode getVideoNode(String content, String videoId) throws PluginImplementationException {
         JsonMapper jsonMapper = new JsonMapper();
-        ArrayList<HashMap> deserialized;
-        HashMap selectedEntry = null;
+        ObjectMapper om = jsonMapper.getObjectMapper();
+        JsonNode selectedNode = null;
         try {
-            deserialized = jsonMapper.deserialize(content, ArrayList.class);
-            for (HashMap entry : deserialized) {
-                if (entry.get("ID").equals(videoId)) {
-                    selectedEntry = entry;
+            JsonNode rootNode = om.readTree(content);
+            for (JsonNode videoNode : rootNode) {
+                if (videoNode.get("ID").getTextValue().equals(videoId)) {
+                    selectedNode = videoNode;
                     break;
                 }
             }
         } catch (Exception e) {
-            throw new PluginImplementationException("Error getting video entry");
+            throw new PluginImplementationException("Error getting video node");
         }
-        if (selectedEntry == null) {
-            throw new PluginImplementationException("Unable to select video entry");
+        if (selectedNode == null) {
+            throw new PluginImplementationException("Unable to select video node");
         }
-        return selectedEntry;
+        return selectedNode;
     }
 
 }

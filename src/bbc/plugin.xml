@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.bbc.BbcServiceImpl"
-        id="bbc.co.uk" vendor="ntoskrnl+tong2shot" version="1.1.13">
+        id="bbc.co.uk" vendor="ntoskrnl+tong2shot" version="1.1.14">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?bbc\.co\.uk/(iplayer|i|programmes)/.+"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="bbc.co.uk"/>
         <attribute id="maxDownloads" value="10"/>

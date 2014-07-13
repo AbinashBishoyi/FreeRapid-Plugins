@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.dailymotion.DailymotionServiceImpl"
-        id="dailymotion.com" vendor="Ramsestom+JPEXS+ntoskrnl+tong2shot" version="1.3.4">
-<attributes>
+        id="dailymotion.com" vendor="Ramsestom+JPEXS+ntoskrnl+tong2shot" version="1.3.5">
+    <attributes>
         <attribute id="urlRegex"
-                   value="http://(www\.)?(dailymotion\.com|dai\.ly)/(((embed/)?video)|swf|playlist|group|.+/featured)/.+|http://.*?dmcdn\.net/static/.+?\.srt/.+"/>
-        <attribute id="minver" value="0.854"/>
+                   value="http://(www\.)?(dailymotion\.com|dai\.ly)/(((embed/)?video)|swf|playlist|group|.+/featured)/.+"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="dailymotion.com"/>
         <attribute id="maxDownloads" value="9"/>

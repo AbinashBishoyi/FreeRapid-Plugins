@@ -6,10 +6,8 @@ import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.services.tor.TorProxyClient;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
-import jlibs.core.net.URLUtil;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.HttpMethod;
@@ -19,14 +17,12 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -41,7 +37,6 @@ class BbcFileRunner extends AbstractRtmpRunner {
     private final static SwfVerificationHelper limelightHelper = new SwfVerificationHelper(LIMELIGHT_SWF_URL);
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
     private final static String DEFAULT_EXT = ".flv";
-    private final static String SUBTITLE_FILENAME_PARAM = "fname";
     private final static String MEDIA_SELECTOR_HASH = "7dff7671d0c697fedb1d905d9a121719938b92bf";
     private final static String MEDIA_SELECTOR_ASN = "1";
 
@@ -60,9 +55,6 @@ class BbcFileRunner extends AbstractRtmpRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         checkUrl();
-        if (isSubtitle(fileURL)) {
-            return;
-        }
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -85,10 +77,6 @@ class BbcFileRunner extends AbstractRtmpRunner {
         super.run();
         checkUrl();
         logger.info("Starting download in TASK " + fileURL);
-        if (isSubtitle(fileURL)) {
-            downloadSubtitle();
-            return;
-        }
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -191,7 +179,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
                 try {
                     final Element mediaElement = (Element) mediaElements.item(i);
                     if (config.isDownloadSubtitles() && mediaElement.getAttribute("kind").equals("captions")) {
-                        queueSubtitle(mediaElement);
+                        downloadSubtitle(mediaElement);
                     } else {
                         NodeList connectionElements = mediaElement.getElementsByTagName("connection");
                         for (int j = 0, connectionElementsLength = connectionElements.getLength(); j < connectionElementsLength; j++) {
@@ -218,21 +206,14 @@ class BbcFileRunner extends AbstractRtmpRunner {
 
         Stream selectedStream = null;
         if (video) { //video/tv
-            //select quality
-            if (config.getVideoQuality() == VideoQuality.Highest) {
-                selectedStream = Collections.max(streamList);
-            } else if (config.getVideoQuality() == VideoQuality.Lowest) {
-                selectedStream = Collections.min(streamList);
-            } else {
-                final int LOWER_QUALITY_PENALTY = 10;
-                int weight = Integer.MAX_VALUE;
-                for (Stream stream : streamList) {
-                    int deltaQ = stream.quality - config.getVideoQuality().getQuality();
-                    int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
-                    if (tempWeight < weight) {
-                        weight = tempWeight;
-                        selectedStream = stream;
-                    }
+            final int LOWER_QUALITY_PENALTY = 10;
+            int weight = Integer.MAX_VALUE;
+            for (Stream stream : streamList) {
+                int deltaQ = stream.quality - config.getVideoQuality().getQuality();
+                int tempWeight = (deltaQ < 0 ? Math.abs(deltaQ) + LOWER_QUALITY_PENALTY : deltaQ);
+                if (tempWeight < weight) {
+                    weight = tempWeight;
+                    selectedStream = stream;
                 }
             }
             if (selectedStream == null) {
@@ -250,7 +231,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
             }
 
             //select CDN
-            int weight = Integer.MIN_VALUE;
+            weight = Integer.MIN_VALUE;
             for (Stream stream : streamList) {
                 if ((stream.quality == selectedQuality) && (stream.bitrate == selectedBitrate)) {
                     int tempWeight = 0;
@@ -285,51 +266,17 @@ class BbcFileRunner extends AbstractRtmpRunner {
         return selectedStream;
     }
 
-    private boolean isSubtitle(String fileUrl) {
-        return fileUrl.contains("/subtitles/");
-    }
-
-    private void queueSubtitle(Element media) throws Exception {
-        Element connection = (Element) media.getElementsByTagName("connection").item(0);
-        String subtitleUrl = connection.getAttribute("href") + "?" + SUBTITLE_FILENAME_PARAM + "="
-                + URLEncoder.encode(PlugUtils.replaceEntities(httpFile.getFileName()).replaceFirst(Pattern.quote(DEFAULT_EXT) + "$", ""), "UTF-8"); //add fname param
-        List<URI> uriList = new LinkedList<URI>();
-        uriList.add(new URI(new org.apache.commons.httpclient.URI(subtitleUrl, false, "UTF-8").toString()));
-        if (uriList.isEmpty()) {
-            logger.info("No subtitles found");
-        } else {
-            getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
-        }
-    }
-
-    private void downloadSubtitle() throws Exception {
-        URL url = new URL(fileURL);
-        String filename = null;
+    private void downloadSubtitle(Element media) throws Exception {
+        String subtitleUrl = null;
         try {
-            filename = URLUtil.getQueryParams(url.toString(), "UTF-8").get(SUBTITLE_FILENAME_PARAM);
-        } catch (Exception e) {
-            //
-        }
-        if (filename == null) {
-            throw new PluginImplementationException("File name not found");
-        }
-        httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + ".srt", "_"));
-        fileURL = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
-
-        HttpMethod method = getGetMethod(fileURL);
-        if (!makeRedirectedRequest(method)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkProblems();
-
-        final byte[] subtitle = TimedText2Srt.convert(getContentAsString()).getBytes("UTF-8");
-        httpFile.setFileSize(subtitle.length);
-        try {
-            downloadTask.saveToFile(new ByteArrayInputStream(subtitle));
+            Element connection = (Element) media.getElementsByTagName("connection").item(0);
+            subtitleUrl = connection.getAttribute("href");
         } catch (Exception e) {
             LogUtils.processException(logger, e);
-            throw new PluginImplementationException("Error saving subtitle", e);
+        }
+        if ((subtitleUrl != null) && !subtitleUrl.isEmpty()) {
+            SubtitleDownloader subtitleDownloader = new SubtitleDownloader();
+            subtitleDownloader.downloadSubtitle(client, httpFile, subtitleUrl);
         }
     }
 

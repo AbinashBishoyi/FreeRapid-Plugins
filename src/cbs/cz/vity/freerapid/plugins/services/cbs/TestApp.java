@@ -20,18 +20,15 @@ public class TestApp extends PluginDevApplication {
             //LogManager.getLogManager().readConfiguration(is);
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.cbs.com/shows/48_hours/video/2241801823/secrets-of-a-marriage"));//regular
-            //httpFile.setNewURL(new URL("http://www.cbs.com/shows/cbs_evening_news/video/H_TIHNUkVN_jBPNl_mG5UKVleBEMvPzE/1-15-air-force-cheating-scandal-leaves-cloud-hanging-over-missile-force-how-prepared-is-calif-for-next-big-quake-/")); //contains subtitle
-            //httpFile.setNewURL(new URL("http://www.cbs.com/shows/cbs_evening_news/video/kCouvpWtR5KsA61cue2whOe_S9ul87vd/1-18-w-va-residents-skeptical-of-water-safety-reports-iraqis-pray-for-peace-brace-for-more-violence/")); //doesn't contain subtitle
-            //httpFile.setNewURL(new URL("http://www.cbsnews.com/videos/captions/H_TIHNUkVN_jBPNl_mG5UKVleBEMvPzE.adb_xml?fname=CBS+Evening+News+-+The+full+episode+of+the+CBS+Evening+News+from+January+15%252C+2014")); //subtitle
+            httpFile.setNewURL(new URL("http://www.cbs.com/shows/cbs_evening_news/video/H_TIHNUkVN_jBPNl_mG5UKVleBEMvPzE/1-15-air-force-cheating-scandal-leaves-cloud-hanging-over-missile-force-how-prepared-is-calif-for-next-big-quake-/")); //contains subtitle
             //httpFile.setNewURL(new URL("http://www.cbs.com/shows/2_broke_girls/video/UVsLa0P8W2AcE7fF16Mx0wdsL_5KOSr0/2-broke-girls-and-the-french-kiss/"));
-            //httpFile.setNewURL(new URL("http://www.cbsstatic.com/closedcaption/CBS_2_BROKE_GIRLS_312_CONTENT_CIAN_caption.xml?fname=2+Broke+Girls+-+And+The+French+Kiss"));
-            httpFile.setNewURL(new URL("http://www.cbsstatic.com/closedcaption/CBS_FERGUSON_1861_CONTENT_CIAN_caption.xml?fname=The+Late+Late+Show+-+The+Late+Late+Show+-+1%252F23%252F2014"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CbsServiceImpl service = new CbsServiceImpl(); //instance of service - of our plugin
             SettingsConfig config = new SettingsConfig();
+            config.setVideoQuality(VideoQuality._360);
             config.setDownloadSubtitles(true);
             service.setConfig(config);
             //runcheck makes the validation

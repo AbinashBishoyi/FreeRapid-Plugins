@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.cbs.CbsServiceImpl"
-        id="cbs.com" vendor="ntoskrnl" version="1.2.1">
+        id="cbs.com" vendor="ntoskrnl" version="1.2.2">
     <attributes>
         <attribute id="urlRegex"
-                   value="http://(www\.)?(cbs\.com/.+?/video|cbsnews\.com/videos/captions|cbsstatic\.com/closedcaption)/.+"/>
-        <attribute id="minver" value="0.854"/>
+                   value="http://(www\.)?cbs\.com/.+?/video/.+"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="cbs.com"/>
         <attribute id="hasOptions" value="true"/>

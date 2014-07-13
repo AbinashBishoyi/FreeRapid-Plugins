@@ -34,7 +34,8 @@ class ApunKaBollywoodFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
             if (fileURL.contains("/browser/download/get/")) {
-                checkNameAndSize();
+                if (!getContentAsString().contains("Free Download No More Available"))
+                    checkNameAndSize();
             }
         } else {
             checkProblems();

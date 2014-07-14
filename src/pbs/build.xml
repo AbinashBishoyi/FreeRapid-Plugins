@@ -76,7 +76,6 @@
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
             <sourcepath location="../rtmp"/>
-            <sourcepath location="../tunlr"/>
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

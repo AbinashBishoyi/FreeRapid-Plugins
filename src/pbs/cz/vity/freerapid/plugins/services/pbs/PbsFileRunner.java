@@ -3,13 +3,9 @@ package cz.vity.freerapid.plugins.services.pbs;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
-import cz.vity.freerapid.plugins.services.tunlr.Tunlr;
-import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
-import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
-import jlibs.core.net.URLUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.Header;
@@ -18,18 +14,12 @@ import org.apache.commons.httpclient.HttpMethod;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayInputStream;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -41,7 +31,6 @@ class PbsFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(PbsFileRunner.class.getName());
     private final static byte[] DECRYPT_KEY = "RPz~i4p*FQmx>t76".getBytes(Charset.forName("UTF-8"));
     private final static String DEFAULT_EXT = ".flv";
-    private final static String SUBTITLE_FNAME = "fname";
     private SettingsConfig config;
 
     private void setConfig() throws Exception {
@@ -52,9 +41,6 @@ class PbsFileRunner extends AbstractRtmpRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        if (isSubtitle(fileURL)) {
-            return;
-        }
         final String url = "http://video.pbs.org/videoPlayerInfo/" + getId() + "/";
         final HttpMethod method = getGetMethod(url);
         if (makeRedirectedRequest(method)) {
@@ -84,24 +70,19 @@ class PbsFileRunner extends AbstractRtmpRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        if (isSubtitle(fileURL)) {
-            downloadSubtitle();
-            return;
-        }
         runCheck();
 
+        String content = getContentAsString();
         setConfig();
         if (config.isDownloadSubtitles()) {
-            queueSubtitle(getContentAsString());
+            downloadSubtitle(content);
         }
 
-        final String url = getUrl();
+        final String url = getUrl(content);
         final HttpMethod method = getGetMethod(url);
-        if (!client.getSettings().isProxySet()) {
-            Tunlr.setupMethod(method);
-        }
         makeRequest(method);
         checkProblems();
+
         final Header location = method.getResponseHeader("Location");
         if (location == null) {
             throw new PluginImplementationException("No redirect location");
@@ -127,8 +108,8 @@ class PbsFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private String getUrl() throws Exception {
-        final String releaseUrl = PlugUtils.getStringBetween(getContentAsString(), "<releaseURL>", "</releaseURL>");
+    private String getUrl(String content) throws Exception {
+        final String releaseUrl = PlugUtils.getStringBetween(content, "<releaseURL>", "</releaseURL>");
         final String[] data = releaseUrl.split("\\$");
         if (data.length != 3) {
             throw new PluginImplementationException("Error parsing 'releaseURL'");
@@ -140,11 +121,7 @@ class PbsFileRunner extends AbstractRtmpRunner {
         return new String(cipher.doFinal(cipherText), "UTF-8");
     }
 
-    private boolean isSubtitle(String fileURL) {
-        return fileURL.contains("cdn.pbs.org/captions/");
-    }
-
-    private void queueSubtitle(String content) throws Exception {
+    private void downloadSubtitle(String content) {
         Matcher captionMatcher = PlugUtils.matcher("<caption>.*?<url>(.+?)</url>.*?<language>(.+?)</language>.*?<format>(.+?)</format>.*?</caption>", content);
         List<Caption> captions = new LinkedList<Caption>();
         while (captionMatcher.find()) {
@@ -158,7 +135,7 @@ class PbsFileRunner extends AbstractRtmpRunner {
         }
 
         if (captions.isEmpty()) {
-            logger.warning("No subtitles found (1)");
+            logger.warning("No subtitles found");
         } else {
             int weight = Integer.MIN_VALUE;
             String subtitleUrl = null;
@@ -181,63 +158,13 @@ class PbsFileRunner extends AbstractRtmpRunner {
             if (subtitleUrl == null) {
                 logger.warning("Cannot select subtitle");
             } else {
-                String subtitleFnameUrl = subtitleUrl + "?" + SUBTITLE_FNAME + "="
-                        + URLEncoder.encode(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_EXT) + "$", ""), "UTF-8"); //add fname param
-                List<URI> uriList = new LinkedList<URI>();
-                uriList.add(new URI(new org.apache.commons.httpclient.URI(subtitleFnameUrl, false, "UTF-8").toString()));
-                if (uriList.isEmpty()) {
-                    logger.warning("No subtitles found (2)");
-                } else {
-                    getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
+                SubtitleDownloader sbDownloader = new SubtitleDownloader();
+                try {
+                    sbDownloader.downloadSubtitle(client, httpFile, subtitleUrl);
+                } catch (Exception e) {
+                    LogUtils.processException(logger, e);
                 }
             }
-        }
-    }
-
-    private void downloadSubtitle() throws Exception {
-        URL url = new URL(fileURL);
-        String filename = null;
-        try {
-            filename = URLUtil.getQueryParams(url.toString(), "UTF-8").get(SUBTITLE_FNAME);
-        } catch (Exception e) {
-            //
-        }
-        if (filename == null) {
-            throw new PluginImplementationException("File name not found");
-        }
-        String path = url.getPath();
-        fileURL = url.getProtocol() + "://" + url.getAuthority() + path;
-        String fileExt = path.substring(path.lastIndexOf("."));
-
-        if (fileExt.equals(".srt") || fileExt.equals(".sami") || fileExt.equals(".smi")) {
-            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + fileExt, "_"));
-            final HttpMethod method = getGetMethod(fileURL);
-            setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-            setFileStreamContentTypes("application/smil+xml", "text/plain");
-            if (!tryDownloadAndSaveFile(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Error downloading subtitle");
-            }
-        } else if (fileExt.equals(".dfxp")) {
-            httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(URLDecoder.decode(filename, "UTF-8") + ".srt", "_"));
-            HttpMethod method = getGetMethod(fileURL);
-            setTextContentTypes("application/ttaf+xml");
-            if (!makeRedirectedRequest(method)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-            checkProblems();
-
-            final byte[] subtitle = TimedText2Srt.convert(getContentAsString()).getBytes("UTF-8");
-            httpFile.setFileSize(subtitle.length);
-            try {
-                downloadTask.saveToFile(new ByteArrayInputStream(subtitle));
-            } catch (Exception e) {
-                LogUtils.processException(logger, e);
-                throw new PluginImplementationException("Error saving subtitle", e);
-            }
-        } else {
-            throw new PluginImplementationException("Unknown subtitle type: " + fileExt);
         }
     }
 

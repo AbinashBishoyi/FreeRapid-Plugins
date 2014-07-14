@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.pbs.PbsServiceImpl"
-        id="pbs.org" vendor="ntoskrnl" version="1.0.3">
+        id="pbs.org" vendor="ntoskrnl" version="1.0.4">
     <attributes>
-        <attribute id="urlRegex" value="http://(video\.pbs\.org/video/.+|.*?video\.cdn\.pbs\.org/captions/.+)"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="urlRegex" value="http://video\.pbs\.org/video/.+"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="pbs.org"/>
         <attribute id="hasOptions" value="true"/>
@@ -12,9 +12,7 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.3"
-                reverse-lookup="false"/>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="tunlr.net" plugin-version="1.0.0"
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="rtmp" plugin-version="2.2.13"
                 reverse-lookup="false"/>
     </requires>
     <runtime>

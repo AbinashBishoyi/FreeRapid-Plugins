@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.filefactory;
+package cz.vity.freerapid.plugins.services.files2share;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -8,7 +8,7 @@ import org.jdesktop.application.Application;
 import java.net.URL;
 
 /**
- * @author Kajda
+ * @author birchie
  */
 public class TestApp extends PluginDevApplication {
     @Override
@@ -16,14 +16,19 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.filefactory.com/file/4gtrcz9lu891/"));
-            httpFile.setNewURL(new URL("http://www.filefactory.com/file/4xgf2a4s277d"));
-            //httpFile.setNewURL(new URL("http://www.filefactory.com/file/5zi28vrfqgan"));    // password protected
+            httpFile.setNewURL(new URL("http://files2share.ch/ylulr2glzes7/Halt.and.Catch.Fire.S01E07.HDTV.x264-ASAP.mp4"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final FileFactoryServiceImpl service = new FileFactoryServiceImpl(); //instance of service - of our plugin
+            final Files2ShareServiceImpl service = new Files2ShareServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set premium account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            //*/
+            //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console
         } catch (Exception e) {//catch possible exception

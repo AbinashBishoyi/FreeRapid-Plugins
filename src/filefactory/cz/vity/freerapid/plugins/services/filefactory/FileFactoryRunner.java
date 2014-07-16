@@ -24,11 +24,31 @@ class FileFactoryRunner extends AbstractRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
 
         if (makeRedirectedRequest(getMethod)) {
+            checkPasswordProtected();
             checkSeriousProblems();
             checkNameAndSize(getContentAsString());
         } else {
             checkSeriousProblems();
             throw new ServiceConnectionProblemException();
+        }
+    }
+
+    private void checkPasswordProtected() throws Exception {
+        while (getContentAsString().contains("Password Protected File")
+                || getContentAsString().contains("File has been password protected")) {
+            final String password = getDialogSupport().askForPassword("FileFactory");
+            if (password == null) {
+                throw new PluginImplementationException("This File has been password protected");
+            }
+            final HttpMethod method = getMethodBuilder()
+                    .setActionFromFormWhereTagContains("password", true)
+                    .setAction(fileURL).setReferer(fileURL)
+                    .setParameter("password", password)
+                    .toPostMethod();
+            if (!makeRedirectedRequest(method)) {
+                checkSeriousProblems();
+                throw new ServiceConnectionProblemException();
+            }
         }
     }
 
@@ -39,6 +59,7 @@ class FileFactoryRunner extends AbstractRunner {
         GetMethod getMethod = getGetMethod(fileURL);
         login();
         if (makeRedirectedRequest(getMethod)) {
+            checkPasswordProtected();
             checkAllProblems();
             checkNameAndSize(getContentAsString());
 

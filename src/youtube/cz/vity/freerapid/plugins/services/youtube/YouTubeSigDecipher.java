@@ -4,7 +4,10 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -33,13 +36,18 @@ class YouTubeSigDecipher {
     private static final int KIND_EXPLICIT = 25;
     private static final int KIND_STATIC_PROTECTED = 26;
     private static final int nameSpaceKinds[] = new int[]{KIND_NAMESPACE, KIND_PRIVATE, KIND_PACKAGE, KIND_PACKAGE_INTERNAL, KIND_PROTECTED, KIND_EXPLICIT, KIND_STATIC_PROTECTED};
-    private static final Pattern REVERSE_PATTERN = Pattern.compile("^\\Q\u005d\\E..\\Q\u00d2\u0046\\E..\\Q\u0001\u0080\\E.$", Pattern.DOTALL);
-    private static final Pattern CLONE_SWAP_PATTERN = Pattern.compile("^\\Q\u005d\\E(..)\\Q\u00d2\u0024\\E(.)\\Q\u0046\\E..\\Q\u0002\u0080\\E.$", Pattern.DOTALL);
+    private static final int ATTR_METADATA = 4;
+    private static final int CLASS_PROTECTED_NS = 8;
+    private static final Pattern REVERSE_CLONE_SWAP_CALL_PATTERN = Pattern.compile("(?s)(.)\\Q\u0046\\E(..)\\Q\u0002\u0080\\E.");
     private static final String CHARSET_NAME = "ISO-8859-1";
 
     private final InputStream is;
-    private Map<Integer, String> multiname_map = new HashMap<Integer, String>();
+    private final Map<Integer, String> multinameMap = new HashMap<Integer, String>();
+    private final Map<Integer, String> traitnameMethodMap = new HashMap<Integer, String>();
     private String bytecode = null;
+    private int swapMethodInfo = -1;
+    private int reverseMethodInfo = -1;
+    private int cloneMethodInfo = -1;
 
     public YouTubeSigDecipher(final InputStream is) {
         this.is = is;
@@ -63,35 +71,31 @@ class YouTubeSigDecipher {
     }
 
     public String decipher(final String sig) throws Exception {
-        final String bytecode = getBytecode();
+        init();
         List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
         lstSig.remove(0); //remove empty char at head
-        for (final String callBytecode : bytecode.split("\\u00d6")) {
-            Matcher matcher = REVERSE_PATTERN.matcher(callBytecode);
-            if (matcher.find()) {
-                logger.info("reverse");
-                lstSig = reverse(lstSig);
-                continue;
-            }
-            matcher = CLONE_SWAP_PATTERN.matcher(callBytecode);
-            if (matcher.find()) {
-                String fps_index = matcher.group(1); //findpropstrict index/arg
-                InputStream bais = new ByteArrayInputStream(fps_index.getBytes(CHARSET_NAME));
-                int multiname_index = readU30(bais);
-                if (multiname_map.containsKey(multiname_index)) {
-                    if (multiname_map.get(multiname_index).contains("clone_")) { //clone
-                        final int arg = matcher.group(2).charAt(0);
-                        logger.info("clone " + arg);
-                        lstSig = clone(lstSig, arg);
-                    } else { //swap
-                        final int arg = matcher.group(2).charAt(0);
-                        logger.info("swap " + arg);
-                        lstSig = swap(lstSig, arg);
-                    }
+        Matcher matcher = REVERSE_CLONE_SWAP_CALL_PATTERN.matcher(bytecode);
+        while (matcher.find()) {
+            int arg = matcher.group(1).charAt(0);
+            String callPropertyIndex = matcher.group(2);
+            int multinameIndex = readU30(new ByteArrayInputStream(callPropertyIndex.getBytes(CHARSET_NAME)));
+            if (multinameMap.containsKey(multinameIndex)) {
+                String callPropertyMethodName = multinameMap.get(multinameIndex);
+                if (callPropertyMethodName.equals(traitnameMethodMap.get(reverseMethodInfo))) {
+                    logger.info("reverse " + arg);
+                    lstSig = reverse(lstSig);
+                } else if (callPropertyMethodName.equals(traitnameMethodMap.get(cloneMethodInfo))) {
+                    logger.info("clone " + arg);
+                    lstSig = clone(lstSig, arg);
+                } else if (callPropertyMethodName.equals(traitnameMethodMap.get(swapMethodInfo))) {
+                    logger.info("swap " + arg);
+                    lstSig = swap(lstSig, arg);
+                } else {
+                    throw new PluginImplementationException("Unknown callproperty method name: " + callPropertyMethodName);
                 }
-                continue;
+            } else {
+                throw new PluginImplementationException("Unknown multiname index: " + multinameIndex);
             }
-            throw new PluginImplementationException("Error parsing SWF (2)");
         }
         StringBuilder sb = new StringBuilder();
         for (String s : lstSig) {
@@ -100,18 +104,94 @@ class YouTubeSigDecipher {
         return sb.toString();
     }
 
-    private String getBytecode() throws Exception {
+    private void init() throws Exception {
         if (bytecode == null) {
             final String swf = readSwfStreamToString(is);
-            final String regex = "(?s)\\Q\u00d0\u0030\u00d1\u002c\u0001\u0046\\E..\\Q\u0001\u0080\\E.\\Q\u00d6\\E"
-                    + "(.+?)\\Q\u00d6\u00d2\u002c\u0001\u0046\\E..\\Q\u0001\u0048\\E";
-            final Matcher matcher = PlugUtils.matcher(regex, swf);
+
+            /*
+            public static function decipher(param1:String) : String {
+                if(!DECIPHER_INSTANCE)
+                {
+                    DECIPHER_INSTANCE = new PLJXUD36Iy2g();
+                }
+                return DECIPHER_INSTANCE.VRlnjHuFLJN6(param1.split("")).join("");
+            }
+            */
+            /*
+            final String DECIPHER_STATIC_PATTERN = "(?s)\\Q\u00d0\u0030\u0060\\E..\\Q\u0011\\E...\\Q\u005e\\E..\\Q\u005d\\E(..)\\Q\u004a\\E..."
+                    + "\\Q\u0061\\E.....\\Q\u00d1\u002c\u0001\u0046\\E..\\Q\u0001\u0046\\E(..)\\Q\u0001\u002c\u0001\u0046\\E..\\Q\u0001\u0048";
+            Matcher matcher = PlugUtils.matcher(DECIPHER_STATIC_PATTERN, swf);
             if (!matcher.find()) {
+                throw new PluginImplementationException("Decipher static method not found");
+            }
+            int decipherNameIndex = readU30(new ByteArrayInputStream(matcher.group(2).getBytes(CHARSET_NAME)));
+            */
+
+            /*
+            private function LiIsM0G5E1vk(param1:Array, param2:Number) : Array {
+                var _loc3_:String = param1[0];
+                var _loc4_:String = param1[param2 % param1.length];
+                param1[0] = _loc4_;
+                param1[param2] = _loc3_;
+                return param1;
+            }
+            */
+            final String SWAP_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u0024\u0000\u0066\\E..\\Q\u0085\u00d7\\E";
+            Matcher matcher = PlugUtils.matcher(SWAP_PATTERN, swf);
+            if (matcher.find()) {
+                swapMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3205; traitname=LiIsM0G5E1vk
+            }
+
+            /*
+            private function YyOGkH0orx4s(param1:Array, param2:Number) : Array {
+                param1.reverse();
+                return param1;
+            }
+            */
+            final String REVERSE_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u004f\\E..\\Q\u0000\u00d1\u0048\\E";
+            matcher = PlugUtils.matcher(REVERSE_PATTERN, swf);
+            if (matcher.find()) {
+                reverseMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3203; traitname=YyOGkH0orx4s
+            }
+
+            /*
+             private function kvS7BCL1VhHo(param1:Array, param2:Number) : Array {
+                return param1.slice(param2);
+             }
+            */
+            final String CLONE_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u00d2\u0046\\E..\\Q\u0001\u0048\\E";
+            matcher = PlugUtils.matcher(CLONE_PATTERN, swf);
+            if (matcher.find()) {
+                cloneMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3204; traitname=kvS7BCL1VhHo
+            }
+
+            if ((reverseMethodInfo == -1) && (cloneMethodInfo == -1) && (swapMethodInfo == -1)) {
                 throw new PluginImplementationException("Error parsing SWF (1)");
             }
-            bytecode = matcher.group(1);
+
+            /*
+            public function VRlnjHuFLJN6(param1:Array) : Array {
+                var param1:Array = this.LiIsM0G5E1vk(param1,15);
+                param1 = this.LiIsM0G5E1vk(param1,44);
+                param1 = this.YyOGkH0orx4s(param1,71);
+                param1 = this.LiIsM0G5E1vk(param1,24);
+                param1 = this.kvS7BCL1VhHo(param1,3);
+                param1 = this.YyOGkH0orx4s(param1,5);
+                param1 = this.LiIsM0G5E1vk(param1,2);
+                param1 = this.LiIsM0G5E1vk(param1,50);
+                return param1;
+            }
+            */
+            final String DECIPHER_PATTERN = String.format("(?s)(..).{5}\\Q\u00d0\u0030\u00d0\u00d1\u0024\\E(.+?)\\Q\u00d5\u00d1\u0048\\E");
+            matcher = PlugUtils.matcher(DECIPHER_PATTERN, swf);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Decipher method not found");
+            }
+            //int decipherMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME)));
+            bytecode = matcher.group(2);
+
+            parseSwf(new ByteArrayInputStream(swf.getBytes(CHARSET_NAME)));
         }
-        return bytecode;
     }
 
     private String readSwfStreamToString(InputStream is) throws IOException {
@@ -130,15 +210,10 @@ class YouTubeSigDecipher {
             } else if (bytes[0] != 'F' || bytes[1] != 'W' || bytes[2] != 'S') {
                 throw new IOException("Invalid SWF stream");
             }
-            InputStream bis = new BufferedInputStream(is);
-            bis.mark(Integer.MAX_VALUE);
-            multiname_map = getMultinameMap(bis);
 
             final StringBuilder sb = new StringBuilder(8192);
-            sb.append(new String(bytes, 0, 8, CHARSET_NAME));
             int len;
-            bis.reset();
-            while ((len = bis.read(bytes)) != -1) {
+            while ((len = is.read(bytes)) != -1) {
                 sb.append(new String(bytes, 0, len, CHARSET_NAME));
             }
             return sb.toString();
@@ -151,7 +226,7 @@ class YouTubeSigDecipher {
         }
     }
 
-    private Map<Integer, String> getMultinameMap(InputStream is) throws IOException {
+    private void parseSwf(InputStream is) throws IOException {
         readBytes(is, 9); //RECT
         read(is); //ignore
         read(is); //frame rate
@@ -159,7 +234,6 @@ class YouTubeSigDecipher {
 
         //read tag
         Map<Integer, String> constant_string_map = new HashMap<Integer, String>();  //k=string index, v=string name
-        Map<Integer, String> multiname_map = new HashMap<Integer, String>();  //k=multiname index, v=string name
         while (true) {
             int tagCodeAndLength = readUI16(is);
             int tagCode = (tagCodeAndLength) >> 6;
@@ -177,13 +251,11 @@ class YouTubeSigDecipher {
             if (tagCode != 82) {
                 continue;
             }
-
-            doAbcTag(data, constant_string_map, multiname_map);
+            doAbcTag(data, constant_string_map);
         }
-        return multiname_map;
     }
 
-    private void doAbcTag(byte[] data, Map<Integer, String> constant_string_map, Map<Integer, String> multiname_map) throws IOException {
+    private void doAbcTag(byte[] data, Map<Integer, String> constant_string_map) throws IOException {
         //DoABC tag
         InputStream abcIs = new ByteArrayInputStream(data);
         readUI32(abcIs); //flags
@@ -225,12 +297,7 @@ class YouTubeSigDecipher {
         int constant_string_pool_count = readU30(abcIs);
         for (int i = 1; i < constant_string_pool_count; i++) { //index 0 not used. Values 1..n-1
             String constant_string = readAbcString(abcIs);
-            //save constant string if it contains clone_, reverse_, or swap_
-            if (constant_string.contains("clone_")
-                    || constant_string.contains("reverse_")
-                    || constant_string.contains("swap_")) {
-                constant_string_map.put(i, constant_string);
-            }
+            constant_string_map.put(i, constant_string);
         }
 
         //constant namespace
@@ -264,7 +331,7 @@ class YouTubeSigDecipher {
                 int string_name_index = readU30(abcIs);
                 //save multimap index (k) and string name (v) if the string name index exists in constant_string_map
                 if (constant_string_map.containsKey(string_name_index)) {
-                    multiname_map.put(i, constant_string_map.get(string_name_index));
+                    multinameMap.put(i, constant_string_map.get(string_name_index));
                 }
             } else if ((kind == 0xf) || (kind == 0x10)) { //CONSTANT_RTQName and CONSTANT_RTQNameA
                 readU30(abcIs); //string name index
@@ -287,8 +354,153 @@ class YouTubeSigDecipher {
                 throw new IOException("Unknown kind of Multiname:0x" + Integer.toHexString(kind));
             }
         }
-        //our intent is to populate multiname_map
-        //skip parsing the rest of ABC file
+
+        //method info
+        int methods_count = readU30(abcIs);
+        for (int i = 0; i < methods_count; i++) {
+            int param_count = readU30(abcIs);
+            readU30(abcIs); //ret_type
+            for (int j = 0; j < param_count; j++) {
+                readU30(abcIs); //param type
+            }
+            readU30(abcIs); //name_index
+            int flags = read(abcIs);
+            //// 1=need_arguments, 2=need_activation, 4=need_rest 8=has_optional (16=ignore_rest, 32=explicit,) 64=setsdxns, 128=has_paramnames
+
+            if ((flags & 8) == 8) { //if has_optional
+                int optional_count = readU30(abcIs);
+                for (int j = 0; j < optional_count; j++) {
+                    readU30(abcIs);  //value index
+                    read(abcIs); //value kind
+                }
+            }
+
+            if ((flags & 128) == 128) { //if has_paramnames
+                for (int j = 0; j < param_count; j++) {
+                    readU30(abcIs); //param name
+                }
+            }
+        }
+
+        //metadata info
+        int metadata_count = readU30(abcIs);
+        for (int i = 0; i < metadata_count; i++) {
+            readU30(abcIs); //name_index
+            int values_count = readU30(abcIs);
+            for (int v = 0; v < values_count; v++) {
+                readU30(abcIs); //key
+            }
+            for (int v = 0; v < values_count; v++) {
+                readU30(abcIs); //value
+            }
+        }
+
+        //instance
+        int class_count = readU30(abcIs);
+        for (int i = 0; i < class_count; i++) {
+            readInstanceInfo(abcIs);
+        }
+
+        //class info
+        for (int i = 0; i < class_count; i++) {
+            readU30(abcIs); //cinit index
+            readTraits(abcIs); //static traits
+        }
+
+        //script info
+        int script_count = readU30(abcIs);
+        for (int i = 0; i < script_count; i++) {
+            readU30(abcIs); //init index
+            readTraits(abcIs);
+        }
+
+        //method body
+        int bodies_count = readU30(abcIs);
+        for (int i = 0; i < bodies_count; i++) {
+            readU30(abcIs); //method_info
+            readU30(abcIs); //max_stack
+            readU30(abcIs); //max_regs
+            readU30(abcIs); //init_scope_depth
+            readU30(abcIs); //max_scope_depth
+            int code_length = readU30(abcIs);
+            readBytes(abcIs, code_length); //codeBytes
+
+            //exceptions
+            int ex_count = readU30(abcIs);
+            for (int j = 0; j < ex_count; j++) {
+                readU30(abcIs); //start
+                readU30(abcIs); //end
+                readU30(abcIs); //target
+                readU30(abcIs); //type index
+                readU30(abcIs); //name index
+            }
+            readTraits(abcIs);
+        }
+    }
+
+    private void readInstanceInfo(InputStream is) throws IOException {
+        readU30(is); //name index
+        readU30(is); //super index
+        int flags = read(is);
+        if ((flags & CLASS_PROTECTED_NS) != 0) {
+            readU30(is); //protected NS
+        }
+        int interfaces_count = readU30(is);
+        for (int i = 0; i < interfaces_count; i++) {
+            readU30(is); //interface
+        }
+        readU30(is); //iinit index
+        readTraits(is);
+    }
+
+    private void readTrait(InputStream is) throws IOException {
+        int name_index = readU30(is);
+        String name = multinameMap.get(name_index);
+        int kind = read(is);
+        int kindType = 0xf & kind;
+        int kindFlags = kind >> 4;
+
+        switch (kindType) {
+            case 0: //slot
+            case 6: //const
+                readU30(is); //slot id
+                readU30(is); //type index
+                int value_index = readU30(is);
+                if (value_index != 0) {
+                    read(is); //value kind
+                }
+                break;
+            case 1: //method
+            case 2: //getter
+            case 3: //setter
+                readU30(is); //disp id
+                int method_info = readU30(is); //method info
+                traitnameMethodMap.put(method_info, name);
+                break;
+            case 4: //class
+                readU30(is); //slot id
+                readU30(is); //class info
+                break;
+            case 5: //function
+                readU30(is); //slot index
+                readU30(is); //method info
+                break;
+            default:
+                throw new IOException("Unknown trait kind:" + kind);
+        }
+        if ((kindFlags & ATTR_METADATA) != 0) {
+            int metadata_count = readU30(is);
+            for (int i = 0; i < metadata_count; i++) {
+                readU30(is); //trait metadata
+            }
+        }
+    }
+
+    private void readTraits(InputStream is) throws IOException {
+        int count = readU30(is);
+        for (int i = 0; i < count; i++) {
+            readTrait(is);
+        }
     }
 
     private static int readBytes(InputStream is, byte[] buffer, int count) throws IOException {
@@ -323,7 +535,6 @@ class YouTubeSigDecipher {
         return is.read() + (is.read() << 8) + (is.read() << 16) + (is.read() << 24);
     }
 
-
     private static long readSI32(InputStream is) throws IOException {
         long uval = is.read() + (is.read() << 8) + (is.read() << 16) + (is.read() << 24);
         if (uval >= 0x80000000) {
@@ -350,14 +561,14 @@ class YouTubeSigDecipher {
         int i;
         int ret = 0;
         int bytePos = 0;
-        int byteCount = 0;
+        //int byteCount = 0;
         boolean nextByte;
         do {
             i = is.read();
             nextByte = (i >> 7) == 1;
             i = i & 0x7f;
             ret = ret + (i << bytePos);
-            byteCount++;
+            //byteCount++;
             bytePos += 7;
         } while (nextByte);
         return ret;
@@ -371,14 +582,14 @@ class YouTubeSigDecipher {
         int i;
         long ret = 0;
         int bytePos = 0;
-        int byteCount = 0;
+        //int byteCount = 0;
         boolean nextByte;
         do {
             i = is.read();
             nextByte = (i >> 7) == 1;
             i = i & 0x7f;
             ret = ret + (i << bytePos);
-            byteCount++;
+            //byteCount++;
             bytePos += 7;
             if (bytePos == 35) {
                 if ((ret >> 31) == 1) {

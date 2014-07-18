@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.freshvideo;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
+import cz.vity.freerapid.plugins.services.xfileplayer.XFilePlayerServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class FreshVideoServiceImpl extends XFileSharingServiceImpl {
+public class FreshVideoServiceImpl extends XFilePlayerServiceImpl {
 
     @Override
     public String getServiceTitle() {

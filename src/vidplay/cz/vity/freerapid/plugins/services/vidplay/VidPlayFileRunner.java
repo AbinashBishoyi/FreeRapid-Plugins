@@ -1,9 +1,8 @@
 package cz.vity.freerapid.plugins.services.vidplay;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
+import cz.vity.freerapid.plugins.services.xfileplayer.XFilePlayerRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
-import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
-import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandlerNoSize;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
 import java.util.List;
 
@@ -12,7 +11,7 @@ import java.util.List;
  *
  * @author birchie
  */
-class VidPlayFileRunner extends XFileSharingRunner {
+class VidPlayFileRunner extends XFilePlayerRunner {
 
     @Override
     protected List<FileNameHandler> getFileNameHandlers() {
@@ -22,24 +21,7 @@ class VidPlayFileRunner extends XFileSharingRunner {
     }
 
     @Override
-    protected List<FileSizeHandler> getFileSizeHandlers() {
-        final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
-        fileSizeHandlers.add(new FileSizeHandlerNoSize());
-        return fileSizeHandlers;
+    protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
+        return getXFSMethodBuilder(content, "method_");
     }
-
-    @Override
-    protected List<String> getDownloadPageMarkers() {
-        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
-        downloadPageMarkers.add("jwplayer('container').setup(");
-        return downloadPageMarkers;
-    }
-
-    @Override
-    protected List<String> getDownloadLinkRegexes() {
-        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add("file\\s*?:\\s*?['\"](.+?)['\"],");
-        return downloadLinkRegexes;
-    }
-
 }

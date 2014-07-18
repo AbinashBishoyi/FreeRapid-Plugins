@@ -18,7 +18,7 @@ class YouPornSettingsPanel extends JPanel {
     }
 
     private static final String[] qualityStrings = {"Small", "Medium", "Large"};
-    private static final String[] qualDescStrings = {"MP4 - For iPhone/iPod", "MP4 - For Windows 7, Mac and iPad", "MPG - For Windows XP/Vista"};
+    private static final String[] qualDescStrings = {"MP4 - For iPhone/iPod", "MP4 - For Windows 7/8, Mac and iPad", "MPG - For Windows XP/Vista"};
     private static final String[] qualTypeStrings = {".mp4", ".mp4", ".mpg"};
 
     public String getQualityDescription(final int quality) {

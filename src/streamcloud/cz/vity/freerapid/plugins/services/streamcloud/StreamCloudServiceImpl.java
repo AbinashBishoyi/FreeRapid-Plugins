@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.streamcloud;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
+import cz.vity.freerapid.plugins.services.xfileplayer.XFilePlayerServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class StreamCloudServiceImpl extends XFileSharingServiceImpl {
+public class StreamCloudServiceImpl extends XFilePlayerServiceImpl {
 
     @Override
     public String getServiceTitle() {

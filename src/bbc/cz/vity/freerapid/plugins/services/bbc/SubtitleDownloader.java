@@ -1,9 +1,11 @@
 package cz.vity.freerapid.plugins.services.bbc;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
@@ -11,6 +13,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 
 /**
@@ -24,13 +27,18 @@ public class SubtitleDownloader {
             return;
         }
         logger.info("Downloading subtitle");
+        logger.info("Subtitle URL: " + subtitleUrl);
+        ConnectionSettings settings = client.getSettings();
+        client.initClient(new ConnectionSettings()); //force direct connection (non-proxy)
         HttpMethod method = client.getGetMethod(subtitleUrl);
         if (200 != client.makeRequest(method, true)) {
             throw new PluginImplementationException("Failed to request subtitle");
         }
         String timedTextXml = client.getContentAsString();
+        client.initClient(settings); //restore original settings
 
-        String fnameNoExt = HttpUtils.replaceInvalidCharsForFileSystem(httpFile.getFileName().replaceFirst("\\.[^\\.]{3,4}$", ""), "_");
+        String fnameNoExt = PlugUtils.unescapeHtml(URLDecoder.decode(HttpUtils.replaceInvalidCharsForFileSystem(
+                httpFile.getFileName().replaceFirst("\\.[^\\.]{3,4}$", ""), "_"), "UTF-8"));
         String fnameOutput = fnameNoExt + ".srt";
         File outputFile = new File(httpFile.getSaveToDirectory(), fnameOutput);
         BufferedWriter bw = null;

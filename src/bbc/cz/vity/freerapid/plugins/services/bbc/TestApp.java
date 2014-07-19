@@ -24,7 +24,7 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b04470xx/the-next-step-10-road-to-joy"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b042twvq/the-first-georgians-the-german-kings-who-made-britain-episode-2"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/programmes/b042z1g4"));
-            httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b044trs9/click-17052014"));
+            httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b049nv1q/T_in_the_Park_2014_Arctic_Monkeys_and_Example/"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/programmes/b043pmd0"));
 
             //the way we connect to the internet

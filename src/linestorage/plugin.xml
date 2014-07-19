@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.xerver.XerverServiceImpl"
-        id="xerver.co" vendor="birchie" version="1.0.1">
+<plugin class="cz.vity.freerapid.plugins.services.linestorage.LineStorageServiceImpl"
+        id="linestorage.com" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?xerver\.co/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?linestorage\.com/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="xerver.co"/>
+        <attribute id="services" value="linestorage.com"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="defaultDownloads" value="1"/>
         <attribute id="premium" value="false"/>
@@ -18,6 +18,6 @@
                 plugin-version="1.0.15" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="xerver.co" path="/" type="code"/>
+        <library id="linestorage.com" path="/" type="code"/>
     </runtime>
 </plugin>

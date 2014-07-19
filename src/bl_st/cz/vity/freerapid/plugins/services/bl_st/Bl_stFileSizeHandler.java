@@ -11,7 +11,7 @@ import java.util.regex.Matcher;
 public class Bl_stFileSizeHandler implements FileSizeHandler {
     @Override
     public void checkFileSize(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("<h4>.+>(.+?)</span>", content);
+        final Matcher match = PlugUtils.matcher("File:.+>(.+?)</span>", content);
         if (!match.find())
             throw new PluginImplementationException("File size not found");
         httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));

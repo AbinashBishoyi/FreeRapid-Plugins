@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.rghost;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -9,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Class which contains main code
@@ -34,8 +36,9 @@ class RGhostFileRunner extends AbstractRunner {
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
         final String content = getContentAsString();
         PlugUtils.checkName(httpFile, content, "<title>", "— RGhost");
-        final String size = PlugUtils.getStringBetween(content, "<small class='nowrap'>\n(", ")\n</small>");
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(size));
+        final Matcher match = PlugUtils.matcher("<small class=['\"]nowrap['\"]>\\s*?\\((.+?)\\)\\s*?</small>", content);
+        if (!match.find()) throw new PluginImplementationException("File size not found");
+        httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

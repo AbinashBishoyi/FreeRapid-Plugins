@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.xerver;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
@@ -54,5 +55,14 @@ class XerverFileRunner extends XFileSharingRunner {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
         downloadLinkRegexes.add("<a[^>]+?href\\s*?=\\s*?[\"|'](http.+?" + Pattern.quote(httpFile.getFileName()) + ")[\"|']");
         return downloadLinkRegexes;
+    }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("FILE NOT FOUND") || content.contains("file was deleted")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        super.checkFileProblems();
     }
 }

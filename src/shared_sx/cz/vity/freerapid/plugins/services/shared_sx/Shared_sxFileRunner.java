@@ -1,12 +1,12 @@
 package cz.vity.freerapid.plugins.services.shared_sx;
 
-import com.subgraph.orchid.encoders.Base64;
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -34,7 +34,7 @@ class Shared_sxFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        httpFile.setFileName(new String(Base64.decode(PlugUtils.getStringBetween(content, "\"full:title\" content=\"", "\""))));
+        httpFile.setFileName(new String(Base64.decodeBase64(PlugUtils.getStringBetween(content, "\"full:title\" content=\"", "\""))));
         httpFile.setFileSize(PlugUtils.getNumberBetween(content, "\"full:size\" content=\"", "\""));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

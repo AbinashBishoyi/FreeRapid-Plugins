@@ -16,7 +16,9 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.fakku.net/doujinshi/karorful-mix-ex10-english"));
+            //httpFile.setNewURL(new URL("http://www.fakku.net/doujinshi/karorful-mix-ex10-english"));           // only fakku
+            //httpFile.setNewURL(new URL("http://www.fakku.net/doujinshi/together-with-louise-tan-english"));    // fakku + other
+            //httpFile.setNewURL(new URL("http://www.fakku.net/doujinshi/le-beau-maitre-8-english/download"));   // no fakku
             httpFile.setNewURL(new URL("http://www.fakku.net/videos/kiss-x-sis-ova-episode-1-kiss-x-sis-ova-episode-1-japanese"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

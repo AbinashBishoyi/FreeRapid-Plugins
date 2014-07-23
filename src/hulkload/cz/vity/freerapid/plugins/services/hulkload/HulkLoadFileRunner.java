@@ -1,11 +1,16 @@
 package cz.vity.freerapid.plugins.services.hulkload;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
+import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -18,6 +23,20 @@ class HulkLoadFileRunner extends XFileSharingRunner {
     @Override
     protected MethodBuilder getXFSMethodBuilder() throws Exception {
         return getXFSMethodBuilder(getContentAsString() + "</Form>");     //# missing end form tag
+    }
+
+    @Override
+    protected List<FileNameHandler> getFileNameHandlers() {
+        final List<FileNameHandler> fileNameHandlers = super.getFileNameHandlers();
+        fileNameHandlers.add(new FileNameHandler() {
+            @Override
+            public void checkFileName(HttpFile httpFile, String content) throws ErrorDuringDownloadingException {
+                final Matcher match = PlugUtils.matcher("Filename\\:</div>\\s*?<.+?>(.+?)</", content);
+                if (!match.find()) throw new PluginImplementationException("File name not found");
+                httpFile.setFileName(match.group(1).trim());
+            }
+        });
+        return fileNameHandlers;
     }
 
     @Override

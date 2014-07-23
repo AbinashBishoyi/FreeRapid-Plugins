@@ -39,7 +39,13 @@ class YunFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "&nbsp;&nbsp;", "</h2>");
+        Matcher matcher = PlugUtils.matcher("<h2[^<>]*?>(?:Downloading\\s*?:\\s*?)?.*?([^<>]+?)</h2>", content);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File name not found");
+        }
+        String fname = PlugUtils.unescapeHtml(matcher.group(1)).trim();
+        logger.info("File name: " + fname);
+        httpFile.setFileName(fname);
         PlugUtils.checkFileSize(httpFile, content, "File Size: <b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

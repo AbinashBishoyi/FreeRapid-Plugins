@@ -3,6 +3,8 @@ package cz.vity.freerapid.plugins.services.youtube;
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -112,8 +114,12 @@ class YouTubeSigDecipher {
 
     private void init() throws Exception {
         if (bytecode == null) {
-            final String swf = readSwfStreamToString(is);
+            String swf = readSwfStreamToString(is);
+            byte[] swfBytes = swf.getBytes(CHARSET_NAME);
             int swapMethodInfo = -1, reverseMethodInfo = -1, cloneMethodInfo = -1;
+            String base64Swf = Base64.encodeBase64String(swfBytes);
+            logger.info("SWF MD5: " + DigestUtils.md5Hex(swf));
+            logger.info("SWF content (base64): " + base64Swf);
 
             /*
             private function LiIsM0G5E1vk(param1:Array, param2:Number) : Array {
@@ -128,6 +134,7 @@ class YouTubeSigDecipher {
             if (matcher.find()) {
                 swapMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3205; traitname=LiIsM0G5E1vk
             }
+            logger.info("Swap method info: " + swapMethodInfo);
 
             /*
             private function YyOGkH0orx4s(param1:Array, param2:Number) : Array {
@@ -139,6 +146,7 @@ class YouTubeSigDecipher {
             if (matcher.find()) {
                 reverseMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3203; traitname=YyOGkH0orx4s
             }
+            logger.info("Reverse method info: " + reverseMethodInfo);
 
             /*
              private function kvS7BCL1VhHo(param1:Array, param2:Number) : Array {
@@ -149,10 +157,12 @@ class YouTubeSigDecipher {
             if (matcher.find()) {
                 cloneMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3204; traitname=kvS7BCL1VhHo
             }
+            logger.info("Clone method info: " + cloneMethodInfo);
 
             if ((reverseMethodInfo == -1) && (cloneMethodInfo == -1) && (swapMethodInfo == -1)) {
                 throw new PluginImplementationException("Error parsing SWF (1)");
             }
+
 
             /*
             public function VRlnjHuFLJN6(param1:Array) : Array {
@@ -173,11 +183,15 @@ class YouTubeSigDecipher {
             }
             //int decipherMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME)));
             bytecode = matcher.group(2);
+            logger.info("Bytecode content (base64): " + Base64.encodeBase64String(bytecode.getBytes(CHARSET_NAME)));
 
-            parseSwf(new ByteArrayInputStream(swf.getBytes(CHARSET_NAME)));
+            parseSwf(new ByteArrayInputStream(swfBytes));
             reverseTraitname = traitnameMethodMap.get(reverseMethodInfo);
             cloneTraitname = traitnameMethodMap.get(cloneMethodInfo);
             swapTraitname = traitnameMethodMap.get(swapMethodInfo);
+            logger.info("Reverse traitname: " + reverseTraitname);
+            logger.info("Clone traitname: " + cloneTraitname);
+            logger.info("Swap traitname: " + swapTraitname);
         }
     }
 

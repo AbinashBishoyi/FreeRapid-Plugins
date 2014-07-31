@@ -77,7 +77,9 @@ class YouTubeSigDecipher {
     public String decipher(final String sig) throws Exception {
         init();
         List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
-        lstSig.remove(0); //remove empty char at head
+        if (lstSig.get(0).isEmpty()) {
+            lstSig.remove(0); //remove empty char at head
+        }
         Matcher matcher = PlugUtils.matcher(REVERSE_CLONE_SWAP_CALL_PATTERN, bytecode);
         boolean matched = false;
         String ret = null;
@@ -120,9 +122,7 @@ class YouTubeSigDecipher {
             String swf = readSwfStreamToString(is);
             byte[] swfBytes = swf.getBytes(CHARSET_NAME);
             int swapMethodInfo = -1, reverseMethodInfo = -1, cloneMethodInfo = -1;
-            String base64Swf = Base64.encodeBase64String(swfBytes);
             logger.info("SWF MD5: " + DigestUtils.md5Hex(swf));
-            logger.info("SWF content (base64): " + base64Swf);
 
             /*
             private function LiIsM0G5E1vk(param1:Array, param2:Number) : Array {

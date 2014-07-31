@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.youtube.YouTubeServiceImpl"
-        id="youtube.com" vendor="Kajda+JPEXS+ntoskrnl+tong2shot" version="2.5.3">
-<attributes>
+        id="youtube.com" vendor="Kajda+JPEXS+ntoskrnl+tong2shot" version="2.5.4">
+    <attributes>
         <attribute id="urlRegex"
                    value="https?://(www\.)?(youtube\.com/(watch\?|user/|playlist\?|course\?|attribution_link\?)|youtu\.be/).+"/>
         <attribute id="minver" value="0.855"/>

@@ -54,6 +54,7 @@ public class SubtitleDownloader {
             }
             ret = new String(baos.toByteArray());
         } finally {
+            inflater.end();
             if (baos != null) {
                 try {
                     baos.close();

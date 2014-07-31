@@ -206,6 +206,8 @@ public class HttpConnection {
             return output.toByteArray();
         } catch (DataFormatException e) {
             throw new IOException("Error decompressing http body: " + e);
+        } finally {
+            decompressor.end();
         }
     }
 

@@ -45,12 +45,13 @@ class FlashXFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
-            method = getMethodBuilder().setActionFromIFrameSrcWhereTagContains("embed_player.php").toGetMethod();
+            method = getMethodBuilder().setActionFromIFrameSrcWhereTagContains("embed.php").toGetMethod();
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            method = getMethodBuilder().setActionFromAHrefWhereATagContains("PLAY NOW").toGetMethod();
+            method = getMethodBuilder().setBaseURL(method.getURI().getURI().split("embed.php")[0])
+                    .setActionFromFormWhereTagContains("PLAY NOW", true).toPostMethod();
             if (!makeRedirectedRequest(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();

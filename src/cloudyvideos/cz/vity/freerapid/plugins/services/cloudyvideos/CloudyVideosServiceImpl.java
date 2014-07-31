@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.cloudyvideos;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
+import cz.vity.freerapid.plugins.services.xfileplayer.XFilePlayerServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class CloudyVideosServiceImpl extends XFileSharingServiceImpl {
+public class CloudyVideosServiceImpl extends XFilePlayerServiceImpl {
 
     @Override
     public String getServiceTitle() {

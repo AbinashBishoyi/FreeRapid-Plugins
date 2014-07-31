@@ -1,18 +1,18 @@
 package cz.vity.freerapid.plugins.services.cloudyvideos;
 
-import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
+import cz.vity.freerapid.plugins.services.xfileplayer.XFilePlayerRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
  *
  * @author birchie
  */
-class CloudyVideosFileRunner extends XFileSharingRunner {
+class CloudyVideosFileRunner extends XFilePlayerRunner {
 
     @Override
     protected List<FileNameHandler> getFileNameHandlers() {
@@ -29,10 +29,7 @@ class CloudyVideosFileRunner extends XFileSharingRunner {
     }
 
     @Override
-    protected List<String> getDownloadLinkRegexes() {
-        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.clear();
-        downloadLinkRegexes.add(0, "<a href\\s?=\\s?(?:\"|')(http.+?/d/.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
-        return downloadLinkRegexes;
+    protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
+        return getXFSMethodBuilder(content, "method_");
     }
 }

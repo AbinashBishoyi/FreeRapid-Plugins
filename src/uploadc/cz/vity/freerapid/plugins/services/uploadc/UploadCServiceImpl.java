@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.uploadc;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,16 +8,16 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class UploadCServiceImpl extends AbstractFileShareService {
+public class UploadCServiceImpl extends XFileSharingServiceImpl {
+
+    @Override
+    public String getServiceTitle() {
+        return "UploadCore";
+    }
 
     @Override
     public String getName() {
         return "uploadc.com";
-    }
-
-    @Override
-    public boolean supportsRunCheck() {
-        return true;
     }
 
     @Override

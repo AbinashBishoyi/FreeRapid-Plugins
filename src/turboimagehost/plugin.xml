@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.rghost.RGhostServiceImpl"
-        id="rghost.net" vendor="ntoskrnl" version="1.0.8">
+<plugin class="cz.vity.freerapid.plugins.services.turboimagehost.TurboImageHostServiceImpl"
+        id="turboimagehost.com" vendor="tong2shot" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="http://([a-z]{2,3}\.)?rghost\.(net|ru)/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?turboimagehost\.com/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="rghost.net rghost.ru"/>
+        <attribute id="services" value="turboimagehost.com"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="rghost.net" path="/" type="code"/>
+        <library id="turboimagehost.com" path="/" type="code"/>
     </runtime>
 </plugin>

@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.mirrorcreator;
+package cz.vity.freerapid.plugins.services.loudupload;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -15,16 +15,17 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://mir.cr/Z2KBKXPT"));
-            //httpFile.setNewURL(new URL("https://www.mirrorcreator.com/files/00KVDZX1/MicroBoxSamsung_V1.0.0.5_FINAL.rar_links"));
-            //httpFile.setNewURL(new URL("http://www.mirrorcreator.com/showlink.php?uid=00KVDZX1&hostid=30&sess_id=93f19d44cdeea2eb7d45f3634a26f139"));
-            httpFile.setNewURL(new URL("http://mir.cr/HLRLYS70"));
+            httpFile.setNewURL(new URL("http://loudupload.com/wzln24jkf0ne.html"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
-            //connectionSettings.setProxy("localhost", 8081);
-            final MirrorCreatorServiceImpl service = new MirrorCreatorServiceImpl();
-            final MirrorCreatorSettingsConfig config = new MirrorCreatorSettingsConfig();
-            config.setQueueAllLinks(true);
-            service.setConfig(config);
+            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            final LoudUploadServiceImpl service = new LoudUploadServiceImpl();
+
+            //we set premium account details
+            //final PremiumAccount config = new PremiumAccount();
+            //config.setUsername("***");
+            //config.setPassword("***");
+            //service.setConfig(config);
+
             testRun(service, httpFile, connectionSettings);
         } catch (Exception e) {
             e.printStackTrace();

@@ -54,7 +54,7 @@ class ShareSixFileRunner extends XFileSharingRunner {
     @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add("file\\s*?:\\s*?['\"](http://[^'\"]+?)['\"]");
+        downloadLinkRegexes.add("var lnk.*?\\s*?=\\s*?['\"](http://[^'\"]+?)['\"]");
         return downloadLinkRegexes;
     }
 }

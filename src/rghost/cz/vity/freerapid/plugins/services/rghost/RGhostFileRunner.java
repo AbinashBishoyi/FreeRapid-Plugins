@@ -23,6 +23,7 @@ class RGhostFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
             checkProblems();
@@ -45,6 +46,7 @@ class RGhostFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -69,6 +71,16 @@ class RGhostFileRunner extends AbstractRunner {
                 || content.contains("\u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+    }
+
+    private void checkUrl() {
+        fileURL = fileURL.replaceFirst("http://([a-z]{2,3}\\.)rghost", "http://rghost")
+                .replaceFirst("http://rghost\\.ru", "http://rghost.net");
+    }
+
+    @Override
+    protected String getBaseURL() {
+        return "http://rghost.net";
     }
 
 }

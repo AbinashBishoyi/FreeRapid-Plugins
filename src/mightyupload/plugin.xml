@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.mightyupload.MightyUploadServiceImpl"
-        id="mightyupload.com" vendor="birchie" version="1.0.1">
+        id="mightyupload.com" vendor="birchie" version="1.1.0">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?mightyupload\.com/.+"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="mightyupload.com"/>
         <attribute id="maxDownloads" value="100"/>
@@ -14,8 +14,10 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
+        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfileplayer"
+                plugin-version="1.0.0" reverse-lookup="false"/>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
-                plugin-version="1.0.10" reverse-lookup="false"/>
+                plugin-version="1.0.15" reverse-lookup="false"/>
     </requires>
     <runtime>
         <library id="mightyupload.com" path="/" type="code"/>

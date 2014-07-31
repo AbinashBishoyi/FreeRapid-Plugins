@@ -21,6 +21,7 @@ public class TestApp extends PluginDevApplication {
 //            httpFile.setNewURL(new URL("http://adf.ly/1409722/http://www.wowebook.be/download/4314/"));
             //httpFile.setNewURL(new URL("http://adf.ly/PPqGu"));  //http://www.putlocker.com/file/A2A1F1C572C8C542
             httpFile.setNewURL(new URL("http://adf.ly/Rp4za"));
+            //httpFile.setNewURL(new URL("http://adf.acb.im/iO"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

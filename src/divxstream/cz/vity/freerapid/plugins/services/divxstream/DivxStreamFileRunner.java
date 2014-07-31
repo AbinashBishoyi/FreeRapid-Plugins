@@ -35,7 +35,7 @@ class DivxStreamFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher match = PlugUtils.matcher("<div align=\"center\".+?>(.+?)</div>", content);
+        final Matcher match = PlugUtils.matcher("fname\" value=\"(.+?)\"", content);
         if (!match.find())
             throw new PluginImplementationException("File name not found");
         httpFile.setFileName(match.group(1).trim() + ".flv");
@@ -51,8 +51,16 @@ class DivxStreamFileRunner extends AbstractRunner {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
-            final Matcher match1 = PlugUtils.matcher("type\\|(\\d+?)\\|(\\d+?)\\|(\\d+?)\\|(\\d+?)\\|\\|(\\d+?)\\|player", contentAsString);
-            final Matcher match2 = PlugUtils.matcher("provider\\|([^\\|]+?)\\|([^\\|]+?)\\|file", contentAsString);
+            final HttpMethod aMethod = getMethodBuilder().setReferer(fileURL)
+                    .setActionFromFormWhereTagContains("Continue", true)
+                    .setAction(fileURL).toPostMethod();
+            if (!makeRedirectedRequest(aMethod)) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+            checkProblems();
+            final Matcher match1 = PlugUtils.matcher("type\\|(\\d+?)\\|(\\d+?)\\|(\\d+?)\\|(\\d+?)\\|\\|(\\d+?)\\|player", getContentAsString());
+            final Matcher match2 = PlugUtils.matcher("provider\\|([^\\|]+?)\\|([^\\|]+?)\\|file", getContentAsString());
             if (!match1.find()) throw new PluginImplementationException("Download url matcher1 failed");
             if (!match2.find()) throw new PluginImplementationException("Download url matcher2 failed");
             final String dlUrl = "http://" + match1.group(5) + "." + match1.group(4) + "." + match1.group(3) + "." +

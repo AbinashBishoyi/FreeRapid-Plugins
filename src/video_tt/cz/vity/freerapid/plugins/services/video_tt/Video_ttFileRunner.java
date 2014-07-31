@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.codec.binary.Base64;
@@ -55,6 +56,8 @@ class Video_ttFileRunner extends AbstractRunner {
             final String downloadLink = new String(Base64.decodeBase64(PlugUtils.getStringBetween(getContentAsString(), "\"u\":\"", "\",")));
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
                     .setAction(downloadLink).toGetMethod();
+            setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
+            httpFile.setResumeSupported(true);
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.streamin;
 
-import cz.vity.freerapid.plugins.services.xfileplayer.XFilePlayerServiceImpl;
+import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,12 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class StreaminServiceImpl extends XFilePlayerServiceImpl {
-
-    @Override
-    public String getServiceTitle() {
-        return "Streamin";
-    }
+public class StreaminServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
@@ -21,8 +16,12 @@ public class StreaminServiceImpl extends XFilePlayerServiceImpl {
     }
 
     @Override
+    public boolean supportsRunCheck() {
+        return true;
+    }
+
+    @Override
     protected PluginRunner getPluginRunnerInstance() {
         return new StreaminFileRunner();
     }
-
 }

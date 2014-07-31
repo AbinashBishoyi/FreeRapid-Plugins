@@ -23,4 +23,11 @@ class one80UploadFileRunner extends XFileSharingRunner {
         downloadPageMarkers.add("By downloading the file you agree to the TOS");
         return downloadPageMarkers;
     }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add(0, "var file_link\\s*?=\\s*?['\"](.+?)['\"]");
+        return downloadLinkRegexes;
+    }
 }

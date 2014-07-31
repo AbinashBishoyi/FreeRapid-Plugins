@@ -17,7 +17,7 @@ public class TestApp extends PluginDevApplication {
         try {
             //we set file URL
             //httpFile.setNewURL(new URL("http://180upload.com/a6al6eh4s86m"));
-            httpFile.setNewURL(new URL("http://180upload.nl/4y7auoa8l5hi/ArabSeed.CoM.P.E.14.P.1.2.By.AhmedTiger.part1.rar.html"));
+            httpFile.setNewURL(new URL("http://180upload.com/6n2usq4zl0qa"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication

@@ -80,6 +80,7 @@ class YouTubeSigDecipher {
         lstSig.remove(0); //remove empty char at head
         Matcher matcher = PlugUtils.matcher(REVERSE_CLONE_SWAP_CALL_PATTERN, bytecode);
         boolean matched = false;
+        String ret = null;
         while (matcher.find()) {
             int arg = matcher.group(1).charAt(0);
             int callPropertyIndex = readU30(new ByteArrayInputStream(matcher.group(2).getBytes(CHARSET_NAME)));
@@ -101,15 +102,17 @@ class YouTubeSigDecipher {
                 throw new PluginImplementationException("Unknown multiname index: " + callPropertyIndex);
             }
             matched = true;
+            StringBuilder sb = new StringBuilder();
+            for (String s : lstSig) {
+                sb.append(s);
+            }
+            ret = sb.toString();
+            logger.info(ret);
         }
         if (!matched) {
             throw new PluginImplementationException("Error parsing SWF (2)");
         }
-        StringBuilder sb = new StringBuilder();
-        for (String s : lstSig) {
-            sb.append(s);
-        }
-        return sb.toString();
+        return ret;
     }
 
     private void init() throws Exception {
@@ -213,6 +216,7 @@ class YouTubeSigDecipher {
             }
 
             final StringBuilder sb = new StringBuilder(8192);
+            sb.append(new String(bytes, 0, 8, CHARSET_NAME));
             int len;
             while ((len = is.read(bytes)) != -1) {
                 sb.append(new String(bytes, 0, len, CHARSET_NAME));
@@ -228,6 +232,7 @@ class YouTubeSigDecipher {
     }
 
     private void parseSwf(InputStream is) throws IOException {
+        readBytes(is, 8); //header
         readBytes(is, 9); //RECT
         read(is); //ignore
         read(is); //frame rate

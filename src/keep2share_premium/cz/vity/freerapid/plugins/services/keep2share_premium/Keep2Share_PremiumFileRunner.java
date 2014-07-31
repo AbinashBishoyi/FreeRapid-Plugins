@@ -21,12 +21,13 @@ import java.util.regex.Matcher;
  */
 class Keep2Share_PremiumFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(Keep2Share_PremiumFileRunner.class.getName());
-    private final static String loginURL = "http://keep2share.cc/login.html";
+    private final static String loginURL = "http://k2s.cc/login.html";
+    private final static String baseURL = "http://k2s.cc/";
 
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
-        addCookie(new Cookie(".keep2share.cc", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".k2s.cc", "lang", "en", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -57,10 +58,10 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         redirectURL();
-        addCookie(new Cookie(".keep2share.cc", "lang", "en", "/", 86400, false));
+        addCookie(new Cookie(".k2s.cc", "lang", "en", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         login();
-        final GetMethod method = getGetMethod(fileURL); //create GET request
+        final HttpMethod method = getMethodBuilder().setBaseURL(baseURL).setAction(fileURL).toGetMethod();
         final int status = client.makeRequest(method, false);
         if (status / 100 == 3) {
             if (!tryDownloadAndSaveFile(method)) {
@@ -73,7 +74,7 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
             if (!contentAsString.contains("This link will be available for")) {
                 if (getContentAsString().contains("window.location.href")) {
                     HttpMethod hMethod = getMethodBuilder()
-                            .setReferer(fileURL)
+                            .setReferer(fileURL).setBaseURL(baseURL)
                             .setAction(PlugUtils.getStringBetween(getContentAsString(), "window.location.href = '", "';"))
                             .toGetMethod();
                     if (!tryDownloadAndSaveFile(hMethod)) {
@@ -88,7 +89,7 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
                 }
                 throw new PluginImplementationException("Unknown error - site may have changed");
             }
-            final HttpMethod httpMethod = getGetMethod("http://keep2share.cc" + PlugUtils.getStringBetween(getContentAsString(), "<a href=\"", "\">this link"));
+            final HttpMethod httpMethod = getMethodBuilder().setBaseURL(baseURL).setActionFromAHrefWhereATagContains("this link").toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
@@ -119,6 +120,12 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
     private static Cookie sessionId;
     private static PremiumAccount pa0 = null;
 
+    public void setLoginData(final PremiumAccount pa) {
+        pa0 = pa;
+        sessionId = getCookieByName("sessid");
+        created = System.currentTimeMillis();
+    }
+
     public boolean isLoginStale(final PremiumAccount pa) {
         return (System.currentTimeMillis() - created > MAX_AGE) || (!pa0.getUsername().matches(pa.getUsername())) || (!pa0.getPassword().matches(pa.getPassword()));
     }
@@ -147,13 +154,14 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
                             .setParameter("LoginForm[username]", pa.getUsername())
                             .setParameter("LoginForm[password]", pa.getPassword())
                             .setParameter("LoginForm[rememberMe]", "1")
-                            .setReferer(loginURL)
+                            .setReferer(loginURL).setBaseURL(baseURL)
                     ).toPostMethod();
                     final int status = client.makeRequest(httpMethod, false);
                     if (status / 100 == 3) {
                         // successfully logged in (trying to redirect to dl url)
+                        setLoginData(pa);
                         return;
-                    } else if (status != 200) {
+                    } else if (status / 100 != 2) {
                         throw new ServiceConnectionProblemException("Error posting login info");
                     }
                 } while (getContentAsString().contains("The verification code is incorrect"));
@@ -164,9 +172,7 @@ class Keep2Share_PremiumFileRunner extends AbstractRunner {
                 if (getContentAsString().contains("Please fix the following input errors"))
                     throw new BadLoginException("Login error occurred!");
                 // login successful
-                pa0 = pa;
-                sessionId = getCookieByName("sessid");
-                created = System.currentTimeMillis();
+                setLoginData(pa);
             }
         }
     }

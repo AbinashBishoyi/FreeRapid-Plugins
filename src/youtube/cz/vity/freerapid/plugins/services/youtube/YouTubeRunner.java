@@ -124,7 +124,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             String fmtStreamMapContent = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
             YouTubeSigDecipher ytSigDecipher = null;
             Map<Integer, YouTubeMedia> afDashStreamMap = new LinkedHashMap<Integer, YouTubeMedia>(); //union between afStreamMap and dashStreamMap
-            logger.info("Swf URL : " + swfUrl);
+            logger.info("SWF URL : " + swfUrl);
             if (config.isEnableDash()
                     || (config.getDownloadMode() == DownloadMode.convertToAudio)
                     || (config.getDownloadMode() == DownloadMode.extractAudio)) {
@@ -146,7 +146,12 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         }
                         String signature = matcher.group(1);
                         ytSigDecipher = getYouTubeSigDecipher(swfUrl);
-                        signature = ytSigDecipher.decipher(signature); //deciphered signature
+                        try {
+                            signature = ytSigDecipher.decipher(signature); //deciphered signature
+                        } catch (Exception e) {
+                            logger.warning("SWF URL: " + swfUrl);
+                            throw e;
+                        }
                         dashUrl = dashUrl.replaceFirst("/s/[^/]+", "/signature/" + signature);
                         logger.info("DASH URL (deciphered) : " + dashUrl);
                     }
@@ -251,7 +256,12 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 if (ytSigDecipher == null) {
                     ytSigDecipher = getYouTubeSigDecipher(swfUrl);
                 }
-                signature = ytSigDecipher.decipher(youTubeMedia.getSignature());
+                try {
+                    signature = ytSigDecipher.decipher(youTubeMedia.getSignature());
+                } catch (Exception e) {
+                    logger.warning("SWF URL: " + swfUrl);
+                    throw e;
+                }
                 logger.info("Deciphered signature : " + signature);
             } else {
                 signature = youTubeMedia.getSignature();
@@ -342,7 +352,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     throw new PluginImplementationException("Invalid YouTube media : " + fmtStream);
                 }
                 YouTubeMedia youTubeMedia = new YouTubeMedia(itag, url, signature, cipherSig);
-                logger.info("Found video : " + youTubeMedia);
+                logger.info("Found " + (youTubeMedia.isDash() ? "DASH " : "") + "media : " + youTubeMedia);
                 fmtStreamMap.put(itag, youTubeMedia);
             } catch (Exception e) {
                 LogUtils.processException(logger, e);
@@ -809,7 +819,9 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                         LogUtils.processException(logger, e);
                     }
                 }
-                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                if (!list.isEmpty()) {
+                    getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                }
             }
         }
         return false;
@@ -866,6 +878,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             fos = new FileOutputStream(outputFile);
             logger.info("Output file name: " + fnameOutput);
             downloadFile.setState(DownloadState.COMPLETED);
+
             videoFds = new FileDataSourceImpl(videoFile);
             audioFds = new FileDataSourceImpl(audioFile);
             Movie videoMovie = MovieCreator.build(videoFds);

@@ -11,7 +11,6 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.InflaterInputStream;
 
 /**
@@ -24,7 +23,6 @@ import java.util.zip.InflaterInputStream;
  * @author JPEXS (http://www.free-decompiler.com)
  */
 class YouTubeSigDecipher {
-
     private static final Logger logger = Logger.getLogger(YouTubeSigDecipher.class.getName());
 
     private static final int MINORwithDECIMAL = 17;
@@ -38,16 +36,20 @@ class YouTubeSigDecipher {
     private static final int nameSpaceKinds[] = new int[]{KIND_NAMESPACE, KIND_PRIVATE, KIND_PACKAGE, KIND_PACKAGE_INTERNAL, KIND_PROTECTED, KIND_EXPLICIT, KIND_STATIC_PROTECTED};
     private static final int ATTR_METADATA = 4;
     private static final int CLASS_PROTECTED_NS = 8;
-    private static final Pattern REVERSE_CLONE_SWAP_CALL_PATTERN = Pattern.compile("(?s)(.)\\Q\u0046\\E(..)\\Q\u0002\u0080\\E.");
+    private static final String SWAP_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u0024\u0000\u0066\\E..\\Q\u0085\u00d7\\E";
+    private static final String REVERSE_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u004f\\E..\\Q\u0000\u00d1\u0048\\E";
+    private static final String CLONE_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u00d2\u0046\\E..\\Q\u0001\u0048\\E";
+    private static final String DECIPHER_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d0\u00d1\u0024\\E(.+?)\\Q\u00d5\u00d1\u0048\\E";
+    private static final String REVERSE_CLONE_SWAP_CALL_PATTERN = "(?s)(.)\\Q\u0046\\E(..)\\Q\u0002\u0080\\E.";
     private static final String CHARSET_NAME = "ISO-8859-1";
 
     private final InputStream is;
-    private final Map<Integer, String> multinameMap = new HashMap<Integer, String>();
-    private final Map<Integer, String> traitnameMethodMap = new HashMap<Integer, String>();
+    private final Map<Integer, String> multinameMap = new HashMap<Integer, String>(); //k=name index, v=name
+    private final Map<Integer, String> traitnameMethodMap = new HashMap<Integer, String>(); //k=method info, v=trait name
     private String bytecode = null;
-    private int swapMethodInfo = -1;
-    private int reverseMethodInfo = -1;
-    private int cloneMethodInfo = -1;
+    private String reverseTraitname = null;
+    private String cloneTraitname = null;
+    private String swapTraitname = null;
 
     public YouTubeSigDecipher(final InputStream is) {
         this.is = is;
@@ -74,28 +76,32 @@ class YouTubeSigDecipher {
         init();
         List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
         lstSig.remove(0); //remove empty char at head
-        Matcher matcher = REVERSE_CLONE_SWAP_CALL_PATTERN.matcher(bytecode);
+        Matcher matcher = PlugUtils.matcher(REVERSE_CLONE_SWAP_CALL_PATTERN, bytecode);
+        boolean matched = false;
         while (matcher.find()) {
             int arg = matcher.group(1).charAt(0);
-            String callPropertyIndex = matcher.group(2);
-            int multinameIndex = readU30(new ByteArrayInputStream(callPropertyIndex.getBytes(CHARSET_NAME)));
-            if (multinameMap.containsKey(multinameIndex)) {
-                String callPropertyMethodName = multinameMap.get(multinameIndex);
-                if (callPropertyMethodName.equals(traitnameMethodMap.get(reverseMethodInfo))) {
+            int callPropertyIndex = readU30(new ByteArrayInputStream(matcher.group(2).getBytes(CHARSET_NAME)));
+            if (multinameMap.containsKey(callPropertyIndex)) {
+                String callPropertyMethodName = multinameMap.get(callPropertyIndex);
+                if (callPropertyMethodName.equals(reverseTraitname)) {
                     logger.info("reverse " + arg);
                     lstSig = reverse(lstSig);
-                } else if (callPropertyMethodName.equals(traitnameMethodMap.get(cloneMethodInfo))) {
+                } else if (callPropertyMethodName.equals(cloneTraitname)) {
                     logger.info("clone " + arg);
                     lstSig = clone(lstSig, arg);
-                } else if (callPropertyMethodName.equals(traitnameMethodMap.get(swapMethodInfo))) {
+                } else if (callPropertyMethodName.equals(swapTraitname)) {
                     logger.info("swap " + arg);
                     lstSig = swap(lstSig, arg);
                 } else {
                     throw new PluginImplementationException("Unknown callproperty method name: " + callPropertyMethodName);
                 }
             } else {
-                throw new PluginImplementationException("Unknown multiname index: " + multinameIndex);
+                throw new PluginImplementationException("Unknown multiname index: " + callPropertyIndex);
             }
+            matched = true;
+        }
+        if (!matched) {
+            throw new PluginImplementationException("Error parsing SWF (2)");
         }
         StringBuilder sb = new StringBuilder();
         for (String s : lstSig) {
@@ -107,25 +113,7 @@ class YouTubeSigDecipher {
     private void init() throws Exception {
         if (bytecode == null) {
             final String swf = readSwfStreamToString(is);
-
-            /*
-            public static function decipher(param1:String) : String {
-                if(!DECIPHER_INSTANCE)
-                {
-                    DECIPHER_INSTANCE = new PLJXUD36Iy2g();
-                }
-                return DECIPHER_INSTANCE.VRlnjHuFLJN6(param1.split("")).join("");
-            }
-            */
-            /*
-            final String DECIPHER_STATIC_PATTERN = "(?s)\\Q\u00d0\u0030\u0060\\E..\\Q\u0011\\E...\\Q\u005e\\E..\\Q\u005d\\E(..)\\Q\u004a\\E..."
-                    + "\\Q\u0061\\E.....\\Q\u00d1\u002c\u0001\u0046\\E..\\Q\u0001\u0046\\E(..)\\Q\u0001\u002c\u0001\u0046\\E..\\Q\u0001\u0048";
-            Matcher matcher = PlugUtils.matcher(DECIPHER_STATIC_PATTERN, swf);
-            if (!matcher.find()) {
-                throw new PluginImplementationException("Decipher static method not found");
-            }
-            int decipherNameIndex = readU30(new ByteArrayInputStream(matcher.group(2).getBytes(CHARSET_NAME)));
-            */
+            int swapMethodInfo = -1, reverseMethodInfo = -1, cloneMethodInfo = -1;
 
             /*
             private function LiIsM0G5E1vk(param1:Array, param2:Number) : Array {
@@ -136,7 +124,6 @@ class YouTubeSigDecipher {
                 return param1;
             }
             */
-            final String SWAP_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u0024\u0000\u0066\\E..\\Q\u0085\u00d7\\E";
             Matcher matcher = PlugUtils.matcher(SWAP_PATTERN, swf);
             if (matcher.find()) {
                 swapMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3205; traitname=LiIsM0G5E1vk
@@ -148,7 +135,6 @@ class YouTubeSigDecipher {
                 return param1;
             }
             */
-            final String REVERSE_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u004f\\E..\\Q\u0000\u00d1\u0048\\E";
             matcher = PlugUtils.matcher(REVERSE_PATTERN, swf);
             if (matcher.find()) {
                 reverseMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3203; traitname=YyOGkH0orx4s
@@ -159,7 +145,6 @@ class YouTubeSigDecipher {
                 return param1.slice(param2);
              }
             */
-            final String CLONE_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d1\u00d2\u0046\\E..\\Q\u0001\u0048\\E";
             matcher = PlugUtils.matcher(CLONE_PATTERN, swf);
             if (matcher.find()) {
                 cloneMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME))); //3204; traitname=kvS7BCL1VhHo
@@ -182,7 +167,6 @@ class YouTubeSigDecipher {
                 return param1;
             }
             */
-            final String DECIPHER_PATTERN = String.format("(?s)(..).{5}\\Q\u00d0\u0030\u00d0\u00d1\u0024\\E(.+?)\\Q\u00d5\u00d1\u0048\\E");
             matcher = PlugUtils.matcher(DECIPHER_PATTERN, swf);
             if (!matcher.find()) {
                 throw new PluginImplementationException("Decipher method not found");
@@ -191,6 +175,9 @@ class YouTubeSigDecipher {
             bytecode = matcher.group(2);
 
             parseSwf(new ByteArrayInputStream(swf.getBytes(CHARSET_NAME)));
+            reverseTraitname = traitnameMethodMap.get(reverseMethodInfo);
+            cloneTraitname = traitnameMethodMap.get(cloneMethodInfo);
+            swapTraitname = traitnameMethodMap.get(swapMethodInfo);
         }
     }
 
@@ -233,7 +220,6 @@ class YouTubeSigDecipher {
         readUI16(is); //frame count
 
         //read tag
-        Map<Integer, String> constant_string_map = new HashMap<Integer, String>();  //k=string index, v=string name
         while (true) {
             int tagCodeAndLength = readUI16(is);
             int tagCode = (tagCodeAndLength) >> 6;
@@ -251,12 +237,13 @@ class YouTubeSigDecipher {
             if (tagCode != 82) {
                 continue;
             }
-            doAbcTag(data, constant_string_map);
+            doAbcTag(data);
         }
     }
 
-    private void doAbcTag(byte[] data, Map<Integer, String> constant_string_map) throws IOException {
+    private void doAbcTag(byte[] data) throws IOException {
         //DoABC tag
+        Map<Integer, String> constant_string_map = new HashMap<Integer, String>();  //k=string index, v=string name
         InputStream abcIs = new ByteArrayInputStream(data);
         readUI32(abcIs); //flags
         readString(abcIs); //name
@@ -329,14 +316,13 @@ class YouTubeSigDecipher {
             if ((kind == 7) || (kind == 0xd)) { // CONSTANT_QName and CONSTANT_QNameA.
                 readU30(abcIs); //namespace index
                 int string_name_index = readU30(abcIs);
-                //save multimap index (k) and string name (v) if the string name index exists in constant_string_map
+                //save multiname index (k) and string name (v) if the string name index exists in constant_string_map
                 if (constant_string_map.containsKey(string_name_index)) {
                     multinameMap.put(i, constant_string_map.get(string_name_index));
                 }
             } else if ((kind == 0xf) || (kind == 0x10)) { //CONSTANT_RTQName and CONSTANT_RTQNameA
                 readU30(abcIs); //string name index
-            } else if ((kind == 0x11) || (kind == 0x12))//kind==0x11,0x12 nothing CONSTANT_RTQNameL and CONSTANT_RTQNameLA.
-            {
+            } else if ((kind == 0x11) || (kind == 0x12)) { //kind==0x11,0x12 nothing CONSTANT_RTQNameL and CONSTANT_RTQNameLA.
                 //
             } else if ((kind == 9) || (kind == 0xe)) { // CONSTANT_Multiname and CONSTANT_MultinameA.
                 readU30(abcIs); //string name index
@@ -550,7 +536,7 @@ class YouTubeSigDecipher {
         while (true) {
             r = is.read();
             if (r <= 0) {
-                return new String(baos.toByteArray(), "utf8");
+                return new String(baos.toByteArray(), CHARSET_NAME);
             }
             baos.write(r);
         }
@@ -633,7 +619,7 @@ class YouTubeSigDecipher {
     private static String readAbcString(InputStream is) throws IOException {
         int length = readU30(is);
         byte b[] = safeRead(is, length);
-        return new String(b, "UTF-8");
+        return new String(b, CHARSET_NAME);
     }
 
     /*

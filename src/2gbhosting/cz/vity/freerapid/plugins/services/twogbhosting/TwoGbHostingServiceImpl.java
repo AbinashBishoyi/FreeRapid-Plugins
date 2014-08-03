@@ -12,7 +12,7 @@ public class TwoGbHostingServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "2gb-hosting.com ";
+        return "2gb-hosting.com";
     }
 
     @Override

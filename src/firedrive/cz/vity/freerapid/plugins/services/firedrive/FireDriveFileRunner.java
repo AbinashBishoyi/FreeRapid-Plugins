@@ -50,12 +50,11 @@ class FireDriveFileRunner extends AbstractRunner {
     }
 
     private void checkUrl() {
-        if (!fileURL.startsWith("http://www.")) {
-            fileURL = fileURL.replaceFirst("http://", "http://www.");
+        if (!PlugUtils.find("^https?://www\\.", fileURL)) {
+            fileURL = fileURL.replaceFirst("(https?)://", "$1://www."); //add www
         }
-        if (fileURL.contains("putlocker.com")) {
-            fileURL = fileURL.replaceFirst("putlocker\\.com", "firedrive.com");
-        }
+        fileURL = fileURL.replaceFirst("^https://", "http://")  //they redirected https to http
+                .replaceFirst("putlocker\\.com", "firedrive.com");
     }
 
     @Override

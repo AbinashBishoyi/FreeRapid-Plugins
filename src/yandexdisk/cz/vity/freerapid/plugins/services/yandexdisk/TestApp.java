@@ -15,11 +15,12 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            //httpFile.setNewURL(new URL("http://yadi.sk/d/69CDK9xBU5qz"));
+            httpFile.setNewURL(new URL("http://yadi.sk/d/69CDK9xBU5qz"));
+            //httpFile.setNewURL(new URL("https://yadi.sk/d/JhLlBlhGWhqW8"));
             //httpFile.setNewURL(new URL("https://disk.yandex.net/disk/public/?hash=cUQgAki%2BkmwkKht8da/UkEusqRyPZivjQcvjD%2BlUrsM%3D&final=true"));
-            //httpFile.setNewURL(new URL("http://yadi.sk/d/VZXQ4AyUYa50&post=12517322_4796"));
+            //httpFile.setNewURL(new URL("http://yadi.sk/d/VZXQ4AyUYa50"));
             //httpFile.setNewURL(new URL("http://yadi.sk/d/IuILKPwmclGU"));
-            httpFile.setNewURL(new URL("http://yadi.sk/d/W9-9gP2KYhAm"));
+            //httpFile.setNewURL(new URL("http://yadi.sk/d/W9-9gP2KYhAm"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final YandexDiskServiceImpl service = new YandexDiskServiceImpl();

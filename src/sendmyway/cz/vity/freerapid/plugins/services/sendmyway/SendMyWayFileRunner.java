@@ -22,6 +22,14 @@ class SendMyWayFileRunner extends XFileSharingRunner {
     }
 
     @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.clear();
+        downloadPageMarkers.add("name=\"Download\" value=\"Download Now");
+        return downloadPageMarkers;
+    }
+
+    @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = new LinkedList<String>();
         downloadLinkRegexes.add("<div.+?id=\"direct_download\".+?>\\s*?<a href\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");

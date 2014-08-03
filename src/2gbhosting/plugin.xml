@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.ultramegabit.UltraMegabitServiceImpl"
-        id="ultramegabit.com" vendor="birchie" version="1.0.10">
+<plugin class="cz.vity.freerapid.plugins.services.twogbhosting.TwoGbHostingServiceImpl"
+        id="2gb-hosting.com " vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?(ultramegabit\.com|uploadto\.us)/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?2gb-hosting\.com /.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="uploadto.us ultramegabit.com"/>
+        <attribute id="services" value="2gb-hosting.com "/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="ultramegabit.com" path="/" type="code"/>
+        <library id="2gb-hosting.com " path="/" type="code"/>
     </runtime>
 </plugin>

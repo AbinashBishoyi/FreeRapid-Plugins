@@ -22,6 +22,7 @@ import java.util.regex.Matcher;
  */
 class RapidGatorFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(RapidGatorFileRunner.class.getName());
+    final static String BaseURL = "http://rapidgator.net";
 
     @Override
     public void runCheck() throws Exception {
@@ -61,11 +62,17 @@ class RapidGatorFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
+    private void fixUrl() {
+        if (fileURL.contains("rg.to"))
+            fileURL = fileURL.replaceFirst("rg.to", "rapidgator.net");
+    }
+
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         addCookie(new Cookie(".rapidgator.net", "lang", "en", "/", 86400, false));
+        fixUrl();
         login();
         HttpMethod method = getGetMethod(fileURL);
         final int status = client.makeRequest(method, false);
@@ -80,7 +87,7 @@ class RapidGatorFileRunner extends AbstractRunner {
                 List<URI> list = new LinkedList<URI>();
                 final Matcher m = PlugUtils.matcher("class=\"(?:odd|even)\"><td><a href=\"(.+?)\"", getContentAsString());
                 while (m.find()) {
-                    list.add(new URI("http://rapidgator.net" + m.group(1).trim()));
+                    list.add(new URI(BaseURL + m.group(1).trim()));
                 }
                 if (list.isEmpty()) throw new PluginImplementationException("No links found");
                 getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
@@ -90,7 +97,7 @@ class RapidGatorFileRunner extends AbstractRunner {
                 return;
             }
             checkNameAndSize(getContentAsString());
-            method = getMethodBuilder().setActionFromTextBetween("var premium_download_link = '", "';").toGetMethod();
+            method = getMethodBuilder().setBaseURL(BaseURL).setActionFromTextBetween("var premium_download_link = '", "';").toGetMethod();
             if (!tryDownloadAndSaveFile(method)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException("Error starting download");
@@ -118,7 +125,7 @@ class RapidGatorFileRunner extends AbstractRunner {
                     throw new BadLoginException("No RapidGator account login information!");
                 }
             }
-            final HttpMethod method = getMethodBuilder()
+            final HttpMethod method = getMethodBuilder().setBaseURL(BaseURL)
                     .setAction("https://rapidgator.net/auth/login")
                     .setParameter("LoginForm[email]", pa.getUsername())
                     .setParameter("LoginForm[password]", pa.getPassword())

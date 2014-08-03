@@ -17,7 +17,12 @@ public class TusFilesFileSizeHandler implements FileSizeHandler {
         final Matcher match = PlugUtils.matcher(" - ([\\d\\.,]+?\\s*?\\w+?)[\\[<]/", content);
         if (match.find())
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(match.group(1)));
-        else
-            PlugUtils.checkFileSize(httpFile, content, "Size:", "| <");
+        else {
+            final Matcher match2 = PlugUtils.matcher(">\\s*?Size\\s*?:\\s*?(.+?)\\s*?<", content);
+            if (match2.find())
+                httpFile.setFileSize(PlugUtils.getFileSizeFromString(match2.group(1)));
+            else
+                PlugUtils.checkFileSize(httpFile, content, "Size:", "| <");
+        }
     }
 }

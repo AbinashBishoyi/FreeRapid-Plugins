@@ -10,7 +10,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URLEncoder;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -172,8 +171,11 @@ class YunFileFileRunner extends AbstractRunner {
             throw new URLNotAvailableAnymoreException("File not found");
         }
         if (contentAsString.contains("down_interval")) {
-            throw new YouHaveToWaitException("Waiting for next file.",
-                    PlugUtils.getWaitTimeBetween(contentAsString, "down_interval_tag\" style=\"font-size: 28px;  color: #000800; \">", "</span>", TimeUnit.MINUTES));
+            int wait = 10;
+            final Matcher match = PlugUtils.matcher("down_interval_tag\"[^>]+?>(.+?)</span>", contentAsString);
+            if (match.find())
+                wait = Integer.parseInt(match.group(1));
+            throw new YouHaveToWaitException("Waiting for next file.", wait * 60);
         }
         if (contentAsString.contains("Web Server may be down")) {
             throw new ServiceConnectionProblemException("A communication error occurred: \"Operation timed out\"");

@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileNameHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandlerNoSize;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
 import org.apache.commons.httpclient.HttpMethod;
 
 import java.util.List;
@@ -39,6 +40,11 @@ class FileCoreFileRunner extends XFileSharingRunner {
             throw new ServiceConnectionProblemException();
         }
         return false;
+    }
+
+    @Override
+    protected MethodBuilder getXFSMethodBuilder(final String content) throws Exception {
+        return getXFSMethodBuilder(content, "method_free");
     }
 
     @Override

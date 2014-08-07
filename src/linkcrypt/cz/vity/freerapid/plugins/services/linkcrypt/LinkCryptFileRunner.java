@@ -63,7 +63,7 @@ class LinkCryptFileRunner extends AbstractRunner {
 
         dummyRequest("http://linkcrypt.ws/js/jquery.js");
         dummyRequest("http://linkcrypt.ws/dir/image/Warning.png");
-        dummyRequest("http://linkcrypt.ws/image/menu_rigth.png");
+        dummyRequest("http://linkcrypt.ws/image/menu_right.png");
 
         if (stepCaptcha(content)) {
             content = getContentAsString();

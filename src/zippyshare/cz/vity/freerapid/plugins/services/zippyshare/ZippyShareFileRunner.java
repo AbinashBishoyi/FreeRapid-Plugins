@@ -65,7 +65,7 @@ class ZippyShareFileRunner extends AbstractRunner {
                         logger.info("Evaluating script:\n" + script);
                         engine.eval(script);
                     } while (matcher.find());
-                    url = (String) engine.eval("document.getElementById('dlbutton').href");
+                    url = engine.eval("document.getElementById('dlbutton').href").toString();
                 } catch (final Exception e) {
                     throw new PluginImplementationException("Script execution failed", e);
                 }

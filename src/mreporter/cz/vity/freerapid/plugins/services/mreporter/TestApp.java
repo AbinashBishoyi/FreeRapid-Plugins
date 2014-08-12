@@ -16,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.mreporter.ru/reports/40284"));
-            httpFile.setNewURL(new URL("http://www.mreporter.ru/reports/40314"));
+            //httpFile.setNewURL(new URL("http://www.mreporter.ru/reports/40314"));
+            httpFile.setNewURL(new URL("http://www.mreporter.ru/styles/video/ext/39938/139866"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final MReporterServiceImpl service = new MReporterServiceImpl();

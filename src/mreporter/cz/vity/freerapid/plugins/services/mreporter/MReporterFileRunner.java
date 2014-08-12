@@ -29,9 +29,16 @@ class MReporterFileRunner extends AbstractRunner {
         config = service.getConfig();
     }
 
+    private void checkUrl() {
+        if (fileURL.contains("/styles/video/ext/")) {
+            fileURL = fileURL.replaceFirst("/styles/video/ext/(\\d+)/.+", "/reports/$1");
+        }
+    }
+
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -51,6 +58,7 @@ class MReporterFileRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         GetMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -89,7 +97,7 @@ class MReporterFileRunner extends AbstractRunner {
     private String getManifestUrl(String content) throws PluginImplementationException {
         Matcher matcher = PlugUtils.matcher("\"file\":\"(http://[^\"]+?\\.\\[(.+?)\\]\\.f4m)\"", content);
         if (!matcher.find()) {
-            throw new PluginImplementationException("Cannot find manifest URL (1)");
+            throw new PluginImplementationException("Cannot find manifest URL");
         }
         String manifestUrl = matcher.group(1); //http://b1.mreporter.ru/c/139866.[360p,144p,240p].f4m
         String[] strQualities = matcher.group(2).replace("p", "").split(","); //360p,144p,240p to [360,144,240]

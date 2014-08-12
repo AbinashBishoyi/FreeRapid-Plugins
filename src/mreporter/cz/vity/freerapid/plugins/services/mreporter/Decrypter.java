@@ -11,7 +11,7 @@ public class Decrypter {
     private final static String lg27 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
     public String decrypt(String st) throws Exception {
-        for (int i = 0; i < codec_b.length; i++) {
+        for (int i = 0, length = codec_b.length; i < length; i++) {
             st = pr62(codec_b[i], codec_a[i], st);
         }
         return xc13(st).toString("UTF-8");
@@ -22,12 +22,13 @@ public class Decrypter {
     }
 
     private ByteArrayOutputStream xc13(String param1) {
+        final int X_LENGTH = 4;
         final int Y_LENGTH = 3;
         final ByteArrayOutputStream ret = new ByteArrayOutputStream();
-        final int[] x = new int[4];
+        final int[] x = new int[X_LENGTH];
         final int[] y = new int[Y_LENGTH];
-        for (int i = 0, length = param1.length(); i < length; i += 4) {
-            for (int j = 0; j < 4 && i + j < length; j++) {
+        for (int i = 0, length = param1.length(); i < length; i += X_LENGTH) {
+            for (int j = 0; j < X_LENGTH && i + j < length; j++) {
                 x[j] = lg27.indexOf(param1.charAt(i + j));
             }
             y[0] = (x[0] << 2) + ((x[1] & 48) >> 4);

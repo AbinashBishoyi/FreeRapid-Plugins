@@ -34,9 +34,16 @@ class ExpressLeechFileRunner extends XFileSharingRunner {
     }
 
     @Override
+    protected List<String> getDownloadPageMarkers() {
+        final List<String> downloadPageMarkers = super.getDownloadPageMarkers();
+        downloadPageMarkers.add("final_download.png");
+        return downloadPageMarkers;
+    }
+
+    @Override
     protected List<String> getDownloadLinkRegexes() {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
-        downloadLinkRegexes.add(0, "<a href=\"(http://dl.srv.+?)(?:\"|')");
+        downloadLinkRegexes.add(0, "<a href=['\"](http://dl\\..+?)['\"]");
         return downloadLinkRegexes;
     }
 

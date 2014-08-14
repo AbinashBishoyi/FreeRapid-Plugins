@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.adf.AdfServiceImpl"
-        id="adf.ly" vendor="ntoskrnl" version="1.2.3">
+        id="adf.ly" vendor="ntoskrnl" version="1.2.4">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?(adf\.ly|q\.gs|adf\.acb\.im|goo\.gl|j.gs)/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?(adf\.ly|q\.gs|adf\.acb\.im|goo\.gl|j\.gs)/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="adf.ly q.gs adf.acb.im goo.gl"/>
+        <attribute id="services" value="adf.ly q.gs adf.acb.im goo.gl j.gs"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

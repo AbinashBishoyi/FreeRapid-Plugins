@@ -98,7 +98,7 @@ class Go4upFileRunner extends AbstractRunner {
                         String strNewUrl = PlugUtils.getStringBetween(subContent, "window.location = \"", "\"");
                         listing.add(new URI(strNewUrl));
                     } else {
-                        final Matcher match = PlugUtils.matcher("id=\"linklist\">\\s*?<center>\\s*?<b><a href=\"(.+?)\">", getContentAsString());
+                        final Matcher match = PlugUtils.matcher("id=\"linklist\">\\s*?<center>\\s*?.+?<b><a href=\"(.+?)\">", getContentAsString());
                         if (match.find())
                             listing.add(new URI(match.group(1)));
                     }
@@ -114,7 +114,8 @@ class Go4upFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("download does not exist") || contentAsString.contains("not found on this server")
-                || contentAsString.contains("Page Not Found") || contentAsString.contains("page you requested was not found")) {
+                || contentAsString.contains("Page Not Found") || contentAsString.contains("page you requested was not found")
+                || contentAsString.contains("page you are looking for cannot be found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

@@ -1,5 +1,7 @@
 package cz.vity.freerapid.plugins.services.uploadrocket;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 
 import java.util.List;
@@ -17,5 +19,13 @@ class UploadRocketFileRunner extends XFileSharingRunner {
         final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
         downloadLinkRegexes.add("var download_url\\s*=\\s*'(http.+?" + Pattern.quote(httpFile.getFileName()) + ")'");
         return downloadLinkRegexes;
+    }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        String contentAsString = getContentAsString();
+        if (contentAsString.contains("file was deleted by")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
     }
 }

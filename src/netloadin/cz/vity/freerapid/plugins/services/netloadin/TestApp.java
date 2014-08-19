@@ -19,7 +19,7 @@ public class TestApp extends PluginDevApplication {
     protected void startup() {
         final HttpFile httpFile = getHttpFile();
         try {
-            httpFile.setNewURL(new URL("https://netload.in/dateixY77QPviRV/asd_0.txt.htm"));
+            httpFile.setNewURL(new URL("http://netload.in/dateiEdDdDkDhN4/Once.Upon.A.Time.S01E22.A.Land.Without.Magic.720p.WEB-DL.DD5.1.H.264-ECI.mkv.htm"));
             testRun(new NetloadInShareServiceImpl(), httpFile, new ConnectionSettings());
         } catch (Exception e) {
             e.printStackTrace();

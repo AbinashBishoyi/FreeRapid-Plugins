@@ -2,9 +2,11 @@ package cz.vity.freerapid.plugins.services.netloadin;
 
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.netloadin.captcha.CaptchaReader;
+import cz.vity.freerapid.plugins.services.recaptcha.ReCaptcha;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -72,8 +74,8 @@ class NetloadInRunner extends AbstractRunner {
                 }
                 stepCaptcha(getContentAsString());
                 captchaCount++;
-            } while (getContentAsString().contains("You may forgot the security code or it might be wrong"));
-
+            } while (getContentAsString().contains("You may forgot the security code or it might be wrong")
+                    || getContentAsString().contains("Please enter the security code"));
             Matcher matcher = getMatcherAgainstContent(">countdown\\(([0-9]+)");
             if (matcher.find()) {
                 int time = Integer.parseInt(matcher.group(1)) / 100;
@@ -106,6 +108,9 @@ class NetloadInRunner extends AbstractRunner {
             stepPasswordPage();
             contentAsString = getContentAsString();
         }
+        if (contentAsString.contains("recaptcha_challenge"))
+            return true;
+
         Matcher matcher = PlugUtils.matcher("class=\"Free_dl\">(.|\\W)*?<a href=\"([^\"]*)\"", contentAsString);
         if (!matcher.find()) {
             throw new PluginImplementationException("Download link not found");
@@ -186,6 +191,19 @@ class NetloadInRunner extends AbstractRunner {
 
                         return true;
                     }
+                }
+            } else if (contentAsString.contains("recaptcha_challenge")) {
+                final String reCaptchaKey = PlugUtils.getStringBetween(contentAsString, "recaptcha/api/challenge?k=", "\"");
+                final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+                final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+                if (captcha == null) {
+                    throw new CaptchaEntryInputMismatchException();
+                }
+                r.setRecognized(captcha);
+                final HttpMethod httpMethod = r.modifyResponseMethod(getMethodBuilder(contentAsString)
+                        .setActionFromFormWhereTagContains("recaptcha", true)).toPostMethod();
+                if (makeRedirectedRequest(httpMethod)) {
+                    return true;
                 }
             } else {
                 throw new PluginImplementationException("Captcha picture was not found");

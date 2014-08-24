@@ -1,5 +1,7 @@
 package cz.vity.freerapid.plugins.services.vshare;
 
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandlerNoSize;
@@ -19,4 +21,15 @@ class VShareFileRunner extends XFileSharingRunner {
         fileSizeHandlers.add(new FileSizeHandlerNoSize());
         return fileSizeHandlers;
     }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("File is no longer available!<") ||
+                content.contains("file you were looking for could not be found")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        super.checkFileProblems();
+    }
+
 }

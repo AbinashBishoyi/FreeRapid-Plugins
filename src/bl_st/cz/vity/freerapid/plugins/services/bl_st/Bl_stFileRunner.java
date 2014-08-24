@@ -2,6 +2,7 @@ package cz.vity.freerapid.plugins.services.bl_st;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.NotRecoverableDownloadException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.services.xfilesharing.XFileSharingRunner;
 import cz.vity.freerapid.plugins.services.xfilesharing.nameandsize.FileSizeHandler;
 
@@ -19,6 +20,15 @@ class Bl_stFileRunner extends XFileSharingRunner {
         final List<FileSizeHandler> fileSizeHandlers = super.getFileSizeHandlers();
         fileSizeHandlers.add(0, new Bl_stFileSizeHandler());
         return fileSizeHandlers;
+    }
+
+    @Override
+    protected void checkFileProblems() throws ErrorDuringDownloadingException {
+        final String content = getContentAsString();
+        if (content.contains("warning\">No such file")) {
+            throw new URLNotAvailableAnymoreException("File not found");
+        }
+        super.checkFileProblems();
     }
 
     @Override

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin class="cz.vity.freerapid.plugins.services.nitroflare_premium.NitroFlare_PremiumServiceImpl"
+        id="nitroflare.com_premium" vendor="birchie" version="1.0.0">
+    <attributes>
+        <attribute id="urlRegex" value="https?://(www\.)?nitroflare\.com/.+"/>
+        <attribute id="minver" value="0.855"/>
+        <attribute id="maxver" value="0.899"/>
+        <attribute id="services" value="nitroflare.com"/>
+        <attribute id="premium" value="true"/>
+        <attribute id="hasOptions" value="true"/>
+        <attribute id="maxDownloads" value="100"/>
+        <attribute id="faviconImage" value="resources/favicon.png"/>
+    </attributes>
+
+    <runtime>
+        <library id="nitroflare.com_premium" path="/" type="code"/>
+    </runtime>
+</plugin>

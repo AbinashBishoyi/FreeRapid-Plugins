@@ -1,6 +1,9 @@
 package cz.vity.freerapid.plugins.services.itebooks;
 
-import cz.vity.freerapid.plugins.exceptions.*;
+import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.FileState;
@@ -62,15 +65,11 @@ class ItEbooksFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize(contentAsString);
             MethodBuilder mb;
-            try {
-                mb = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Free");
-            } catch (BuildMethodException e) {
-                Matcher matcher = getMatcherAgainstContent("<a href='(http://filepi\\.com/[^']+?)'");
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Download link not found");
-                }
-                mb = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1));
+            Matcher matcher = getMatcherAgainstContent("<a href='(http://filepi\\.com/[^']+?)'");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Download link not found");
             }
+            mb = getMethodBuilder().setReferer(fileURL).setAction(matcher.group(1));
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
             if (!tryDownloadAndSaveFile(mb.toHttpMethod())) {
                 checkProblems();

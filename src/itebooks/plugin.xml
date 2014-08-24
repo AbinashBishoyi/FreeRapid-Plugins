@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.itebooks.ItEbooksServiceImpl"
-        id="it-ebooks.info" vendor="tong2shot" version="1.0.1">
+        id="it-ebooks.info" vendor="tong2shot" version="1.0.2">
     <attributes>
         <attribute id="urlRegex"
                    value="http://(www\.)?it-ebooks\.info/book/\d+.*|http://feedproxy\.google\.com/~r/IT-eBooks/.+"/>

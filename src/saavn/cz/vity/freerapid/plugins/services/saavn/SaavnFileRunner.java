@@ -51,7 +51,7 @@ class SaavnFileRunner extends AbstractRtmpRunner {
         } else {
             final String album = PlugUtils.getStringBetween(content, "\"album\":\"", "\"").trim();
             final String title = PlugUtils.getStringBetween(content, "\"title\":\"", "\"").trim();
-            httpFile.setFileName(String.format("%s - %s.mp3", album, title));
+            httpFile.setFileName(String.format("%s - %s.flv", album, title));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

@@ -16,8 +16,9 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.canalplus.fr/c-infos-documentaires/pid1830-c-zapping.html?vid=1089249"));
-            httpFile.setNewURL(new URL("http://www.canalplus.fr/c-infos-documentaires/pid1830-c-zapping.html?vid=1096418"));
+            //httpFile.setNewURL(new URL("http://www.canalplus.fr/c-infos-documentaires/pid1830-c-zapping.html?vid=1096418"));
             //httpFile.setNewURL(new URL("http://www.canalplus.fr/c-infos-documentaires/pid1830-c-zapping.html?vid=1085169"));
+            httpFile.setNewURL(new URL("http://www.canalplus.fr/c-sport/c-football/c-les-specimens/pid3728-c-videos-les-specimens.html?vid=1119814"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final CanalPlusServiceImpl service = new CanalPlusServiceImpl();

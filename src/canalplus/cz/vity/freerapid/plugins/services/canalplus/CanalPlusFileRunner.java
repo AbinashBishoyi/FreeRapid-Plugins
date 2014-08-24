@@ -100,21 +100,24 @@ class CanalPlusFileRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private String getVideoListUrl(String videoId) throws PluginImplementationException {
+    private String getVideoListUrl(String videoId) {
         return "http://service.canal-plus.com/video/rest/getVideosLiees/cplus/" + videoId + "?format=json";
     }
 
     private JsonNode getVideoNode(String content, String videoId) throws PluginImplementationException {
-        JsonMapper jsonMapper = new JsonMapper();
-        ObjectMapper om = jsonMapper.getObjectMapper();
+        ObjectMapper om = new JsonMapper().getObjectMapper();
         JsonNode selectedNode = null;
         try {
             JsonNode rootNode = om.readTree(content);
-            for (JsonNode videoNode : rootNode) {
-                if (videoNode.get("ID").getTextValue().equals(videoId)) {
-                    selectedNode = videoNode;
-                    break;
+            if (rootNode.isArray()) { //contains more than 1 items
+                for (JsonNode videoNode : rootNode) {
+                    if (videoNode.get("ID").getTextValue().equals(videoId)) {
+                        selectedNode = videoNode;
+                        break;
+                    }
                 }
+            } else if (rootNode.get("ID").getTextValue().equals(videoId)) { //only 1
+                selectedNode = rootNode;
             }
         } catch (Exception e) {
             throw new PluginImplementationException("Error getting video node");

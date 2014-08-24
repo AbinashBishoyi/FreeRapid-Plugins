@@ -18,7 +18,9 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://it-ebooks.info/book/1045/")); //direct download
             //httpFile.setNewURL(new URL("http://it-ebooks.info/book/2196/"));
             //httpFile.setNewURL(new URL("http://it-ebooks.info/book/2712/")); //filepi
-            httpFile.setNewURL(new URL("http://feedproxy.google.com/~r/IT-eBooks/~3/Vu2Mw9EkTBA/"));
+            //httpFile.setNewURL(new URL("http://feedproxy.google.com/~r/IT-eBooks/~3/Vu2Mw9EkTBA/"));
+            //httpFile.setNewURL(new URL("http://feedproxy.google.com/~r/IT-eBooks/~3/XbcM8LDOMZw/"));
+            httpFile.setNewURL(new URL("http://it-ebooks.info/book/670/"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final ItEbooksServiceImpl service = new ItEbooksServiceImpl();

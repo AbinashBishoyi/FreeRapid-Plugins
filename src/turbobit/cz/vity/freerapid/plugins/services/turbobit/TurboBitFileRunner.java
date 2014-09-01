@@ -40,7 +40,7 @@ public class TurboBitFileRunner extends AbstractRunner {
     }
 
     private String checkFileURL(final String fileURL) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("^http://(?:www\\.)?(turbobit\\.net|hitfile\\.net|files\\.uz-translations\\.uz)/(?:download/free/)?(\\w+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("^http://(?:www\\.|new\\.)?(turbobit\\.net|hitfile\\.net|files\\.uz-translations\\.uz)/(?:download/free/)?(\\w+)", fileURL);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing download link");
         }
@@ -50,11 +50,13 @@ public class TurboBitFileRunner extends AbstractRunner {
 
     protected void checkNameAndSize() throws ErrorDuringDownloadingException {
         final Matcher matcher = getMatcherAgainstContent("<span class.*?>(.+?)</span>\\s*\\((.+?)\\)");
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File name/size not found");
+        if (matcher.find()) {
+            httpFile.setFileName(matcher.group(1));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
+        } else {
+            PlugUtils.checkName(httpFile, getContentAsString(), "file-title\">", "<");
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "file-size\">", "</");
         }
-        httpFile.setFileName(matcher.group(1));
-        httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 

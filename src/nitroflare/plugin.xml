@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.nitroflare.NitroFlareServiceImpl"
-        id="nitroflare.com" vendor="tong2shot" version="1.0.0">
-    <attributes>
+        id="nitroflare.com" vendor="tong2shot" version="1.0.1">
+<attributes>
         <attribute id="urlRegex" value="https?://(www\.)?nitroflare\.com/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>

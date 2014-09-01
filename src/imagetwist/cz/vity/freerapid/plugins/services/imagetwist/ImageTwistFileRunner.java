@@ -22,12 +22,12 @@ class ImageTwistFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(ImageTwistFileRunner.class.getName());
 
     @Override
-    public void runCheck() throws Exception { //this method validates file
+    public void runCheck() throws Exception {
         super.runCheck();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
+        final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
-            checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
+            checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
             throw new ServiceConnectionProblemException();
@@ -36,35 +36,30 @@ class ImageTwistFileRunner extends AbstractRunner {
 
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        final Matcher filenameMatcher = PlugUtils.matcher("/([^/]+\\.\\w+)\" class=\"pic\"",content);
-        if (filenameMatcher.find()) {
-            final String filename = filenameMatcher.group(1);
-            logger.info("File name " + filename);
-            httpFile.setFileName(filename);
-            httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
-        } else {
+        final Matcher filenameMatcher = PlugUtils.matcher("class=\"pic\" alt=\"([^\"]+?)\"", content);
+        if (!filenameMatcher.find()) {
             throw new PluginImplementationException("File name not found");
-        }        
-        //PlugUtils.checkFileSize(httpFile, content, "FileSizeLEFT", "FileSizeRIGHT");//TODO
-
+        }
+        final String filename = filenameMatcher.group(1);
+        logger.info("File name " + filename);
+        httpFile.setFileName(filename);
+        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
-    
+
 
     @Override
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
-            final String contentAsString = getContentAsString();//check for response
-            checkProblems();//check problems
-            checkNameAndSize(contentAsString);//extract file name and size from the page
+        final GetMethod method = getGetMethod(fileURL);
+        if (makeRedirectedRequest(method)) {
+            final String contentAsString = getContentAsString();
+            checkProblems();
+            checkNameAndSize(contentAsString);
             final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromImgSrcWhereTagContains("pic").toHttpMethod();
-
-            //here is the download link extraction
             if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();//if downloading failed
-                throw new ServiceConnectionProblemException("Error starting download");//some unknown problem
+                checkProblems();
+                throw new ServiceConnectionProblemException("Error starting download");
             }
         } else {
             checkProblems();
@@ -75,7 +70,7 @@ class ImageTwistFileRunner extends AbstractRunner {
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("Image Not Found")) {
-            throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
+            throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 

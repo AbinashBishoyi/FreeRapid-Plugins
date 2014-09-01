@@ -3,8 +3,11 @@ package cz.vity.freerapid.plugins.services.nitroflare_premium;
 import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
+import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.hoster.CaptchaSupport;
 import cz.vity.freerapid.plugins.webclient.hoster.PremiumAccount;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 
@@ -103,35 +106,56 @@ class NitroFlare_PremiumFileRunner extends AbstractRunner {
         }
     }
 
+    private static Cookie userCookie;
+
     public void login() throws Exception {
-        final NitroFlare_PremiumServiceImpl service = (NitroFlare_PremiumServiceImpl) getPluginService();
-        PremiumAccount pa = service.getConfig();
-        synchronized (NitroFlare_PremiumServiceImpl.class) {
-            if (!pa.isSet()) {
-                pa = service.showConfigDialog();
-                if (pa == null || !pa.isSet()) {
-                    throw new BadLoginException("No NitroFlare Premium account login information!");
+        if (userCookie != null) {
+            addCookie(userCookie);
+            logger.info("LOGGED IN Using Cookie :)");
+        } else {
+            final NitroFlare_PremiumServiceImpl service = (NitroFlare_PremiumServiceImpl) getPluginService();
+            PremiumAccount pa = service.getConfig();
+            synchronized (NitroFlare_PremiumServiceImpl.class) {
+                if (!pa.isSet()) {
+                    pa = service.showConfigDialog();
+                    if (pa == null || !pa.isSet()) {
+                        throw new BadLoginException("No NitroFlare Premium account login information!");
+                    }
                 }
             }
+            do {
+                if (!makeRedirectedRequest(getGetMethod("https://www.nitroflare.com/login"))) {
+                    throw new ServiceConnectionProblemException("Error getting login page");
+                }
+                final MethodBuilder builder = getMethodBuilder()
+                        .setActionFromFormWhereTagContains("login", true)
+                        .setAction("https://www.nitroflare.com/login")
+                        .setReferer("https://www.nitroflare.com/login")
+                        .setParameter("email", pa.getUsername())
+                        .setParameter("password", pa.getPassword())
+                        .setParameter("login", "")
+                        .setAjax();
+                if (getContentAsString().contains("captcha")) {
+                    final CaptchaSupport captchaSupport = getCaptchaSupport();
+                    final String captchaSrc = getMethodBuilder().setActionFromImgSrcWhereTagContains("captcha").getEscapedURI();
+                    final String captcha = captchaSupport.getCaptcha(captchaSrc);
+                    if (captcha == null)
+                        throw new CaptchaEntryInputMismatchException();
+                    builder.setParameter("captcha", captcha);
+                }
+                if (!makeRedirectedRequest(builder.toPostMethod())) {
+                    throw new ServiceConnectionProblemException("Error posting login info");
+                }
+            } while (getContentAsString().contains("CAPTCHA error"));
+
+            if (getContentAsString().contains("Account does not exist") ||
+                    getContentAsString().contains("Forgot your password") ||
+                    getContentAsString().contains("Login failed")) {
+                throw new BadLoginException("Invalid NitroFlare Premium account login information!");
+            }
+            userCookie = getCookieByName("user");
+            logger.info("LOGGED IN :)");
         }
-        if (!makeRedirectedRequest(getGetMethod("https://www.nitroflare.com/login"))) {
-            throw new ServiceConnectionProblemException("Error getting login page");
-        }
-        final HttpMethod method = getMethodBuilder()
-                .setActionFromFormWhereTagContains("login", true)
-                .setAction("https://www.nitroflare.com/login")
-                .setReferer("https://www.nitroflare.com/login")
-                .setParameter("email", pa.getUsername())
-                .setParameter("password", pa.getPassword())
-                .setParameter("login", "")
-                .setAjax().toPostMethod();
-        if (!makeRedirectedRequest(method)) {
-            throw new ServiceConnectionProblemException("Error posting login info");
-        }
-        if (getContentAsString().contains("Account does not exist") ||
-                getContentAsString().contains("Login failed")) {
-            throw new BadLoginException("Invalid NitroFlare Premium account login information!");
-        }
-        logger.info("LOGGED IN :)");
     }
+
 }

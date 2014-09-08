@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.crunchyroll;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.services.rtmp.AbstractRtmpRunner;
 import cz.vity.freerapid.plugins.services.rtmp.RtmpSession;
 import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
@@ -101,6 +98,9 @@ class CrunchyRollFileRunner extends AbstractRtmpRunner {
         }
         if (getContentAsString().contains("This video is not available from this website")) {
             throw new URLNotAvailableAnymoreException("This video is not available from this website");
+        }
+        if (getContentAsString().contains("this video is not available in your region")) {
+            throw new NotRecoverableDownloadException("This video is not available in your region");
         }
         if (getContentAsString().contains("You are watching a sample clip")) {
             throw new URLNotAvailableAnymoreException("Sample clips are not supported");

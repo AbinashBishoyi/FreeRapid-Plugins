@@ -8,7 +8,7 @@ import java.awt.event.ActionListener;
 /**
  * @author tong2shot
  */
-public class SettingsPanel extends JPanel {
+class SettingsPanel extends JPanel {
     private SettingsConfig config;
 
     public SettingsPanel(CrunchyRollServiceImpl service) throws Exception {

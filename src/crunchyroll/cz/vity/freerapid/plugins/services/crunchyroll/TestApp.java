@@ -23,7 +23,7 @@ public class TestApp extends PluginDevApplication {
             httpFile.setNewURL(new URL("http://www.crunchyroll.com/jojos-bizarre-adventure/episode-8-the-devil-652591"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
+            //connectionSettings.setProxy("localhost", 9050, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final CrunchyRollServiceImpl service = new CrunchyRollServiceImpl(); //instance of service - of our plugin
             SettingsConfig config = new SettingsConfig();

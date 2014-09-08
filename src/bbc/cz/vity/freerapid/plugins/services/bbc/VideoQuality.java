@@ -6,7 +6,7 @@ import java.util.Collections;
 /**
  * @author tong2shot
  */
-public enum VideoQuality {
+enum VideoQuality {
     Lowest(0),
     _240(240),
     _360(360),

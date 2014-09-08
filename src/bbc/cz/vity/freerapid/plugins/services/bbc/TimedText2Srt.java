@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 /**
  * @author tong2shot
  */
-public class TimedText2Srt {
+class TimedText2Srt {
     private final static Logger logger = Logger.getLogger(TimedText2Srt.class.getName());
 
     private TimedText2Srt() {

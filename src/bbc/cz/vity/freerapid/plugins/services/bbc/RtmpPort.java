@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.bbc;
 /**
  * @author tong2shot
  */
-public enum RtmpPort {
+enum RtmpPort {
     _1935(1935),
     _80(80),
     _443(443);

@@ -149,7 +149,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
     }
 
     private String getPid(String fileUrl) throws PluginImplementationException {
-        Matcher matcher = PlugUtils.matcher("/(?:programmes|iplayer(?:/[^/]+)?|i(?:/[^/]+)?)/([a-z\\d]{8})", fileUrl);
+        Matcher matcher = PlugUtils.matcher("/(?:programmes|iplayer(?:/[^/]+)*|i(?:/[^/]+)?)/([a-z\\d]{8})", fileUrl);
         if (!matcher.find()) {
             throw new PluginImplementationException("PID not found");
         }

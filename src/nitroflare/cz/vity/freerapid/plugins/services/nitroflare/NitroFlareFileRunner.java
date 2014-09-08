@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
 class NitroFlareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NitroFlareFileRunner.class.getName());
     private final static int MAX_FREE_PAGE_ATTEMPT = 5;
-    private final static String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:31.0) Gecko/20100101 Firefox/31.0";
+    private final static String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:32.0) Gecko/20100101 Firefox/32.0";
 
     @Override
     public void runCheck() throws Exception {
@@ -40,7 +40,7 @@ class NitroFlareFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "span title=\"", "\"");
-        Matcher matcher = PlugUtils.matcher("File Size: </b><span[^<>]+?>([^<>]+?)</", content);
+        Matcher matcher = PlugUtils.matcher("<span [^<>]*?dir=\"ltr\"[^<>]*>(.+?)</", content);
         if (!matcher.find()) {
             throw new PluginImplementationException("File size not found");
         }
@@ -61,13 +61,7 @@ class NitroFlareFileRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
             fileURL = method.getURI().toString(); //http redirected to https
 
-            String fileId;
-            try {
-                fileId = PlugUtils.getStringBetween(getContentAsString(), "\"fileId\" value=\"", "\"");
-            } catch (PluginImplementationException e) {
-                throw new PluginImplementationException("File ID not found");
-            }
-
+            String fileId = getFileId(fileURL);
             String freePageContent = null;
             int i = 0;
             while (getContentAsString().contains("goToFreePage") && (i++ < MAX_FREE_PAGE_ATTEMPT)) {
@@ -127,21 +121,6 @@ class NitroFlareFileRunner extends AbstractRunner {
         }
     }
 
-    private void setCookie(String fileId) throws IOException, ErrorDuringDownloadingException {
-        HttpMethod method;
-        method = getMethodBuilder()
-                .setReferer(fileURL)
-                .setAction("https://www.nitroflare.com/ajax/setCookie.php")
-                .setParameter("fileId", fileId)
-                .setAjax()
-                .toPostMethod();
-        if (!makeRedirectedRequest(method)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkProblems();
-    }
-
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
         if (contentAsString.contains("File doesn't exist")) {
@@ -155,6 +134,29 @@ class NitroFlareFileRunner extends AbstractRunner {
             int waitingTime = Integer.parseInt(matcher.group(1).trim());
             throw new YouHaveToWaitException("You have to wait " + waitingTime + " minute(s) to download your next file", waitingTime * 60);
         }
+    }
+
+    private String getFileId(String fileUrl) throws PluginImplementationException {
+        Matcher matcher = PlugUtils.matcher("/view/([^/]+?)(?:/.*)?$", fileUrl);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("File ID not found");
+        }
+        return matcher.group(1);
+    }
+
+    private void setCookie(String fileId) throws IOException, ErrorDuringDownloadingException {
+        HttpMethod method;
+        method = getMethodBuilder()
+                .setReferer(fileURL)
+                .setAction("https://www.nitroflare.com/ajax/setCookie.php")
+                .setParameter("fileId", fileId)
+                .setAjax()
+                .toPostMethod();
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
     }
 
     private void stepCaptcha(String content) throws Exception {

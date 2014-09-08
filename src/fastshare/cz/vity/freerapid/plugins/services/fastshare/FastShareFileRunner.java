@@ -19,11 +19,11 @@ import java.util.regex.Matcher;
  */
 class FastShareFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FastShareFileRunner.class.getName());
-    private final static String SERVICE_COOKIE_DOMAIN = ".fastshare.cz";
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        final String SERVICE_COOKIE_DOMAIN = "." + httpFile.getFileUrl().getAuthority().replaceFirst("www.", "");
         addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "cs", "/", 86400, false));
         final GetMethod getMethod = getGetMethod(fileURL);
         //site returning status code 404 when page loads correctly ??
@@ -34,13 +34,18 @@ class FastShareFileRunner extends AbstractRunner {
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         PlugUtils.checkName(httpFile, content, "<h1 class=\"dwp\">", "</h1>");
-        PlugUtils.checkFileSize(httpFile, content, "Velikost:", ", ");
+        try {
+            PlugUtils.checkFileSize(httpFile, content, "Velikost:", ", ");
+        } catch (Exception e) {
+            PlugUtils.checkFileSize(httpFile, content, ": ", ", File type");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
+        final String SERVICE_COOKIE_DOMAIN = "." + httpFile.getFileUrl().getAuthority().replaceFirst("www.", "");
         addCookie(new Cookie(SERVICE_COOKIE_DOMAIN, "lang", "cs", "/", 86400, false));
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL);
@@ -72,7 +77,8 @@ class FastShareFileRunner extends AbstractRunner {
         final Matcher match = PlugUtils.matcher("<img src=\"(/securimage.+?)\">", getContentAsString());
         if (!match.find())
             throw new PluginImplementationException("Captcha image not found");
-        final String captchaURL = "http://www.fastshare.cz" + match.group(1);
+        final String baseUrl = httpFile.getFileUrl().getProtocol() + "://" + httpFile.getFileUrl().getAuthority();
+        final String captchaURL = baseUrl + match.group(1);
         logger.info("Captcha URL " + captchaURL);
         final String captcha = captchaSupport.getCaptcha(captchaURL);
         if (captcha == null) {

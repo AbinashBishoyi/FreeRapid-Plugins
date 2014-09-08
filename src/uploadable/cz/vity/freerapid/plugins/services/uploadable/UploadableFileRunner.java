@@ -75,7 +75,7 @@ class UploadableFileRunner extends AbstractRunner {
 
             final HttpMethod httpMethod = getMethodBuilder(contentAsString)
                     .setReferer(fileURL)
-                    .setActionFromFormWhereTagContains("normal", true)
+                    .setActionFromFormByName("regularForm", true)
                     .toPostMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed

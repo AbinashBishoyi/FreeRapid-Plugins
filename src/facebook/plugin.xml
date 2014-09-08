@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.facebook.FaceBookServiceImpl"
-        id="facebook.com" vendor="ntoskrnl+tong2shot" version="1.1.7">
+        id="facebook.com" vendor="ntoskrnl+tong2shot" version="1.1.8">
     <attributes>
         <attribute id="urlRegex"
-                   value="https?://(www\.)?facebook\.com/((video/video\.php|photo\.php|media/set/)\?.+|.+?/videos|video/\?id=.+)"/>
-        <attribute id="minver" value="0.853"/>
+                   value="https?://(www\.)?facebook\.com/(((video/)?video\.php|photo\.php|media/set/)\?.+|.+?/videos|video/\?id=.+)"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="facebook.com"/>
         <attribute id="maxDownloads" value="10"/>

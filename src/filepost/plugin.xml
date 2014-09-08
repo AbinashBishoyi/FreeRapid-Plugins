@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.filepost.FilePostServiceImpl"
-        id="filepost.com" vendor="CrazyCoder+ntoskrnl" version="1.1.0">
-    <attributes>
+        id="filepost.com" vendor="CrazyCoder+ntoskrnl" version="1.1.1">
+<attributes>
         <attribute id="urlRegex" value="https?://(www\.)?(filepost\.com/(files|folder)|fp\.io)/.+"/>
         <attribute id="minver" value="0.854"/>
         <attribute id="maxver" value="0.899"/>

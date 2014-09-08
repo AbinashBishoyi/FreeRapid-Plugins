@@ -14,6 +14,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -27,6 +28,7 @@ import java.util.regex.Matcher;
 class FilePostFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FilePostFileRunner.class.getName());
     private final static Semaphore SEMAPHORE = new Semaphore(2, true);
+    private long ajaxCounter = 0;
 
     @Override
     public void runCheck() throws Exception {
@@ -87,8 +89,7 @@ class FilePostFileRunner extends AbstractRunner {
             final boolean passworded = getContentAsString().contains("is_pass_exists = true");
             logger.info("showCaptcha = " + showCaptcha);
             logger.info("passworded = " + passworded);
-            String password = "";
-
+            String password = null;
             HttpMethod ajax = null;
 
             while (true) {
@@ -113,8 +114,7 @@ class FilePostFileRunner extends AbstractRunner {
                         throw new ServiceConnectionProblemException("Error starting download");
                     }
                     break;
-                }
-                if (content.contains("wait_time")) {
+                } else if (content.contains("wait_time")) {
                     int wait = 60;
                     try {
                         // please don't use PlugUtils.getNumberBetween, as it will throw exception on negative time value
@@ -128,22 +128,28 @@ class FilePostFileRunner extends AbstractRunner {
                     if (wait > 0) {
                         downloadTask.sleep(wait + 1);
                     }
-                }
-                if (passworded) {
-                    password = getDialogSupport().askForPassword("FilePost");
-                    if (password == null) {
-                        throw new NotRecoverableDownloadException("This file is secured with a password");
+                    if (passworded && (password == null)) {
+                        password = getDialogSupport().askForPassword("FilePost");
+                        if (password == null) {
+                            throw new NotRecoverableDownloadException("This file is secured with a password");
+                        }
+                        ajax = ajaxBuilder(sid, code, password, false).toPostMethod();
                     }
-                    ajax = ajaxBuilder(sid, code, password, false).toPostMethod();
-                }
-                if (showCaptcha) {
-                    final ReCaptcha r = new ReCaptcha(captchaKey, client);
-                    final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-                    if (captcha == null) {
-                        throw new CaptchaEntryInputMismatchException();
+                    if (showCaptcha) {
+                        final ReCaptcha r = new ReCaptcha(captchaKey, client);
+                        final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+                        if (captcha == null) {
+                            throw new CaptchaEntryInputMismatchException();
+                        }
+                        r.setRecognized(captcha);
+                        ajax = r.modifyResponseMethod(ajaxBuilder(sid, code, password, false)).toPostMethod();
                     }
-                    r.setRecognized(captcha);
-                    ajax = r.modifyResponseMethod(ajaxBuilder(sid, code, password, false)).toPostMethod();
+                    if (!passworded && !showCaptcha) {
+                        ajax = ajaxBuilder(sid, code, null, false).toPostMethod();
+                    }
+                } else {
+                    checkProblems();
+                    throw new PluginImplementationException("Waiting time and download link not found");
                 }
             }
         } else {
@@ -157,19 +163,15 @@ class FilePostFileRunner extends AbstractRunner {
     }
 
     private MethodBuilder ajaxBuilder(Cookie sid, String code, String password, boolean start) throws URIException, PluginImplementationException {
-        final Cookie time = getCookieByName("time");
-        if (time == null) {
-            throw new PluginImplementationException("Time cookie not found");
-        }
-
-        final String startUrl = "http://filepost.com/files/get/?SID=" + sid.getValue() + "&JsHttpRequest=" + time.getValue() + "-xml";
+        final long time = new Date().getTime();
+        final String startUrl = "http://filepost.com/files/get/?SID=" + sid.getValue() + "&JsHttpRequest=" + time + ajaxCounter++ + "-xml";
         logger.info("Start URL: " + startUrl);
 
         MethodBuilder mb = getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction(startUrl)
                 .setParameter("code", code)
-                .setParameter("file_pass", password);
+                .setParameter("file_pass", password == null ? "" : password);
         if (start) {
             mb.setParameter("action", "set_download");
         }

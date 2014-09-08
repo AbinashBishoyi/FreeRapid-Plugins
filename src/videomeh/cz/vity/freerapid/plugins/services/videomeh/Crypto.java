@@ -5,6 +5,7 @@ import org.codehaus.jackson.JsonNode;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * @author tong2shot
@@ -15,6 +16,8 @@ class Crypto {
      /com/videobb/kageo/kCryptoString.as
      /com/videobb/kageo/vbCryptoSelector.as
      */
+
+    private final static Logger logger = Logger.getLogger(Crypto.class.getName());
 
     public String parse(JsonNode rootNode) throws PluginImplementationException {
         String keyString1;
@@ -29,6 +32,7 @@ class Crypto {
             int outputInfoKey1 = rootNode.get("settings").get("login_status").get("salt").getIntValue();
             int outputInfoKey2 = 950569;
             String outputInfo = hex2str(bitDecrypt(outputInfoRAW, outputInfoKey1, outputInfoKey2, false));
+            logger.info("OutputInfo: " + outputInfo);
             String[] outputInfoSet = outputInfo.split(";");
             String outputPattern = outputInfoSet[0];
             String outputKeySet = outputInfoSet[1];
@@ -83,6 +87,7 @@ class Crypto {
         } catch (Exception ex) {
             throw new PluginImplementationException("Error parsing player's settings JSON (2)");
         }
+        logger.info("Parsing output: " + output);
         return output;
     }
 
@@ -94,20 +99,20 @@ class Crypto {
         String _loc20_;
         List<String> binList = string2bin(param1);
         int _loc11_ = (!is32byte ? binList.size() * 2 : 256);
-        int[] _loc12_ = new int[(!is32byte ? binList.size() * 3 : 384)];
-        for (int i = 0, loopTo = binList.size() * 3; i < loopTo; i++) {
+        int[] _loc12_ = new int[(int) (_loc11_ * 1.5)];
+        for (int i = 0, loopTo = (int) (_loc11_ * 1.5); i < loopTo; i++) {
             param2 = (param2 * param4 + param5) % param6;
             param3 = (param3 * param7 + param8) % param9;
-            _loc12_[i] = (param2 + param3) % ((!is32byte ? binList.size() : 128));
+            _loc12_[i] = (param2 + param3) % ((int) (_loc11_ * 0.5));
         }
         for (int i = _loc11_; i >= 0; i--) {
             _loc17_ = _loc12_[i];
-            _loc18_ = i % (!is32byte ? binList.size() : 128);
+            _loc18_ = i % ((int) (_loc11_ * 0.5));
             _loc19_ = binList.get(_loc17_);
             binList.set(_loc17_, binList.get(_loc18_));
             binList.set(_loc18_, _loc19_);
         }
-        for (int i = 0, loopTo = (!is32byte ? binList.size() : 128); i < loopTo; i++) {
+        for (int i = 0, loopTo = (int) (_loc11_ * 0.5); i < loopTo; i++) {
             binList.set(i, String.valueOf(Integer.parseInt(binList.get(i)) ^ _loc12_[i + _loc11_] & 1));
         }
 
@@ -131,7 +136,7 @@ class Crypto {
 
     private List<String> string2bin(String param1) {
         StringBuilder sb = new StringBuilder(param1.length());
-        for (int i = 0; i < param1.length(); i++) {
+        for (int i = 0, loopTo = param1.length(); i < loopTo; i++) {
             sb.append(String.format("%04d", Integer.parseInt(Integer.toBinaryString(Integer.parseInt(param1.substring(i, i + 1), 16)))));
         }
         List<String> stringList = new ArrayList<String>(Arrays.asList(sb.toString().split("")));

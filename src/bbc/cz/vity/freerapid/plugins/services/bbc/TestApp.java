@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
 import cz.vity.freerapid.plugins.webclient.interfaces.HttpFile;
 import org.jdesktop.application.Application;
 
+import java.net.Proxy;
 import java.net.URL;
 
 /**
@@ -26,11 +27,12 @@ public class TestApp extends PluginDevApplication {
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/programmes/b042z1g4"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b049nv1q/T_in_the_Park_2014_Arctic_Monkeys_and_Example/"));
             //httpFile.setNewURL(new URL("http://www.bbc.co.uk/programmes/b043pmd0"));
-            httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/cbbc/episode/b039671z/dragons-riders-of-berk-series-1-9-dragon-flower"));
+            //httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/cbbc/episode/b039671z/dragons-riders-of-berk-series-1-9-dragon-flower"));
+            httpFile.setNewURL(new URL("http://www.bbc.co.uk/iplayer/episode/b01rbznt/octonauts-series-2-14-swashbuckling-swordfish"));
 
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
-            //connectionSettings.setProxy("localhost", 9050, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
+            connectionSettings.setProxy("localhost", 9090, Proxy.Type.SOCKS); //eg we can use local proxy to sniff HTTP communication
             //then we tries to download
             final BbcServiceImpl service = new BbcServiceImpl(); //instance of service - of our plugin
             SettingsConfig config = new SettingsConfig();

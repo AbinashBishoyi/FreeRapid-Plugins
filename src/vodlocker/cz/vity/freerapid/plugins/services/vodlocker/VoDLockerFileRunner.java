@@ -17,4 +17,13 @@ class VoDLockerFileRunner extends XFilePlayerRunner {
         }
         super.checkDownloadProblems();
     }
+
+    @Override
+    protected String getDownloadLinkFromRegexes() throws ErrorDuringDownloadingException {
+        final String link = super.getDownloadLinkFromRegexes();
+        final String ext = link.substring(link.lastIndexOf("."));
+        if (!httpFile.getFileName().matches(".+?" + ext))
+            httpFile.setFileName(httpFile.getFileName() + ext);
+        return link;
+    }
 }

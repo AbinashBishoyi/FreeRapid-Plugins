@@ -10,7 +10,10 @@ import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.HttpMethod;
 
+import java.net.URI;
 import java.net.URL;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 
@@ -36,7 +39,11 @@ class CokeAndPopcornFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, getContentAsString(), "<meta property=\"og:title\" content=\"", "\" />");
+        try {
+            PlugUtils.checkName(httpFile, getContentAsString(), "<meta property=\"og:title\" content=\"", "\" />");
+        } catch (Exception e) {
+            PlugUtils.checkName(httpFile, getContentAsString(), ">> Watch", "Online<");
+        }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -48,6 +55,25 @@ class CokeAndPopcornFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize();
+            if (getContentAsString().contains("<div class=\"episodecontainer\">") ||
+                    getContentAsString().contains("><div class=\"contain\">")) {
+                List<URI> list = new LinkedList<URI>();
+                final String episodes;
+                if (getContentAsString().contains("<div class=\"episodecontainer\">"))
+                    episodes = PlugUtils.getStringBetween(getContentAsString(), "<div class=\"episodecontainer\">", "</div>");
+                else
+                    episodes = PlugUtils.getStringBetween(getContentAsString(), "><div class=\"contain\">", "</div>");
+                final Matcher m = PlugUtils.matcher("<a href=\"([^\"]+?)\" title", episodes);
+                while (m.find()) {
+                    list.add(new URI(m.group(1).trim()));
+                }
+                if (list.isEmpty()) throw new PluginImplementationException("No links found");
+                getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, list);
+                httpFile.setFileName("Link(s) Extracted !");
+                httpFile.setState(DownloadState.COMPLETED);
+                httpFile.getProperties().put("removeCompleted", true);
+                return;
+            }
             Matcher matcher = getMatcherAgainstContent("\"/js/return\\.php\", \\{\\s*hash: \"(.+?)\", episodeHash: \"(.+?)\\s*\\}");
             if (!matcher.find()) {
                 throw new PluginImplementationException("Video data not found");

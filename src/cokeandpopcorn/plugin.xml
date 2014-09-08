@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.cokeandpopcorn.CokeAndPopcornServiceImpl"
-        id="cokeandpopcorn.ch" vendor="ntoskrnl" version="1.0.0">
+        id="cokeandpopcorn.ch" vendor="ntoskrnl+birchie" version="1.0.1">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?cokeandpopcorn\.(ch|eu|me|tk)/.+"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="cokeandpopcorn.ch"/>
         <attribute id="maxDownloads" value="10"/>

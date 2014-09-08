@@ -41,12 +41,14 @@ class NitroFlare_PremiumFileRunner extends AbstractRunner {
         PlugUtils.checkName(httpFile, content, "span title=\"", "\"");
         Matcher matcher = PlugUtils.matcher("File Size: </b><span[^<>]+?>([^<>]+?)</", content);
         if (!matcher.find()) {
-            throw new PluginImplementationException("File size not found");
+            matcher = PlugUtils.matcher(">([^<]+?)</span>\\]<", content);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("File size not found");
+            }
         }
         long filesize = PlugUtils.getFileSizeFromString(matcher.group(1));
         logger.info("File size: " + filesize);
         httpFile.setFileSize(filesize);
-        httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -61,28 +63,7 @@ class NitroFlare_PremiumFileRunner extends AbstractRunner {
             checkNameAndSize(getContentAsString());
             fileURL = method.getURI().toString(); //http redirected to https
 
-            final Matcher mFile = PlugUtils.matcher("<input[^<>]+?name=\"fileId\"[^<>]+?value=\"([^\"]+?)\"", getContentAsString());
-            final Matcher mPKey = PlugUtils.matcher("<input[^<>]+?name=\"password\"[^<>]+?value=\"([^\"]+?)\"", getContentAsString());
-            if (!mFile.find()) throw new PluginImplementationException("File id not found");
-            if (!mPKey.find()) throw new PluginImplementationException("Premium key not found");
-            final String fileId = mFile.group(1);
-            final String premiumKey = mPKey.group(1);
-            final String timeStamp = "" + System.currentTimeMillis();
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL)
-                    .setAction("/ajax/unlock.php")
-                    .setParameter("password", premiumKey)
-                    .setParameter("file", fileId)
-                    .setParameter("keep", "false")
-                    .setParameter("direct", "false")
-                    .setParameter("_", timeStamp)
-                    .setAjax()
-                    .toGetMethod();
-            if (!makeRedirectedRequest(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException();
-            }
-
-            httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download").toGetMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download").toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

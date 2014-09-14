@@ -126,6 +126,9 @@ class NitroFlareFileRunner extends AbstractRunner {
         if (contentAsString.contains("File doesn't exist")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
+        if (contentAsString.contains("Free download is currently unavailable")) {
+            throw new YouHaveToWaitException("Free download is currently unavailable", 5 * 60);
+        }
         if (contentAsString.contains("You have to wait")) {
             Matcher matcher = PlugUtils.matcher("You have to wait (\\d+) minutes?", contentAsString);
             if (!matcher.find()) {

@@ -24,7 +24,8 @@ class UploadRocketFileRunner extends XFileSharingRunner {
     @Override
     protected void checkFileProblems() throws ErrorDuringDownloadingException {
         String contentAsString = getContentAsString();
-        if (contentAsString.contains("file was deleted by")) {
+        if (contentAsString.contains("file was deleted by") ||
+                contentAsString.contains("Reason for deletion")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }

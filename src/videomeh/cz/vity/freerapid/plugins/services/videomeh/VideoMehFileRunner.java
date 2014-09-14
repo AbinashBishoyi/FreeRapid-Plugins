@@ -39,7 +39,7 @@ class VideoMehFileRunner extends AbstractRunner {
     public void runCheck() throws Exception {
         super.runCheck();
         String videoId = getVideoId(fileURL);
-        HttpMethod method = requestPlayerSettings(videoId);
+        HttpMethod method = getPlayerSettingsMethod(videoId);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize(getPlayerRootNode(getContentAsString()));
@@ -65,7 +65,7 @@ class VideoMehFileRunner extends AbstractRunner {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
         String videoId = getVideoId(fileURL);
-        HttpMethod method = requestPlayerSettings(videoId);
+        HttpMethod method = getPlayerSettingsMethod(videoId);
         if (makeRedirectedRequest(method)) {
             checkProblems();
             JsonNode playerRootNode = getPlayerRootNode(getContentAsString());
@@ -99,17 +99,11 @@ class VideoMehFileRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private HttpMethod requestPlayerSettings(String videoId) throws IOException, ErrorDuringDownloadingException {
-        HttpMethod httpMethod = getMethodBuilder()
+    private HttpMethod getPlayerSettingsMethod(String videoId) throws IOException, ErrorDuringDownloadingException {
+        return getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction(String.format("http://videomeh.com/player_control/settings.php?v=%s&em=TRUE&fv=v1.2.74&rv=1.0.1&rv=1.0.1", videoId))
                 .toGetMethod();
-        if (!makeRedirectedRequest(httpMethod)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException();
-        }
-        checkProblems();
-        return httpMethod;
     }
 
     private JsonNode getPlayerRootNode(String content) throws PluginImplementationException {

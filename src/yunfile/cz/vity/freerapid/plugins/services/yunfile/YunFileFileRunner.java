@@ -38,11 +38,14 @@ class YunFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("<h2[^<>]*?>(?:Downloading\\s*?:\\s*?)?.*?([^<>]+?)</h2>", content);
+        Matcher matcher = PlugUtils.matcher("<h2[^<>]*?>(?:Downloading\\s*?:\\s*?)?.*?(.+?)</h2>", content);
         if (!matcher.find()) {
             throw new PluginImplementationException("File name not found");
         }
-        String fname = PlugUtils.unescapeHtml(matcher.group(1)).trim();
+        String fname = PlugUtils.unescapeHtml(matcher.group(1))
+                .replace("<b>", "")
+                .replace("</b>", "")
+                .replace("<h2>", "").trim();
         logger.info("File name: " + fname);
         httpFile.setFileName(fname);
         PlugUtils.checkFileSize(httpFile, content, "File Size: <b>", "</b>");

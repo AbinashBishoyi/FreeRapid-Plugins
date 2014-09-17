@@ -43,7 +43,11 @@ public class Nova_NovaPlusServiceImpl extends AbstractFileShareService {
                 if (!storage.configFileExists(CONFIG_FILE)) {
                     config = new SettingsConfig();
                 } else {
-                    config = storage.loadConfigFromFile(CONFIG_FILE, SettingsConfig.class);
+                    try {
+                        config = storage.loadConfigFromFile(CONFIG_FILE, SettingsConfig.class);
+                    } catch (Exception e) {
+                        config = new SettingsConfig();
+                    }
                 }
             }
             return config;

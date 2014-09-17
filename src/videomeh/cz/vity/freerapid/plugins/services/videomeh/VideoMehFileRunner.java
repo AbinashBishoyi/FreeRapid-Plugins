@@ -1,9 +1,6 @@
 package cz.vity.freerapid.plugins.services.videomeh;
 
-import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
-import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
-import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
-import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
+import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
@@ -13,7 +10,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -99,7 +95,7 @@ class VideoMehFileRunner extends AbstractRunner {
         return matcher.group(1);
     }
 
-    private HttpMethod getPlayerSettingsMethod(String videoId) throws IOException, ErrorDuringDownloadingException {
+    private HttpMethod getPlayerSettingsMethod(String videoId) throws BuildMethodException {
         return getMethodBuilder()
                 .setReferer(fileURL)
                 .setAction(String.format("http://videomeh.com/player_control/settings.php?v=%s&em=TRUE&fv=v1.2.74&rv=1.0.1&rv=1.0.1", videoId))

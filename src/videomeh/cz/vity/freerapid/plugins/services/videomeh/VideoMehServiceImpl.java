@@ -42,9 +42,12 @@ public class VideoMehServiceImpl extends AbstractFileShareService {
             if (config == null) {
                 if (!storage.configFileExists(CONFIG_FILE)) {
                     config = new SettingsConfig();
-                    config.setVideoQuality(VideoQuality._480);
                 } else {
-                    config = storage.loadConfigFromFile(CONFIG_FILE, SettingsConfig.class);
+                    try {
+                        config = storage.loadConfigFromFile(CONFIG_FILE, SettingsConfig.class);
+                    } catch (Exception e) {
+                        config = new SettingsConfig();
+                    }
                 }
             }
             return config;

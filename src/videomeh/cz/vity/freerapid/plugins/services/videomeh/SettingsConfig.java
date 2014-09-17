@@ -4,7 +4,7 @@ package cz.vity.freerapid.plugins.services.videomeh;
  * @author tong2shot
  */
 
-class SettingsConfig {
+public class SettingsConfig {
     private VideoQuality videoQuality = VideoQuality._480;
 
     public VideoQuality getVideoQuality() {

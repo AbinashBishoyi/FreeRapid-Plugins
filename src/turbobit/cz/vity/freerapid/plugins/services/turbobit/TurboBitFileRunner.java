@@ -40,7 +40,7 @@ public class TurboBitFileRunner extends AbstractRunner {
     }
 
     private String checkFileURL(final String fileURL) throws ErrorDuringDownloadingException {
-        final Matcher matcher = PlugUtils.matcher("^http://(?:www\\.|new\\.)?(turbobit\\.net|hitfile\\.net|files\\.uz-translations\\.uz)/(?:download/free/)?(\\w+)", fileURL);
+        final Matcher matcher = PlugUtils.matcher("^http://(?:www\\.|new\\.)?(turbobit\\.net|hitfile\\.net|files\\.uz-translations\\.uz)/(?:download/free/)?(\\w+)", fileURL.replaceFirst("turo-bit.net/", "turbobit.net/"));
         if (!matcher.find()) {
             throw new PluginImplementationException("Error parsing download link");
         }
@@ -92,6 +92,7 @@ public class TurboBitFileRunner extends AbstractRunner {
             method = getMethodBuilder()
                     .setReferer(method.getURI().toString())
                     .setAction("/download/getLinkTimeout/" + matcher.group(1))
+                    .setBaseURL(method.getURI().toString().split("/download/")[0])
                     .toGetMethod();
             method.addRequestHeader("X-Requested-With", "XMLHttpRequest");
 
@@ -133,7 +134,7 @@ public class TurboBitFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("The file is not available now because of technical problems");
         }
         if (getContentAsString().contains("From your IP range the limit of connections is reached")) {
-            final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), "<span id='timeout'>", "</span>");
+            final int waitTime = PlugUtils.getNumberBetween(getContentAsString(), " id='timeout'>", "</");
             throw new YouHaveToWaitException("Download limit reached from your IP range", waitTime);
         }
     }

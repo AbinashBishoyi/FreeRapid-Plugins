@@ -36,9 +36,10 @@ class KingFilesFileRunner extends XFileSharingRunner {
             if (!content.contains("visibility:hidden\"><b>File Not Found"))
                 throw new URLNotAvailableAnymoreException("File not found");
         }
-        if (content.contains("file was removed")
-                || content.contains("file has been removed")) {
-            throw new URLNotAvailableAnymoreException("File not found");
+        if (content.contains("file was removed") || content.contains("file has been removed")
+                || content.contains("file was deleted")) {
+            if (!content.contains("visibility:hidden\"><h3>The file was removed"))
+                throw new URLNotAvailableAnymoreException("File not found");
         }
         if (content.contains("server is in maintenance mode")) {
             throw new ServiceConnectionProblemException("This server is in maintenance mode. Please try again later.");

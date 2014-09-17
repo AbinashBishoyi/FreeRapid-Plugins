@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.turbobit.TurboBitServiceImpl"
-        id="turbobit.net" vendor="Whole team" version="1.5.3">
+        id="turbobit.net" vendor="Whole team" version="1.5.4">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.|new\.)?turbobit\.net/.+"/>
+        <attribute id="urlRegex" value="http://(www\.|new\.)?(turbobit|turo-bit)\.net/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="turbobit.net"/>
+        <attribute id="services" value="turbobit.net turo-bit.net"/>
         <attribute id="maxDownloads" value="1"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

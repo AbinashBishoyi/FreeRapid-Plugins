@@ -38,13 +38,7 @@ class YunFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        Matcher matcher = PlugUtils.matcher("^\\s*?(?!<[^<>]+?display:none[^<>]*?>)<h2[^<>]*?>(?:Downloading\\s*?:\\s*?)?.*?(.+?)</h2>", content);
-        if (!matcher.find()) {
-            throw new PluginImplementationException("File name not found");
-        }
-        String fname = PlugUtils.unescapeHtml(matcher.group(1)).replaceAll("</?[a-z0-9]{1,2}?>", "").trim();
-        logger.info("File name: " + fname);
-        httpFile.setFileName(fname);
+        PlugUtils.checkName(httpFile, content, "\"keywords\" content=\"", "\"");
         PlugUtils.checkFileSize(httpFile, content, "File Size: <b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -86,7 +80,7 @@ class YunFileFileRunner extends AbstractRunner {
                     final String captcha;
                     final String captchaUrl;
                     try {
-                        captchaUrl = getMethodBuilder().setActionFromImgSrcWhereTagContains("Pcv").getAction();
+                        captchaUrl = getMethodBuilder(getContentAsString().replaceAll("(?s)<!--.*?-->", "")).setActionFromImgSrcWhereTagContains("Pcv").getAction();
                     } catch (BuildMethodException e) {
                         throw new PluginImplementationException("Captcha URL not found");
                     }

@@ -58,6 +58,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
+            requestPlaylist(getPid(fileURL));
             checkNameAndSize(getContentAsString());
         } else {
             checkProblems();
@@ -65,21 +66,14 @@ class BbcFileRunner extends AbstractRtmpRunner {
         }
     }
 
-    private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        String title, subtitle = null;
+    private void checkNameAndSize(String playlistContent) throws ErrorDuringDownloadingException {
+        String name;
         try {
-            title = PlugUtils.getStringBetween(content, "\"title\":\"", "\"").replace(": ", " - ").trim();
+            name = PlugUtils.getStringBetween(playlistContent, "<title>", "</title>").replace(": ", " - ");
         } catch (PluginImplementationException e) {
             throw new PluginImplementationException("Programme title not found");
         }
-        try {
-            subtitle = PlugUtils.getStringBetween(content, "\"subtitle\":\"", "\"").replace(": ", " - ").trim();
-        } catch (PluginImplementationException e) {
-            //
-        }
-        String filename = title + (subtitle == null || subtitle.isEmpty() ? "" : " - " + subtitle) + DEFAULT_EXT;
-        logger.info("File name : " + filename);
-        httpFile.setFileName(filename);
+        httpFile.setFileName(name + DEFAULT_EXT);
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -93,13 +87,19 @@ class BbcFileRunner extends AbstractRtmpRunner {
             checkProblems();
             //sometimes they redirect, set fileURL to the new page
             fileURL = method.getURI().toString();
+            String mainPageContent = getContentAsString();
+            requestPlaylist(getPid(fileURL));
             checkNameAndSize(getContentAsString());
             setConfig();
             String vpid;
             try {
-                vpid = PlugUtils.getStringBetween(getContentAsString(), "\"vpid\":\"", "\"");
+                vpid = PlugUtils.getStringBetween(mainPageContent, "\"vpid\":\"", "\""); //TV
             } catch (PluginImplementationException e) {
-                throw new PluginImplementationException("Identifier not found");
+                Matcher matcher = getMatcherAgainstContent("<item[^<>]*?identifier=\"([^<>]+?)\""); //radio
+                if (!matcher.find()) {
+                    throw new PluginImplementationException("Identifier not found");
+                }
+                vpid = matcher.group(1);
             }
             String atk = Hex.encodeHexString(DigestUtils.sha(MEDIA_SELECTOR_HASH + vpid));
             String mediaSelector = String.format("http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/pc/vpid/%s/atk/%s/asn/%s/", vpid, atk, MEDIA_SELECTOR_ASN);
@@ -157,6 +157,25 @@ class BbcFileRunner extends AbstractRtmpRunner {
         if (getContentAsString().contains("Page not found") || getContentAsString().contains("page was not found")) {
             throw new URLNotAvailableAnymoreException("Page not found");
         }
+    }
+
+    private String getPid(String fileUrl) throws PluginImplementationException {
+        Matcher matcher = PlugUtils.matcher("/(?:programmes|iplayer(?:/[^/]+?)*|i(?:/[^/]+?)?)/([a-z\\d]{8})(?:/.*)?$", fileUrl);
+        if (!matcher.find()) {
+            throw new PluginImplementationException("PID not found");
+        }
+        String pid = matcher.group(1);
+        logger.info("PID: " + pid);
+        return pid;
+    }
+
+    private void requestPlaylist(String pid) throws Exception {
+        GetMethod method = getGetMethod("http://www.bbc.co.uk/iplayer/playlist/" + pid);
+        if (!makeRedirectedRequest(method)) {
+            checkProblems();
+            throw new ServiceConnectionProblemException();
+        }
+        checkProblems();
     }
 
     private RtmpSession getRtmpSession(Stream stream) {

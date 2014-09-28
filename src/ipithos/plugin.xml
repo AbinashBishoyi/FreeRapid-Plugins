@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.grifthost.GriftHostServiceImpl"
-        id="grifthost.com" vendor="birchie" version="1.0.1">
+<plugin class="cz.vity.freerapid.plugins.services.ipithos.iPithosServiceImpl"
+        id="ipithos.to" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?grifthost\.com/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?ipithos\.to/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="grifthost.com"/>
+        <attribute id="services" value="ipithos.to"/>
         <attribute id="maxDownloads" value="100"/>
         <attribute id="defaultDownloads" value="1"/>
         <attribute id="premium" value="false"/>
@@ -14,12 +14,10 @@
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
     <requires>
-        <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfileplayer"
-                plugin-version="1.0.2" reverse-lookup="false"/>
         <import exported="false" match="greater-or-equal" optional="false" plugin-id="xfilesharing"
                 plugin-version="1.0.15" reverse-lookup="false"/>
     </requires>
     <runtime>
-        <library id="grifthost.com" path="/" type="code"/>
+        <library id="ipithos.to" path="/" type="code"/>
     </runtime>
 </plugin>

@@ -116,17 +116,17 @@ class ZippyShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("document\\.getElementById\\('dlbutton'\\)\\.href.+/(.+?)\";");
+        Matcher matcher = getMatcherAgainstContent("document\\.getElementById\\([^\\(\\)]*?\\)\\.href[^<>]+/([^<>]+?)\";");
         if (matcher.find()) {
             httpFile.setFileName(URLDecoder.decode(matcher.group(1), "UTF-8"));
         } else {
-            matcher = getMatcherAgainstContent("Name:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
+            matcher = getMatcherAgainstContent("Name:\\s*?<[^<>]+?>\\s*?<[^<>]+?>([^<>]+?)<[^<>]+?>");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File name not found");
             }
             httpFile.setFileName(matcher.group(1));
         }
-        matcher = getMatcherAgainstContent("Size:\\s*?<.+?>\\s*?<.+?>(.+?)<.+?>");
+        matcher = getMatcherAgainstContent("Size:\\s*?<[^<>]+?>\\s*?<[^<>]+?>([^<>]+?)<[^<>]+?>");
         if (matcher.find()) {
             httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(1)));
         } else {

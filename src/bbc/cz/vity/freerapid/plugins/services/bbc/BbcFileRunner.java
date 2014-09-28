@@ -47,14 +47,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
         config = service.getConfig();
     }
 
-    private void checkUrl() {
-        fileURL = fileURL.replace("/programmes/", "/iplayer/episode/");
-    }
-
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -80,7 +75,6 @@ class BbcFileRunner extends AbstractRtmpRunner {
     @Override
     public void run() throws Exception {
         super.run();
-        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
@@ -135,6 +129,13 @@ class BbcFileRunner extends AbstractRtmpRunner {
         }
     }
 
+    private void checkPlaylistProblems() throws NotRecoverableDownloadException {
+        String content = getContentAsString();
+        if (content.contains("<noItems reason=\"")) {
+            throw new URLNotAvailableAnymoreException("This programme is not available anymore");
+        }
+    }
+
     private void checkMediaSelectorProblems() throws NotRecoverableDownloadException {
         Matcher matcher = getMatcherAgainstContent("<error id=\"(.+?)\"");
         if (matcher.find()) {
@@ -150,13 +151,7 @@ class BbcFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        if (getContentAsString().contains("this programme is not available")
-                || getContentAsString().contains("Not currently available on BBC iPlayer")) {
-            throw new URLNotAvailableAnymoreException("This programme is not available anymore");
-        }
-        if (getContentAsString().contains("Page not found") || getContentAsString().contains("page was not found")) {
-            throw new URLNotAvailableAnymoreException("Page not found");
-        }
+        //
     }
 
     private String getPid(String fileUrl) throws PluginImplementationException {
@@ -172,10 +167,10 @@ class BbcFileRunner extends AbstractRtmpRunner {
     private void requestPlaylist(String pid) throws Exception {
         GetMethod method = getGetMethod("http://www.bbc.co.uk/iplayer/playlist/" + pid);
         if (!makeRedirectedRequest(method)) {
-            checkProblems();
+            checkPlaylistProblems();
             throw new ServiceConnectionProblemException();
         }
-        checkProblems();
+        checkPlaylistProblems();
     }
 
     private RtmpSession getRtmpSession(Stream stream) {

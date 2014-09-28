@@ -43,7 +43,10 @@ class YunFileFileRunner extends AbstractRunner {
         while (matcher.find()) {
             String group1 = matcher.group(1);
             if (!group1.contains("Please") || !group1.contains("premium")) {
-                filename = PlugUtils.unescapeHtml(group1).replaceAll("</?[a-z0-9]{1,2}?>", "").trim();
+                filename = PlugUtils.unescapeHtml(group1)
+                        .replaceAll("</?[a-z0-9]{1,2}?>", "")
+                        .replaceAll("<!--.*?-->", "")
+                        .trim();
             }
         }
         if (filename == null) {
@@ -90,7 +93,7 @@ class YunFileFileRunner extends AbstractRunner {
                 if (getContentAsString().contains("vcode")) {
                     final String captcha;
                     final String captchaUrl;
-                    matcher = PlugUtils.matcher("(?!.*?')<img src=\"(/verifyimg/getPcv/[^\"]+?)\"", getContentAsString());
+                    matcher = PlugUtils.matcher("(?!.*?')<img [^<>]*?src=\"(/verifyimg/getPcv/[^\"]+?)\"", getContentAsString());
                     if (!matcher.find()) {
                         throw new PluginImplementationException("Captcha URL not found");
                     }
@@ -197,7 +200,9 @@ class YunFileFileRunner extends AbstractRunner {
     }
 
     private void checkFileURL() {
-        fileURL = fileURL.replaceFirst("yfdisk\\.com", "yunfile.com").replaceFirst("filemarkets\\.com", "yunfile.com").replaceFirst("www\\.yunfile\\.com", "yunfile.com"); //apparently they redirect www.yunfile.com to yunfile.com
+        fileURL = fileURL.replaceFirst("yfdisk\\.com", "yunfile.com")
+                .replaceFirst("filemarkets\\.com", "yunfile.com")
+                .replaceFirst("www\\.yunfile\\.com", "yunfile.com"); //apparently they redirect www.yunfile.com to yunfile.com
     }
 
     @Override

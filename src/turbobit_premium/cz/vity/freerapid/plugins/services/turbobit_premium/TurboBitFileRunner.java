@@ -43,17 +43,13 @@ class TurboBitFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws ErrorDuringDownloadingException {
-        final Matcher filenameMatcher = getMatcherAgainstContent("<title>\\s*Download (.+?)\\. Free download");
-        if (filenameMatcher.find()) {
-            httpFile.setFileName(filenameMatcher.group(1));
+        final Matcher matcher = getMatcherAgainstContent("<span class.*?>(.+?)</span>\\s*\\((.+?)\\)");
+        if (matcher.find()) {
+            httpFile.setFileName(matcher.group(1));
+            httpFile.setFileSize(PlugUtils.getFileSizeFromString(matcher.group(2)));
         } else {
-            throw new PluginImplementationException("File name not found");
-        }
-        final Matcher filesizeMatcher = getMatcherAgainstContent("</span>\\s*\\((.+?)\\)");
-        if (filesizeMatcher.find()) {
-            httpFile.setFileSize(PlugUtils.getFileSizeFromString(filesizeMatcher.group(1)));
-        } else {
-            throw new PluginImplementationException("File size not found");
+            PlugUtils.checkName(httpFile, getContentAsString(), "file-title\">", "<");
+            PlugUtils.checkFileSize(httpFile, getContentAsString(), "file-size\">", "</");
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }

@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.uploadrocket;
+package cz.vity.freerapid.plugins.services.imgbabes;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,18 +16,12 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            httpFile.setNewURL(new URL("http://uploadrocket.net/o82y98xwntfk/Supernatural.S09E01.BDRip.x264-DEMAND.mkv.html"));
+            httpFile.setNewURL(new URL("http://www.imgbabes.com/up95ipj1qbeq/entd.14.08.24.colleen.a.confesso_preview.jpg.html"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            final UploadRocketServiceImpl service = new UploadRocketServiceImpl(); //instance of service - of our plugin
-            /*
-            //we set premium account details
-            final PremiumAccount config = new PremiumAccount();
-            config.setUsername("****");
-            config.setPassword("****");
-            service.setConfig(config);
-            */
+            //then we tries to download
+            final ImgBabesServiceImpl service = new ImgBabesServiceImpl(); //instance of service - of our plugin
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

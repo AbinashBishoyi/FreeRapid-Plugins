@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin id="mediafire.com" version="3.2.1" vendor="Lukiz+ntoskrnl+birchie"
+<plugin id="mediafire.com" version="3.2.2" vendor="Lukiz+ntoskrnl+birchie"
         class="cz.vity.freerapid.plugins.services.mediafire.MediafireServiceImpl">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?mediafire\.com/((download\.php)?\?|download/).+"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="urlRegex" value="https?://(www\.)?mediafire\.com/((download\.php)?\?|download/).+"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="mediafire.com"/>
         <attribute id="maxDownloads" value="10"/>

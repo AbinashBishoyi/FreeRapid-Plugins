@@ -31,6 +31,7 @@ class MediafireRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
+        checkUrl();
         final HttpMethod method = getGetMethod(fileURL);
         int httpStatus = client.makeRequest(method, false);
         if (httpStatus == 301) { // permanent redirection to html page
@@ -46,6 +47,11 @@ class MediafireRunner extends AbstractRunner {
             checkProblems();
             throw new ServiceConnectionProblemException();
         }
+    }
+
+    private void checkUrl() {
+        // HTTPS works but redirects to HTTP in browser
+        fileURL = fileURL.replaceFirst("https:", "http:");
     }
 
     private void checkNameAndSize() throws Exception {
@@ -69,12 +75,12 @@ class MediafireRunner extends AbstractRunner {
             httpFile.setFileSize(contents);
 
         } else {
-            final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('.+?','(.+?)','(\\d+?)'");
+            PlugUtils.checkName(httpFile, getContentAsString(), "<div class=\"fileName\">", "</div>");
+            final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('.+?','.+?','(\\d+?)'");
             if (!matcher.find()) {
-                throw new PluginImplementationException("File name/size not found");
+                throw new PluginImplementationException("File size not found");
             }
-            httpFile.setFileName(matcher.group(1).replace("\\'", "'"));
-            httpFile.setFileSize(Long.parseLong(matcher.group(2)));
+            httpFile.setFileSize(Long.parseLong(matcher.group(1)));
         }
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -95,6 +101,7 @@ class MediafireRunner extends AbstractRunner {
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         while (true) {
             /**
              * Grab the current captcha state for use after the initial request.

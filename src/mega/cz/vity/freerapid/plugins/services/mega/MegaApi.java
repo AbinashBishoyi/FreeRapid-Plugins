@@ -88,7 +88,7 @@ class MegaApi {
 
     public static void checkProblems(final String content) throws Exception {
         if (content.contains("\"e\":")) {
-            final int e = PlugUtils.getNumberBetween(content, "\"e\":", "}");
+            final int e = Integer.parseInt(PlugUtils.getStringBetween(content, "\"e\":", "}"));
             switch (e) {
                 case EOVERQUOTA:
                     throw new NotRecoverableDownloadException("Bandwidth quota exceeded");

@@ -37,10 +37,9 @@ class ImgBabesFileRunner extends AbstractRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        final String contentAsString = getContentAsString();
-        if (contentAsString.contains("file you were looking for could not be found") ||
-                contentAsString.contains("file was deleted")
-                ) {
+        final String content = getContentAsString();
+        if (content.contains("file you were looking for could not be found") ||
+                content.contains("file was deleted") || content.contains("Nothing Found")) {
             throw new URLNotAvailableAnymoreException("File not found"); //let to know user in FRD
         }
     }

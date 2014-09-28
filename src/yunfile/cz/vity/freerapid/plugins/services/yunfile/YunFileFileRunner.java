@@ -38,7 +38,18 @@ class YunFileFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        PlugUtils.checkName(httpFile, content, "\"keywords\" content=\"", "\"");
+        String filename = null;
+        Matcher matcher = PlugUtils.matcher("^\\s*?(?!<[^<>]+?display:none[^<>]*?>)<h2[^<>]*?>(?:Downloading\\s*?:\\s*?)?.*?(.+?)</h2>", content);
+        while (matcher.find()) {
+            String group1 = matcher.group(1);
+            if (!group1.contains("Please") || !group1.contains("premium")) {
+                filename = PlugUtils.unescapeHtml(group1).replaceAll("</?[a-z0-9]{1,2}?>", "").trim();
+            }
+        }
+        if (filename == null) {
+            throw new PluginImplementationException("File name not found");
+        }
+        httpFile.setFileName(filename);
         PlugUtils.checkFileSize(httpFile, content, "File Size: <b>", "</b>");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
@@ -79,11 +90,11 @@ class YunFileFileRunner extends AbstractRunner {
                 if (getContentAsString().contains("vcode")) {
                     final String captcha;
                     final String captchaUrl;
-                    try {
-                        captchaUrl = getMethodBuilder(getContentAsString().replaceAll("(?s)<!--.*?-->", "")).setActionFromImgSrcWhereTagContains("Pcv").getAction();
-                    } catch (BuildMethodException e) {
+                    matcher = PlugUtils.matcher("(?!.*?')<img src=\"(/verifyimg/getPcv/[^\"]+?)\"", getContentAsString());
+                    if (!matcher.find()) {
                         throw new PluginImplementationException("Captcha URL not found");
                     }
+                    captchaUrl = matcher.group(1);
                     captcha = getCaptchaSupport().getCaptcha(baseURL + captchaUrl);
                     if (captcha == null) {
                         throw new CaptchaEntryInputMismatchException();

@@ -6,8 +6,8 @@ import java.util.Collections;
 /**
  * @author tong2shot
  */
-public enum VideoQuality {
-    Lowest(0),
+enum VideoQuality {
+    Lowest(0, "Lowest available"),
     _240(240),
     _360(360),
     _480(480),
@@ -16,24 +16,19 @@ public enum VideoQuality {
     _1440(1440),
     _2160(2160),
     _3072(3072),
-    Highest(10000);
+    Highest(10000, "Highest available");
 
     private final int quality;
     private final String name;
 
     private VideoQuality(int quality) {
-        this.quality = quality;
-        switch (quality) {
-            case 0:
-                this.name = "Lowest available";
-                break;
-            case 10000:
-                this.name = "Highest available";
-                break;
-            default:
-                this.name = quality + "p";
-                break;
-        }
+        this.quality = quality;       
+	this.name = quality + "p";                
+    }
+    
+    private VideoQuality(int quality, String name) {
+	this.quality = quality;
+	this.name = name;
     }
 
     public int getQuality() {

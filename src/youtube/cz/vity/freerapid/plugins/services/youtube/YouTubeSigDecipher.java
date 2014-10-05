@@ -1,10 +1,10 @@
 package cz.vity.freerapid.plugins.services.youtube;
 
 import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
+import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
+import cz.vity.freerapid.plugins.webclient.interfaces.HttpDownloadClient;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -44,6 +44,7 @@ class YouTubeSigDecipher {
     private static final String DECIPHER_PATTERN = "(?s)(..).{5}\\Q\u00d0\u0030\u00d0\u00d1\u0024\\E(.+?)\\Q\u00d5\u00d1\u0048\\E";
     private static final String REVERSE_CLONE_SWAP_CALL_PATTERN = "(?s)(.)\\Q\u0046\\E(..)\\Q\u0002\u0080\\E.";
     private static final String CHARSET_NAME = "ISO-8859-1";
+    private static final Map<Class<?>, YouTubeSigDecipherHolder> SIG_DECIPHER_CACHE = new WeakHashMap<Class<?>, YouTubeSigDecipherHolder>(2);
 
     private final InputStream is;
     private final Map<Integer, String> multinameMap = new HashMap<Integer, String>(); //k=name index, v=name
@@ -53,7 +54,29 @@ class YouTubeSigDecipher {
     private String cloneTraitname = null;
     private String swapTraitname = null;
 
-    public YouTubeSigDecipher(final InputStream is) {
+
+    public static YouTubeSigDecipher getInstance(String swfUrl, HttpDownloadClient client) throws Exception {
+        synchronized (YouTubeSigDecipher.class) {
+            YouTubeSigDecipher youTubeSigDecipher;
+            YouTubeSigDecipherHolder youTubeSigDecipherHolder = SIG_DECIPHER_CACHE.get(YouTubeSigDecipher.class);
+            if ((youTubeSigDecipherHolder == null) || !swfUrl.equals(youTubeSigDecipherHolder.getSwfUrl()) || youTubeSigDecipherHolder.isStale()) {
+                logger.info("Requesting SWF: " + swfUrl);
+                InputStream is = client.makeRequestForFile(client.getGetMethod(swfUrl));
+                if (is == null) {
+                    throw new ServiceConnectionProblemException("Error downloading SWF");
+                }
+                youTubeSigDecipher = new YouTubeSigDecipher(is);
+                youTubeSigDecipher.init(); //make sure to call init in multithread environment
+                SIG_DECIPHER_CACHE.put(YouTubeSigDecipher.class, new YouTubeSigDecipherHolder(swfUrl, youTubeSigDecipher));
+            } else {
+                logger.info("Signature decipher data cache hit");
+                youTubeSigDecipher = youTubeSigDecipherHolder.getYouTubeSigDecipher();
+            }
+            return youTubeSigDecipher;
+        }
+    }
+
+    private YouTubeSigDecipher(final InputStream is) {
         this.is = is;
     }
 
@@ -77,11 +100,10 @@ class YouTubeSigDecipher {
     public String decipher(final String sig) throws Exception {
         init();
         List<String> lstSig = new ArrayList<String>(Arrays.asList(sig.split("")));
-        if (lstSig.get(0).isEmpty()) {
+        if (lstSig.get(0).isEmpty()) { //JRE < 8 regex bug (https://bugs.openjdk.java.net/browse/JDK-8027645)
             lstSig.remove(0); //remove empty char at head
         }
-        Matcher matcher = PlugUtils.matcher(REVERSE_CLONE_SWAP_CALL_PATTERN, bytecode);
-        boolean matched = false;
+        Matcher matcher = PlugUtils.matcher(REVERSE_CLONE_SWAP_CALL_PATTERN, bytecode);        
         String ret = null;
         while (matcher.find()) {
             int arg = matcher.group(1).charAt(0);
@@ -102,8 +124,7 @@ class YouTubeSigDecipher {
                 }
             } else {
                 throw new PluginImplementationException("Unknown multiname index: " + callPropertyIndex);
-            }
-            matched = true;
+            }            
             StringBuilder sb = new StringBuilder();
             for (String s : lstSig) {
                 sb.append(s);
@@ -111,7 +132,7 @@ class YouTubeSigDecipher {
             ret = sb.toString();
             logger.info(ret);
         }
-        if (!matched) {
+        if (ret == null) {
             throw new PluginImplementationException("Error parsing SWF (2)");
         }
         return ret;
@@ -122,7 +143,6 @@ class YouTubeSigDecipher {
             String swf = readSwfStreamToString(is);
             byte[] swfBytes = swf.getBytes(CHARSET_NAME);
             int swapMethodInfo = -1, reverseMethodInfo = -1, cloneMethodInfo = -1;
-            logger.info("SWF MD5: " + DigestUtils.md5Hex(swf));
 
             /*
             private function LiIsM0G5E1vk(param1:Array, param2:Number) : Array {
@@ -166,7 +186,6 @@ class YouTubeSigDecipher {
                 throw new PluginImplementationException("Error parsing SWF (1)");
             }
 
-
             /*
             public function VRlnjHuFLJN6(param1:Array) : Array {
                 var param1:Array = this.LiIsM0G5E1vk(param1,15);
@@ -186,7 +205,6 @@ class YouTubeSigDecipher {
             }
             //int decipherMethodInfo = readU30(new ByteArrayInputStream(matcher.group(1).getBytes(CHARSET_NAME)));
             bytecode = matcher.group(2);
-            logger.info("Bytecode content (base64): " + Base64.encodeBase64String(bytecode.getBytes(CHARSET_NAME)));
 
             parseSwf(new ByteArrayInputStream(swfBytes));
             reverseTraitname = traitnameMethodMap.get(reverseMethodInfo);
@@ -198,7 +216,7 @@ class YouTubeSigDecipher {
         }
     }
 
-    private String readSwfStreamToString(InputStream is) throws IOException {
+    public static String readSwfStreamToString(InputStream is) throws IOException {
         try {
             final byte[] bytes = new byte[2048];
             //read the first 8 bytes :
@@ -639,6 +657,31 @@ class YouTubeSigDecipher {
         int length = readU30(is);
         byte b[] = safeRead(is, length);
         return new String(b, CHARSET_NAME);
+    }
+
+    private static class YouTubeSigDecipherHolder {
+        private final static long MAX_AGE = 86400000; //1 day
+        private final String swfUrl;
+        private final YouTubeSigDecipher youTubeSigDecipher;
+        private final long created;
+
+        private YouTubeSigDecipherHolder(String swfUrl, YouTubeSigDecipher youTubeSigDecipher) {
+            this.swfUrl = swfUrl;
+            this.youTubeSigDecipher = youTubeSigDecipher;
+            this.created = System.currentTimeMillis();
+        }
+
+        public String getSwfUrl() {
+            return swfUrl;
+        }
+
+        public YouTubeSigDecipher getYouTubeSigDecipher() {
+            return youTubeSigDecipher;
+        }
+
+        public boolean isStale() {
+            return System.currentTimeMillis() - created > MAX_AGE;
+        }
     }
 
     /*

@@ -7,7 +7,7 @@ import java.util.Locale;
 /**
  * @author tong2shot
  */
-public enum Container {
+enum Container {
     Any(0),
     mp4(1),
     flv(2),

@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.youtube;
 /**
  * @author tong2shot
  */
-public enum DownloadMode {
+enum DownloadMode {
     downloadVideo,
     convertToAudio,
     extractAudio;

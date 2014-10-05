@@ -3,7 +3,7 @@ package cz.vity.freerapid.plugins.services.youtube;
 import java.util.Arrays;
 import java.util.Collections;
 
-public enum AudioQuality {
+enum AudioQuality {
     _48(48),
     _64(64),
     _96(96),

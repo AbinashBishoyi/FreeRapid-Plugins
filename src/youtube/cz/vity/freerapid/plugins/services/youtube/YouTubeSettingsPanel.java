@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 /**
  * @author Kajda, JPEXS, ntoskrnl, tong2shot
  */
-public class YouTubeSettingsPanel extends JPanel {
+class YouTubeSettingsPanel extends JPanel {
     private final static Logger logger = Logger.getLogger(YouTubeSettingsPanel.class.getName());
     private YouTubeSettingsConfig config;
 

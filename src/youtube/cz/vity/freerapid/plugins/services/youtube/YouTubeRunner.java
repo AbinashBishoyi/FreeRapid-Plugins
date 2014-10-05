@@ -47,7 +47,6 @@ import java.util.regex.Pattern;
  */
 class YouTubeRunner extends AbstractVideo2AudioRunner {
     private static final Logger logger = Logger.getLogger(YouTubeRunner.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0";
     private static final String DEFAULT_FILE_EXT = ".flv";
     private static final String DASH_AUDIO_ITAG = "dashaudioitag";
     private static final String SECONDARY_DASH_AUDIO_ITAG = "secondarydashaudioitag"; //as backup, in case the primary fails
@@ -55,11 +54,11 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
     private YouTubeSettingsConfig config;
     private int dashAudioItagValue = -1;
     private int secondaryDashAudioItagValue = -1;
+    private String swfUrl = null;
 
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         if (isAttributionLink()) {
             processAttributionLink();
@@ -72,7 +71,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
         final HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            bypassAgeVerification(method);
             checkProblems();
             checkName();
         } else {
@@ -85,7 +83,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
         addCookie(new Cookie(".youtube.com", "PREF", "hl=en", "/", 86400, false));
         setConfig();
         if (isAttributionLink()) {
@@ -102,7 +99,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
         HttpMethod method = getGetMethod(fileURL);
         if (makeRedirectedRequest(method)) {
-            bypassAgeVerification(method);
             checkProblems();
             fileURL = method.getURI().toString();
             checkName();
@@ -120,9 +116,22 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 return;
             }
 
-            String swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
-            String fmtStreamMapContent = PlugUtils.getStringBetween(getContentAsString(), "\"url_encoded_fmt_stream_map\": \"", "\"");
-            YouTubeSigDecipher ytSigDecipher = null;
+            bypassAgeVerification(method);
+            if (swfUrl == null) {
+                try {
+                    swfUrl = PlugUtils.getStringBetween(getContentAsString(), "\"url\": \"", "\"").replace("\\/", "/");
+                } catch (PluginImplementationException e) {
+                    throw new PluginImplementationException("SWF URL not found");
+                }
+            }
+            //"url_encoded_fmt_stream_map": "type=vi...    " //normal
+            //url_encoded_fmt_stream_map=url%3Dhttp%253A... & //embedded
+            Matcher matcher = getMatcherAgainstContent("\"?url_encoded_fmt_stream_map\"?(=|:)(?: \")?([^&\"$]+)(?:\"&|$|)");
+            if (!matcher.find()) {
+                throw new PluginImplementationException("Fmt stream map not found");
+            }
+            String fmtStreamMapContent = matcher.group(1).equals(":") ? matcher.group(2) : URLDecoder.decode(matcher.group(2), "UTF-8");
+            YouTubeSigDecipher ytSigDecipher;
             Map<Integer, YouTubeMedia> afDashStreamMap = new LinkedHashMap<Integer, YouTubeMedia>(); //union between afStreamMap and dashStreamMap
             logger.info("SWF URL : " + swfUrl);
             if (config.isEnableDash()
@@ -130,22 +139,30 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     || (config.getDownloadMode() == DownloadMode.extractAudio)) {
                 Map<Integer, YouTubeMedia> afStreamMap = null; //streams from 'adaptive_fmts', not to be confused with afDashStreamMap
                 Map<Integer, YouTubeMedia> dashStreamMap = null; //streams from 'dashmpd'
-                if (getContentAsString().contains("\"adaptive_fmts\": \"")) {
-                    String afContent = PlugUtils.getStringBetween(getContentAsString(), "\"adaptive_fmts\": \"", "\"");
+                if (getContentAsString().contains("adaptive_fmts")) {
+                    matcher = getMatcherAgainstContent("\"?adaptive_fmts\"?(=|:)(?: \")?([^&\"$]+)(?:\"&|$|)");
+                    if (!matcher.find()) {
+                        throw new PluginImplementationException("Error getting adaptive fmts");
+                    }
+                    String afContent = matcher.group(1).equals(":") ? matcher.group(2) : URLDecoder.decode(matcher.group(2), "UTF-8");
                     logger.info("Parsing adaptive_fmts");
                     //'adaptive_fmts' parser is similar with 'url_encoded_fmt_stream_map' parser
                     afStreamMap = getFmtStreamMap(afContent);
                 }
-                if (getContentAsString().contains("\"dashmpd\": \"")) {
-                    String dashUrl = PlugUtils.getStringBetween(getContentAsString(), "\"dashmpd\": \"", "\"").replace("\\/", "/");
+                if (getContentAsString().contains("dashmpd")) {
+                    matcher = getMatcherAgainstContent("\"?dashmpd\"?(=|:)(?: \")?([^&\"$]+)(?:\"&|$|)");
+                    if (!matcher.find()) {
+                        throw new PluginImplementationException("Error getting dash URL");
+                    }
+                    String dashUrl = matcher.group(1).equals(":") ? matcher.group(2).replace("\\/", "/") : URLDecoder.decode(matcher.group(2), "UTF-8");
                     logger.info("DASH URL : " + dashUrl);
                     if (!(dashUrl.contains("/sig/") || dashUrl.contains("/signature/"))) {  //cipher signature
-                        Matcher matcher = PlugUtils.matcher("/s/([^/]+)", dashUrl);
+                        matcher = PlugUtils.matcher("/s/([^/]+)", dashUrl);
                         if (!matcher.find()) {
                             throw new PluginImplementationException("Cipher signature not found");
                         }
                         String signature = matcher.group(1);
-                        ytSigDecipher = getYouTubeSigDecipher(swfUrl);
+                        ytSigDecipher = YouTubeSigDecipher.getInstance(swfUrl, client);
                         try {
                             signature = ytSigDecipher.decipher(signature); //deciphered signature
                         } catch (Exception e) {
@@ -199,7 +216,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             logger.info("Config setting : " + config);
             logger.info("Downloading media : " + youTubeMedia);
             setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
-            if (!tryDownloadAndSaveFile(getGetMethod(getMediaUrl(swfUrl, ytSigDecipher, youTubeMedia)))) {
+            if (!tryDownloadAndSaveFile(getGetMethod(getMediaUrl(swfUrl, youTubeMedia)))) {
                 if (secondaryDashAudioItagValue != -1) { //try secondary dash audio
                     youTubeMedia = afDashStreamMap.get(secondaryDashAudioItagValue);
                     if (youTubeMedia == null) {
@@ -207,7 +224,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                     }
                     logger.info("Primary DASH audio failed, trying to download secondary DASH audio");
                     logger.info("Downloading media : " + youTubeMedia);
-                    if (!tryDownloadAndSaveFile(getGetMethod(getMediaUrl(swfUrl, ytSigDecipher, youTubeMedia)))) {
+                    if (!tryDownloadAndSaveFile(getGetMethod(getMediaUrl(swfUrl, youTubeMedia)))) {
                         checkProblems();
                         throw new ServiceConnectionProblemException("Error downloading secondary DASH audio");
                     }
@@ -241,7 +258,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
     }
 
-    private String getMediaUrl(String swfUrl, YouTubeSigDecipher ytSigDecipher, YouTubeMedia youTubeMedia) throws Exception {
+    private String getMediaUrl(String swfUrl, YouTubeMedia youTubeMedia) throws Exception {
         String videoURL = youTubeMedia.getUrl();
         String signatureInUrl = null;
         try {
@@ -253,9 +270,7 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
             String signature;
             if (youTubeMedia.isCipherSignature()) { //signature is encrypted
                 logger.info("Cipher signature : " + youTubeMedia.getSignature());
-                if (ytSigDecipher == null) {
-                    ytSigDecipher = getYouTubeSigDecipher(swfUrl);
-                }
+                YouTubeSigDecipher ytSigDecipher = YouTubeSigDecipher.getInstance(swfUrl, client);
                 try {
                     signature = ytSigDecipher.decipher(youTubeMedia.getSignature());
                 } catch (Exception e) {
@@ -271,14 +286,6 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         return videoURL;
     }
 
-    private YouTubeSigDecipher getYouTubeSigDecipher(String swfUrl) throws IOException, ServiceConnectionProblemException {
-        InputStream is = client.makeRequestForFile(getGetMethod(swfUrl));
-        if (is == null) {
-            throw new ServiceConnectionProblemException("Error downloading SWF");
-        }
-        return new YouTubeSigDecipher(is);
-    }
-
     private void checkFileProblems() throws Exception {
         logger.info("Checking file problems");
         HttpMethod method = getGetMethod(String.format("https://gdata.youtube.com/feeds/api/videos/%s?v=2", getIdFromUrl()));
@@ -291,8 +298,12 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
         }
     }
 
-    private void checkProblems() {
-        //
+    private void checkProblems() throws ErrorDuringDownloadingException {
+        String content = getContentAsString();
+        if (content.contains("It+is+restricted+from+playback+on+certain+sites")
+                || content.contains("This+video+contains+content+from+")) {
+            throw new PluginImplementationException("Error requesting embedded content, video cannot be embedded");
+        }
     }
 
     private void checkName() throws ErrorDuringDownloadingException {
@@ -990,33 +1001,40 @@ class YouTubeRunner extends AbstractVideo2AudioRunner {
                 || getContentAsString().contains("Sign in to confirm your age")
                 || getContentAsString().contains("<script>window.location = \"https:\\/\\/www.youtube.com\\/verify_age")
                 || getContentAsString().contains("<script>window.location = \"http:\\/\\/www.youtube.com\\/verify_age")) {
-            setClientParameter(DownloadClientConsts.USER_AGENT, "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)");
-            method = getGetMethod(fileURL);
+            logger.info("Trying to bypass age verification");
+            //Request embed format to bypass age verification
+            String videoId = getIdFromUrl();
+            String embedSwfUrl = "https://www.youtube.com/v/" + videoId;
+            logger.info("Requesting embed SWF: " + embedSwfUrl);
+            InputStream is = client.makeRequestForFile(client.getGetMethod(embedSwfUrl));
+            if (is == null) {
+                throw new ServiceConnectionProblemException("Error downloading SWF");
+            }
+            String embedSwfContent = YouTubeSigDecipher.readSwfStreamToString(is);
+
+            Matcher matcher = PlugUtils.matcher("swf.*?(https?://.+?\\.swf)", embedSwfContent);
+            if (!matcher.find()) {
+                throw new PluginImplementationException("SWF URL not found");
+            }
+            swfUrl = matcher.group(1).replace("cps.swf", "watch_as3.swf");
+            method = getMethodBuilder()
+                    .setReferer(embedSwfUrl)
+                    .setAction("https://www.youtube.com/get_video_info")
+                    .setParameter("asv", "3")
+                    .setParameter("hl", "en_US")
+                    .setParameter("el", "embedded")
+                    .setParameter("video_id", videoId)
+                    .setParameter("width", "1366")
+                    .setParameter("sts", "16345")
+                    .setParameter("height", "239")
+                    .setAndEncodeParameter("eurl", embedSwfUrl)
+                    .toGetMethod();
+            setTextContentTypes("application/x-www-form-urlencoded");
             if (!makeRedirectedRequest(method)) {
+                checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-
-            //controversy
-            if (getContentAsString().contains("<script>window.location = \"http:\\/\\/www.youtube.com\\/verify_controversy")
-                    || getContentAsString().contains("<script>window.location = \"https:\\/\\/www.youtube.com\\/verify_controversy")) {
-                method = getMethodBuilder()
-                        .setAction(PlugUtils.getStringBetween(getContentAsString(), "window.location = \"", "\"").replace("\\/", "/"))
-                        .toGetMethod();
-                if (!makeRedirectedRequest(method)) {
-                    throw new ServiceConnectionProblemException();
-                }
-            }
-            if (method.getURI().toString().matches("https?://(www\\.)?youtube\\.com/verify_controversy.*")
-                    || getContentAsString().contains("verify_controversy?action_confirm=1")) {
-                method = getMethodBuilder()
-                        .setBaseURL("https://www.youtube.com")
-                        .setActionFromFormWhereActionContains("verify_controversy", true)
-                        .toPostMethod();
-                if (!makeRedirectedRequest(method)) {
-                    throw new ServiceConnectionProblemException();
-                }
-            }
-            setClientParameter(DownloadClientConsts.USER_AGENT, USER_AGENT);
+            checkProblems(); //check whether the video can/cannot be embedded
         } else if (getContentAsString().contains("I confirm that I am 18 years of age or older")) {
             if (!makeRedirectedRequest(getGetMethod(fileURL + "&has_verified=1"))) {
                 throw new ServiceConnectionProblemException();

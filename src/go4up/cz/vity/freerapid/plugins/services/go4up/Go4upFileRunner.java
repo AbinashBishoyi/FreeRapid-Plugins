@@ -98,7 +98,7 @@ class Go4upFileRunner extends AbstractRunner {
                         String strNewUrl = PlugUtils.getStringBetween(subContent, "window.location = \"", "\"");
                         listing.add(new URI(strNewUrl));
                     } else {
-                        final Matcher match = PlugUtils.matcher("id=\"linklist\">\\s*?<center>\\s*?.+?<b><a href=\"(.+?)\">", getContentAsString());
+                        final Matcher match = PlugUtils.matcher("id=\"linklist\">\\s*?<center>\\s*?.*?\\s*?<b><a href=\"(.+?)\">", getContentAsString());
                         try {
                             if (match.find())
                                 listing.add(new URI(match.group(1)));

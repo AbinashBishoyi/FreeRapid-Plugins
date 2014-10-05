@@ -32,7 +32,7 @@ import java.util.regex.Matcher;
  */
 class BbcFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(BbcFileRunner.class.getName());
-    private final static String SWF_URL = "http://emp.bbci.co.uk/emp/releases/smp-flash/revisions/1.9.23/1.9.23_smp.swf";
+    private final static String SWF_URL = "http://emp.bbci.co.uk/emp/SMPf/1.9.36/StandardMediaPlayerChromelessFlash.swf";
     private final static String LIMELIGHT_SWF_URL = "http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf";
     private final static SwfVerificationHelper limelightHelper = new SwfVerificationHelper(LIMELIGHT_SWF_URL);
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
@@ -133,6 +133,9 @@ class BbcFileRunner extends AbstractRtmpRunner {
         String content = getContentAsString();
         if (content.contains("<noItems reason=\"")) {
             throw new URLNotAvailableAnymoreException("This programme is not available anymore");
+        }
+        if (content.contains("<h1>404</h1>")) {
+            throw new URLNotAvailableAnymoreException("Page not found");
         }
     }
 

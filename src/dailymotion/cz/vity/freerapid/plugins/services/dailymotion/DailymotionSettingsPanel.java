@@ -8,7 +8,7 @@ import java.awt.event.ActionListener;
 /**
  * @author tong2shot
  */
-public class DailymotionSettingsPanel extends JPanel {
+class DailymotionSettingsPanel extends JPanel {
     private DailymotionSettingsConfig config;
 
     public DailymotionSettingsPanel(DailymotionServiceImpl service) throws Exception {

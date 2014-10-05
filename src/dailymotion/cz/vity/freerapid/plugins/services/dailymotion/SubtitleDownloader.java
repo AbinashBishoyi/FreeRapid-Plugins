@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 /**
  * @author tong2shot
  */
-public class SubtitleDownloader {
+class SubtitleDownloader {
     private final static Logger logger = Logger.getLogger(SubtitleDownloader.class.getName());
 
     public void downloadSubtitle(HttpDownloadClient client, HttpFile httpFile, String subtitleUrl, String lang) throws Exception {

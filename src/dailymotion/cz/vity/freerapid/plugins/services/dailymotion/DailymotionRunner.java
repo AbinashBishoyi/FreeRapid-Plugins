@@ -11,19 +11,14 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpMethod;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.InflaterInputStream;
 
 /**
  * Class which contains main code
@@ -34,6 +29,8 @@ class DailymotionRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(DailymotionRunner.class.getName());
     private final static String DEFAULT_FILE_EXT = ".mp4";
     private DailymotionSettingsConfig config;
+
+    private static enum Container {FLV, MP4}
 
     private void setConfig() throws Exception {
         DailymotionServiceImpl service = (DailymotionServiceImpl) getPluginService();
@@ -49,7 +46,6 @@ class DailymotionRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception {
         super.runCheck();
-        addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
         addCookie(new Cookie(".dailymotion.com", "lang", "en_EN", "/", 86400, false));
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
         if (!(isPlaylist() || isGroup())) {
@@ -71,6 +67,8 @@ class DailymotionRunner extends AbstractRunner {
         }
         checkProblems();
 
+        //Sometimes file name contains double-quote sign, which is tricky to parse.
+        //So JsonMapper is used to detect file name
         Map deserialized;
         String fname = null;
         try {
@@ -92,7 +90,6 @@ class DailymotionRunner extends AbstractRunner {
     public void run() throws Exception {
         super.run();
         logger.info("Starting download in TASK " + fileURL);
-        addCookie(new Cookie(".dailymotion.com", "family_filter", "off", "/", 86400, false));
         addCookie(new Cookie(".dailymotion.com", "lang", "en_EN", "/", 86400, false));
         setFileStreamContentTypes(new String[0], new String[]{"application/json"});
         if (isPlaylist()) {
@@ -111,93 +108,18 @@ class DailymotionRunner extends AbstractRunner {
         if (config.isSubtitleDownload()) {
             downloadSubtitles();
         }
-        HttpMethod method = getGetMethod(fileURL);
-        //dummy request
+        //They block some videos in some countries.
+        //Request embed format to avoid blocking.
+        final String embedUrl = String.format("http://www.dailymotion.com/embed/video/%s", getVideoIdFromURL());
+        HttpMethod method = getGetMethod(embedUrl);
         if (makeRedirectedRequest(method)) {
             checkProblems();
-            //they block some videos in some countries.
-            //request swf to avoid blocking.
-            final String swfUrl = String.format("http://www.dailymotion.com/swf/video/%s?autoPlay=1", getVideoIdFromURL());
-            method = getMethodBuilder()
-                    .setReferer(fileURL)
-                    .setAction(swfUrl)
-                    .toGetMethod();
-            final InputStream is = client.makeRequestForFile(method);
-            if (is == null) {
-                throw new ServiceConnectionProblemException("Error downloading SWF");
-            }
-            final String swfStr = swfToString(is);
-            final String sequence;
-            List<DailyMotionVideo> dailyMotionVideos;
-            if (swfStr.contains("ldURL")) { //mp4
-                //find sequence in swf
-                // \Q = begin quote, \E = end quote
-                Matcher matcher = PlugUtils.matcher("(\\Q\\\"ldURL\\\":\\\"\\E.+?)(?:\\Q,\\\"cdn\\E|\\Q,\\\"autoURL\\E)", swfStr);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Sequence not found in SWF");
-                }
-                sequence = matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/");
-                logger.info("Sequence found in SWF");
-                dailyMotionVideos = getDailyMotionVideosFromSequence(sequence, "MP4");
-            } else if (swfStr.contains("autoURL")) { //flv
-                //find manifest in swf
-                Matcher matcher = PlugUtils.matcher("\\Q\\\"autoURL\\\":\\\"\\E(.+?)(?:\\Q\\\",\\\"cdn\\E|\\Q\\\",\\\"allowStageVideo\\E)", swfStr);
-                if (!matcher.find()) {
-                    throw new PluginImplementationException("Manifest not found in SWF");
-                }
-                final String manifestUrl = matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/");
-                setTextContentTypes("application/vnd.lumberjack.manifest");
-                method = getMethodBuilder()
-                        .setReferer(swfUrl)
-                        .setAction(manifestUrl)
-                        .toGetMethod();
-                if (!makeRedirectedRequest(method)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                checkProblems();
-                logger.info("Manifest found in SWF");
-                logger.info("Manifest content : " + getContentAsString());
-                //find sequence in manifest
-                sequence = manifestToSequence(getContentAsString());
-                logger.info("Sequence found in manifest");
-                dailyMotionVideos = getDailyMotionVideosFromSequence(sequence, "FLV");
-
-                if (swfStr.contains("video_url")) { //380p mp4, higher priority than 380p flv
-                    //find 380p mp4 single quality sequence in swf
-                    matcher = PlugUtils.matcher("\\Q\\\"video_url\\\":\\\"\\E(.+?)\\Q\\\",\\E", swfStr);
-                    if (!matcher.find()) {
-                        throw new PluginImplementationException("Sequence (380p mp4) not found in SWF");
-                    }
-                    logger.info("Sequence (380p mp4) found in SWF");
-                    dailyMotionVideos.add(new DailyMotionVideo(VideoQuality._380, "MP4", URLDecoder.decode(matcher.group(1).replace("\\\"", "\"").replace("\\\\\\/", "/"), "UTF-8")));
-                }
-            } else {
-                throw new PluginImplementationException("External video channel is not supported");
-            }
-
+            List<DailyMotionVideo> dailyMotionVideos = getDailyMotionVideosFromSequence(getContentAsString(), Container.MP4);
             final DailyMotionVideo dmv = getSelectedDailyMotionVideo(dailyMotionVideos);
             logger.info("Quality setting : " + config.getVideoQuality());
             logger.info("Video to be downloaded : " + dmv);
             String url = dmv.url;
-            if (dmv.container.equalsIgnoreCase("FLV")) {
-                method = getMethodBuilder()
-                        .setReferer(swfUrl)
-                        .setAction(url)
-                        .toGetMethod();
-                if (!makeRedirectedRequest(method)) {
-                    checkProblems();
-                    throw new ServiceConnectionProblemException();
-                }
-                checkProblems();
-                //final String baseUrl = new URI(url).getAuthority();
-                final String baseUrl = "vid2.ec.dmcdn.net";
-                //get the original url, not the fragmented ones
-                url = "http://" + baseUrl + PlugUtils.getStringBetween(getContentAsString(), "\"template\":\"", "\",").replace("frag($fragment$)/", "");
-                httpFile.setFileName(httpFile.getFileName().replaceFirst(Pattern.quote(DEFAULT_FILE_EXT) + "$", ".flv"));
-            }
-            client.setReferer(fileURL);
-            method = getGetMethod(URLDecoder.decode(url, "UTF-8").replace("\\", ""));
+            method = getMethodBuilder().setReferer(fileURL).setAction(url).toGetMethod();
             setClientParameter(DownloadClientConsts.IGNORE_ACCEPT_RANGES, true);
             httpFile.setResumeSupported(true);
             if (!tryDownloadAndSaveFile(method)) {
@@ -206,35 +128,17 @@ class DailymotionRunner extends AbstractRunner {
             }
         } else {
             checkProblems();
-            throw new ServiceConnectionProblemException();
+            throw new ServiceConnectionProblemException("Error getting embed URL");
         }
     }
 
-    private String manifestToSequence(final String manifest) {
-        final Matcher matcher = PlugUtils.matcher("\"name\":\"(\\d+)\".+?\"template\":\"(.+?)\"", manifest);
-        final StringBuilder sequenceSb = new StringBuilder();
-        while (matcher.find()) {
-            String qualityToken = matcher.group(1);
-            for (VideoQuality videoQuality : VideoQuality.getItems()) {
-                //replace 240 with "ldURL", and so on..
-                qualityToken = qualityToken.replace(String.valueOf(videoQuality.getQuality()), "\"" + videoQuality.getQualityToken() + "\"");
-            }
-            sequenceSb.append(qualityToken);
-            sequenceSb.append(":\"");
-            sequenceSb.append(matcher.group(2));
-            sequenceSb.append("\",");
-        }
-        return sequenceSb.toString();
-    }
-
-    private List<DailyMotionVideo> getDailyMotionVideosFromSequence(String sequence, String container) {
+    private List<DailyMotionVideo> getDailyMotionVideosFromSequence(String sequence, Container container) {
         final List<DailyMotionVideo> dailyMotionVideos = new LinkedList<DailyMotionVideo>();
         for (VideoQuality videoQuality : VideoQuality.getItems()) {
-            final String qualityToken = videoQuality.getQualityToken();
-            final String urlRegex = String.format("\"%s\":\"(.+?)\"", qualityToken);
+            final String urlRegex = String.format("\"stream_h264_?(?:%s)_url\":\"(.+?)\"", videoQuality.getQualityToken1() + "|" + videoQuality.getQualityToken2());
             final Matcher matcher = PlugUtils.matcher(urlRegex, sequence);
             if (matcher.find()) {
-                final String url = matcher.group(1);
+                final String url = matcher.group(1).replace("\\/", "/");
                 final DailyMotionVideo dmv = new DailyMotionVideo(videoQuality, container, url);
                 dailyMotionVideos.add(dmv);
             }
@@ -251,33 +155,6 @@ class DailymotionRunner extends AbstractRunner {
             throw new PluginImplementationException("No available video");
         }
         return Collections.min(dailyMotionVideos);
-    }
-
-    private String swfToString(InputStream is) throws Exception {
-        try {
-            final byte[] header = new byte[8];
-            if (8 != is.read(header)) throw new IOException("Failed receiving SWF header");
-            String strHeader = new String(header);
-            if ((!strHeader.contains("FWS")) && (!strHeader.contains("CWS"))) {
-                throw new IOException("Invalid SWF file");
-            }
-            if (strHeader.contains("CWS")) {
-                is = new InflaterInputStream(is);
-            }
-            final byte[] buffer = new byte[1024];
-            final StringBuilder sb = new StringBuilder(8192);
-            int len;
-            while ((len = is.read(buffer)) != -1) {
-                sb.append(new String(buffer, 0, len, "utf-8"));
-            }
-            return sb.toString();
-        } finally {
-            try {
-                is.close();
-            } catch (final Exception e) {
-                LogUtils.processException(logger, e);
-            }
-        }
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
@@ -404,11 +281,11 @@ class DailymotionRunner extends AbstractRunner {
         private final static int NEAREST_LOWER_PENALTY = 10;
         private final static int FLV_PENALTY = 1;
         private final VideoQuality videoQuality;
-        private final String container;
+        private final Container container;
         private final String url;
         private final int weight;
 
-        private DailyMotionVideo(final VideoQuality videoQuality, final String container, final String url) {
+        private DailyMotionVideo(final VideoQuality videoQuality, final Container container, final String url) {
             this.videoQuality = videoQuality;
             this.container = container;
             this.url = url;
@@ -419,12 +296,13 @@ class DailymotionRunner extends AbstractRunner {
             final VideoQuality configQuality = config.getVideoQuality();
             final int deltaQ = videoQuality.getQuality() - configQuality.getQuality();
             int weight = (deltaQ < 0 ? Math.abs(deltaQ) + NEAREST_LOWER_PENALTY : deltaQ); //prefer nearest better if the same quality doesn't exist
-            if (container.equalsIgnoreCase("FLV")) { //prefer MP4 on same quality
+            if (container == Container.FLV) { //prefer MP4 on same quality
                 weight += FLV_PENALTY;
             }
             return weight;
         }
 
+        @SuppressWarnings("NullableProblems")
         @Override
         public int compareTo(DailyMotionVideo that) {
             return Integer.valueOf(this.weight).compareTo(that.weight);

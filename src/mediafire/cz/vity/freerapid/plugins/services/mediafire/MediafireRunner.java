@@ -75,7 +75,7 @@ class MediafireRunner extends AbstractRunner {
             httpFile.setFileSize(contents);
 
         } else {
-            PlugUtils.checkName(httpFile, getContentAsString(), "<div class=\"fileName\">", "</div>");
+            PlugUtils.checkName(httpFile, getContentAsString(), "<meta property=\"og:title\" content=\"", "\" />");
             final Matcher matcher = getMatcherAgainstContent("oFileSharePopup\\.ald\\('.+?','.+?','(\\d+?)'");
             if (!matcher.find()) {
                 throw new PluginImplementationException("File size not found");

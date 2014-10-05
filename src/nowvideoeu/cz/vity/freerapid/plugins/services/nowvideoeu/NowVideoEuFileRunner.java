@@ -23,8 +23,8 @@ class NowVideoEuFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(NowVideoEuFileRunner.class.getName());
 
     private void checkUrl() {
-        if (fileURL.contains("embed.php?v=")) {
-            fileURL = fileURL.replaceFirst("http://embed\\.nowvideo\\.(.{2})/embed\\.php\\?v=([a-z0-9]+)", "http://www.nowvideo.$1/video/$2");
+        if (PlugUtils.find("(embed|player)\\.php\\?v=", fileURL)) {
+            fileURL = fileURL.replaceFirst("http://.*?nowvideo\\.(.{2})/(embed|player)\\.php\\?v=(.+)", "http://www.nowvideo.$1/video/$3");
         }
     }
 

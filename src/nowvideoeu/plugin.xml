@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.nowvideoeu.NowVideoEuServiceImpl"
-        id="nowvideo.eu" vendor="tong2shot" version="1.1.0">
+        id="nowvideo.eu" vendor="tong2shot" version="1.1.1">
     <attributes>
         <attribute id="urlRegex"
-                   value="(http://(www\.)?nowvideo\.(eu|co|sx|ch)/video/.+)|(http://embed\.nowvideo\.(eu|co|sx|ch)/embed\.php\?v=[a-z0-9]+)"/>
-        <attribute id="minver" value="0.854"/>
+                   value="(http://(www\.)?nowvideo\.(eu|co|sx|ch)/(video/|player.php?v=).+)|(http://embed\.nowvideo\.(eu|co|sx|ch)/embed\.php\?v=[a-z0-9]+)"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="nowvideo.eu nowvideo.co nowvideo.sx"/>
+        <attribute id="services" value="nowvideo.eu .co .sx .ch"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

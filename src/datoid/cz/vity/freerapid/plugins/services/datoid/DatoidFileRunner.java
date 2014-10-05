@@ -33,7 +33,7 @@ class DatoidFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
-        Matcher match = PlugUtils.matcher("(?s)<h1>(.+?)</h1>", content);
+        Matcher match = PlugUtils.matcher("<h1>(?:\\s*?<[^>]+>)?\\s*?(.+?)\\s*?</h1>", content);
         if (!match.find())
             throw new PluginImplementationException("File name not found");
         httpFile.setFileName(match.group(1).trim());

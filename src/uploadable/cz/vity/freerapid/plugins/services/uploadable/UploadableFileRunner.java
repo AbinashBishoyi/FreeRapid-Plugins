@@ -22,6 +22,7 @@ class UploadableFileRunner extends AbstractRunner {
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
+        checkUrl();
         final GetMethod getMethod = getGetMethod(fileURL);//make first request
         if (makeRedirectedRequest(getMethod)) {
             checkProblems();
@@ -38,9 +39,14 @@ class UploadableFileRunner extends AbstractRunner {
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
+    private void checkUrl() {
+        fileURL = fileURL.replaceFirst("http://(www\\.)?uploadable\\.ch", "http://www.uploadable.ch");
+    }
+
     @Override
     public void run() throws Exception {
         super.run();
+        checkUrl();
         logger.info("Starting download in TASK " + fileURL);
         final GetMethod method = getGetMethod(fileURL); //create GET request
         if (makeRedirectedRequest(method)) { //we make the main request
@@ -74,7 +80,7 @@ class UploadableFileRunner extends AbstractRunner {
                 throw new YouHaveToWaitException("Please wait", getWaitTime());
 
             final HttpMethod httpMethod = getMethodBuilder(contentAsString)
-                    .setReferer(fileURL)
+                    .setReferer(fileURL).setBaseURL("http://www.uploadable.ch")
                     .setActionFromFormByName("regularForm", true)
                     .toPostMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {

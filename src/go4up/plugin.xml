@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.go4up.Go4upServiceImpl"
-        id="go4up.com" vendor="birchie" version="1.0.6">
+        id="go4up.com" vendor="birchie" version="1.0.7">
     <attributes>
         <attribute id="urlRegex" value="http://(www\.)?go4up\.com/((dl|rd)/|link\.php).+"/>
         <attribute id="minver" value="0.855"/>

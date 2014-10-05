@@ -79,7 +79,7 @@ class KeepLinksFileRunner extends AbstractRunner {
                 }
                 // check 4 & complete password
                 if (content.contains("Link password")) {
-                    final String password = getDialogSupport().askForPassword("KeepLinks.me");
+                    final String password = getDialogSupport().askForPassword("KeepLinks");
                     if (password == null) {
                         throw new PluginImplementationException("This file is secured with a password");
                     }
@@ -96,7 +96,7 @@ class KeepLinksFileRunner extends AbstractRunner {
             } else if (count >= MAX_CAPTCHA_ATTEMPTS) {
                 throw new PluginImplementationException("Excessive Incorrect Captcha Entries");
             } else {
-                throw new PluginImplementationException("Captcha Text Error : KeepLinks.me site changed : KeepLinks.me feature not supported yet");
+                throw new PluginImplementationException("Captcha Text Error : KeepLinks site changed : KeepLinks feature not supported yet");
             }
 
             final Matcher m = PlugUtils.matcher("<a href=\"([^\"]+)\"[^>]+?class=\"selecttext (live|direct)", getContentAsString());
@@ -172,7 +172,7 @@ class KeepLinksFileRunner extends AbstractRunner {
             }
             method.setParameter("norobot", captcha);
         } else {
-            throw new PluginImplementationException("Unknows captcha type");
+            throw new PluginImplementationException("Unknown captcha type");
         }
     }
 

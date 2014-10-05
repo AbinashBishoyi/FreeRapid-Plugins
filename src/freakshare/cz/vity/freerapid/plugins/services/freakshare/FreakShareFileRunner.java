@@ -52,30 +52,34 @@ class FreakShareFileRunner extends AbstractRunner {
         checkProblems();
         waitForTime();
 
-        final MethodBuilder methodBuilder = getMethodBuilder(contentAsString)
-                .setActionFromFormWhereActionContains(hostName + "/files", true);
-
-        //captcha
-        final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha\\.net/noscript\\?k=(.*?)\"");
-        if (reCaptchaKeyMatcher.find()) {
-            final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
-
-            logger.info("recaptcha public key : " + reCaptchaKey);
-
-            final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
-            final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
-            if (captcha == null) {
-                throw new CaptchaEntryInputMismatchException();
+        boolean captchaLoop;
+        do {
+            captchaLoop = false;
+            final MethodBuilder methodBuilder = getMethodBuilder(contentAsString)
+                    .setActionFromFormWhereActionContains(hostName + "/files", true);
+            //captcha
+            final Matcher reCaptchaKeyMatcher = getMatcherAgainstContent("recaptcha\\.net/noscript\\?k=(.*?)\"");
+            if (reCaptchaKeyMatcher.find()) {
+                final String reCaptchaKey = reCaptchaKeyMatcher.group(1);
+                logger.info("recaptcha public key : " + reCaptchaKey);
+                final ReCaptcha r = new ReCaptcha(reCaptchaKey, client);
+                final String captcha = getCaptchaSupport().getCaptcha(r.getImageURL());
+                if (captcha == null) {
+                    throw new CaptchaEntryInputMismatchException();
+                }
+                r.setRecognized(captcha);
+                r.modifyResponseMethod(methodBuilder);
             }
-            r.setRecognized(captcha);
-            r.modifyResponseMethod(methodBuilder);
-        }
-
-        httpMethod = methodBuilder.toHttpMethod();
-        if (!tryDownloadAndSaveFile(httpMethod)) {
-            checkProblems();
-            throw new ServiceConnectionProblemException("Error starting download");
-        }
+            httpMethod = methodBuilder.toPostMethod();
+            if (!tryDownloadAndSaveFile(httpMethod)) {
+                if (getContentAsString().contains("Wrong Captcha"))
+                    captchaLoop = true;
+                else {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
+            }
+        } while (captchaLoop);
     }
 
     private void waitForTime() throws Exception {

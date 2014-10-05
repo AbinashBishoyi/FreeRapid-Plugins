@@ -99,8 +99,10 @@ class Go4upFileRunner extends AbstractRunner {
                         listing.add(new URI(strNewUrl));
                     } else {
                         final Matcher match = PlugUtils.matcher("id=\"linklist\">\\s*?<center>\\s*?.+?<b><a href=\"(.+?)\">", getContentAsString());
-                        if (match.find())
-                            listing.add(new URI(match.group(1)));
+                        try {
+                            if (match.find())
+                                listing.add(new URI(match.group(1)));
+                        } catch (Exception ee) {/* ignore invalid links */}
                     }
                 }
             } catch (final URISyntaxException e) {

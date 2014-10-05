@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.keeplinks.KeepLinksServiceImpl"
-        id="keeplinks.me" vendor="birchie" version="1.0.1">
+        id="keeplinks.me" vendor="birchie" version="1.0.2">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?keeplinks\.me/(p|d)/.+"/>
-        <attribute id="minver" value="0.854"/>
+        <attribute id="urlRegex" value="https?://(www\.)?keeplinks\.(me|eu)/(p|d)/.+"/>
+        <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="keeplinks.me"/>
+        <attribute id="services" value="keeplinks.eu .me"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>

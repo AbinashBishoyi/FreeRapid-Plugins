@@ -55,6 +55,10 @@ class ZippyShareFileRunner extends AbstractRunner {
             }
             matcher = PlugUtils.matcher("<script[^<>]*?>([^<>]+?)</script>", matcher.group(1));
             if (matcher.find()) {
+                final Matcher buttonId = getMatcherAgainstContent("<a\\b[^<>]*?\\bid=\"([\\w\\-]+?)\"[^<>]*?>.*?alt=\"Download\"");
+                if (!buttonId.find()) {
+                    throw new PluginImplementationException("Download button ID not found");
+                }
                 final ScriptEngine engine = initScriptEngine();
                 try {
                     do {
@@ -65,7 +69,7 @@ class ZippyShareFileRunner extends AbstractRunner {
                         logger.info("Evaluating script:\n" + script);
                         engine.eval(script);
                     } while (matcher.find());
-                    url = engine.eval("document.getElementById('dlbutton').href").toString();
+                    url = engine.eval("document.getElementById('" + buttonId.group(1) + "').href").toString();
                 } catch (final Exception e) {
                     throw new PluginImplementationException("Script execution failed", e);
                 }

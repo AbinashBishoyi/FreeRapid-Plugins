@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.zippyshare.ZippyShareServiceImpl"
-        id="zippyshare.com" vendor="Vity+ntoskrnl+tonyk+CapCap" version="1.14.14">
+        id="zippyshare.com" vendor="Vity+ntoskrnl+tonyk+CapCap" version="1.14.15">
     <attributes>
         <attribute id="urlRegex" value="http://(www\d*\.)?zippyshare\.com/(v/|view\.jsp\?).+"/>
         <attribute id="minver" value="0.855"/>

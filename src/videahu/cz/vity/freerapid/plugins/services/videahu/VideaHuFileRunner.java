@@ -1,6 +1,7 @@
 package cz.vity.freerapid.plugins.services.videahu;
 
 import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
+import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
@@ -46,7 +47,12 @@ class VideaHuFileRunner extends AbstractRunner {
         if (makeRedirectedRequest(method)) {
             checkProblems();
             checkNameAndSize(getContentAsString());
-            final String videoId = PlugUtils.getStringBetween(getContentAsString(), "/flvplayer.swf?f=", "&");
+            final String videoId;
+            try {
+                videoId = PlugUtils.getStringBetween(getContentAsString(), "/flvplayer.swf?f=", "&");
+            } catch (PluginImplementationException e) {
+                throw new PluginImplementationException("Video ID not found");
+            }
             HttpMethod httpMethod = getMethodBuilder()
                     .setReferer(fileURL)
                     .setAction("http://videa.hu/flvplayer_get_video_xml.php")
@@ -56,7 +62,12 @@ class VideaHuFileRunner extends AbstractRunner {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-            final String videoUrl = PlugUtils.getStringBetween(getContentAsString(), "video_url=\"", "\"");
+            String videoUrl;
+            try {
+                videoUrl = PlugUtils.getStringBetween(getContentAsString(), "video_url=\"", "\"").replaceFirst("^//", "http://");
+            } catch (PluginImplementationException e) {
+                throw new PluginImplementationException("Video URL not found");
+            }
             httpMethod = getMethodBuilder().setReferer(fileURL).setAction(videoUrl).toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();

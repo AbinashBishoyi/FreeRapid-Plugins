@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 
 import java.util.List;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -46,5 +47,13 @@ class SkyVidsFileRunner extends XFilePlayerRunner {
             }
         });
         return fileSizeHandlers;
+    }
+
+    @Override
+    protected List<String> getDownloadLinkRegexes() {
+        final List<String> downloadLinkRegexes = super.getDownloadLinkRegexes();
+        downloadLinkRegexes.add("value=\"\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
+        downloadLinkRegexes.add("src\\s?=\\s?(?:\"|')(http.+?" + Pattern.quote(httpFile.getFileName()) + ")(?:\"|')");
+        return downloadLinkRegexes;
     }
 }

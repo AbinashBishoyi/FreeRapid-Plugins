@@ -10,6 +10,7 @@ import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
 import org.codehaus.jackson.JsonNode;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -97,7 +98,12 @@ class FlickrFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Connection Error");
         }
         checkProblems();
-        JsonNode mediaRootNode = mapper.getObjectMapper().readTree(getContentAsString());
+        JsonNode mediaRootNode;
+        try {
+            mediaRootNode = mapper.getObjectMapper().readTree(getContentAsString());
+        } catch (IOException e) {
+            throw new PluginImplementationException("Error getting media root node");
+        }
         FlickrMedia selectedMedia = getFlickrMedia(mediaType, mediaRootNode);
         logger.info("Selected media: " + selectedMedia);
 
@@ -125,10 +131,10 @@ class FlickrFileRunner extends AbstractRunner {
             JsonNode sizeNodes = mediaRootNode.get("sizes").get("size");
             for (JsonNode sizeNode : sizeNodes) {
                 MediaType _mediaType = (sizeNode.get("media").getTextValue().equals("photo") ? MediaType.PHOTO : MediaType.VIDEO);
-                if (_mediaType != mediaType) {
+                String label = sizeNode.get("label").getTextValue();
+                if ((_mediaType != mediaType) || ((_mediaType == MediaType.VIDEO) && label.contains("Video Player"))) { //skip video player
                     continue;
                 }
-                String label = sizeNode.get("label").getTextValue();
                 int quality = sizeNode.get("height").getValueAsInt();
                 String url = sizeNode.get("url").getTextValue();
                 String source = sizeNode.get("source").getTextValue();

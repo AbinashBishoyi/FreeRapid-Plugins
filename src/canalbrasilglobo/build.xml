@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="DivxStream.net" default="all" basedir=".">
-    <property name="application" value="divxstream"/>
+<project name="CanalBrasil.Globo.com" default="all" basedir=".">
+    <property name="application" value="canalbrasilglobo"/>
 
     <property name="version" value="1.0"/>
     <property name="version.name" value="${application}"/>
 
-    <property name="mainjar.file" value="divxstream.jar"/>
+    <property name="mainjar.file" value="canalbrasilglobo.jar"/>
 
     <!--<property name="mainjar-packed.file" value="${mainjar.file}.pack.gz"/>-->
 
@@ -75,10 +75,7 @@
     <target name="compile" depends="clean, init" description="compiling source codes">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="cp" optimize="on" target="1.6">
-            <sourcepath location="../recaptcha"/>
-            <sourcepath location="../solvemediacaptcha"/>
-            <sourcepath location="../xfilesharing/"/>
-            <sourcepath location="../xfileplayer/"/>
+
             <sourcepath location="../devapp"/>
         </javac>
         <!-- zkopirovani resourcu -->

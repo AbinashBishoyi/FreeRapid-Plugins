@@ -1,6 +1,6 @@
 package cz.vity.freerapid.plugins.services.divxstream;
 
-import cz.vity.freerapid.plugins.webclient.AbstractFileShareService;
+import cz.vity.freerapid.plugins.services.xfileplayer.XFilePlayerServiceImpl;
 import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
 
 /**
@@ -8,7 +8,7 @@ import cz.vity.freerapid.plugins.webclient.interfaces.PluginRunner;
  *
  * @author birchie
  */
-public class DivxStreamServiceImpl extends AbstractFileShareService {
+public class DivxStreamServiceImpl extends XFilePlayerServiceImpl {
 
     @Override
     public String getName() {
@@ -16,8 +16,8 @@ public class DivxStreamServiceImpl extends AbstractFileShareService {
     }
 
     @Override
-    public boolean supportsRunCheck() {
-        return true;
+    public String getServiceTitle() {
+        return "DivxStream";
     }
 
     @Override

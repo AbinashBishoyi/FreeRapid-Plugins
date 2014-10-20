@@ -93,7 +93,7 @@ class YunFileFileRunner extends AbstractRunner {
                 if (getContentAsString().contains("vcode")) {
                     final String captcha;
                     final String captchaUrl;
-                    matcher = PlugUtils.matcher("(?!.*?')<img [^<>]*?src=\"(/verifyimg/getPcv/[^\"]+?)\"", getContentAsString());
+                    matcher = PlugUtils.matcher("$(?!.*?(?:'|//))\\s*?<img [^<>]*?src=\"(/verifyimg/getPcv/[^\"]+?)\"", getContentAsString());
                     if (!matcher.find()) {
                         throw new PluginImplementationException("Captcha URL not found");
                     }

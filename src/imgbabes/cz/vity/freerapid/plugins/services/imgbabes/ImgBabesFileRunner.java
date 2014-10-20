@@ -4,6 +4,7 @@ import cz.vity.freerapid.plugins.exceptions.ErrorDuringDownloadingException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.util.logging.Logger;
@@ -25,7 +26,7 @@ class ImgBabesFileRunner extends AbstractRunner {
             checkProblems();//check problems
             final String imgUrl = getMethodBuilder().setReferer(fileURL)
                     .setActionFromImgSrcWhereTagContains("this_image").getEscapedURI();
-            httpFile.setFileName(imgUrl.substring(1 + imgUrl.lastIndexOf("/")));
+            httpFile.setFileName(PlugUtils.suggestFilename(imgUrl));
             if (!tryDownloadAndSaveFile(getGetMethod(imgUrl))) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

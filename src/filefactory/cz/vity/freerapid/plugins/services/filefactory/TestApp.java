@@ -18,6 +18,7 @@ public class TestApp extends PluginDevApplication {
             //we set file URL
             //httpFile.setNewURL(new URL("http://www.filefactory.com/file/4gtrcz9lu891/"));
             httpFile.setNewURL(new URL("http://www.filefactory.com/file/4xgf2a4s277d"));
+            //httpFile.setNewURL(new URL("http://www.filefactory.com/stream/2wrrb67r7rqh"));
             //httpFile.setNewURL(new URL("http://www.filefactory.com/file/5zi28vrfqgan"));    // password protected
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection

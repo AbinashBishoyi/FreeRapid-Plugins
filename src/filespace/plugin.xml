@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
 <plugin class="cz.vity.freerapid.plugins.services.filespace.FileSpaceServiceImpl"
-        id="filespace.com" vendor="birchie" version="1.0.1">
+        id="filespace.com" vendor="birchie" version="1.0.2">
     <attributes>
-        <attribute id="urlRegex" value="http://(www\.)?(filespace|spaceforfiles)\.com/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?(filespace|spaceforfiles)\.com/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
         <attribute id="services" value="filespace.com spaceforfiles.com"/>

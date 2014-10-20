@@ -15,7 +15,7 @@ public class Nova_NovaPlusServiceImpl extends AbstractFileShareService {
 
     @Override
     public String getName() {
-        return "nova_novaplus.cz";
+        return "nova.cz_novaplus";
     }
 
     @Override

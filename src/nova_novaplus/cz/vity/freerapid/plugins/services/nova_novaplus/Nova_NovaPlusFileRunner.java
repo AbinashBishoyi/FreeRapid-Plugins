@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
  */
 class Nova_NovaPlusFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(Nova_NovaPlusFileRunner.class.getName());
-    private final static String PASSWORD = "EaDUutg4ppGYXwNMFdRJsadenFSnI6gJ";
     private final static String TIME_SERVICE_URL = "http://tn.nova.cz/lbin/time.php";
     private SettingsConfig config;
 
@@ -67,8 +66,8 @@ class Nova_NovaPlusFileRunner extends AbstractRtmpRunner {
             if (!matcher.find()) {
                 throw new PluginImplementationException("Config URL not found");
             }
-            String configPage = matcher.group(1);
-            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(configPage).toGetMethod();
+            String configUrl = matcher.group(1);
+            HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(configUrl).toGetMethod();
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
@@ -81,8 +80,8 @@ class Nova_NovaPlusFileRunner extends AbstractRtmpRunner {
             } catch (PluginImplementationException e) {
                 throw new PluginImplementationException("Base64 config not found");
             }
-            String configDecrypted = new Crypto().decrypt(base64Config, PASSWORD);
-            String mediaListContent = getMediaListContent(getTimeString(), configDecrypted);
+            String configDecrypted = new Crypto().decrypt(base64Config);
+            String mediaListContent = getMediaListContent(configDecrypted);
             setConfig();
             Nova_NovaPlusVideo selectedVideo = getSelectedVideo(mediaListContent);
             RtmpSession rtmpSession = new RtmpSession(selectedVideo.baseUrl, selectedVideo.url);
@@ -110,7 +109,8 @@ class Nova_NovaPlusFileRunner extends AbstractRtmpRunner {
         return getContentAsString().substring(0, 14);
     }
 
-    private String getMediaListContent(String timeStr, String configDecrypted) throws Exception {
+    private String getMediaListContent(String configDecrypted) throws Exception {
+        String timeStr = getTimeString();
         String mediaId;
         String resolverContent;
         String serviceUrl;
@@ -145,18 +145,27 @@ class Nova_NovaPlusFileRunner extends AbstractRtmpRunner {
 
     private Nova_NovaPlusVideo getSelectedVideo(String content) throws PluginImplementationException {
         List<Nova_NovaPlusVideo> videoList = new ArrayList<Nova_NovaPlusVideo>();
-        String baseUrl = PlugUtils.getStringBetween(content, "<baseUrl>", "</baseUrl>");
+        String baseUrl = PlugUtils.getStringBetween(content, "<baseUrl>", "</baseUrl>").replace("<![CDATA[", "").replace("]]>", "");
         Matcher mediaMatcher = PlugUtils.matcher("(?s)<media>(.+?)</media>", content);
         logger.info("Available videos :");
         while (mediaMatcher.find()) {
-            Matcher qualityMatcher = PlugUtils.matcher("(?s)<quality>(.+?)</quality>", mediaMatcher.group(1));
-            Matcher urlMatcher = PlugUtils.matcher("(?s)<url>(.+?)</url>", mediaMatcher.group(1));
+            String mediaContent = mediaMatcher.group(1);
+            Matcher qualityMatcher = PlugUtils.matcher("(?s)<quality>(.+?)</quality>", mediaContent);
+            Matcher urlMatcher = PlugUtils.matcher("(?s)<url>(.+?)</url>", mediaContent);
             if (!qualityMatcher.find() || !urlMatcher.find()) {
                 throw new PluginImplementationException("Error parsing media");
             }
-            String quality = qualityMatcher.group(1);
-            String url = urlMatcher.group(1);
-            Nova_NovaPlusVideo novaPlusVideo = new Nova_NovaPlusVideo(quality.contains("hq") ? VideoQuality.HQ : VideoQuality.LQ, baseUrl, url);
+            String quality = qualityMatcher.group(1).replace("<![CDATA[", "").replace("]]>", "");
+            String url = urlMatcher.group(1).replace("<![CDATA[", "").replace("]]>", "");
+            VideoQuality videoQuality;
+            if (quality.contains("hd")) {
+                videoQuality = VideoQuality.HD;
+            } else if (quality.contains("hq")) {
+                videoQuality = VideoQuality.HQ;
+            } else {
+                videoQuality = VideoQuality.LQ;
+            }
+            Nova_NovaPlusVideo novaPlusVideo = new Nova_NovaPlusVideo(videoQuality, baseUrl, url);
             logger.info(novaPlusVideo.toString());
             videoList.add(novaPlusVideo);
         }

@@ -16,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://novaplus.nova.cz/porad/comeback/video/2517-comeback-34-dil-zlata-ledvina"));
-            httpFile.setNewURL(new URL("http://novaplus.nova.cz/porad/velka-kucharka-ladi-hrusky/video/1976-levne-a-chutne-domaci-malinovka"));
+            //httpFile.setNewURL(new URL("http://novaplus.nova.cz/porad/velka-kucharka-ladi-hrusky/video/1976-levne-a-chutne-domaci-malinovka"));
+            httpFile.setNewURL(new URL("http://novaplus.nova.cz/porad/televizni-noviny/video/2711-televizni-noviny-30-9-2014"));
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final Nova_NovaPlusServiceImpl service = new Nova_NovaPlusServiceImpl();

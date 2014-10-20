@@ -5,7 +5,7 @@ package cz.vity.freerapid.plugins.services.nova_novaplus;
  */
 
 public class SettingsConfig {
-    private VideoQuality videoQuality = VideoQuality.HQ;
+    private VideoQuality videoQuality = VideoQuality.HD;
 
     public VideoQuality getVideoQuality() {
         return videoQuality;

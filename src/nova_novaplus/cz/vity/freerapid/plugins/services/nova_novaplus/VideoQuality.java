@@ -8,12 +8,16 @@ import java.util.Collections;
  */
 
 enum VideoQuality {
-    LQ(240), HQ(720);
+    LQ(240, "Low Quality"),
+    HQ(480, "High Quality"),
+    HD(720, "High Definition");
 
     private final int quality;
+    private final String name;
 
-    VideoQuality(int quality) {
+    VideoQuality(int quality, String name) {
         this.quality = quality;
+        this.name = name;
     }
 
     public int getQuality() {
@@ -22,13 +26,7 @@ enum VideoQuality {
 
     @Override
     public String toString() {
-        switch (this) {
-            case LQ:
-                return "Low Quality";
-            case HQ:
-                return "High Quality";
-        }
-        return null;
+        return name;
     }
 
     public static VideoQuality[] getItems() {

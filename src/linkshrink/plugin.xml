@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
-<plugin class="cz.vity.freerapid.plugins.services.solidfiles.SolidFilesServiceImpl"
-        id="solidfiles.com" vendor="birchie" version="1.0.6">
+<plugin class="cz.vity.freerapid.plugins.services.linkshrink.LinkShrinkServiceImpl"
+        id="linkshrink.net" vendor="birchie" version="1.0.0">
     <attributes>
-        <attribute id="urlRegex" value="https?://(www\.)?solidfiles\.(com|net)/.+"/>
+        <attribute id="urlRegex" value="https?://(www\.)?linkshrink\.net/.+"/>
         <attribute id="minver" value="0.855"/>
         <attribute id="maxver" value="0.899"/>
-        <attribute id="services" value="solidfiles.com solidfiles.net"/>
+        <attribute id="services" value="linkshrink.net"/>
         <attribute id="maxDownloads" value="10"/>
         <attribute id="faviconImage" value="resources/favicon.png"/>
     </attributes>
 
     <runtime>
-        <library id="solidfiles.com" path="/" type="code"/>
+        <library id="linkshrink.net" path="/" type="code"/>
     </runtime>
 </plugin>

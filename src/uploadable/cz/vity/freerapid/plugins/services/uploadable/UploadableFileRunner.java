@@ -18,13 +18,26 @@ import java.util.logging.Logger;
  */
 class UploadableFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(UploadableFileRunner.class.getName());
+    private final static String BaseURL = "http://www.uploadable.ch";
 
     @Override
     public void runCheck() throws Exception { //this method validates file
         super.runCheck();
         checkUrl();
-        final GetMethod getMethod = getGetMethod(fileURL);//make first request
-        if (makeRedirectedRequest(getMethod)) {
+        GetMethod getMethod = getGetMethod(fileURL);//make first request
+        int status = client.makeRequest(getMethod,  false);
+        if (status/100 == 3) {
+            String redirect = getMethod.getResponseHeader("Location").getValue();
+            if (!redirect.contains("http"))
+                redirect = BaseURL + redirect;
+            fileURL = redirect;
+            status = client.makeRequest(getGetMethod(redirect), true);
+            if (status != 200) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+        }
+        if (status == 200) {
             checkProblems();
             checkNameAndSize(getContentAsString());//ok let's extract file name and size from the page
         } else {
@@ -40,16 +53,27 @@ class UploadableFileRunner extends AbstractRunner {
     }
 
     private void checkUrl() {
-        fileURL = fileURL.replaceFirst("http://(www\\.)?uploadable\\.ch", "http://www.uploadable.ch");
+        fileURL = fileURL.replaceFirst("http://(www\\.)?uploadable\\.ch", BaseURL);
     }
 
     @Override
     public void run() throws Exception {
         super.run();
         checkUrl();
-        logger.info("Starting download in TASK " + fileURL);
-        final GetMethod method = getGetMethod(fileURL); //create GET request
-        if (makeRedirectedRequest(method)) { //we make the main request
+        logger.info("Starting download in TASK " + fileURL);GetMethod getMethod = getGetMethod(fileURL);//make first request
+        int status = client.makeRequest(getMethod,  false);
+        if (status/100 == 3) {
+            String redirect = getMethod.getResponseHeader("Location").getValue();
+            if (!redirect.contains("http"))
+                redirect = BaseURL + redirect;
+            fileURL = redirect;
+            status = client.makeRequest(getGetMethod(redirect), true);
+            if (status != 200) {
+                checkProblems();
+                throw new ServiceConnectionProblemException();
+            }
+        }
+        if (status == 200) {
             final String contentAsString = getContentAsString();//check for response
             checkProblems();//check problems
             checkNameAndSize(contentAsString);//extract file name and size from the page
@@ -63,7 +87,7 @@ class UploadableFileRunner extends AbstractRunner {
             if (response.equals("showCaptcha")) {
                 do {
                     final HttpMethod captchaMethod = doCaptcha(getMethodBuilder()
-                            .setReferer(fileURL).setAction("http://www.uploadable.ch/checkReCaptcha.php")
+                            .setReferer(fileURL).setAction(BaseURL + "/checkReCaptcha.php")
                             .setAjax().setParameter("recaptcha_shortencode_field", PlugUtils.getStringBetween(contentAsString, "recaptcha_shortencode_field\" value=\"", "\"")
                             ), contentAsString).toPostMethod();
                     if (!makeRedirectedRequest(captchaMethod)) {
@@ -80,7 +104,7 @@ class UploadableFileRunner extends AbstractRunner {
                 throw new YouHaveToWaitException("Please wait", getWaitTime());
 
             final HttpMethod httpMethod = getMethodBuilder(contentAsString)
-                    .setReferer(fileURL).setBaseURL("http://www.uploadable.ch")
+                    .setReferer(fileURL).setBaseURL(BaseURL)
                     .setActionFromFormByName("regularForm", true)
                     .toPostMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {

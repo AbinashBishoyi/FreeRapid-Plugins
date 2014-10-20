@@ -1,4 +1,4 @@
-package cz.vity.freerapid.plugins.services.uploadable;
+package cz.vity.freerapid.plugins.services.fileshow;
 
 import cz.vity.freerapid.plugins.dev.PluginDevApplication;
 import cz.vity.freerapid.plugins.webclient.ConnectionSettings;
@@ -16,14 +16,18 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile(); //creates new test instance of HttpFile
         try {
             //we set file URL
-            //httpFile.setNewURL(new URL("http://www.uploadable.ch/file/VYSAKm6ZrU3n"));
-            //httpFile.setNewURL(new URL("http://uploadable.ch/file/pUJpZT98xDbk"));
-            httpFile.setNewURL(new URL("http://www.uploadable.ch/file/RwbSACmenFqw/DVDisoarearaw.comm_iyuki_VOL.02.part09.rar"));
+            httpFile.setNewURL(new URL("http://fileshow.tv/sl/Manhattan_S01E09_HDTV_x264_LOL.mp4"));
             //the way we connect to the internet
             final ConnectionSettings connectionSettings = new ConnectionSettings();// creates default connection
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
-            //then we tries to download
-            final UploadableServiceImpl service = new UploadableServiceImpl(); //instance of service - of our plugin
+            final FileShowServiceImpl service = new FileShowServiceImpl(); //instance of service - of our plugin
+            /*
+            //we set premium account details
+            final PremiumAccount config = new PremiumAccount();
+            config.setUsername("****");
+            config.setPassword("****");
+            service.setConfig(config);
+            //*/
             //runcheck makes the validation
             testRun(service, httpFile, connectionSettings);//download file with service and its Runner
             //all output goes to the console

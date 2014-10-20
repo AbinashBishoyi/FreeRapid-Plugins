@@ -10,6 +10,7 @@ import cz.vity.freerapid.plugins.services.rtmp.SwfVerificationHelper;
 import cz.vity.freerapid.plugins.services.tor.TorProxyClient;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
+import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -23,12 +24,19 @@ import java.util.regex.Matcher;
  * Class which contains main code
  *
  * @author ntoskrnl
+ * @author tong2shot (subtitle)
  */
 class ItvFileRunner extends AbstractRtmpRunner {
     private final static Logger logger = Logger.getLogger(ItvFileRunner.class.getName());
 
     private final static String SWF_URL = "https://www.itv.com/mediaplayer/ITVMediaPlayer.swf";
     private final static SwfVerificationHelper helper = new SwfVerificationHelper(SWF_URL);
+    private SettingsConfig config;
+
+    private void setConfig() throws Exception {
+        final ItvServiceImpl service = (ItvServiceImpl) getPluginService();
+        config = service.getConfig();
+    }
 
     @Override
     public void runCheck() throws Exception {
@@ -77,6 +85,8 @@ class ItvFileRunner extends AbstractRtmpRunner {
                 throw new ServiceConnectionProblemException();
             }
             checkProblems();
+            setConfig();
+            logger.info("Config settings: " + config);
             final RtmpSession rtmpSession = getRtmpSession();
             tryDownloadAndSaveFile(rtmpSession);
         } else {
@@ -101,6 +111,21 @@ class ItvFileRunner extends AbstractRtmpRunner {
             throw new PluginImplementationException("'Video' tag not found in playlist");
         }
         final String video = matcher.group(1);
+
+        if (config.isDownloadSubtitles()) {
+            matcher = PlugUtils.matcher("<URL>(?:<!\\[CDATA\\[)?(http://subtitles\\.[^\\]<>]+?)(?:\\]\\]>)?</URL>", video);
+            if (matcher.find()) {
+                String subtitleUrl = matcher.group(1);
+                try {
+                    new SubtitleDownloader().downloadSubtitle(client, httpFile, subtitleUrl);
+                } catch (Exception e) {
+                    LogUtils.processException(logger, e);
+                }
+            } else {
+                logger.warning("Subtitle not found");
+            }
+        }
+
         matcher = PlugUtils.matcher("(?s)<MediaFiles base=\"(rtmp.+?)\"", video);
         if (!matcher.find()) {
             throw new PluginImplementationException("URL not found in playlist");

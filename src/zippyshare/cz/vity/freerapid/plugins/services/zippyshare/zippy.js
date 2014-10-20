@@ -4,15 +4,9 @@ document = {
     getElementById: function (id) {
         var element = this.elements[id];
         if (element === undefined) {
-            element = {
-                addEventListener: function (s, f) {
-                    f();
-                }
-            };
+            element = {};
             this.elements[id] = element;
         }
         return element;
     }
 };
-
-window = {};

@@ -121,7 +121,7 @@ class BitShareFileRunner extends AbstractRunner {
                     .setAction(getContentAsString().substring("SUCCESS#".length()))
                     .setReferer(fileURL).toGetMethod();
 
-            //here is the download link extraction
+            setFileStreamContentTypes("text/plain");
             if (!tryDownloadAndSaveFile(getMethodForDownload)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//set unknown problem

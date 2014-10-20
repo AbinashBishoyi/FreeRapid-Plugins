@@ -115,6 +115,9 @@ class RapiduFileRunner extends AbstractRunner {
         if (contentAsString.contains("Trwają prace techniczne")) {
             throw new NotRecoverableDownloadException("Technical work on the target server underway");
         }
+        if (contentAsString.contains("h2>To gain access to any files")) {
+            throw new NotRecoverableDownloadException("Premium account needed - " + PlugUtils.getStringBetween(contentAsString, "<h1>", "</h1>"));
+        }
     }
 
     public MethodBuilder doCaptcha(final MethodBuilder methodBuilder) throws Exception {

@@ -62,8 +62,7 @@ class NitroFlare_PremiumFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize(getContentAsString());
             fileURL = method.getURI().toString(); //http redirected to https
-
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("download").toGetMethod();
+            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setActionFromAHrefWhereATagContains("Click here to download").toGetMethod();
             if (!tryDownloadAndSaveFile(httpMethod)) {
                 checkProblems();//if downloading failed
                 throw new ServiceConnectionProblemException("Error starting download");//some unknown problem

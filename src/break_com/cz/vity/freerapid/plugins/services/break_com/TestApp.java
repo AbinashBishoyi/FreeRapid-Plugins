@@ -16,7 +16,8 @@ public class TestApp extends PluginDevApplication {
         final HttpFile httpFile = getHttpFile();
         try {
             //httpFile.setNewURL(new URL("http://www.break.com/video/perth-live-newscast-ruined-by-drive-by-videobomb-2763863"));
-            httpFile.setNewURL(new URL("http://www.break.com/video/prank-exposes-hot-chick-as-a-despicable-gold-digger-2776363"));
+            //httpFile.setNewURL(new URL("http://www.break.com/video/prank-exposes-hot-chick-as-a-despicable-gold-digger-2776363"));
+            httpFile.setNewURL(new URL("http://www.break.com/video/thorne-travel-advert-2014-2776097")); //youtube embedded
             final ConnectionSettings connectionSettings = new ConnectionSettings();
             //connectionSettings.setProxy("localhost", 8081); //eg we can use local proxy to sniff HTTP communication
             final Break_comServiceImpl service = new Break_comServiceImpl();

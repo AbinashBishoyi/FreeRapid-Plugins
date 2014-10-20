@@ -5,6 +5,7 @@ import cz.vity.freerapid.plugins.exceptions.PluginImplementationException;
 import cz.vity.freerapid.plugins.exceptions.ServiceConnectionProblemException;
 import cz.vity.freerapid.plugins.exceptions.URLNotAvailableAnymoreException;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
+import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
@@ -13,6 +14,7 @@ import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.codehaus.jackson.JsonNode;
 
+import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,7 +56,7 @@ class Break_comFileRunner extends AbstractRunner {
         if (filename == null) {
             throw new PluginImplementationException("File name not found");
         }
-        httpFile.setFileName(filename + ".mp4");
+        httpFile.setFileName(filename.trim() + ".mp4");
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -69,14 +71,23 @@ class Break_comFileRunner extends AbstractRunner {
             JsonNode embedVarsRootNode = getEmbedVarsRootNode(getEmbedContent(fileURL));
             checkNameAndSize(embedVarsRootNode);
 
-            setConfig();
-            Break_comVideo selectedVideo = getSelectedVideo(embedVarsRootNode);
-            logger.info("Config settings : " + config);
-            logger.info("Selected video  : " + selectedVideo);
-            final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(selectedVideo.url).toHttpMethod();
-            if (!tryDownloadAndSaveFile(httpMethod)) {
-                checkProblems();
-                throw new ServiceConnectionProblemException("Error starting download");
+            String youtubeId = embedVarsRootNode.get("youtubeId").getTextValue();
+            if (youtubeId != null) {
+                String youtubeUrl = "https://www.youtube.com/watch?v=" + youtubeId;
+                logger.info("YouTube URL: " + youtubeUrl);
+                httpFile.setNewURL(new URL(youtubeUrl));
+                httpFile.setPluginID("");
+                httpFile.setState(DownloadState.QUEUED);
+            } else {
+                setConfig();
+                Break_comVideo selectedVideo = getSelectedVideo(embedVarsRootNode);
+                logger.info("Config settings : " + config);
+                logger.info("Selected video  : " + selectedVideo);
+                final HttpMethod httpMethod = getMethodBuilder().setReferer(fileURL).setAction(selectedVideo.url).toHttpMethod();
+                if (!tryDownloadAndSaveFile(httpMethod)) {
+                    checkProblems();
+                    throw new ServiceConnectionProblemException("Error starting download");
+                }
             }
         } else {
             isAtHomepage(method);
@@ -106,14 +117,14 @@ class Break_comFileRunner extends AbstractRunner {
     private String getEmbedContent(String fileUrl) throws Exception {
         if (!makeRedirectedRequest(getGetMethod("http://www.break.com/embed/" + getVideoId(fileUrl)))) {
             checkProblems();
-            throw new ServiceConnectionProblemException();
+            throw new ServiceConnectionProblemException("Error requesting embed format");
         }
         checkProblems();
         return getContentAsString();
     }
 
     private JsonNode getEmbedVarsRootNode(String content) throws PluginImplementationException {
-        Matcher matcher = PlugUtils.matcher("(?s)<script>\\s*?var embedVars\\s*?=\\s*?(\\{\\s*?[^<>]+?\\})\\s*?</script>", content);
+        Matcher matcher = PlugUtils.matcher("(?s)<script>\\s*?var embedVars\\s*?=\\s*?(\\{\\s*?.+?\\})\\s*?</script>", content);
         if (!matcher.find()) {
             throw new PluginImplementationException("Error getting 'embedVars' content");
         }
@@ -128,9 +139,9 @@ class Break_comFileRunner extends AbstractRunner {
     }
 
     private Break_comVideo getSelectedVideo(JsonNode rootNode) throws PluginImplementationException {
-        String authTokenNode = rootNode.findPath("AuthToken").getTextValue();
-        if (authTokenNode == null) {
-            throw new PluginImplementationException("Error getting 'AuthToken' node");
+        String authToken = rootNode.findPath("AuthToken").getTextValue();
+        if (authToken == null) {
+            throw new PluginImplementationException("Error getting auth token");
         }
         JsonNode mediaNodes = rootNode.get("media");
         if (mediaNodes == null) {
@@ -144,7 +155,7 @@ class Break_comFileRunner extends AbstractRunner {
             String url;
             try {
                 quality = mediaNode.get("height").getIntValue();
-                url = mediaNode.get("uri").getTextValue() + "?" + authTokenNode;
+                url = mediaNode.get("uri").getTextValue() + "?" + authToken;
             } catch (Exception e) {
                 throw new PluginImplementationException("Error parsing 'media' nodes");
             }

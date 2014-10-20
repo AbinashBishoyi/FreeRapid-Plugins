@@ -46,7 +46,7 @@ class ZippyShareFileRunner extends AbstractRunner {
             checkProblems();
             checkNameAndSize();
             final String url;
-            Matcher matcher = getMatcherAgainstContent("document\\.getElementById\\([^\\(\\)]*?\\)\\.href[^<>]+=([^<>]+?/[^<>]+?\";)");
+            Matcher matcher = getMatcherAgainstContent("(\"\\d+/\"[^<>]+?/[^<>]+?\";)");
             if (matcher.find()) {
                 final String script = matcher.group(1);
                 logger.info("Evaluating script:\n" + script);
@@ -99,7 +99,7 @@ class ZippyShareFileRunner extends AbstractRunner {
     }
 
     private void checkNameAndSize() throws Exception {
-        Matcher matcher = getMatcherAgainstContent("document\\.getElementById\\([^\\(\\)]*?\\)\\.href[^<>]+/([^<>]+?)\";");
+        Matcher matcher = getMatcherAgainstContent("\"\\d+/\"[^<>]+?/([^<>]+?)\";");
         if (matcher.find()) {
             httpFile.setFileName(URLDecoder.decode(matcher.group(1), "UTF-8"));
         } else {

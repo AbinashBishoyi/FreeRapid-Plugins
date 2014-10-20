@@ -4,12 +4,16 @@ import cz.vity.freerapid.plugins.exceptions.*;
 import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadClientConsts;
 import cz.vity.freerapid.plugins.webclient.MethodBuilder;
+import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import cz.vity.freerapid.utilities.LogUtils;
 import org.apache.commons.httpclient.HttpMethod;
+import org.codehaus.jackson.JsonNode;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -24,14 +28,16 @@ import java.util.regex.Matcher;
  */
 class FlickrFileRunner extends AbstractRunner {
     private final static Logger logger = Logger.getLogger(FlickrFileRunner.class.getName());
-    public static final String API_KEY = "f2949bc8f2e7d566279784478033e72a";
-    public static final String METHOD_PHOTOS_GET_SIZES = "flickr.photos.getSizes";
-    public static final String METHOD_PHOTOS_GET_INFO = "flickr.photos.getInfo";
-    public static final String METHOD_PHOTOSETS_GET_PHOTOS = "flickr.photosets.getPhotos";
-    public static final String METHOD_GALLERIES_GET_PHOTOS = "flickr.galleries.getPhotos";
-    public static final String METHOD_URLS_LOOKUP_GALLERY = "flickr.urls.lookupGallery";
-    public static final String METHOD_URLS_LOOKUP_USER = "flickr.urls.lookupUser";
-    public static final String METHOD_FAVORITES_GET_PUBLIC_LIST = "flickr.favorites.getPublicList";
+    private final static String API_KEY = "f2949bc8f2e7d566279784478033e72a";
+    private final static String METHOD_PHOTOS_GET_SIZES = "flickr.photos.getSizes";
+    private final static String METHOD_PHOTOS_GET_INFO = "flickr.photos.getInfo";
+    private final static String METHOD_PHOTOSETS_GET_PHOTOS = "flickr.photosets.getPhotos";
+    private final static String METHOD_GALLERIES_GET_PHOTOS = "flickr.galleries.getPhotos";
+    private final static String METHOD_URLS_LOOKUP_GALLERY = "flickr.urls.lookupGallery";
+    private final static String METHOD_URLS_LOOKUP_USER = "flickr.urls.lookupUser";
+    private final static String METHOD_FAVORITES_GET_PUBLIC_LIST = "flickr.favorites.getPublicList";
+
+    private static enum MediaType {PHOTO, VIDEO}
 
     @Override
     public void run() throws Exception {
@@ -61,11 +67,25 @@ class FlickrFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException();
         }
         checkProblems();
-        String title = PlugUtils.unescapeUnicode(PlugUtils.getStringBetween(getContentAsString(), "\"title\":{\"_content\":\"", "\""));
-        final String media = PlugUtils.getStringBetween(getContentAsString(), "\"media\":\"", "\"");
+
+        //Title/filename sometimes contains double-quote sign, which is tricky to parse,
+        //so JsonMapper is used to parse title/filename.
+        JsonMapper mapper = new JsonMapper();
+        JsonNode mediaInfoRootNode;
+        try {
+            mediaInfoRootNode = mapper.getObjectMapper().readTree(getContentAsString());
+        } catch (Exception e) {
+            throw new PluginImplementationException("Error getting media info root node");
+        }
+        String title = PlugUtils.unescapeUnicode(mediaInfoRootNode.findPath("title").findPath("_content").getTextValue());
+        final String media = mediaInfoRootNode.findPath("media").getTextValue();
+        if ((title == null) || (media == null)) {
+            throw new PluginImplementationException("Error parsing media info JSON content");
+        }
         if (title.length() > 200) {
             title = title.substring(0, 199);
         }
+        MediaType mediaType = (media.equals("photo") ? MediaType.PHOTO : MediaType.VIDEO);
 
         //Step #2 Get the best quality content
         //reference : http://www.flickr.com/services/api/flickr.photos.getSizes.html
@@ -77,21 +97,16 @@ class FlickrFileRunner extends AbstractRunner {
             throw new ServiceConnectionProblemException("Connection Error");
         }
         checkProblems();
-        final Matcher matcher = getMatcherAgainstContent("\"source\":\"(.+?)\", ?\"url\":\"(.+?)\"");
-        String source = null;
-        String url = null;
-        //the best quality is the last one
-        while (matcher.find()) {
-            source = matcher.group(1).replace("\\/", "/");
-            url = matcher.group(2).replace("\\/", "/");
-        }
-        if (source == null) {
-            throw new PluginImplementationException("Unable to find download url");
-        }
-        final String fileExtension = media.equals("video") ? ".mp4" : source.substring(source.lastIndexOf("."));
+        JsonNode mediaRootNode = mapper.getObjectMapper().readTree(getContentAsString());
+        FlickrMedia selectedMedia = getFlickrMedia(mediaType, mediaRootNode);
+        logger.info("Selected media: " + selectedMedia);
+
+        //Step #3 Download the media
+        String source = selectedMedia.source;
+        final String fileExtension = (mediaType == MediaType.VIDEO ? ".mp4" : source.substring(source.lastIndexOf(".")));
         httpFile.setFileName(title + fileExtension);
         method = getMethodBuilder()
-                .setReferer(url)
+                .setReferer(selectedMedia.url)
                 .setAction(source)
                 .toGetMethod();
         setClientParameter(DownloadClientConsts.DONT_USE_HEADER_FILENAME, true);
@@ -102,6 +117,32 @@ class FlickrFileRunner extends AbstractRunner {
             }
             throw new ServiceConnectionProblemException("Error starting download");
         }
+    }
+
+    private FlickrMedia getFlickrMedia(MediaType mediaType, JsonNode mediaRootNode) throws PluginImplementationException {
+        List<FlickrMedia> flickrMediaList = new ArrayList<FlickrMedia>();
+        try {
+            JsonNode sizeNodes = mediaRootNode.get("sizes").get("size");
+            for (JsonNode sizeNode : sizeNodes) {
+                MediaType _mediaType = (sizeNode.get("media").getTextValue().equals("photo") ? MediaType.PHOTO : MediaType.VIDEO);
+                if (_mediaType != mediaType) {
+                    continue;
+                }
+                String label = sizeNode.get("label").getTextValue();
+                int quality = sizeNode.get("height").getValueAsInt();
+                String url = sizeNode.get("url").getTextValue();
+                String source = sizeNode.get("source").getTextValue();
+                FlickrMedia flickrMedia = new FlickrMedia(_mediaType, label, quality, url, source);
+                flickrMediaList.add(flickrMedia);
+                logger.info("Found: " + flickrMedia);
+            }
+        } catch (Exception e) {
+            throw new PluginImplementationException("Error parsing media JSON content");
+        }
+        if (flickrMediaList.isEmpty()) {
+            throw new PluginImplementationException("No media found");
+        }
+        return Collections.max(flickrMediaList);
     }
 
     private MethodBuilder getFlickrMethodBuilder(final String method) throws BuildMethodException {
@@ -251,6 +292,57 @@ class FlickrFileRunner extends AbstractRunner {
         }
         if (contentAsString.contains("Invalid gallery ID")) {
             throw new PluginImplementationException("Invalid gallery ID");
+        }
+    }
+
+    private class FlickrMedia implements Comparable<FlickrMedia> {
+        final MediaType mediaType;
+        final String label;
+        final int quality;
+        final String url;
+        final String source;
+        final int weight;
+
+        FlickrMedia(MediaType mediaType, String label, int quality, String url, String source) {
+            this.mediaType = mediaType;
+            this.label = label;
+            this.quality = quality;
+            this.url = url;
+            this.source = source;
+            this.weight = calcWeight();
+        }
+
+        private int calcWeight() {
+            if (mediaType == MediaType.PHOTO) {
+                return quality;
+            } else { //video
+                int weight = quality;
+                //"Video Player"
+                //"Site MP4"
+                //"Mobile MP4"
+                if (label.contains("Site MP4")) { //prefer "Site MP4"
+                    weight += 10;
+                }
+                return weight;
+            }
+        }
+
+        @SuppressWarnings("NullableProblems")
+        @Override
+        public int compareTo(FlickrMedia that) {
+            return Integer.valueOf(this.weight).compareTo(that.weight);
+        }
+
+        @Override
+        public String toString() {
+            return "FlickrMedia{" +
+                    "mediaType=" + mediaType +
+                    ", label='" + label + '\'' +
+                    ", quality=" + quality +
+                    ", url='" + url + '\'' +
+                    ", source='" + source + '\'' +
+                    ", weight=" + weight +
+                    '}';
         }
     }
 

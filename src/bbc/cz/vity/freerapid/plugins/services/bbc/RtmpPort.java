@@ -8,7 +8,7 @@ enum RtmpPort {
     _80(80),
     _443(443);
 
-    private int port;
+    private final int port;
 
     RtmpPort(int port) {
         this.port = port;

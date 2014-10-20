@@ -131,9 +131,11 @@ class BbcFileRunner extends AbstractRtmpRunner {
 
     private void checkPlaylistProblems() throws NotRecoverableDownloadException {
         String content = getContentAsString();
+        /* Bugs on their side, false negative.
         if (content.contains("<noItems reason=\"")) {
             throw new URLNotAvailableAnymoreException("This programme is not available anymore");
         }
+        */
         if (content.contains("<h1>404</h1>")) {
             throw new URLNotAvailableAnymoreException("Page not found");
         }
@@ -154,7 +156,17 @@ class BbcFileRunner extends AbstractRtmpRunner {
     }
 
     private void checkProblems() throws ErrorDuringDownloadingException {
-        //
+        /*
+         Using page scraping method to get file availability info is not reliable (false negative).
+         But at this moment the API also broken.
+         */
+        if (getContentAsString().contains("this programme is not available")
+                || getContentAsString().contains("Not currently available on BBC iPlayer")) {
+            throw new URLNotAvailableAnymoreException("This programme is not available anymore");
+        }
+        if (getContentAsString().contains("Page not found") || getContentAsString().contains("page was not found")) {
+            throw new URLNotAvailableAnymoreException("Page not found");
+        }
     }
 
     private String getPid(String fileUrl) throws PluginImplementationException {

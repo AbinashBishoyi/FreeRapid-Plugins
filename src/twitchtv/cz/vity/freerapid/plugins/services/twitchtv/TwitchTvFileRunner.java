@@ -8,21 +8,21 @@ import cz.vity.freerapid.plugins.webclient.AbstractRunner;
 import cz.vity.freerapid.plugins.webclient.DownloadState;
 import cz.vity.freerapid.plugins.webclient.FileState;
 import cz.vity.freerapid.plugins.webclient.utils.HttpUtils;
+import cz.vity.freerapid.plugins.webclient.utils.JsonMapper;
 import cz.vity.freerapid.plugins.webclient.utils.PlugUtils;
 import jlibs.core.net.URLUtil;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.codehaus.jackson.JsonNode;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class which contains main code
@@ -53,11 +53,11 @@ class TwitchTvFileRunner extends AbstractRunner {
     private void checkNameAndSize(String content) throws ErrorDuringDownloadingException {
         String filename;
         try {
-            filename = PlugUtils.getStringBetween(content, "\"title\":\"", "\"");
+            filename = PlugUtils.getStringBetween(content, "content='", "' property='og:title'");
         } catch (PluginImplementationException e) {
             throw new PluginImplementationException("Filename not found");
         }
-        httpFile.setFileName(filename.trim().replaceAll("\\s", " "));
+        httpFile.setFileName(PlugUtils.unescapeHtml(filename.trim()).replaceAll("\\s", " "));
         httpFile.setFileState(FileState.CHECKED_AND_EXISTING);
     }
 
@@ -75,61 +75,50 @@ class TwitchTvFileRunner extends AbstractRunner {
             isAtHomePage(method);
             checkProblems();
             checkNameAndSize(contentAsString);
-            final int archiveId;
+
+            final String videoId;
             try {
-                archiveId = PlugUtils.getNumberBetween(getContentAsString(), "\"archive_id\":", ",");
+                videoId = PlugUtils.getStringBetween(getContentAsString(), "\"videoId\":\"", "\"");
             } catch (PluginImplementationException e) {
-                throw new PluginImplementationException("Archive id not found");
+                throw new PluginImplementationException("Video id not found");
             }
-            final HttpMethod httpMethod = getGetMethod(String.format("http://api.justin.tv/api/broadcast/by_archive/%d.xml", archiveId));
+            final HttpMethod httpMethod = getGetMethod(String.format("https://api.twitch.tv/api/videos/%s?as3=t", videoId));
             if (!makeRedirectedRequest(httpMethod)) {
                 checkProblems();
                 throw new ServiceConnectionProblemException();
             }
-
             checkProblems();
-            //title element sometimes in front of video_file_url element, but sometimes behind video_file_url element
-            final Matcher archiveMatcher = Pattern.compile("<archive>(.+?)</archive>", Pattern.DOTALL).matcher(getContentAsString());
-            final Matcher titleMatcher = Pattern.compile("<title>(.+?)</title>").matcher(getContentAsString());
-            final Matcher videoUrlMatcher = Pattern.compile("<video_file_url>(.+?)</video_file_url>").matcher(getContentAsString());
+
+            final String title = httpFile.getFileName();
             final List<URI> uriList = new LinkedList<URI>();
-            final HashMap<String, Integer> titleMap = new HashMap<String, Integer>(); //to store unique title, value=counter
-            while (archiveMatcher.find()) {
-                titleMatcher.region(archiveMatcher.start(1), archiveMatcher.end(1));
-                if (!titleMatcher.find()) {
-                    throw new PluginImplementationException("Title not found");
+            JsonNode rootNode;
+            try {
+                rootNode = new JsonMapper().getObjectMapper().readTree(getContentAsString());
+            } catch (IOException e) {
+                throw new PluginImplementationException("Error getting video root node");
+            }
+            try {
+                JsonNode chunksNode = rootNode.get("chunks");
+                //for multi quality, pick non-live, as live sometimes cannot be downloaded.
+                //only support 480p for non-live, can't find sample for other qualities.
+                JsonNode urlParentNodes = (chunksNode.get("480p") != null ? chunksNode.get("480p") : chunksNode.get("live"));
+                boolean multiPart = (urlParentNodes.size() > 1);
+                int counter = 1;
+                for (JsonNode urlNode : urlParentNodes) {
+                    //http://media-cdn.twitch.tv/store44.media44/archives/2012-7-30/highlight_326746473.flv
+                    String videoUrl = urlNode.get("url").getTextValue();
+                    //add title (and counter for multipart) to url's tail so we can extract it later
+                    final String url = getMethodBuilder()
+                            .setAction(videoUrl)
+                            .setAndEncodeParameter(TITLE_PARAM, title + (multiPart ? "_" + counter++ : ""))
+                            .getEscapedURI();
+                    uriList.add(new URI(url));
                 }
-                String title = titleMatcher.group(1);
-
-                videoUrlMatcher.region(archiveMatcher.start(1), archiveMatcher.end(1));
-                if (!videoUrlMatcher.find()) {
-                    throw new PluginImplementationException("Video url not found");
-                }
-                String videoUrl = videoUrlMatcher.group(1);
-
-                title = PlugUtils.unescapeHtml(title.replaceAll("\\s", " ")); // to avoid illegal chars in filename
-                Integer counter = titleMap.get(title);
-                if (counter == null) {
-                    counter = 1;
-                    titleMap.put(title, counter); //counter=1 if title doesn't exist
-                } else {
-                    titleMap.put(title, ++counter); //increase counter if title exists
-                }
-                if (counter != 1) {
-                    title += "_" + counter;
-                }
-
-                //add title and counter to url's tail so we can extract it later.
-                //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv -> original videoUrl
-                //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv?title=česká kvalifikace na ESWC!! 2/4_2 -> title+"_"+counter added
-                final String url = getMethodBuilder().setAction(videoUrl).setAndEncodeParameter(TITLE_PARAM, title).getEscapedURI();
-                if (!isVideoUrl(url)) {
-                    throw new PluginImplementationException("Unrecognized video url pattern"); //to prevent original link disappear when video url pattern unrecognized
-                }
-                uriList.add(new URI(url));
+            } catch (Exception e) {
+                throw new PluginImplementationException("Error parsing JSON content");
             }
             if (uriList.isEmpty()) {
-                throw new PluginImplementationException("No video links found");
+                throw new PluginImplementationException("No video link found");
             }
             getPluginService().getPluginContext().getQueueSupport().addLinksToQueue(httpFile, uriList);
             httpFile.setState(DownloadState.COMPLETED);
@@ -142,24 +131,24 @@ class TwitchTvFileRunner extends AbstractRunner {
 
     private void checkProblems() throws ErrorDuringDownloadingException {
         final String contentAsString = getContentAsString();
-        if (contentAsString.contains("File Not Found")) {
+        if (contentAsString.contains("I'm sorry, that page is in another castle")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
     private void isAtHomePage(final HttpMethod method) throws URLNotAvailableAnymoreException, URIException {
-        if (method.getURI().toString().matches("http://(?:.+?\\.)?(?:twitch|justin)\\.tv/.+?/videos/?")) {
+        if (method.getURI().toString().matches("http://(?:.+?\\.)?twitch\\.tv/.+?/videos/?")) {
             throw new URLNotAvailableAnymoreException("File not found");
         }
     }
 
     private boolean isVideoUrl(final String url) {
-        return url.matches("http://.*?media\\d+\\.justin\\.tv/archives/.+?/.+?\\..{3}.*");
+        return url.matches("http://media-cdn\\.twitch\\.tv/[^/]+?/archives/.+?/.+?\\..{3}.*");
     }
 
     private void processVideoUrl() throws Exception {
-        //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv -> original videoUrl
-        //http://media6.justin.tv/archives/2012-8-30/live_user_wries_1346350462.flv?title=česká kvalifikace na ESWC!! 2/4_2 -> title+"_"+counter added
+        //http://media-cdn.twitch.tv/store48.media48/archives/2012-9-3/format_480p_330898023.flv -> original videoUrl
+        //http://media-cdn.twitch.tv/store48.media48/archives/2012-9-3/format_480p_330898023.flv?title=Kings of Poverty for RAINN!-Mystery Tournament_2 -> title+"_"+counter added
         URL url = new URL(fileURL);
         String title = null;
         try {
@@ -169,7 +158,7 @@ class TwitchTvFileRunner extends AbstractRunner {
         }
         fileURL = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
         final String extension = fileURL.substring(fileURL.lastIndexOf("."));
-        final String filename = (title == null ? fileURL.substring(fileURL.lastIndexOf("/") + 1) : URLDecoder.decode(title + extension, "UTF-8"));
+        final String filename = (title == null ? PlugUtils.suggestFilename(fileURL) : URLDecoder.decode(title + extension, "UTF-8"));
         httpFile.setFileName(HttpUtils.replaceInvalidCharsForFileSystem(filename, "_"));
         client.setReferer(httpFile.getFileUrl().getProtocol() + "://" + httpFile.getFileUrl().getAuthority());
         final GetMethod method = getGetMethod(fileURL);
